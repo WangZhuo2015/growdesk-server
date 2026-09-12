@@ -50,6 +50,9 @@ import {
   FoodGuidelinesResponseSchema,
   FoodPlanSchema,
   FoodPlanResponseSchema,
+  SupplementRecordSchema,
+  SupplementRecordResponseSchema,
+  SupplementListResponseSchema,
   DeleteRecordResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
@@ -72,6 +75,7 @@ import { formulaProductRoutes } from "./routes/formula-product-routes.js";
 import { diaperRoutes } from "./routes/diaper-routes.js";
 import { sleepRoutes } from "./routes/sleep-routes.js";
 import { foodRoutes } from "./routes/food-routes.js";
+import { supplementRoutes } from "./routes/supplement-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -156,6 +160,9 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(FoodGuidelinesResponseSchema);
   app.addSchema(FoodPlanSchema);
   app.addSchema(FoodPlanResponseSchema);
+  app.addSchema(SupplementRecordSchema);
+  app.addSchema(SupplementRecordResponseSchema);
+  app.addSchema(SupplementListResponseSchema);
   app.addSchema(DeleteRecordResponseSchema);
 
   // Standard API Error Envelope Handler
@@ -270,6 +277,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     });
 
     app.register(foodRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(supplementRoutes, {
       prisma: databaseContext.prisma,
     });
   }

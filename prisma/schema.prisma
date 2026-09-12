@@ -62,6 +62,7 @@ model Family {
   foodStatuses    FamilyFoodStatus[]
   customFoodItems FoodLibraryItem[]
   babyFoodPlans   BabyFoodPlan[]
+  supplementRecords SupplementRecord[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -110,6 +111,7 @@ model Baby {
   sleepRecords    SleepRecord[]
   foodRecords     FoodRecord[]
   foodPlan        BabyFoodPlan?
+  supplementRecords SupplementRecord[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -565,6 +567,27 @@ model BabyFoodPlan {
 
   @@unique([familyId, babyId], name: "uq_baby_food_plans_family_baby")
   @@map("baby_food_plans")
+  @@schema("public")
+}
+
+model SupplementRecord {
+  id             String    @id
+  familyId       String    @map("family_id")
+  babyId         String    @map("baby_id")
+  supplementName String    @map("supplement_name") @db.VarChar(100)
+  occurredAt     DateTime  @map("occurred_at") @db.Timestamptz(3)
+  amount         String?   @db.VarChar(100)
+  notes          String?   @db.VarChar(1000)
+  version        Int       @default(1)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family         Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby           Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_supplement_records_baby_timeline")
+  @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_supplement_records_family_timeline")
+  @@map("supplement_records")
   @@schema("public")
 }
 

@@ -89,7 +89,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(foodSql);
       }
 
-      // 7. Verify all expected foundation tables exist
+      // 7. Apply 202609120007_care_supplement if not already applied
+      const supplementSql = fs.readFileSync("prisma/migrations/202609120007_care_supplement/migration.sql", "utf8");
+      const { rows: suppRows } = await client.query("SELECT to_regclass('public.supplement_records') as exists");
+      if (!suppRows[0]?.exists) {
+        await client.query(supplementSql);
+      }
+
+      // 8. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -118,6 +125,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "food_library_items",
         "family_food_statuses",
         "baby_food_plans",
+        "supplement_records",
       ];
 
       const { rows } = await client.query(
