@@ -58,6 +58,10 @@ model Family {
   formulaProducts FormulaProduct[]
   diaperRecords   DiaperRecord[]
   sleepRecords    SleepRecord[]
+  foodRecords     FoodRecord[]
+  foodStatuses    FamilyFoodStatus[]
+  customFoodItems FoodLibraryItem[]
+  babyFoodPlans   BabyFoodPlan[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -104,6 +108,8 @@ model Baby {
   feedingRecords  FeedingRecord[]
   diaperRecords   DiaperRecord[]
   sleepRecords    SleepRecord[]
+  foodRecords     FoodRecord[]
+  foodPlan        BabyFoodPlan?
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -488,6 +494,77 @@ model SleepRecord {
   @@index([babyId, deletedAt, startedAt(sort: Desc), id(sort: Desc)], name: "ix_sleep_records_baby_timeline")
   @@index([familyId, deletedAt, startedAt(sort: Desc)], name: "ix_sleep_records_family_timeline")
   @@map("sleep_records")
+  @@schema("public")
+}
+
+model FoodRecord {
+  id                 String    @id
+  familyId           String    @map("family_id")
+  babyId             String    @map("baby_id")
+  recordDate         String    @map("record_date") @db.VarChar(10)
+  mealType           String    @map("meal_type") @db.VarChar(32)
+  occurredAt         DateTime? @map("occurred_at") @db.Timestamptz(3)
+  foodItemIds        String[]  @default([]) @map("food_item_ids")
+  portionDescription String?   @map("portion_description") @db.VarChar(255)
+  reaction           String?   @db.VarChar(32)
+  notes              String?   @db.VarChar(1000)
+  version            Int       @default(1)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family             Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby               Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@index([babyId, deletedAt, recordDate(sort: Desc), id(sort: Desc)], name: "ix_food_records_baby_timeline")
+  @@index([familyId, deletedAt, recordDate(sort: Desc)], name: "ix_food_records_family_timeline")
+  @@map("food_records")
+  @@schema("public")
+}
+
+model FoodLibraryItem {
+  id                   String    @id @db.VarChar(64)
+  name                 String    @db.VarChar(100)
+  category             String    @db.VarChar(50)
+  allergenRisk         String    @map("allergen_risk") @db.VarChar(16)
+  recommendedAgeMonths Int       @map("recommended_age_months")
+  isCustom             Boolean   @default(false) @map("is_custom")
+  familyId             String?   @map("family_id")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family               Family?   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@index([familyId, isCustom], name: "ix_food_library_items_family_custom")
+  @@map("food_library_items")
+  @@schema("public")
+}
+
+model FamilyFoodStatus {
+  id         String   @id
+  familyId   String   @map("family_id")
+  foodItemId String   @map("food_item_id") @db.VarChar(64)
+  tried      Boolean  @default(false)
+  reaction   String?  @db.VarChar(32)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family     Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, foodItemId], name: "uq_family_food_statuses")
+  @@map("family_food_statuses")
+  @@schema("public")
+}
+
+model BabyFoodPlan {
+  id        String   @id
+  familyId  String   @map("family_id")
+  babyId    String   @unique @map("baby_id")
+  planData  Json     @map("plan_data") @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby      Baby     @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@unique([familyId, babyId], name: "uq_baby_food_plans_family_baby")
+  @@map("baby_food_plans")
   @@schema("public")
 }
 

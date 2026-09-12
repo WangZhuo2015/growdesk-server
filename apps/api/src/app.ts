@@ -42,6 +42,14 @@ import {
   SleepRecordSchema,
   SleepRecordResponseSchema,
   SleepListResponseSchema,
+  FoodRecordSchema,
+  FoodRecordResponseSchema,
+  FoodListResponseSchema,
+  FoodLibraryItemSchema,
+  FoodLibraryItemListResponseSchema,
+  FoodGuidelinesResponseSchema,
+  FoodPlanSchema,
+  FoodPlanResponseSchema,
   DeleteRecordResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
@@ -63,6 +71,7 @@ import { feedingRoutes } from "./routes/feeding-routes.js";
 import { formulaProductRoutes } from "./routes/formula-product-routes.js";
 import { diaperRoutes } from "./routes/diaper-routes.js";
 import { sleepRoutes } from "./routes/sleep-routes.js";
+import { foodRoutes } from "./routes/food-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -139,6 +148,14 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(SleepRecordSchema);
   app.addSchema(SleepRecordResponseSchema);
   app.addSchema(SleepListResponseSchema);
+  app.addSchema(FoodRecordSchema);
+  app.addSchema(FoodRecordResponseSchema);
+  app.addSchema(FoodListResponseSchema);
+  app.addSchema(FoodLibraryItemSchema);
+  app.addSchema(FoodLibraryItemListResponseSchema);
+  app.addSchema(FoodGuidelinesResponseSchema);
+  app.addSchema(FoodPlanSchema);
+  app.addSchema(FoodPlanResponseSchema);
   app.addSchema(DeleteRecordResponseSchema);
 
   // Standard API Error Envelope Handler
@@ -249,6 +266,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     });
 
     app.register(sleepRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(foodRoutes, {
       prisma: databaseContext.prisma,
     });
   }
