@@ -13,14 +13,26 @@ import {
   RevokeSessionResponseSchema,
   SuccessStatusResponseSchema,
   CurrentUserResponseSchema,
+  ChangePasswordRequestSchema,
+  RegenerateRecoveryCodesRequestSchema,
+  RegenerateRecoveryCodesResponseSchema,
+  RecoverPasswordRequestSchema,
   type RegisterRequest,
   type LoginRequest,
   type RefreshTokenRequest,
+  type ChangePasswordRequest,
+  type RegenerateRecoveryCodesRequest,
+  type RecoverPasswordRequest,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/tokens.js";
 import { createSession, revokeSession, rotateRefreshToken } from "../auth/session-service.js";
+import {
+  changePasswordTx,
+  regenerateRecoveryCodesTx,
+  recoverPasswordTx,
+} from "../auth/recovery-service.js";
 import { ReplayStore } from "../auth/replay-store.js";
 
 export interface AuthRoutesOptions {
@@ -415,6 +427,151 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
           displayName: user.displayName,
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString(),
+        },
+      });
+    },
+  );
+
+  // 8. POST /api/v1/auth/password/change
+  fastify.post<{ Body: ChangePasswordRequest }>(
+    "/api/v1/auth/password/change",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        body: ChangePasswordRequestSchema,
+        response: {
+          200: SuccessStatusResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const principal = request.principal!;
+      const { oldPassword, newPassword } = request.body;
+      const requestId = (request.id as string) || crypto.randomUUID();
+
+      const result = await changePasswordTx({
+        pool,
+        userId: principal.userId,
+        sessionId: principal.sessionId,
+        oldPassword,
+        newPassword,
+      });
+
+      if (!result.success) {
+        reply.status(result.statusCode).send({
+          error: {
+            code: result.code ?? "UNAUTHORIZED",
+            message: result.message ?? "Password change failed",
+            requestId,
+          },
+        });
+        return;
+      }
+
+      reply.status(200).send({
+        data: {
+          success: true,
+        },
+      });
+    },
+  );
+
+  // 9. POST /api/v1/auth/recovery-codes/regenerate
+  fastify.post<{ Body: RegenerateRecoveryCodesRequest }>(
+    "/api/v1/auth/recovery-codes/regenerate",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        body: RegenerateRecoveryCodesRequestSchema,
+        response: {
+          200: RegenerateRecoveryCodesResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const principal = request.principal!;
+      const { password } = request.body;
+      const requestId = (request.id as string) || crypto.randomUUID();
+
+      const user = await prisma.user.findUnique({
+        where: { id: principal.userId },
+      });
+
+      if (!user || user.deletedAt !== null) {
+        reply.status(401).send({
+          error: {
+            code: "UNAUTHORIZED",
+            message: "User account not found",
+            requestId,
+          },
+        });
+        return;
+      }
+
+      const verification = await verifyPassword(password, user.passwordHash);
+      if (!verification.valid) {
+        reply.status(401).send({
+          error: {
+            code: "INVALID_CREDENTIALS",
+            message: "Current password does not match",
+            requestId,
+          },
+        });
+        return;
+      }
+
+      const result = await regenerateRecoveryCodesTx(pool, principal.userId);
+      reply.status(200).send({
+        data: {
+          codes: result.codes,
+          batchId: result.batchId,
+        },
+      });
+    },
+  );
+
+  // 10. POST /api/v1/auth/password/recover
+  fastify.post<{ Body: RecoverPasswordRequest }>(
+    "/api/v1/auth/password/recover",
+    {
+      schema: {
+        body: RecoverPasswordRequestSchema,
+        response: {
+          200: SuccessStatusResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { username, recoveryCode, newPassword } = request.body;
+      const requestId = (request.id as string) || crypto.randomUUID();
+
+      const result = await recoverPasswordTx({
+        pool,
+        username,
+        recoveryCode,
+        newPassword,
+      });
+
+      if (!result.success) {
+        reply.status(result.statusCode).send({
+          error: {
+            code: result.code ?? "INVALID_RECOVERY_CODE",
+            message: result.message ?? "Invalid username or recovery code",
+            requestId,
+          },
+        });
+        return;
+      }
+
+      reply.status(200).send({
+        data: {
+          success: true,
         },
       });
     },

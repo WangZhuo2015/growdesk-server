@@ -29,6 +29,7 @@ import {
   BabyListResponseSchema,
   BabyMemberListResponseSchema,
   RemoveBabyMemberResponseSchema,
+  RegenerateRecoveryCodesResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -108,6 +109,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(BabyListResponseSchema);
   app.addSchema(BabyMemberListResponseSchema);
   app.addSchema(RemoveBabyMemberResponseSchema);
+  app.addSchema(RegenerateRecoveryCodesResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
