@@ -14,25 +14,42 @@
   },
   "scripts": {
     "backend:doctor": "bash scripts/doctor.sh",
-    "backend:build": "npm run --workspaces --if-present build",
-    "backend:typecheck": "npm run --workspaces --if-present typecheck",
-    "backend:lint": "eslint 'apps/*/src/**/*.ts' 'packages/*/src/**/*.ts'",
-    "backend:contracts:generate": "node --import tsx apps/api/src/export-openapi.ts",
-    "backend:contracts:check": "node --import tsx scripts/contracts-check.ts",
-    "backend:test:guard": "node --import tsx scripts/test-guard.ts",
-    "backend:test:unit": "node --import tsx --test 'packages/*/tests/**/*.test.ts'",
-    "backend:test:integration": "node --import tsx --test 'tests/integration/**/*.test.ts'",
-    "backend:db:generate": "prisma generate",
-    "backend:db:validate": "prisma validate",
-    "backend:db:migrate": "prisma migrate dev",
+    "backend:build": "npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build",
+    "backend:typecheck": "tsc -p tsconfig.backend.json --noEmit",
+    "backend:lint": "eslint . && node scripts/check-architecture.mjs",
+    "backend:deps:test": "python3 scripts/test-integration.py --suite infrastructure",
+    "backend:test:guard": "node --import tsx --test packages/testkit/tests/environment.test.ts packages/database/tests/config.test.ts",
+    "backend:test:unit": "npm run backend:build && node --import tsx --test \"packages/*/tests/**/*.test.ts\" \"apps/*/tests/**/*.test.ts\" \"tests/unit/**/*.test.ts\"",
+    "backend:test:integration": "python3 scripts/test-integration.py",
+    "backend:evidence:check": "node scripts/evidence-check.mjs",
+    "backend:contracts:generate": "node scripts/not-ready.mjs backend:contracts:generate BE-01",
+    "backend:contracts:check": "node scripts/not-ready.mjs backend:contracts:check BE-01",
+    "backend:db:generate": "node scripts/not-ready.mjs backend:db:generate BE-02",
+    "backend:db:validate": "node scripts/not-ready.mjs backend:db:validate BE-02",
+    "backend:db:migrate": "node scripts/not-ready.mjs backend:db:migrate BE-02",
     "dev:api": "npm run --workspace=@growdesk/api dev",
     "dev:worker": "npm run --workspace=@growdesk/worker dev",
-    "dev:scheduler": "npm run --workspace=@growdesk/scheduler dev"
+    "dev:scheduler": "npm run --workspace=@growdesk/scheduler dev",
+    "backend:release:package": "node scripts/package-cloud-release.mjs"
+  },
+  "dependencies": {
+    "@fastify/type-provider-typebox": "5.2.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "@sinclair/typebox": "0.34.52",
+    "bullmq": "5.81.5",
+    "fastify": "5.12.4",
+    "ioredis": "5.11.1",
+    "pg": "8.23.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/node": "24.0.0",
+    "@types/pg": "8.23.1",
+    "eslint": "10.10.0",
     "prisma": "7.10.0",
     "tsx": "4.23.13",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0"
   }
 }

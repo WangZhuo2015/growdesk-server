@@ -6,14 +6,16 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@growdesk/domain": "^0.1.0",
-    "@prisma/client": "^7.0.0"
+    "@growdesk/domain": "0.1.0",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "pg": "8.23.0"
   },
   "devDependencies": {
-    "typescript": "^5.8.0"
+    "@types/pg": "8.23.1"
   }
 }

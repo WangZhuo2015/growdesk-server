@@ -1,0 +1,65 @@
+name: GrowDesk backend
+
+on:
+  push:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "tsconfig.backend.json"
+      - "eslint.config.js"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "tsconfig.backend.json"
+      - "eslint.config.js"
+      - ".github/workflows/backend.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  backend-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:typecheck
+      - run: npm run backend:build
+      - run: npm run backend:lint
+      - run: npm run backend:test:guard
+      - run: npm run backend:test:unit
+
+  backend-integration:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Install local test services (runner enforces major versions)
+        run: |
+          brew install postgresql@18 redis
+          echo "PG_BIN=$(brew --prefix postgresql@18)/bin" >> "$GITHUB_ENV"
+          echo "REDIS_BIN=$(brew --prefix redis)/bin" >> "$GITHUB_ENV"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:test:integration -- --suite infrastructure
+      - run: python3 tests/integration/runner-lifecycle.test.py

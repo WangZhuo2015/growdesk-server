@@ -1,0 +1,5 @@
+Docker Compose v5.5.1 standalone (official SHA256 verified)
+config --quiet: PASS
+Synthetic credentials only; no daemon or host mutation
+Assertions PASS: separate project, API loopback port3180, no PG/Redis published port, isolated networks, superuser credential absent from API, pinned image digests
+Postgres initialization script sh -n: PASS

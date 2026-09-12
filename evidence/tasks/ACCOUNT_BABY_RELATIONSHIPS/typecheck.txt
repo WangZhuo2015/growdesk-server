@@ -1,0 +1,4 @@
+
+> growdesk-server@0.1.0 backend:typecheck
+> tsc -p tsconfig.backend.json --noEmit
+

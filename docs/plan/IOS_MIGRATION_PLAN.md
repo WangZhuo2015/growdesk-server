@@ -3,18 +3,22 @@
 > 路径约定（2026-09-11 更新）：服务端目标根目录为 `/Users/wangzhuo/Documents/GitHub/growdesk-server`，原生端为同级 `growdesk-ios`；完整计划唯一主本位于服务端 `docs/plan/`。下文“旧 Web/源系统/现有来源”中的 `app/`、`lib/`、`prisma/`、`scripts/`、package 和 SQLite 路径均相对旧参考仓库 `/Users/wangzhuo/Documents/GitHub/baby_panel_for_cecilia`；目标服务端路径相对 `growdesk-server`，Swift 工程路径相对 `growdesk-ios`。不要在旧 Web 内新建后端，也不要在服务端内嵌套 iOS 工程。既有代码事实基于旧审查基线，开工须重新核对。
 
 
-版本：2.0 / 2026-09-11。状态：**规格已编写，实施未开始**。
+版本：3.0 / 2026-09-11。状态：**BOOT-01 和 IOS00 基线已完成本地复核，正推进后端工作区；联网应用、仅本机保存可选，云同步需授权。**
 
 本版本替代上一次“保留服务端SQLite、优先MVP”的方案。新的目标是完整iPhone/iPad原生产品、独立后端与PostgreSQL，从首个正式版本就具备可靠同步、持久AI任务、权限隔离、可验证的数据迁移和性能基线。阶段化开发用于降低实现风险，不把未完成基础能力带入首发。
 
 本计划已迁入 GrowDesk 独立服务端仓库。用户已创建服务端基础骨架（根 package/tsconfig、domain/database/contracts 三个包），iOS 仓库尚无工程；这些不代表任务已验收。本次只整理计划和开工入口，未安装依赖、运行迁移/压测或访问生产数据。旧 Web 审查基线为 ed7318d；开工必须重新确认各仓库 HEAD 和工作区状态。
+
+最新产品决策见 [07 本地保存与按需云协作](implementation/07_LOCAL_FIRST_OPTIONAL_SYNC.md)，优先于下文旧的登录/缓存前提。此前的“未实施”段落为历史基线，当前进展以 evidence 报告为准。
+
+账号与宝宝明确为多对多；家庭资格不能替代宝宝记录授权。关系、回填及逐宝宝权限以 [08](implementation/08_ACCOUNT_BABY_RELATIONSHIPS.md) 为准。
 
 ## 1. 推荐技术栈
 
 | 部分 | 决策 |
 |---|---|
 | iPhone/iPad | Swift 6 + SwiftUI + Observation，最低系统暂定17 |
-| 原生本地缓存/离线队列 | GRDB + SQLite；与服务器数据库用途不同 |
+| 原生正式本地库/可选同步队列 | GRDB + SQLite；与服务器数据库用途不同 |
 | 网络 | URLSession + Swift OpenAPI Generator；SSE补发事件 |
 | API服务 | Node.js 24 LTS + TypeScript + Fastify 5，独立于Next.js |
 | 主数据库 | PostgreSQL 18 + Prisma 7 + adapter-pg |
@@ -25,7 +29,7 @@
 
 采用TypeScript保留现有领域规则和测试资产；用独立Fastify服务替换Next服务宿主。主要性能工作放在查询/索引、连接预算、队列背压和派生数据上，不假定换语言就能解决性能问题。版本和框架依据见[架构分册](implementation/01_ARCHITECTURE.md)。
 
-生产不再运行SQLite。旧库作为只读迁移源；原生本地SQLite继续承担缓存与待同步操作，这是长期设计而不是临时过渡。不采用双主数据库、长期双写、CloudKit第二权威或第一版后必需再换库的路线。
+生产不再运行SQLite。旧库作为只读迁移源；原生本地SQLite承担正式本地数据与用户选择开启的同步操作，这是长期设计而不是临时过渡。不采用双主数据库、长期双写、CloudKit第二权威或第一版后必需再换库的路线。
 
 ## 2. 实现规格包
 
@@ -39,6 +43,8 @@
 | [04 功能对照和iOS任务](implementation/04_FEATURE_PARITY_AND_IOS.md) | 旧页面/API到原生的映射、模块边界、逐项实现和真机验收 | iOS/领域业务Agent |
 | [05 性能、部署与验收](implementation/05_PERFORMANCE_DEPLOYMENT_ACCEPTANCE.md) | 容量目标、起测机器、负载/故障、CI、备份、SLO/RPO/RTO | 运维/性能Agent与最终review |
 | [06 Agent执行手册](implementation/06_AGENT_EXECUTION_PLAYBOOK.md) | 任务卡、依赖、拟新增命令、证据模板、可复制实现/review提示词 | 每次领取任务 |
+| [07 本地保存与可选同步](implementation/07_LOCAL_FIRST_OPTIONAL_SYNC.md) | 联网与数据上传分离、显式绑定、首次导入、暂停与在线能力 | 存储、同步、在线 AI |
+| [08 账号与宝宝多对多](implementation/08_ACCOUNT_BABY_RELATIONSHIPS.md) | BabyMember、逐宝宝权限、邀请/撤销、迁移回填和 feed 过滤 | 账号、数据库、iOS 宝宝选择 |
 
 所有新接口、脚本、表都是待实现项。文档中的示例不是生产可执行命令，特别是标注“拟新增”的npm脚本要先由对应任务实现。任务完成需关联commit、测试输出与review结论，不能靠修改文档状态代替实现。
 

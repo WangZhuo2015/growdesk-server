@@ -1,5 +1,9 @@
 # Baby Panel PostgreSQL 18 数据库迁移实施计划
 
+> **账号与宝宝多对多修订**：目标新增 BabyMember 关联与约束。旧 FamilyMember→Baby 的有效访问需显式回填，不能因新模型丢失权限，也不能让以后新加入的家庭成员自动获取所有宝宝。迁移步骤、角色及共享数据删除规则以 [08](08_ACCOUNT_BABY_RELATIONSHIPS.md) 为准。
+
+> **2026-09-11 产品决策更新**：应用正常联网，可选择数据仅本机保存；云同步/协作需主动授权。涉及登录前置、仅缓存、本地保留和“必须联网”的规则以 [07 本地保存与按需云协作](07_LOCAL_FIRST_OPTIONAL_SYNC.md) 为准；云端事务、权限与幂等不变量继续有效。
+
 > 路径约定（2026-09-11 更新）：服务端目标根目录为 `/Users/wangzhuo/Documents/GitHub/growdesk-server`，原生端为同级 `growdesk-ios`；完整计划唯一主本位于服务端 `docs/plan/`。下文“旧 Web/源系统/现有来源”中的 `app/`、`lib/`、`prisma/`、`scripts/`、package 和 SQLite 路径均相对旧参考仓库 `/Users/wangzhuo/Documents/GitHub/baby_panel_for_cecilia`；目标服务端路径相对 `growdesk-server`，Swift 工程路径相对 `growdesk-ios`。不要在旧 Web 内新建后端，也不要在服务端内嵌套 iOS 工程。既有代码事实基于旧审查基线，开工须重新核对。
 
 

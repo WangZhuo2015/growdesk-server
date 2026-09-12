@@ -1,5 +1,7 @@
 # 01 — 最终架构、决策与边界
 
+> **2026-09-11 产品决策更新**：应用正常联网，可选择数据仅本机保存；云同步/协作需主动授权。涉及登录前置、仅缓存、本地保留和“必须联网”的规则以 [07 本地保存与按需云协作](07_LOCAL_FIRST_OPTIONAL_SYNC.md) 为准；云端事务、权限与幂等不变量继续有效。
+
 > 路径约定（2026-09-11 更新）：服务端目标根目录为 `/Users/wangzhuo/Documents/GitHub/growdesk-server`，原生端为同级 `growdesk-ios`；完整计划唯一主本位于服务端 `docs/plan/`。下文“旧 Web/源系统/现有来源”中的 `app/`、`lib/`、`prisma/`、`scripts/`、package 和 SQLite 路径均相对旧参考仓库 `/Users/wangzhuo/Documents/GitHub/baby_panel_for_cecilia`；目标服务端路径相对 `growdesk-server`，Swift 工程路径相对 `growdesk-ios`。不要在旧 Web 内新建后端，也不要在服务端内嵌套 iOS 工程。既有代码事实基于旧审查基线，开工须重新核对。
 
 
@@ -30,7 +32,7 @@
 | Redis 角色 | 专用队列实例，AOF、`noeviction`；另一个 Redis 实例做限流/短缓存 | 两实例相同技术栈；允许早期同主机，不共享驱逐策略，不让缓存淘汰任务 |
 | 附件 | 私有 S3 对象存储，AWS SDK v3 的 S3 适配器 | 不放 Web `public/uploads`；不将 base64 嵌入数据库消息作为长期附件 |
 | 推送 | APNs provider + 现有 Web Push 适配器 | 业务 notification 表是事实，推送仅提醒；不把推送送达等同于数据同步 |
-| 部署 | Linux OCI 容器，Caddy TLS/反向代理，API/worker/scheduler 独立进程 | 不为本规模引入 Kubernetes、服务网格、Kafka、Elasticsearch |
+| 部署 | Linux OCI 容器，复用 singbox nginx TLS/反向代理，API/worker/scheduler 独立进程 | 不为本规模引入 Kubernetes、服务网格、Kafka、Elasticsearch |
 | 可观测性 | Pino 结构化脱敏日志、OpenTelemetry、Prometheus/Grafana | 不保存报告正文或 token 作为调试日志 |
 | 构建/包管理 | 新服务端独立 npm lockfile + 现有 npm workspaces；iOS 使用 SPM | 沿用 npm，但不复制旧 Web 依赖锁；锁定实际兼容版本 |
 | 测试 | TS `node:test`/tsx + Fastify inject + 隔离 PostgreSQL；k6；Swift Testing/XCTest/XCUITest | 不用 SQLite 模拟 PostgreSQL 行为；不拿单元通过代替故障和真机证据 |
@@ -55,7 +57,7 @@ PostgreSQL 18 是已发布且仍支持的主版本；官方建议跟进当前小
 iPhone / iPad                            过渡 Web / OAuth 授权页面
 SwiftUI → Repository → GRDB                         │
                   ↕ HTTPS                           │
-                 Caddy / 同源域名路由 / TLS
+                 nginx / 同源域名路由 / TLS
                             │
                 Fastify API 副本（无状态）
            ┌────────────────┼────────────────┐
@@ -101,7 +103,7 @@ growdesk-server/
   contracts/openapi.json
   scripts/             # 隔离runner、迁移ETL、验证、压测初始化
   tests/               # unit、integration、contract、chaos、load
-  infra/               # compose、Caddy、monitoring、部署模板
+  infra/               # compose、nginx、monitoring、部署模板
 growdesk-ios/
   BabyPanel.xcodeproj
   BabyPanel/           # App、Features、Core、DesignSystem
@@ -168,3 +170,7 @@ growdesk-android/       # 独立仓库，本计划不含 Android 实现任务
 任何修改以下事项必须触发架构 review：数据库/provider、认证语义、角色权限、离线冲突策略、cursor语义、ID格式、任务幂等和重试、删除与留存、公开API破坏性变更。普通UI布局、模块内重构、补充测试不必重复请求架构决策。
 
 资料：[Fastify 路由 schema](https://fastify.dev/docs/latest/Reference/Validation-and-Serialization/)、[Swagger 插件](https://github.com/fastify/fastify-swagger)、[Prisma 连接池](https://www.prisma.io/docs/orm/prisma-client/setup-and-configuration/databases-connections)、[BullMQ 幂等任务](https://docs.bullmq.io/patterns/idempotent-jobs)、[BullMQ 生产配置](https://docs.bullmq.io/guide/going-to-production)、[Swift OpenAPI](https://www.swift.org/openapi/)、[GRDB](https://github.com/groue/GRDB.swift)。
+
+## 2026-09-12 部署入口调整
+
+按用户决定，新服务先部署到 ubuntu@161.33.201.230，使用独立端口并复用既有 singbox nginx，不启动第二个入口代理，不影响原有服务。本节覆盖其他早期计划中的 Caddy 产品选型；TLS、SSE、私有存储、健康门禁、回滚与性能验收要求仍然有效，应转换成 nginx 的等价部署验证。当前只准备基础运行栈，不能把健康接口通过当成业务 API 已可上线。执行步骤以 deploy/HOST_RUNBOOK.zh-CN.md 为准。

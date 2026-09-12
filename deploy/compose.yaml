@@ -1,0 +1,190 @@
+name: growdesk
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        NODE_IMAGE: ${GROWDESK_NODE_IMAGE:-node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c}
+        BUILD_REVISION: ${GROWDESK_IMAGE_TAG:-local}
+    image: growdesk-api:${GROWDESK_IMAGE_TAG:-local}
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3080
+      DATABASE_URL: "postgresql://growdesk:${GROWDESK_DB_PASSWORD:?GROWDESK_DB_PASSWORD is required}@postgres:5432/growdesk"
+      REDIS_URL: "redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0"
+    ports:
+      - "127.0.0.1:${GROWDESK_HOST_PORT:-3180}:3080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - growdesk-db
+      - growdesk-redis
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3080/health/ready')
+          .then((response) => { if (!response.ok) throw new Error('not ready'); })
+          .catch(() => process.exit(1));
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    stop_grace_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: &default-logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 768M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  postgres:
+    image: ${GROWDESK_POSTGRES_IMAGE:-postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af}
+    init: true
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: growdesk
+      POSTGRES_PASSWORD: "${POSTGRES_SUPERUSER_PASSWORD:?POSTGRES_SUPERUSER_PASSWORD is required}"
+      GROWDESK_DB_PASSWORD: "${GROWDESK_DB_PASSWORD:?GROWDESK_DB_PASSWORD is required}"
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - growdesk-postgres-data:/var/lib/postgresql
+    configs:
+      - source: growdesk-postgres-init
+        target: /docker-entrypoint-initdb.d/10-create-growdesk-role.sh
+        mode: 0555
+    networks:
+      - growdesk-db
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    stop_grace_period: 60s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "2.00"
+          memory: 2G
+        reservations:
+          cpus: "0.50"
+          memory: 512M
+
+  redis:
+    image: ${GROWDESK_REDIS_IMAGE:-redis:8.10.1-alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576}
+    init: true
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"
+    command:
+      - sh
+      - -ec
+      - |
+        case "$${REDIS_PASSWORD:-}" in
+          ""|*[!A-Za-z0-9._-]*)
+            echo "REDIS_PASSWORD must be a non-empty URL-safe value" >&2
+            exit 1
+            ;;
+        esac
+        exec redis-server --appendonly yes --appendfsync everysec \
+          --requirepass "$${REDIS_PASSWORD}" --maxmemory 384mb \
+          --maxmemory-policy noeviction
+    volumes:
+      - growdesk-redis-data:/data
+    networks:
+      - growdesk-redis
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli --no-auth-warning -a "$${REDIS_PASSWORD}" ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    stop_grace_period: 30s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+configs:
+  growdesk-postgres-init:
+    content: |
+      #!/bin/sh
+      set -eu
+
+      case "$${GROWDESK_DB_PASSWORD:-}" in
+        ""|*[!A-Za-z0-9._-]*)
+          echo "GROWDESK_DB_PASSWORD must be a non-empty URL-safe value" >&2
+          exit 1
+          ;;
+      esac
+
+      psql \
+        --username "$${POSTGRES_USER}" \
+        --dbname "$${POSTGRES_DB}" \
+        --set=ON_ERROR_STOP=1 <<'SQL'
+      \getenv app_password GROWDESK_DB_PASSWORD
+      SELECT format(
+        'CREATE ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L',
+        :'app_password'
+      )
+      WHERE NOT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'growdesk'
+      )
+      \gexec
+
+      ALTER ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'app_password';
+      REVOKE ALL ON DATABASE growdesk FROM PUBLIC;
+      GRANT CONNECT ON DATABASE growdesk TO growdesk;
+      REVOKE ALL ON SCHEMA public FROM PUBLIC;
+      GRANT USAGE ON SCHEMA public TO growdesk;
+      SQL
+
+volumes:
+  growdesk-postgres-data:
+    name: growdesk-postgres-data
+  growdesk-redis-data:
+    name: growdesk-redis-data
+
+networks:
+  growdesk-db:
+    name: growdesk-db
+    internal: true
+  growdesk-redis:
+    name: growdesk-redis
+    internal: true

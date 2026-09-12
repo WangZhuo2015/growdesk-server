@@ -6,13 +6,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.0"
+    "@sinclair/typebox": "0.34.52"
   }
 }
