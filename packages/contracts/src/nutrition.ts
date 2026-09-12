@@ -1,0 +1,181 @@
+import { Type, type Static } from "@sinclair/typebox";
+import {
+  Nullable,
+  DateTimeString,
+  DecimalString,
+  UuidString,
+  PaginatedEnvelope,
+} from "./common.js";
+
+// ==========================================
+// 1. Formula Products
+// ==========================================
+
+export const FormulaProductSchema = Type.Object(
+  {
+    id: UuidString,
+    familyId: UuidString,
+    brand: Type.String({ minLength: 1, maxLength: 100 }),
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    stage: Nullable(Type.String({ maxLength: 50 })),
+    scoopGrams: Nullable(DecimalString),
+    waterMlPerScoop: Nullable(DecimalString),
+    isArchived: Type.Boolean(),
+    createdAt: DateTimeString,
+    updatedAt: DateTimeString,
+  },
+  { $id: "FormulaProduct", additionalProperties: false }
+);
+
+export type FormulaProduct = Static<typeof FormulaProductSchema>;
+
+export const CreateFormulaProductRequestSchema = Type.Object(
+  {
+    brand: Type.String({ minLength: 1, maxLength: 100 }),
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    stage: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
+    scoopGrams: Type.Optional(Nullable(DecimalString)),
+    waterMlPerScoop: Type.Optional(Nullable(DecimalString)),
+  },
+  { $id: "CreateFormulaProductRequest", additionalProperties: false }
+);
+
+export type CreateFormulaProductRequest = Static<typeof CreateFormulaProductRequestSchema>;
+
+export const UpdateFormulaProductRequestSchema = Type.Object(
+  {
+    brand: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+    stage: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
+    scoopGrams: Type.Optional(Nullable(DecimalString)),
+    waterMlPerScoop: Type.Optional(Nullable(DecimalString)),
+    isArchived: Type.Optional(Type.Boolean()),
+  },
+  { $id: "UpdateFormulaProductRequest", additionalProperties: false }
+);
+
+export type UpdateFormulaProductRequest = Static<typeof UpdateFormulaProductRequestSchema>;
+
+export const FormulaProductResponseSchema = Type.Object(
+  {
+    data: FormulaProductSchema,
+  },
+  { $id: "FormulaProductResponse", additionalProperties: false }
+);
+
+export type FormulaProductResponse = Static<typeof FormulaProductResponseSchema>;
+
+export const FormulaProductListResponseSchema = PaginatedEnvelope(FormulaProductSchema, {
+  $id: "FormulaProductListResponse",
+});
+
+export type FormulaProductListResponse = Static<typeof FormulaProductListResponseSchema>;
+
+// ==========================================
+// 2. Food Library & Guidelines
+// ==========================================
+
+export const FoodAllergenRiskSchema = Type.Union([
+  Type.Literal("low"),
+  Type.Literal("medium"),
+  Type.Literal("high"),
+]);
+
+export type FoodAllergenRisk = Static<typeof FoodAllergenRiskSchema>;
+
+export const FoodLibraryItemSchema = Type.Object(
+  {
+    id: Type.String(),
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    category: Type.String({ minLength: 1, maxLength: 50 }),
+    allergenRisk: FoodAllergenRiskSchema,
+    recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+    familyStatus: Type.Optional(
+      Type.Object(
+        {
+          tried: Type.Boolean(),
+          reaction: Nullable(Type.String()),
+        },
+        { additionalProperties: false }
+      )
+    ),
+  },
+  { $id: "FoodLibraryItem", additionalProperties: false }
+);
+
+export type FoodLibraryItem = Static<typeof FoodLibraryItemSchema>;
+
+export const CreateFoodLibraryItemRequestSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    category: Type.String({ minLength: 1, maxLength: 50 }),
+    allergenRisk: FoodAllergenRiskSchema,
+    recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+  },
+  { $id: "CreateFoodLibraryItemRequest", additionalProperties: false }
+);
+
+export type CreateFoodLibraryItemRequest = Static<typeof CreateFoodLibraryItemRequestSchema>;
+
+export const FoodLibraryItemListResponseSchema = Type.Object(
+  {
+    data: Type.Array(FoodLibraryItemSchema),
+  },
+  { $id: "FoodLibraryItemListResponse", additionalProperties: false }
+);
+
+export type FoodLibraryItemListResponse = Static<typeof FoodLibraryItemListResponseSchema>;
+
+export const FoodGuidelineItemSchema = Type.Object(
+  {
+    monthAge: Type.Integer({ minimum: 0 }),
+    title: Type.String(),
+    content: Type.String(),
+    forbiddenFoods: Type.Array(Type.String()),
+  },
+  { $id: "FoodGuidelineItem", additionalProperties: false }
+);
+
+export type FoodGuidelineItem = Static<typeof FoodGuidelineItemSchema>;
+
+export const FoodGuidelinesResponseSchema = Type.Object(
+  {
+    data: Type.Array(FoodGuidelineItemSchema),
+  },
+  { $id: "FoodGuidelinesResponse", additionalProperties: false }
+);
+
+export type FoodGuidelinesResponse = Static<typeof FoodGuidelinesResponseSchema>;
+
+// ==========================================
+// 3. Baby Food Plan
+// ==========================================
+
+export const FoodPlanSchema = Type.Object(
+  {
+    babyId: UuidString,
+    planData: Type.Record(Type.String(), Type.Unknown()),
+    updatedAt: DateTimeString,
+  },
+  { $id: "FoodPlan", additionalProperties: false }
+);
+
+export type FoodPlan = Static<typeof FoodPlanSchema>;
+
+export const SaveFoodPlanRequestSchema = Type.Object(
+  {
+    planData: Type.Record(Type.String(), Type.Unknown()),
+  },
+  { $id: "SaveFoodPlanRequest", additionalProperties: false }
+);
+
+export type SaveFoodPlanRequest = Static<typeof SaveFoodPlanRequestSchema>;
+
+export const FoodPlanResponseSchema = Type.Object(
+  {
+    data: FoodPlanSchema,
+  },
+  { $id: "FoodPlanResponse", additionalProperties: false }
+);
+
+export type FoodPlanResponse = Static<typeof FoodPlanResponseSchema>;

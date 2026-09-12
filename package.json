@@ -22,8 +22,8 @@
     "backend:test:unit": "npm run backend:build && node --import tsx --test \"packages/*/tests/**/*.test.ts\" \"apps/*/tests/**/*.test.ts\" \"tests/unit/**/*.test.ts\"",
     "backend:test:integration": "python3 scripts/test-integration.py",
     "backend:evidence:check": "node scripts/evidence-check.mjs",
-    "backend:contracts:generate": "node scripts/not-ready.mjs backend:contracts:generate BE-01",
-    "backend:contracts:check": "node scripts/not-ready.mjs backend:contracts:check BE-01",
+    "backend:contracts:generate": "node scripts/generate-contracts.mjs",
+    "backend:contracts:check": "node scripts/check-contracts.mjs",
     "backend:db:generate": "node scripts/not-ready.mjs backend:db:generate BE-02",
     "backend:db:validate": "node scripts/not-ready.mjs backend:db:validate BE-02",
     "backend:db:migrate": "node scripts/not-ready.mjs backend:db:migrate BE-02",
@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@fastify/swagger": "^9.8.1",
     "@types/node": "24.0.0",
     "@types/pg": "8.23.1",
     "eslint": "10.10.0",
