@@ -30,7 +30,7 @@ function readRun(): OwnedRun {
   return JSON.parse(fs.readFileSync(real, "utf8")) as OwnedRun;
 }
 
-test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
+test("SH-04G: Growth Measurement Pipeline & WHO Percentiles suite", async (t) => {
   const run = readRun();
   const identity = {
     host: "127.0.0.1" as const,
@@ -56,52 +56,30 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     await ctx.close();
   });
 
-  // Ensure all migrations up to 202609120007_care_supplement are applied
-  const identitySql = fs.readFileSync("prisma/migrations/202609120001_identity/migration.sql", "utf8");
-  const { rows: idRows } = await ctx.pool.query("SELECT to_regclass('public.users') as exists");
-  if (!idRows[0]?.exists) {
-    await ctx.pool.query(identitySql);
-  }
+  // Ensure all migrations up to 202609120008_care_growth are applied
+  const migrations = [
+    "prisma/migrations/202609120001_identity/migration.sql",
+    "prisma/migrations/202609120002_foundation/migration.sql",
+    "prisma/migrations/202609120003_care_feeding/migration.sql",
+    "prisma/migrations/202609120004_care_diaper/migration.sql",
+    "prisma/migrations/202609120005_care_sleep/migration.sql",
+    "prisma/migrations/202609120006_care_food/migration.sql",
+    "prisma/migrations/202609120007_care_supplement/migration.sql",
+    "prisma/migrations/202609120008_care_growth/migration.sql",
+  ];
 
-  const foundationSql = fs.readFileSync("prisma/migrations/202609120002_foundation/migration.sql", "utf8");
-  const { rows: fRows } = await ctx.pool.query("SELECT to_regclass('public.device_sessions') as exists");
-  if (!fRows[0]?.exists) {
-    await ctx.pool.query(foundationSql);
-  }
-
-  const feedingSql = fs.readFileSync("prisma/migrations/202609120003_care_feeding/migration.sql", "utf8");
-  const { rows: feedRows } = await ctx.pool.query("SELECT to_regclass('public.formula_products') as exists");
-  if (!feedRows[0]?.exists) {
-    await ctx.pool.query(feedingSql);
-  }
-
-  const diaperSql = fs.readFileSync("prisma/migrations/202609120004_care_diaper/migration.sql", "utf8");
-  const { rows: diaperRows } = await ctx.pool.query("SELECT to_regclass('public.diaper_records') as exists");
-  if (!diaperRows[0]?.exists) {
-    await ctx.pool.query(diaperSql);
-  }
-
-  const sleepSql = fs.readFileSync("prisma/migrations/202609120005_care_sleep/migration.sql", "utf8");
-  const { rows: sleepRows } = await ctx.pool.query("SELECT to_regclass('public.sleep_records') as exists");
-  if (!sleepRows[0]?.exists) {
-    await ctx.pool.query(sleepSql);
-  }
-
-  const foodSql = fs.readFileSync("prisma/migrations/202609120006_care_food/migration.sql", "utf8");
-  const { rows: foodRows } = await ctx.pool.query("SELECT to_regclass('public.food_records') as exists");
-  if (!foodRows[0]?.exists) {
-    await ctx.pool.query(foodSql);
-  }
-
-  const supplementSql = fs.readFileSync("prisma/migrations/202609120007_care_supplement/migration.sql", "utf8");
-  const { rows: suppRows } = await ctx.pool.query("SELECT to_regclass('public.supplement_records') as exists");
-  if (!suppRows[0]?.exists) {
-    await ctx.pool.query(supplementSql);
+  for (const m of migrations) {
+    const sql = fs.readFileSync(m, "utf8");
+    try {
+      await ctx.pool.query(sql);
+    } catch {
+      // Table may already exist in shared run, continue
+    }
   }
 
   // Identities
-  const userAName = `test_supp_a_${Date.now()}`;
-  const userBName = `test_supp_b_${Date.now()}`;
+  const userAName = `test_growth_a_${Date.now()}`;
+  const userBName = `test_growth_b_${Date.now()}`;
   let tokenA = "";
   let familyAId = "";
   let babyAId = "";
@@ -109,8 +87,8 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
   let familyBId = "";
   let babyBId = "";
 
-  let record1Id = "";
-  let record1Version = "1";
+  let measurement1Id = "";
+  let measurement1Version = "1";
 
   await t.test("Setup: Register User A and User B, create families and babies", async () => {
     // 1. Register User A
@@ -135,7 +113,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.ok(famListA[0]);
     familyAId = famListA[0].id;
 
-    // 3. Create Baby A
+    // 3. Create Baby A (girl)
     const babyResA = await app.inject({
       method: "POST",
       url: `/api/v1/families/${familyAId}/babies`,
@@ -149,7 +127,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
       },
     });
     assert.strictEqual(babyResA.statusCode, 201);
-    babyAId = babyResA.json().data.id;
+    babyAId = babyResA.json<{ data: { id: string } }>().data.id;
 
     // 4. Register User B
     const regResB = await app.inject({
@@ -173,7 +151,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.ok(famListB[0]);
     familyBId = famListB[0].id;
 
-    // 6. Create Baby B
+    // 6. Create Baby B (boy)
     const babyResB = await app.inject({
       method: "POST",
       url: `/api/v1/families/${familyBId}/babies`,
@@ -187,43 +165,43 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
       },
     });
     assert.strictEqual(babyResB.statusCode, 201);
-    babyBId = babyResB.json().data.id;
+    babyBId = babyResB.json<{ data: { id: string } }>().data.id;
   });
 
-  const fixedOccurredAt = new Date().toISOString();
-
-  await t.test("SU-01: Create supplement record with timeline projection", async () => {
+  await t.test("G-01: Create growth measurement with timeline projection", async () => {
     const res = await app.inject({
       method: "POST",
-      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements`,
       headers: {
         authorization: `Bearer ${tokenA}`,
-        "idempotency-key": "idemp-supp-create-01",
+        "idempotency-key": "idemp-growth-create-01",
       },
       payload: {
-        supplementName: "Vitamin D3",
-        occurredAt: fixedOccurredAt,
-        amount: "400 IU",
-        notes: "Morning drop",
+        measurementDate: "2025-06-01",
+        weightKg: "7.50",
+        heightCm: "67.2",
+        headCircumferenceCm: "42.5",
+        notes: "6-month checkup",
       },
     });
 
     assert.strictEqual(res.statusCode, 201);
-    const body = res.json();
+    const body = res.json<{ data: { id: string; babyId: string; familyId: string; weightKg: string; heightCm: string; headCircumferenceCm: string; measurementDate: string; version: string } }>();
     assert.ok(body.data.id);
-    record1Id = body.data.id;
+    measurement1Id = body.data.id;
     assert.strictEqual(body.data.babyId, babyAId);
     assert.strictEqual(body.data.familyId, familyAId);
-    assert.strictEqual(body.data.supplementName, "Vitamin D3");
-    assert.strictEqual(body.data.amount, "400 IU");
-    assert.strictEqual(body.data.notes, "Morning drop");
+    assert.strictEqual(body.data.measurementDate, "2025-06-01");
+    assert.strictEqual(body.data.weightKg, "7.50");
+    assert.strictEqual(body.data.heightCm, "67.2");
+    assert.strictEqual(body.data.headCircumferenceCm, "42.5");
     assert.strictEqual(body.data.version, "1");
-    record1Version = body.data.version;
+    measurement1Version = body.data.version;
 
     // Verify timeline projection in database
     const { rows: tlRows } = await ctx.pool.query(
-      `SELECT * FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'supplement'`,
-      [record1Id]
+      `SELECT * FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'growth'`,
+      [measurement1Id]
     );
     assert.strictEqual(tlRows.length, 1);
     assert.strictEqual(tlRows[0].baby_id, babyAId);
@@ -231,63 +209,63 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(tlRows[0].deleted_at, null);
   });
 
-  await t.test("SU-02: Idempotency replay with same key returns cached result", async () => {
+  await t.test("G-02: Idempotency replay with same key returns cached result", async () => {
     const res = await app.inject({
       method: "POST",
-      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements`,
       headers: {
         authorization: `Bearer ${tokenA}`,
-        "idempotency-key": "idemp-supp-create-01",
+        "idempotency-key": "idemp-growth-create-01",
       },
       payload: {
-        supplementName: "Vitamin D3",
-        occurredAt: fixedOccurredAt,
-        amount: "400 IU",
-        notes: "Morning drop",
+        measurementDate: "2025-06-01",
+        weightKg: "7.50",
+        heightCm: "67.2",
+        headCircumferenceCm: "42.5",
+        notes: "6-month checkup",
       },
     });
 
     assert.strictEqual(res.statusCode, 201);
-    const body = res.json();
-    assert.strictEqual(body.data.id, record1Id);
-    assert.strictEqual(body.data.supplementName, "Vitamin D3");
+    const body = res.json<{ data: { id: string; weightKg: string } }>();
+    assert.strictEqual(body.data.id, measurement1Id);
+    assert.strictEqual(body.data.weightKg, "7.50");
   });
 
-  await t.test("SU-03: Reusing Idempotency-Key with different payload triggers 409", async () => {
+  await t.test("G-03: Reusing Idempotency-Key with different payload triggers 409", async () => {
     const res = await app.inject({
       method: "POST",
-      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements`,
       headers: {
         authorization: `Bearer ${tokenA}`,
-        "idempotency-key": "idemp-supp-create-01",
+        "idempotency-key": "idemp-growth-create-01",
       },
       payload: {
-        supplementName: "DHA Drops",
-        occurredAt: new Date().toISOString(),
-        amount: "1 ml",
+        measurementDate: "2025-07-01",
+        weightKg: "8.10",
       },
     });
 
     assert.strictEqual(res.statusCode, 409);
-    const body = res.json();
+    const body = res.json<{ error: { code: string } }>();
     assert.strictEqual(body.error.code, "IDEMPOTENCY_KEY_REUSED");
   });
 
-  await t.test("SU-04: Keyset pagination works stably across supplement records", async () => {
-    // Create 3 more records with distinct timestamps
+  await t.test("G-04: Keyset pagination works stably across growth measurements", async () => {
+    // Create 3 more measurements on different dates
     for (let i = 1; i <= 3; i++) {
-      const pastTime = new Date(Date.now() - i * 3600000).toISOString();
+      const day = String(i + 1).padStart(2, "0");
       const res = await app.inject({
         method: "POST",
-        url: `/api/v1/babies/${babyAId}/records/supplement`,
+        url: `/api/v1/babies/${babyAId}/growth-measurements`,
         headers: {
           authorization: `Bearer ${tokenA}`,
-          "idempotency-key": `idemp-supp-batch-${i}`,
+          "idempotency-key": `idemp-growth-batch-${i}`,
         },
         payload: {
-          supplementName: `Supplement #${i}`,
-          occurredAt: pastTime,
-          amount: `${i} drops`,
+          measurementDate: `2025-07-${day}`,
+          weightKg: `${7.5 + i * 0.3}`,
+          heightCm: `${67.2 + i * 1.0}`,
         },
       });
       assert.strictEqual(res.statusCode, 201);
@@ -296,7 +274,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     // List with limit=2
     const page1Res = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement?limit=2`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements?limit=2`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
@@ -312,7 +290,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     // List page 2 using cursor
     const page2Res = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement?limit=2&cursor=${encodeURIComponent(page1.page.nextCursor!)}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements?limit=2&cursor=${encodeURIComponent(page1.page.nextCursor!)}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
@@ -325,117 +303,116 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(page2.data.length, 2);
 
     // Check no duplicate IDs between pages
-    const idsPage1 = new Set(page1.data.map((r: { id: string }) => r.id));
+    const idsPage1 = new Set(page1.data.map((r) => r.id));
     for (const r of page2.data) {
       assert.strictEqual(idsPage1.has(r.id), false);
     }
   });
 
-  await t.test("SU-05: Optimistic locking detects concurrency conflicts on baseVersion", async () => {
-    // Get single record
+  await t.test("G-05: Optimistic locking detects concurrency conflicts on baseVersion", async () => {
+    // Get single measurement
     const getRes = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
     });
     assert.strictEqual(getRes.statusCode, 200);
-    const current = getRes.json().data;
-    assert.strictEqual(current.version, record1Version);
+    const current = getRes.json<{ data: { version: string } }>().data;
+    assert.strictEqual(current.version, measurement1Version);
 
     // Attempt update with wrong baseVersion
     const wrongVersionRes = await app.inject({
       method: "PATCH",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
       payload: {
         baseVersion: "999",
-        supplementName: "Conflicting Supplement",
+        weightKg: "7.80",
       },
     });
     assert.strictEqual(wrongVersionRes.statusCode, 409);
-    assert.strictEqual(wrongVersionRes.json().error.code, "CONCURRENCY_CONFLICT");
+    assert.strictEqual(wrongVersionRes.json<{ error: { code: string } }>().error.code, "CONCURRENCY_CONFLICT");
 
     // Valid update with matching baseVersion
     const validUpdateRes = await app.inject({
       method: "PATCH",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
       payload: {
-        baseVersion: record1Version,
-        supplementName: "Vitamin D3 + K2",
-        amount: "600 IU",
+        baseVersion: measurement1Version,
+        weightKg: "7.65",
+        notes: "Adjusted weight",
       },
     });
     assert.strictEqual(validUpdateRes.statusCode, 200);
-    const updated = validUpdateRes.json().data;
-    assert.strictEqual(updated.supplementName, "Vitamin D3 + K2");
-    assert.strictEqual(updated.amount, "600 IU");
+    const updated = validUpdateRes.json<{ data: { weightKg: string; version: string } }>().data;
+    assert.strictEqual(updated.weightKg, "7.65");
     assert.strictEqual(updated.version, "2");
-    record1Version = updated.version;
+    measurement1Version = updated.version;
   });
 
-  await t.test("SU-06: User B cannot access or modify Baby A's supplement records (403)", async () => {
-    // User B attempts to read Baby A's record
+  await t.test("G-06: User B cannot access or modify Baby A's growth measurements (403)", async () => {
+    // User B attempts to read Baby A's measurement
     const readRes = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenB}`,
       },
     });
     assert.strictEqual(readRes.statusCode, 403);
-    assert.strictEqual(readRes.json().error.code, "FAMILY_ACCESS_DENIED");
+    assert.strictEqual(readRes.json<{ error: { code: string } }>().error.code, "FAMILY_ACCESS_DENIED");
 
-    // User B attempts to update Baby A's record
+    // User B attempts to update Baby A's measurement
     const updateRes = await app.inject({
       method: "PATCH",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenB}`,
       },
       payload: {
-        baseVersion: record1Version,
-        supplementName: "Hacked Supplement",
+        baseVersion: measurement1Version,
+        weightKg: "12.00",
       },
     });
     assert.strictEqual(updateRes.statusCode, 403);
-    assert.strictEqual(updateRes.json().error.code, "FAMILY_ACCESS_DENIED");
+    assert.strictEqual(updateRes.json<{ error: { code: string } }>().error.code, "FAMILY_ACCESS_DENIED");
 
-    // User B attempts to list Baby A's supplement records
+    // User B attempts to list Baby A's growth measurements
     const listRes = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements`,
       headers: {
         authorization: `Bearer ${tokenB}`,
       },
     });
     assert.strictEqual(listRes.statusCode, 403);
-    assert.strictEqual(listRes.json().error.code, "FAMILY_ACCESS_DENIED");
+    assert.strictEqual(listRes.json<{ error: { code: string } }>().error.code, "FAMILY_ACCESS_DENIED");
   });
 
-  await t.test("SU-07: Delete supplement record soft-deletes and removes active timeline projection", async () => {
+  await t.test("G-07: Delete growth measurement soft-deletes and removes active timeline projection", async () => {
     const delRes = await app.inject({
       method: "DELETE",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}?baseVersion=${record1Version}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}?baseVersion=${measurement1Version}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
     });
     assert.strictEqual(delRes.statusCode, 200);
-    const delBody = delRes.json();
-    assert.strictEqual(delBody.data.id, record1Id);
+    const delBody = delRes.json<{ data: { id: string; deleted: boolean } }>();
+    assert.strictEqual(delBody.data.id, measurement1Id);
     assert.strictEqual(delBody.data.deleted, true);
 
-    // Reading deleted record returns 404
+    // Reading deleted measurement returns 404
     const getRes = await app.inject({
       method: "GET",
-      url: `/api/v1/babies/${babyAId}/records/supplement/${record1Id}`,
+      url: `/api/v1/babies/${babyAId}/growth-measurements/${measurement1Id}`,
       headers: {
         authorization: `Bearer ${tokenA}`,
       },
@@ -444,10 +421,65 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
 
     // Verify timeline projection is soft deleted (deleted_at IS NOT NULL)
     const { rows: tlRows } = await ctx.pool.query(
-      `SELECT deleted_at FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'supplement'`,
-      [record1Id]
+      `SELECT deleted_at FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'growth'`,
+      [measurement1Id]
     );
     assert.strictEqual(tlRows.length, 1);
     assert.notStrictEqual(tlRows[0].deleted_at, null);
+  });
+
+  await t.test("G-08: Get Growth Chart returns historical measurements overlaid with WHO percentiles", async () => {
+    const chartRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/growth-chart`,
+      headers: {
+        authorization: `Bearer ${tokenA}`,
+      },
+    });
+    assert.strictEqual(chartRes.statusCode, 200);
+    const chartData = chartRes.json<{
+      data: {
+        measurements: Array<{ id: string; weightKg: string }>;
+        whoPercentiles: {
+          weightForAge: Array<{ monthAge: number; p50: string }>;
+          heightForAge: Array<{ monthAge: number; p50: string }>;
+          headCircumferenceForAge: Array<{ monthAge: number; p50: string }>;
+        };
+      };
+    }>().data;
+
+    // Remaining measurements for Baby A (3 active measurements since 1 was deleted)
+    assert.strictEqual(chartData.measurements.length, 3);
+
+    // WHO Percentiles: 37 data points (months 0 through 36) for girl
+    assert.strictEqual(chartData.whoPercentiles.weightForAge.length, 37);
+    assert.strictEqual(chartData.whoPercentiles.heightForAge.length, 37);
+    assert.strictEqual(chartData.whoPercentiles.headCircumferenceForAge.length, 37);
+
+    // Month 0 check for girl (weight median: 3.20 kg, length median: 49.1 cm)
+    assert.strictEqual(chartData.whoPercentiles.weightForAge[0]?.monthAge, 0);
+    assert.strictEqual(chartData.whoPercentiles.weightForAge[0]?.p50, "3.20");
+    assert.strictEqual(chartData.whoPercentiles.heightForAge[0]?.p50, "49.1");
+
+    // Also verify Baby B (boy) returns boy percentiles
+    const chartResB = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyBId}/growth-chart`,
+      headers: {
+        authorization: `Bearer ${tokenB}`,
+      },
+    });
+    assert.strictEqual(chartResB.statusCode, 200);
+    const chartDataB = chartResB.json<{
+      data: {
+        whoPercentiles: {
+          weightForAge: Array<{ monthAge: number; p50: string }>;
+          heightForAge: Array<{ monthAge: number; p50: string }>;
+        };
+      };
+    }>().data;
+    // Month 0 check for boy (weight median: 3.30 kg, length median: 49.9 cm)
+    assert.strictEqual(chartDataB.whoPercentiles.weightForAge[0]?.p50, "3.30");
+    assert.strictEqual(chartDataB.whoPercentiles.heightForAge[0]?.p50, "49.9");
   });
 });

@@ -63,6 +63,7 @@ model Family {
   customFoodItems FoodLibraryItem[]
   babyFoodPlans   BabyFoodPlan[]
   supplementRecords SupplementRecord[]
+  growthMeasurements GrowthMeasurement[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -112,6 +113,7 @@ model Baby {
   foodRecords     FoodRecord[]
   foodPlan        BabyFoodPlan?
   supplementRecords SupplementRecord[]
+  growthMeasurements GrowthMeasurement[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -588,6 +590,29 @@ model SupplementRecord {
   @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_supplement_records_baby_timeline")
   @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_supplement_records_family_timeline")
   @@map("supplement_records")
+  @@schema("public")
+}
+
+model GrowthMeasurement {
+  id                  String    @id
+  familyId            String    @map("family_id")
+  babyId              String    @map("baby_id")
+  measurementDate     DateTime  @map("measurement_date") @db.Date
+  weightKg            Decimal?  @map("weight_kg") @db.Decimal(5, 2)
+  heightCm            Decimal?  @map("height_cm") @db.Decimal(5, 1)
+  headCircumferenceCm Decimal?  @map("head_circumference_cm") @db.Decimal(4, 1)
+  attachmentId        String?   @map("attachment_id") @db.VarChar(255)
+  notes               String?
+  version             Int       @default(1)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family              Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby                Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@index([babyId, deletedAt, measurementDate(sort: Desc), id(sort: Desc)], name: "ix_growth_measurements_baby_timeline")
+  @@index([familyId, deletedAt, measurementDate(sort: Desc)], name: "ix_growth_measurements_family_timeline")
+  @@map("growth_measurements")
   @@schema("public")
 }
 

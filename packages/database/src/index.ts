@@ -9,5 +9,6 @@ export * from "./diaper-repository.js";
 export * from "./sleep-repository.js";
 export * from "./food-repository.js";
 export * from "./supplement-repository.js";
+export * from "./growth-repository.js";
 export * from "./timeline-repository.js";
 export type { PrismaClient, Prisma } from "./generated/client.js";
