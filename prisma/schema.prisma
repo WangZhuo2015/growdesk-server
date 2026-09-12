@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../packages/database/src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["public", "legacy_import"]
+}
+
+// Identity and household membership are deliberately kept as separate
+// relations. There is no activeBabyId: BabyMember is the authorization edge.
+model User {
+  // Source identifiers are text and are kept byte-for-byte during import.
+  id                      String         @id
+  username                String         @unique
+  passwordHash            String         @map("password_hash")
+  passwordHashAlgorithm   String         @default("bcrypt") @map("password_hash_algorithm")
+  passwordHashVersion     Int            @default(1) @map("password_hash_version")
+  passwordHashNeedsRehash Boolean        @default(false) @map("password_hash_needs_rehash")
+  displayName             String         @map("display_name")
+  timezone                String?
+  version                 Int            @default(1)
+  deletedAt               DateTime?      @map("deleted_at") @db.Timestamptz(3)
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  familyMemberships       FamilyMember[]
+  babyMemberships         BabyMember[]
+  syncState               UserSyncState?
+
+  @@index([deletedAt, id], name: "ix_users_deleted_id")
+  @@map("users")
+  @@schema("public")
+}
+
+model Family {
+  id          String           @id
+  name        String
+  // Legacy date-only and wall-clock values are interpreted in this explicit
+  // source assumption; new families may choose another IANA timezone.
+  timezone    String           @default("Asia/Shanghai")
+  version     Int              @default(1)
+  deletedAt   DateTime?        @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  members     FamilyMember[]
+  babies      Baby[]
+  babyMembers BabyMember[]
+  syncState   FamilySyncState?
+
+  @@index([deletedAt, id], name: "ix_families_deleted_id")
+  @@map("families")
+  @@schema("public")
+}
+
+model FamilyMember {
+  id        String    @id
+  familyId  String    @map("family_id")
+  userId    String    @map("user_id")
+  role      String    @default("member")
+  relation  String    @default("parent")
+  status    String    @default("active")
+  version   Int       @default(1)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId], name: "uq_family_members_family_user")
+  @@index([userId, status], name: "ix_family_members_user_status")
+  @@index([familyId, status], name: "ix_family_members_family_status")
+  @@map("family_members")
+  @@schema("public")
+}
+
+model Baby {
+  id             String       @id
+  familyId       String       @map("family_id")
+  nickname       String
+  birthDate      DateTime     @map("birth_date") @db.Date
+  gender         String       @default("unknown")
+  gestationalAge Int?         @map("gestational_age")
+  avatarUrl      String?      @map("avatar_url")
+  avatarMetadata Json?        @map("avatar_metadata") @db.JsonB
+  version        Int          @default(1)
+  deletedAt      DateTime?    @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family         Family       @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  members        BabyMember[]
+
+  // The composite key is the family boundary used by every baby-owned table.
+  @@unique([familyId, id], name: "uq_babies_family_id_id")
+  @@index([familyId, deletedAt, createdAt, id], name: "ix_babies_family_timeline")
+  @@map("babies")
+  @@schema("public")
+}
+
+model BabyMember {
+  id        String    @id
+  familyId  String    @map("family_id")
+  babyId    String    @map("baby_id")
+  userId    String    @map("user_id")
+  role      String    @default("member")
+  status    String    @default("active")
+  version   Int       @default(1)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby      Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Account deletion cascades this edge only; it never reaches the shared Baby.
+  @@unique([userId, babyId], name: "uq_baby_members_user_baby")
+  @@index([familyId, babyId, status], name: "ix_baby_members_family_baby_status")
+  @@index([userId, familyId, status, babyId], name: "ix_baby_members_user_family_status_baby")
+  @@map("baby_members")
+  @@schema("public")
+}
+
+model UserSyncState {
+  userId    String   @id @map("user_id")
+  epoch     String
+  cursor    BigInt   @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sync_states")
+  @@schema("public")
+}
+
+model FamilySyncState {
+  familyId          String   @id @map("family_id")
+  epoch             String
+  cursor            BigInt   @default(0)
+  permissionVersion Int      @default(1) @map("permission_version")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family            Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@map("family_sync_states")
+  @@schema("public")
+}
+
+// Mapping/backfill plan: import User, Family, FamilyMember and Baby with their
+// source text IDs; then expand every valid FamilyMember × Baby in that family
+// into an idempotent active BabyMember row. Keep unknown/ambiguous source rows
+// in LegacyImportRow and never use archive scope columns for authorization.
+model LegacyImportBatch {
+  // Immutable snapshot identity; callers must use the SHA-256 batch hash here.
+  id               String            @id @map("batch_id") @db.VarChar(128)
+  sourceSystem     String            @map("source_system")
+  sourceSnapshot   String?           @map("source_snapshot")
+  checksum         String            @db.Char(64)
+  sourceSchemaHash String?           @map("source_schema_hash") @db.Char(64)
+  mappingVersion   String            @map("mapping_version")
+  rowCount         Int               @default(0) @map("row_count")
+  tableCounts      Json              @map("table_counts") @db.JsonB
+  metadata         Json?             @db.JsonB
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  rows             LegacyImportRow[]
+
+  @@map("import_batches")
+  @@schema("legacy_import")
+}
+
+model LegacyImportRow {
+  batchId     String            @map("batch_id") @db.VarChar(128)
+  sourceTable String            @map("source_table")
+  sourceId    String            @map("source_id")
+  userId      String?           @map("user_id")
+  familyId    String?           @map("family_id")
+  babyId      String?           @map("baby_id")
+  payload     Json              @db.JsonB
+  payloadHash String            @map("payload_hash") @db.Char(64)
+  capturedAt  DateTime          @default(now()) @map("captured_at") @db.Timestamptz(3)
+  batch       LegacyImportBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  // userId/familyId/babyId are nullable source lineage only; no auth/FK role.
+  @@id([batchId, sourceTable, sourceId], name: "pk_legacy_import_rows")
+  @@index([batchId, sourceTable], name: "ix_legacy_import_rows_batch_table")
+  @@index([userId], name: "ix_legacy_import_rows_user_id")
+  @@index([familyId], name: "ix_legacy_import_rows_family_id")
+  @@index([babyId], name: "ix_legacy_import_rows_baby_id")
+  @@map("import_rows")
+  @@schema("legacy_import")
+}

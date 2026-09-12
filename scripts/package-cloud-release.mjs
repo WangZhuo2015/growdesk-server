@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 const sourcePaths = ['Dockerfile', '.dockerignore', 'package.json', 'package-lock.json',
-  'tsconfig.json', 'tsconfig.backend.json', 'apps', 'packages', 'deploy'];
+  'tsconfig.json', 'tsconfig.backend.json', 'apps', 'packages', 'deploy', 'prisma', 'prisma.config.ts', 'scripts/legacy-import'];
 
 try {
   if (git('status', '--porcelain')) throw new Error('Commit the verified source before packaging; working tree is not clean.');

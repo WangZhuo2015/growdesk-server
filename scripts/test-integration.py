@@ -92,6 +92,7 @@ def main():
                 except OSError: time.sleep(.1)
             else: raise RuntimeError('Redis readiness timed out')
             command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts'], env=env)
+            command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
             print('Owned PostgreSQL/Redis integration checks passed; test process exited successfully.', flush=True)
         finally:
             # Popen handles identify only children started here, never PID files from other runs.
