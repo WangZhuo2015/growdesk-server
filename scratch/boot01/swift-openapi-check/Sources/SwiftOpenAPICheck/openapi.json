@@ -1,0 +1,341 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GrowDesk API BOOT-01 Scratch Spec",
+    "version": "0.1.0",
+    "description": "OpenAPI 3.0.3 export test for Swift OpenAPI Generator compatibility"
+  },
+  "components": {
+    "schemas": {
+      "ApiErrorEnvelope": {
+        "description": "Standard API Error Envelope",
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {},
+              "requestId": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "GrowthRecord": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "babyId",
+          "familyId",
+          "heightCm",
+          "weightKg",
+          "headCircumferenceCm",
+          "recordedAt",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "babyId": {
+            "type": "string"
+          },
+          "familyId": {
+            "type": "string"
+          },
+          "heightCm": {
+            "description": "Decimal string with precision 1, e.g. 75.5",
+            "type": "string"
+          },
+          "weightKg": {
+            "description": "Decimal string with precision 2, e.g. 9.45",
+            "type": "string"
+          },
+          "headCircumferenceCm": {
+            "description": "Decimal string or null",
+            "type": "string",
+            "nullable": true
+          },
+          "recordedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "Entity version as string",
+            "type": "string"
+          }
+        }
+      },
+      "FeedingEvent": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "volumeMl"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "feeding"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "volumeMl": {
+            "type": "number"
+          }
+        }
+      },
+      "DiaperEvent": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "wet",
+          "dirty"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diaper"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "wet": {
+            "type": "boolean"
+          },
+          "dirty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SleepEvent": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "id",
+          "durationMinutes"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "sleep"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "number"
+          }
+        }
+      },
+      "TimelineEvent": {
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "feeding": "#/components/schemas/FeedingEvent",
+            "diaper": "#/components/schemas/DiaperEvent",
+            "sleep": "#/components/schemas/SleepEvent"
+          }
+        },
+        "description": "Discriminated union of timeline events",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FeedingEvent"
+          },
+          {
+            "$ref": "#/components/schemas/DiaperEvent"
+          },
+          {
+            "$ref": "#/components/schemas/SleepEvent"
+          }
+        ]
+      },
+      "NullableSample": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "tag": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/sample/growth/{id}": {
+      "get": {
+        "operationId": "getGrowthRecord",
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GrowthRecord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sample/timeline": {
+      "post": {
+        "operationId": "createTimelineEvent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimelineEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TimelineEvent"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sample/nullable": {
+      "get": {
+        "operationId": "getNullableSample",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NullableSample"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:3000/api/v1",
+      "description": "Local test server"
+    }
+  ]
+}

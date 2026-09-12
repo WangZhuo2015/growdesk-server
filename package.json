@@ -1,0 +1,38 @@
+{
+  "name": "growdesk-server",
+  "version": "0.1.0",
+  "description": "宝宝成长桌台 (GrowDesk) - Standalone Backend API, Worker & Scheduler",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "backend:doctor": "bash scripts/doctor.sh",
+    "backend:build": "npm run --workspaces --if-present build",
+    "backend:typecheck": "npm run --workspaces --if-present typecheck",
+    "backend:lint": "eslint 'apps/*/src/**/*.ts' 'packages/*/src/**/*.ts'",
+    "backend:contracts:generate": "node --import tsx apps/api/src/export-openapi.ts",
+    "backend:contracts:check": "node --import tsx scripts/contracts-check.ts",
+    "backend:test:guard": "node --import tsx scripts/test-guard.ts",
+    "backend:test:unit": "node --import tsx --test 'packages/*/tests/**/*.test.ts'",
+    "backend:test:integration": "node --import tsx --test 'tests/integration/**/*.test.ts'",
+    "backend:db:generate": "prisma generate",
+    "backend:db:validate": "prisma validate",
+    "backend:db:migrate": "prisma migrate dev",
+    "dev:api": "npm run --workspace=@growdesk/api dev",
+    "dev:worker": "npm run --workspace=@growdesk/worker dev",
+    "dev:scheduler": "npm run --workspace=@growdesk/scheduler dev"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.0",
+    "prisma": "7.10.0",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3"
+  }
+}

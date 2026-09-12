@@ -1,0 +1,32 @@
+[
+  {
+    "command": "[PosixPath('/opt/homebrew/opt/postgresql@18/bin/initdb'), '-D', PosixPath('/var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg'), '-E', 'UTF-8', '--locale=C', '-A', 'trust']",
+    "exit": 0,
+    "stdout": "The files belonging to this database system will be owned by user \"wangzhuo\".\nThis user must also own the server process.\n\nThe database cluster will be initialized with locale \"C\".\nThe default text search configuration will be set to \"english\".\n\nData page checksums are enabled.\n\ncreating directory /var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg ... ok\ncreating subdirectories ... ok\nselecting dynamic shared memory implementation ... posix\nselecting default \"max_connections\" ... 100\nselecting default \"shared_buffers\" ... 128MB\nselecting default time zone ... US/Pacific\ncreating configuration files ... ok\nrunning bootstrap script ... ok\nperforming post-bootstrap initialization ... ok\nsyncing data to disk ... ok\n\nSuccess. You can now start the database server using:\n\n    '/opt/homebrew/opt/postgresql@18/bin/pg_ctl' -D /var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg -l logfile start\n\n",
+    "stderr": ""
+  },
+  {
+    "command": "[PosixPath('/opt/homebrew/opt/postgresql@18/bin/pg_ctl'), '-D', PosixPath('/var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg'), '-o', '-p 50350 -h 127.0.0.1 -k /var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc', '-l', PosixPath('/var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg.log'), 'start']",
+    "exit": 0,
+    "stdout": "waiting for server to start.... done\nserver started\n",
+    "stderr": ""
+  },
+  {
+    "command": "[PosixPath('/opt/homebrew/opt/postgresql@18/bin/createdb'), '-h', '127.0.0.1', '-p', '50350', 'test_growdesk_review_r2']",
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "command": "['node', '--import', 'tsx', 'prisma-pg-check.ts']",
+    "exit": 0,
+    "stdout": "Connecting to isolated PostgreSQL 18 at: postgresql://wangzhuo@127.0.0.1:50350/test_growdesk_review_r2?sslmode=disable\nPostgreSQL Version: PostgreSQL 18.6 (Homebrew) on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit\nDDL initialized for test_boot01_records\nInitializing PrismaClient with @prisma/adapter-pg...\nExecuting transaction commit test with prisma.$transaction...\nPrisma 7 adapter-pg Transaction Commit: PASSED\nExecuting unique constraint violation test via Prisma...\nSuccessfully caught expected Prisma P2002 error: \nPrisma 7 adapter-pg Unique Constraint Enforcement (P2002): PASSED\nExecuting transaction rollback test via prisma.$transaction...\nPrisma 7 adapter-pg Transaction Rollback: PASSED\nPrisma 7 + @prisma/adapter-pg + PG 18 Check: ALL PASSED!\n",
+    "stderr": ""
+  },
+  {
+    "command": "[PosixPath('/opt/homebrew/opt/postgresql@18/bin/pg_ctl'), '-D', PosixPath('/var/folders/6l/f5dw0hr55tscmrl8cnbsxnj00000gp/T/growdesk-review-r2-y9sq8_uc/pg'), 'stop', '-m', 'fast']",
+    "exit": 0,
+    "stdout": "waiting for server to shut down.... done\nserver stopped\n",
+    "stderr": ""
+  }
+]

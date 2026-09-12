@@ -1,0 +1,89 @@
+{
+  "baseline": "main UNBORN; user working tree plus authorized R3 fixes",
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "b1b5c263909e534541845ee6449de8c51de4ed40d141f81552bda352a048c66c"
+    },
+    {
+      "path": "TOOLCHAIN.md",
+      "sha256": "8803c5515dd213f54903f5062453829b05b7c01059169058a126398567fa40b8"
+    },
+    {
+      "path": "scratch/boot01/bullmq-redis-check.ts",
+      "sha256": "0ffdf76a81757e8974bc6acfa50e8c61719c46d9c707158bafe56aff787fe727"
+    },
+    {
+      "path": "scratch/boot01/fastify-typebox-swagger.ts",
+      "sha256": "d3e5272a49f6e348a82ac13aa835ca6291853165ea34fa178266fb42d4c75c38"
+    },
+    {
+      "path": "scratch/boot01/infra-test-env.sh",
+      "sha256": "242d2ca4ccf07524d02eee658948333791cff49e1159f113939b1df91cfff8a2"
+    },
+    {
+      "path": "scratch/boot01/openapi.json",
+      "sha256": "7347852b3f38968fb42ddf314c2a4e750d7d22c1327a59c941bb7265ebb50e05"
+    },
+    {
+      "path": "scratch/boot01/package-lock.json",
+      "sha256": "2504aa3ae812a6033d5cc9f78d324e037acbd511f756b82ff97f30c0dce993a1"
+    },
+    {
+      "path": "scratch/boot01/package.json",
+      "sha256": "0a0784be8d6a3c1a94270e973bf8df0ca73373e371f469fa5e196bda0ef1ebc0"
+    },
+    {
+      "path": "scratch/boot01/prisma/schema.prisma",
+      "sha256": "b4a742600841c57196bdaf0b34f5043ca33af4977c22ace8024d999d079266d4"
+    },
+    {
+      "path": "scratch/boot01/prisma-pg-check.ts",
+      "sha256": "611dbc9580cc002dfd919ab4154b4845c8b2daeba93e6a89873fbe824b660a28"
+    },
+    {
+      "path": "scratch/boot01/run-isolated.py",
+      "sha256": "32c6695a517b1e0fab7ac0ec1a194fe4d8b0617dd6b1f33eb50fa1e0ac51bb56"
+    },
+    {
+      "path": "scratch/boot01/runner-lifecycle.test.py",
+      "sha256": "30b602f010944dd9a0f0098bf245fb417bdd576b85770c82ada461aaaa4cd415"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Package.resolved",
+      "sha256": "3e254777bc181a0854002dad898f3d1f1eac5c7fba79e65ff905531984f88f6d"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Package.swift",
+      "sha256": "7600ef5731fdbbf02902a092b76438daf8f0a89d8041ea960520963f39208c6b"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/Export.swift",
+      "sha256": "6d16151ef6d88be326855136e2f33bbb20d8137168949e7c9069cc84c0f8e8c1"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/openapi-generator-config.yaml",
+      "sha256": "2f21412d030124e9407c93d38c684af6f8d6824406a105bf99666b515d239300"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/openapi.json",
+      "sha256": "7347852b3f38968fb42ddf314c2a4e750d7d22c1327a59c941bb7265ebb50e05"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Tests/SwiftOpenAPICheckTests/SwiftOpenAPICheckTests.swift",
+      "sha256": "f0368251560779493bf4e55202ec11024218cccf2f3a946ca4b057a5ffa9d41f"
+    },
+    {
+      "path": "scratch/boot01/test-environment.test.ts",
+      "sha256": "1c676dbf7a69272fd114295786e7a20ff64ca92d04b9ef45854caadc98eaae22"
+    },
+    {
+      "path": "scratch/boot01/test-environment.ts",
+      "sha256": "07d10cafd0cf16173f825f360bb69114f0ecb0432eb0f59939a86918dfa777d3"
+    },
+    {
+      "path": "scripts/doctor.sh",
+      "sha256": "8e7a82ca2b0d8ba59febab642a0d5b36eb26febb3dd78a177447bd35db2358d6"
+    }
+  ]
+}

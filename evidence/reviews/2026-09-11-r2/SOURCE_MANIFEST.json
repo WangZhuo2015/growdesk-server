@@ -1,0 +1,145 @@
+{
+  "baseline": "UNBORN main; current working tree, initial additions",
+  "files": [
+    {
+      "path": "TOOLCHAIN.md",
+      "sha256": "74e5882c57c1fa734dbdc9e05776281bc595bbbf7407e51dda8547eb736fb47e"
+    },
+    {
+      "path": "START_HERE.md",
+      "sha256": "4c4dbbd54eb685f3adaa53dc69a75b53de50920eeb0d995b5ac2dfd5688058d8"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "881a32ba738f3d7b2fc447248e606efb95b09e7acfa565dac64cf3edf10330f6"
+    },
+    {
+      "path": "package.json",
+      "sha256": "ab4d817fabc49f58e85e51a9d85f42e24f344b7054dc6a0cccd9cbf24484375d"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "42af49e546ee8f17ff624450893ac2c3c20c91bbcb832e67e71fe33ce8a0e192"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "c71774ffc5b709c30a3f12ba70f66d185f3b6985a0b5f96e4d32e899d299e27f"
+    },
+    {
+      "path": "docs/plan/IOS_MIGRATION_PLAN.md",
+      "sha256": "f3ca7b948b99ce29e69bb987894e30f919afd5a0722509e929212705dae9d3e4"
+    },
+    {
+      "path": "docs/plan/implementation/01_ARCHITECTURE.md",
+      "sha256": "39bdcfd94a93401e5d403ec4431f6603a6d097fc07fc63802ede78219a55272d"
+    },
+    {
+      "path": "docs/plan/implementation/05_PERFORMANCE_DEPLOYMENT_ACCEPTANCE.md",
+      "sha256": "c49b357a6d8e18b08d106bcf8cc53a7a718751320f84e3b2b2505b4b2b6aaaad"
+    },
+    {
+      "path": "docs/plan/implementation/04_FEATURE_PARITY_AND_IOS.md",
+      "sha256": "2ddce896ddfde05dc19213731e6cb52da6af2fe831428d50a393ac491dc4a23b"
+    },
+    {
+      "path": "docs/plan/implementation/02_BACKEND_CONTRACTS.md",
+      "sha256": "863214ef3d4dc2ee9b26581c96782d4b38b525016bc2eb1529ec15ed471bd428"
+    },
+    {
+      "path": "docs/plan/implementation/06_AGENT_EXECUTION_PLAYBOOK.md",
+      "sha256": "6921bde9092565f3b4652e62052aca6e3ba9ceec164d0f91c0b10ae512f322bc"
+    },
+    {
+      "path": "docs/plan/implementation/03_DATABASE_MIGRATION.md",
+      "sha256": "13c4a88571bd2be0c1d2d111cbf3eae884abcab9a4b9981c9fb850c1faf15e9a"
+    },
+    {
+      "path": "scratch/boot01/prisma-pg-check.ts",
+      "sha256": "04fa7140424fe4529c7208a2b859d92de6a490de5cc7ea274a17e55b03eeee6f"
+    },
+    {
+      "path": "scratch/boot01/infra-test-env.sh",
+      "sha256": "980d6f4d136b2e4e373a8279ceb2232dbd0a4dbd0d659f74068e5588855d51bd"
+    },
+    {
+      "path": "scratch/boot01/package-lock.json",
+      "sha256": "1ddab6a8fd53c6a4624cf729d25c8f6f5bee61e2b25e276649aa149d5863b723"
+    },
+    {
+      "path": "scratch/boot01/package.json",
+      "sha256": "ed3c0e90f5e447436f87e7472a73ea95eba7f60e89b272c41f7f32488e956147"
+    },
+    {
+      "path": "scratch/boot01/fastify-typebox-swagger.ts",
+      "sha256": "12ffe0b8805fa68a10b87935e527bbaa02f1c63a68b0af37299187301dcaa0af"
+    },
+    {
+      "path": "scratch/boot01/bullmq-redis-check.ts",
+      "sha256": "d4a37d40e226f479fe7ce1ccce556d5d12d5466b137cb8c6ec675daa59726164"
+    },
+    {
+      "path": "scratch/boot01/openapi.json",
+      "sha256": "7347852b3f38968fb42ddf314c2a4e750d7d22c1327a59c941bb7265ebb50e05"
+    },
+    {
+      "path": "scratch/boot01/prisma/schema.prisma",
+      "sha256": "b4a742600841c57196bdaf0b34f5043ca33af4977c22ace8024d999d079266d4"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Package.resolved",
+      "sha256": "3e254777bc181a0854002dad898f3d1f1eac5c7fba79e65ff905531984f88f6d"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Package.swift",
+      "sha256": "7600ef5731fdbbf02902a092b76438daf8f0a89d8041ea960520963f39208c6b"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Tests/SwiftOpenAPICheckTests/SwiftOpenAPICheckTests.swift",
+      "sha256": "f05a05be598173bf7c0628539435ce530d4fa59f5ee47a7f79db1c7e448f8281"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/Export.swift",
+      "sha256": "6d16151ef6d88be326855136e2f33bbb20d8137168949e7c9069cc84c0f8e8c1"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/openapi.json",
+      "sha256": "7347852b3f38968fb42ddf314c2a4e750d7d22c1327a59c941bb7265ebb50e05"
+    },
+    {
+      "path": "scratch/boot01/swift-openapi-check/Sources/SwiftOpenAPICheck/openapi-generator-config.yaml",
+      "sha256": "2f21412d030124e9407c93d38c684af6f8d6824406a105bf99666b515d239300"
+    },
+    {
+      "path": "packages/database/package.json",
+      "sha256": "d45c5eacc2c722300f56d223925c3b6979e1030cecced036860a7c6b2d4e7c5a"
+    },
+    {
+      "path": "packages/database/tsconfig.json",
+      "sha256": "99f305fcb968f454e24d4fb0e2f6745ce660df0f15f744febe849fccb86bde22"
+    },
+    {
+      "path": "packages/contracts/package.json",
+      "sha256": "c66b11aa99ac0979c5c80fd67e64dd6ed7949b29d8ad58460679450419cdad2b"
+    },
+    {
+      "path": "packages/contracts/tsconfig.json",
+      "sha256": "99f305fcb968f454e24d4fb0e2f6745ce660df0f15f744febe849fccb86bde22"
+    },
+    {
+      "path": "packages/contracts/src/index.ts",
+      "sha256": "0ae5852cbf7186c5eb036fb9f700556002a8e84cd4b788fdf66da89337fca552"
+    },
+    {
+      "path": "packages/domain/package.json",
+      "sha256": "be15909998e2baecca1e373d33df54485868444ba02efde2ba12b2b2a3a591e9"
+    },
+    {
+      "path": "packages/domain/tsconfig.json",
+      "sha256": "99f305fcb968f454e24d4fb0e2f6745ce660df0f15f744febe849fccb86bde22"
+    },
+    {
+      "path": "packages/domain/src/index.ts",
+      "sha256": "0656cda9393d3cc95a1fcc33dac82442c0541c6729bdbd3723ad58f4ae3d4a4a"
+    }
+  ]
+}
