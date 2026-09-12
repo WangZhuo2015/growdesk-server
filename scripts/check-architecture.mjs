@@ -10,7 +10,7 @@ async function tsFiles(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true }).catch(() => []);
   const files = [];
   for (const entry of entries) {
-    if (entry.name === "node_modules" || entry.name === "dist" || entry.name === "build") continue;
+    if (entry.name === "node_modules" || entry.name === "dist" || entry.name === "build" || entry.name === "generated") continue;
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await tsFiles(full));
     else if (entry.isFile() && full.endsWith(".ts")) files.push(full);

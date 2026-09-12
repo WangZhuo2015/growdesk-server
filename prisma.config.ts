@@ -1,4 +1,8 @@
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
+
+// Prisma CLI resolves this URL, but migration validation and client generation
+// use only a safe loopback URL when DATABASE_URL is not set.
+const url = process.env.DATABASE_URL || "postgresql://test_runner:dummy@127.0.0.1:5433/test_growdesk";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -6,8 +10,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // Prisma CLI resolves this URL, but migration validation below uses only a
-    // fake loopback URL and never opens a production connection.
-    url: env("DATABASE_URL"),
+    url,
   },
 });
+

@@ -91,8 +91,8 @@ def main():
                     with socket.create_connection(('127.0.0.1', redisport), timeout=.1): break
                 except OSError: time.sleep(.1)
             else: raise RuntimeError('Redis readiness timed out')
-            command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts'], env=env)
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts', 'tests/integration/foundation-migration.test.ts'], env=env)
             print('Owned PostgreSQL/Redis integration checks passed; test process exited successfully.', flush=True)
         finally:
             # Popen handles identify only children started here, never PID files from other runs.
