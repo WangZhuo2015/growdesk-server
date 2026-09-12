@@ -1,0 +1,247 @@
+{
+  "services": {
+    "agenttrader-api.service": {
+      "MainPID": "892440",
+      "ExecMainStartTimestampMonotonic": "5602179875194",
+      "ActiveState": "active"
+    },
+    "agenttrader-frontend.service": {
+      "MainPID": "892442",
+      "ExecMainStartTimestampMonotonic": "5602179877160",
+      "ActiveState": "active"
+    },
+    "agenttrader.service": {
+      "MainPID": "892119",
+      "ExecMainStartTimestampMonotonic": "5602175945078",
+      "ActiveState": "active"
+    },
+    "argo.service": {
+      "MainPID": "122039",
+      "ExecMainStartTimestampMonotonic": "534212889231",
+      "ActiveState": "active"
+    },
+    "baby-panel.service": {
+      "MainPID": "892386",
+      "ExecMainStartTimestampMonotonic": "5602178920116",
+      "ActiveState": "active"
+    },
+    "containerd.service": {
+      "MainPID": "892125",
+      "ExecMainStartTimestampMonotonic": "5602175963418",
+      "ActiveState": "active"
+    },
+    "cron.service": {
+      "MainPID": "892111",
+      "ExecMainStartTimestampMonotonic": "5602175925168",
+      "ActiveState": "active"
+    },
+    "dbus.service": {
+      "MainPID": "1120",
+      "ExecMainStartTimestampMonotonic": "8365080",
+      "ActiveState": "active"
+    },
+    "docker.service": {
+      "MainPID": "1717",
+      "ExecMainStartTimestampMonotonic": "14899719",
+      "ActiveState": "active"
+    },
+    "getty@tty1.service": {
+      "MainPID": "1248",
+      "ExecMainStartTimestampMonotonic": "9116199",
+      "ActiveState": "active"
+    },
+    "hermes-gateway.service": {
+      "MainPID": "892658",
+      "ExecMainStartTimestampMonotonic": "5602187091122",
+      "ActiveState": "active"
+    },
+    "hospital-consultant.service": {
+      "MainPID": "893281",
+      "ExecMainStartTimestampMonotonic": "5602200044136",
+      "ActiveState": "active"
+    },
+    "image-api.service": {
+      "MainPID": "893290",
+      "ExecMainStartTimestampMonotonic": "5602201621110",
+      "ActiveState": "active"
+    },
+    "image-worker.service": {
+      "MainPID": "893291",
+      "ExecMainStartTimestampMonotonic": "5602201623138",
+      "ActiveState": "active"
+    },
+    "iscsid.service": {
+      "MainPID": "892151",
+      "ExecMainStartTimestampMonotonic": "5602176027651",
+      "ActiveState": "active"
+    },
+    "ModemManager.service": {
+      "MainPID": "892285",
+      "ExecMainStartTimestampMonotonic": "5602176924112",
+      "ActiveState": "active"
+    },
+    "multipathd.service": {
+      "MainPID": "892144",
+      "ExecMainStartTimestampMonotonic": "5602176020074",
+      "ActiveState": "active"
+    },
+    "polkit.service": {
+      "MainPID": "892257",
+      "ExecMainStartTimestampMonotonic": "5602176653102",
+      "ActiveState": "active"
+    },
+    "postgresql@16-main.service": {
+      "MainPID": "892306",
+      "ExecMainStartTimestampMonotonic": "5602180320476",
+      "ActiveState": "active"
+    },
+    "redis-server.service": {
+      "MainPID": "892413",
+      "ExecMainStartTimestampMonotonic": "5602179767639",
+      "ActiveState": "active"
+    },
+    "rpcbind.service": {
+      "MainPID": "892137",
+      "ExecMainStartTimestampMonotonic": "5602175996948",
+      "ActiveState": "active"
+    },
+    "rsyslog.service": {
+      "MainPID": "892266",
+      "ExecMainStartTimestampMonotonic": "5602176777901",
+      "ActiveState": "active"
+    },
+    "serial-getty@ttyAMA0.service": {
+      "MainPID": "1236",
+      "ExecMainStartTimestampMonotonic": "8803913",
+      "ActiveState": "active"
+    },
+    "sing-box.service": {
+      "MainPID": "892235",
+      "ExecMainStartTimestampMonotonic": "5602176328363",
+      "ActiveState": "active"
+    },
+    "snap.cups.cups-browsed.service": {
+      "MainPID": "651519",
+      "ExecMainStartTimestampMonotonic": "2058322169083",
+      "ActiveState": "active"
+    },
+    "snap.cups.cupsd.service": {
+      "MainPID": "651511",
+      "ExecMainStartTimestampMonotonic": "2058322157568",
+      "ActiveState": "active"
+    },
+    "snap.oracle-cloud-agent.oracle-cloud-agent-updater.service": {
+      "MainPID": "1142",
+      "ExecMainStartTimestampMonotonic": "8471653",
+      "ActiveState": "active"
+    },
+    "snap.oracle-cloud-agent.oracle-cloud-agent.service": {
+      "MainPID": "1145",
+      "ExecMainStartTimestampMonotonic": "8476440",
+      "ActiveState": "active"
+    },
+    "snapd.service": {
+      "MainPID": "2844960",
+      "ExecMainStartTimestampMonotonic": "5157676914145",
+      "ActiveState": "active"
+    },
+    "ssh.service": {
+      "MainPID": "892172",
+      "ExecMainStartTimestampMonotonic": "5602176093095",
+      "ActiveState": "active"
+    },
+    "systemd-journald.service": {
+      "MainPID": "892251",
+      "ExecMainStartTimestampMonotonic": "5602176538598",
+      "ActiveState": "active"
+    },
+    "systemd-logind.service": {
+      "MainPID": "1173",
+      "ExecMainStartTimestampMonotonic": "8533849",
+      "ActiveState": "active"
+    },
+    "systemd-networkd.service": {
+      "MainPID": "892236",
+      "ExecMainStartTimestampMonotonic": "5602176339074",
+      "ActiveState": "active"
+    },
+    "systemd-resolved.service": {
+      "MainPID": "892178",
+      "ExecMainStartTimestampMonotonic": "5602176112391",
+      "ActiveState": "active"
+    },
+    "systemd-timesyncd.service": {
+      "MainPID": "892170",
+      "ExecMainStartTimestampMonotonic": "5602176090501",
+      "ActiveState": "active"
+    },
+    "systemd-udevd.service": {
+      "MainPID": "892222",
+      "ExecMainStartTimestampMonotonic": "5602176227316",
+      "ActiveState": "active"
+    },
+    "tavernia-web.service": {
+      "MainPID": "892205",
+      "ExecMainStartTimestampMonotonic": "5602176168992",
+      "ActiveState": "active"
+    },
+    "udisks2.service": {
+      "MainPID": "892263",
+      "ExecMainStartTimestampMonotonic": "5602176742157",
+      "ActiveState": "active"
+    },
+    "unattended-upgrades.service": {
+      "MainPID": "1218",
+      "ExecMainStartTimestampMonotonic": "8709492",
+      "ActiveState": "active"
+    },
+    "user@1001.service": {
+      "MainPID": "232547",
+      "ExecMainStartTimestampMonotonic": "1110935551858",
+      "ActiveState": "active"
+    },
+    "ws-scrcpy.service": {
+      "MainPID": "892206",
+      "ExecMainStartTimestampMonotonic": "5602176170690",
+      "ActiveState": "active"
+    }
+  },
+  "containers": {
+    "/webtop-kde": {
+      "id": "573b1b9f2240d574c99abf66075c5d1390582e2dd9fb97cd49df12e606c21826",
+      "running": "true",
+      "startedAt": "2026-09-09T03:49:29.257012587Z"
+    },
+    "/redroid": {
+      "id": "a047add2851ee9477b505f46e2af0032911a6489fa0cae4ae76a253fe082a358",
+      "running": "true",
+      "startedAt": "2026-08-21T03:52:16.734023925Z"
+    },
+    "/juice-shop": {
+      "id": "1f7ec60f3f60592378a7ea7c6d9f9c82e6fb30a5a00b0a27b53b2f65c9219c75",
+      "running": "true",
+      "startedAt": "2026-07-10T01:54:58.828206034Z"
+    }
+  },
+  "nginxConfigHashes": {
+    "/etc/sing-box/nginx.conf": "61c2aca3bb4b4813b5b52c6438fb39190a90256f97ec6b3edfb5a7d9364681f3",
+    "/etc/sing-box/nginx.d/00-hospital-ratelimit.conf": "8c0c3b25535b2f9239f98189ac343947719b0d940a39b7a95474cc496361d527",
+    "/etc/sing-box/nginx.d/baby.zwang.fun.conf": "861bc4b333506a8b619b192e291710c52165a8fb36651f7eb8b9f1143d7b4fba",
+    "/etc/sing-box/nginx.d/ampere.zwang.fun.conf": "13dc6fda47a011b33ee35b13acc858bd6d523c6df3ef8c95c1a74fcf7dcc1dd4"
+  },
+  "nginxMaster": "",
+  "http": {
+    "ampere.zwang.fun": {
+      "code": "401",
+      "exitCode": 0
+    },
+    "ampere-cf.zwang.fun": {
+      "code": "200",
+      "exitCode": 0
+    },
+    "baby.zwang.fun": {
+      "code": "200",
+      "exitCode": 0
+    }
+  }
+}

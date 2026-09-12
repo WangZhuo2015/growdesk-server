@@ -85,3 +85,5 @@ Do not run `down -v` against this project as routine cleanup: it deletes the nam
 The stack intentionally does not run migrations, seed data, workers, schedulers, or business test fixtures. Migration and application readiness are separate gates, and the current API skeleton has no business API to accept production traffic.
 
 Target-host steps and rollback boundaries: [中文部署手册](HOST_RUNBOOK.zh-CN.md).
+
+API also joins a dedicated normal bridge (`growdesk-ingress`) so Docker can publish its loopback port. PostgreSQL and Redis remain exclusively on their respective internal networks. An API attached only to internal networks had healthy container probes but no published host listener on Docker 29.

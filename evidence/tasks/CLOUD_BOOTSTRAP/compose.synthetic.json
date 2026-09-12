@@ -2,18 +2,22 @@
   "configs": {
     "growdesk-postgres-init": {
       "name": "growdesk_growdesk-postgres-init",
-      "content": "#!/bin/sh\nset -eu\n\ncase \"$${GROWDESK_DB_PASSWORD:-}\" in\n  \"\"|*[!A-Za-z0-9._-]*)\n    echo \"GROWDESK_DB_PASSWORD must be a non-empty URL-safe value\" >&2\n    exit 1\n    ;;\nesac\n\npsql \\\n  --username \"$${POSTGRES_USER}\" \\\n  --dbname \"$${POSTGRES_DB}\" \\\n  --set=ON_ERROR_STOP=1 <<'SQL'\n\\getenv app_password GROWDESK_DB_PASSWORD\nSELECT format(\n  'CREATE ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L',\n  :'app_password'\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'growdesk'\n)\n\\gexec\n\nALTER ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'app_password';\nREVOKE ALL ON DATABASE growdesk FROM PUBLIC;\nGRANT CONNECT ON DATABASE growdesk TO growdesk;\nREVOKE ALL ON SCHEMA public FROM PUBLIC;\nGRANT USAGE ON SCHEMA public TO growdesk;\nSQL\n"
+      "content": "#!/bin/sh\nset -eu\n\ncase \"$${GROWDESK_DB_PASSWORD:-}\" in\n  \"\"|*[!A-Za-z0-9._-]*)\n    echo \"GROWDESK_DB_PASSWORD must be a non-empty URL-safe value\" \u003e\u00262\n    exit 1\n    ;;\nesac\n\npsql \\\n  --username \"$${POSTGRES_USER}\" \\\n  --dbname \"$${POSTGRES_DB}\" \\\n  --set=ON_ERROR_STOP=1 \u003c\u003c'SQL'\n\\getenv app_password GROWDESK_DB_PASSWORD\nSELECT format(\n  'CREATE ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L',\n  :'app_password'\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'growdesk'\n)\n\\gexec\n\nALTER ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'app_password';\nREVOKE ALL ON DATABASE growdesk FROM PUBLIC;\nGRANT CONNECT ON DATABASE growdesk TO growdesk;\nREVOKE ALL ON SCHEMA public FROM PUBLIC;\nGRANT USAGE ON SCHEMA public TO growdesk;\nSQL\n"
     }
   },
   "name": "growdesk",
   "networks": {
     "growdesk-db": {
-      "name": "growdesk_growdesk-db",
+      "name": "growdesk-db",
       "ipam": {},
       "internal": true
     },
+    "growdesk-ingress": {
+      "name": "growdesk-ingress",
+      "ipam": {}
+    },
     "growdesk-redis": {
-      "name": "growdesk_growdesk-redis",
+      "name": "growdesk-redis",
       "ipam": {},
       "internal": true
     }
@@ -24,7 +28,7 @@
         "context": "/Users/wangzhuo/Documents/GitHub/growdesk-server",
         "dockerfile": "Dockerfile",
         "args": {
-          "BUILD_REVISION": "test_validation",
+          "BUILD_REVISION": "test_image_tag",
           "NODE_IMAGE": "node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c"
         }
       },
@@ -57,25 +61,25 @@
       },
       "entrypoint": null,
       "environment": {
-        "DATABASE_URL": "postgresql://growdesk:test_application_not_real@postgres:5432/growdesk",
+        "DATABASE_URL": "postgresql://growdesk:test_app@postgres:5432/growdesk",
         "HOST": "0.0.0.0",
         "NODE_ENV": "production",
         "PORT": "3080",
-        "REDIS_URL": "redis://:test_redis_not_real@redis:6379/0"
+        "REDIS_URL": "redis://:test_redis@redis:6379/0"
       },
       "healthcheck": {
         "test": [
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:3080/health/ready') .then((response) => { if (!response.ok) throw new Error('not ready'); }) .catch(() => process.exit(1));"
+          "fetch('http://127.0.0.1:3080/health/ready') .then((response) =\u003e { if (!response.ok) throw new Error('not ready'); }) .catch(() =\u003e process.exit(1));"
         ],
         "timeout": "5s",
         "interval": "15s",
         "retries": 5,
         "start_period": "20s"
       },
-      "image": "growdesk-api:test_validation",
+      "image": "growdesk-api:test_image_tag",
       "init": true,
       "logging": {
         "driver": "json-file",
@@ -86,6 +90,7 @@
       },
       "networks": {
         "growdesk-db": null,
+        "growdesk-ingress": null,
         "growdesk-redis": null
       },
       "ports": [
@@ -131,10 +136,10 @@
       },
       "entrypoint": null,
       "environment": {
-        "GROWDESK_DB_PASSWORD": "test_application_not_real",
+        "GROWDESK_DB_PASSWORD": "test_app",
         "PGDATA": "/var/lib/postgresql/18/docker",
         "POSTGRES_DB": "growdesk",
-        "POSTGRES_PASSWORD": "test_superuser_not_real",
+        "POSTGRES_PASSWORD": "test_super",
         "POSTGRES_USER": "postgres"
       },
       "healthcheck": {
@@ -174,7 +179,7 @@
       "command": [
         "sh",
         "-ec",
-        "exec redis-server --appendonly yes --appendfsync everysec --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 384mb --maxmemory-policy noeviction"
+        "case \"$${REDIS_PASSWORD:-}\" in\n  \"\"|*[!A-Za-z0-9._-]*)\n    echo \"REDIS_PASSWORD must be a non-empty URL-safe value\" \u003e\u00262\n    exit 1\n    ;;\nesac\nexec redis-server --appendonly yes --appendfsync everysec \\\n  --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 384mb \\\n  --maxmemory-policy noeviction\n"
       ],
       "deploy": {
         "resources": {
@@ -191,7 +196,7 @@
       },
       "entrypoint": null,
       "environment": {
-        "REDIS_PASSWORD": "test_redis_not_real"
+        "REDIS_PASSWORD": "test_redis"
       },
       "healthcheck": {
         "test": [
@@ -229,10 +234,10 @@
   },
   "volumes": {
     "growdesk-postgres-data": {
-      "name": "growdesk_growdesk-postgres-data"
+      "name": "growdesk-postgres-data"
     },
     "growdesk-redis-data": {
-      "name": "growdesk_growdesk-redis-data"
+      "name": "growdesk-redis-data"
     }
   }
 }

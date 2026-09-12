@@ -28,6 +28,7 @@ services:
       redis:
         condition: service_healthy
     networks:
+      - growdesk-ingress
       - growdesk-db
       - growdesk-redis
     healthcheck:
@@ -182,6 +183,8 @@ volumes:
     name: growdesk-redis-data
 
 networks:
+  growdesk-ingress:
+    name: growdesk-ingress
   growdesk-db:
     name: growdesk-db
     internal: true

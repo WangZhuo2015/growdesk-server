@@ -1,0 +1,206 @@
+ Image redis:8.10.1-alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576 Pulling 
+ Image postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af Pulling 
+ 056e8d98e35f Pulling fs layer 0B
+ c0dfe3eebc6c Pulling fs layer 0B
+ 9d42292743c5 Pulling fs layer 0B
+ 14a4754c352f Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ eb8ace705184 Pulling fs layer 0B
+ d297848f263d Pulling fs layer 0B
+ 75782e20ea1f Pulling fs layer 0B
+ 545481733576 Pulling fs layer 0B
+ 63ba4d1b9b1a Pulling fs layer 0B
+ 7ef8a510d414 Pulling fs layer 0B
+ 60ec89b686eb Pulling fs layer 0B
+ f54f79a42a2d Pulling fs layer 0B
+ 840f3b8b2441 Pulling fs layer 0B
+ db077a768c3b Pulling fs layer 0B
+ 7105667d1505 Pulling fs layer 0B
+ 22a8987b6f5c Pulling fs layer 0B
+ 3d2cfabac35e Pulling fs layer 0B
+ 53367cc5fc82 Pulling fs layer 0B
+ ca026fbec373 Pulling fs layer 0B
+ 056e8d98e35f Download complete 0B
+ d297848f263d Download complete 0B
+ 7105667d1505 Download complete 0B
+ 75782e20ea1f Downloading 3.146MB
+ 4f4fb700ef54 Download complete 0B
+ 63ba4d1b9b1a Download complete 0B
+ c0dfe3eebc6c Downloading 9.437MB
+ 9d42292743c5 Download complete 0B
+ 14a4754c352f Downloading 4.182MB
+ 7ef8a510d414 Download complete 0B
+ eb8ace705184 Download complete 0B
+ ca026fbec373 Download complete 0B
+ 75782e20ea1f Downloading 14.68MB
+ 545481733576 Download complete 0B
+ 53367cc5fc82 Downloading 186B
+ 75782e20ea1f Downloading 24.12MB
+ c0dfe3eebc6c Downloading 19.92MB
+ 22a8987b6f5c Download complete 0B
+ 53367cc5fc82 Download complete 0B
+ 14a4754c352f Download complete 0B
+ 3d2cfabac35e Download complete 0B
+ db077a768c3b Download complete 0B
+ 60ec89b686eb Downloading 4.52MB
+ f54f79a42a2d Download complete 0B
+ 840f3b8b2441 Downloading 6.291MB
+ 14a4754c352f Extracting 1B
+ c0dfe3eebc6c Downloading 30.41MB
+ 60ec89b686eb Download complete 0B
+ 840f3b8b2441 Downloading 13.63MB
+ 75782e20ea1f Downloading 28.12MB
+ 14a4754c352f Extracting 1B
+ c0dfe3eebc6c Downloading 34.28MB
+ 840f3b8b2441 Downloading 29.36MB
+ 14a4754c352f Extracting 1B
+ a0033f4760fa Downloading 31.14kB
+ 840f3b8b2441 Downloading 49.28MB
+ c0dfe3eebc6c Downloading 34.28MB
+ 75782e20ea1f Download complete 0B
+ 14a4754c352f Pull complete 0B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 65.01MB
+ a0033f4760fa Download complete 0B
+ a180f3ac2b6b Download complete 0B
+ c0dfe3eebc6c Download complete 0B
+ 056e8d98e35f Pull complete 0B
+ d297848f263d Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 81.79MB
+ 2e4d0c85f636 Downloading 3.146MB
+ d297848f263d Pull complete 0B
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 2e4d0c85f636 Download complete 0B
+ 840f3b8b2441 Downloading 99.61MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ 693a28c42a1f Download complete 0B
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 1B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 1B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Extracting 2B
+ 75782e20ea1f Extracting 2B
+ 840f3b8b2441 Downloading 112.2MB
+ c0dfe3eebc6c Pull complete 0B
+ 840f3b8b2441 Download complete 0B
+ 4f4fb700ef54 Pull complete 0B
+ 9d42292743c5 Pull complete 0B
+ 545481733576 Pull complete 0B
+ eb8ace705184 Pull complete 0B
+ 60ec89b686eb Extracting 1B
+ 75782e20ea1f Pull complete 0B
+ Image redis:8.10.1-alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576 Pulled 
+ f54f79a42a2d Pull complete 0B
+ 60ec89b686eb Pull complete 0B
+ 63ba4d1b9b1a Extracting 1B
+ 63ba4d1b9b1a Pull complete 0B
+ 22a8987b6f5c Pull complete 0B
+ 7105667d1505 Pull complete 0B
+ 7ef8a510d414 Pull complete 0B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 1B
+ 840f3b8b2441 Extracting 2B
+ 840f3b8b2441 Extracting 2B
+ 840f3b8b2441 Extracting 2B
+ 840f3b8b2441 Extracting 2B
+ 840f3b8b2441 Pull complete 0B
+ ca026fbec373 Pull complete 0B
+ 53367cc5fc82 Pull complete 0B
+ 3d2cfabac35e Pull complete 0B
+ db077a768c3b Pull complete 0B
+ Image postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af Pulled 
+ Network growdesk-redis Creating 
+ Volume growdesk-redis-data Creating 
+ Volume growdesk-redis-data Creating 
+ Network growdesk-redis Creating 
+ Volume growdesk-postgres-data Creating 
+ Volume growdesk-postgres-data Creating 
+ Network growdesk-db Creating 
+ Network growdesk-db Creating 
+ Volume growdesk-redis-data Created 
+ Volume growdesk-redis-data Created 
+ Volume growdesk-postgres-data Created 
+ Volume growdesk-postgres-data Created 
+ Network growdesk-redis Created 
+ Network growdesk-redis Created 
+ Container growdesk-redis-1 Creating 
+ Network growdesk-db Created 
+ Network growdesk-db Created 
+ Container growdesk-postgres-1 Creating 
+ Container growdesk-postgres-1 Created 
+ Container growdesk-redis-1 Created 
+ Container growdesk-api-1 Creating 
+ Container growdesk-api-1 Created 
+ Container growdesk-redis-1 Starting 
+ Container growdesk-postgres-1 Starting 
+ Container growdesk-redis-1 Started 
+ Container growdesk-postgres-1 Started 
+ Container growdesk-postgres-1 Waiting 
+ Container growdesk-redis-1 Waiting 
+ Container growdesk-redis-1 Healthy 
+ Container growdesk-postgres-1 Healthy 
+ Container growdesk-api-1 Starting 
+ Container growdesk-api-1 Started 
+ Container growdesk-api-1 Waiting 
+ Container growdesk-postgres-1 Waiting 
+ Container growdesk-redis-1 Waiting 
+ Container growdesk-redis-1 Healthy 
+ Container growdesk-postgres-1 Healthy 
+ Container growdesk-api-1 Healthy 
