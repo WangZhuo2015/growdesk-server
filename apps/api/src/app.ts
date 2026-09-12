@@ -30,6 +30,13 @@ import {
   BabyMemberListResponseSchema,
   RemoveBabyMemberResponseSchema,
   RegenerateRecoveryCodesResponseSchema,
+  FeedingRecordSchema,
+  FeedingRecordResponseSchema,
+  FeedingListResponseSchema,
+  FormulaProductSchema,
+  FormulaProductResponseSchema,
+  FormulaProductListResponseSchema,
+  DeleteRecordResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -46,6 +53,8 @@ import { authPlugin } from "./plugins/auth-plugin.js";
 import { authRoutes } from "./routes/auth-routes.js";
 import { familyRoutes } from "./routes/family-routes.js";
 import { babyRoutes } from "./routes/baby-routes.js";
+import { feedingRoutes } from "./routes/feeding-routes.js";
+import { formulaProductRoutes } from "./routes/formula-product-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -110,6 +119,13 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(BabyMemberListResponseSchema);
   app.addSchema(RemoveBabyMemberResponseSchema);
   app.addSchema(RegenerateRecoveryCodesResponseSchema);
+  app.addSchema(FeedingRecordSchema);
+  app.addSchema(FeedingRecordResponseSchema);
+  app.addSchema(FeedingListResponseSchema);
+  app.addSchema(FormulaProductSchema);
+  app.addSchema(FormulaProductResponseSchema);
+  app.addSchema(FormulaProductListResponseSchema);
+  app.addSchema(DeleteRecordResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -203,6 +219,14 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     });
 
     app.register(babyRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(feedingRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(formulaProductRoutes, {
       prisma: databaseContext.prisma,
     });
   }

@@ -55,6 +55,7 @@ model Family {
   familyChanges   FamilyChange[]
   timelineEntries TimelineEntry[]
   feedingRecords  FeedingRecord[]
+  formulaProducts FormulaProduct[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -398,13 +399,41 @@ model FeedingRecord {
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  baby             Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family           Family          @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby             Baby            @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  formulaProduct   FormulaProduct? @relation(fields: [formulaProductId], references: [id], onDelete: SetNull)
 
   @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_feeding_records_baby_timeline")
   @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_feeding_records_family_timeline")
   @@map("feeding_records")
+  @@schema("public")
+}
+
+model FormulaProduct {
+  id                  String          @id
+  familyId            String          @map("family_id")
+  brand               String
+  name                String
+  stage               String?
+  scoopWeightG        Decimal?        @map("scoop_weight_g") @db.Decimal(12, 5)
+  waterPerScoopMl     Decimal?        @map("water_per_scoop_ml") @db.Decimal(12, 5)
+  reconstitutionRatio Decimal?        @map("reconstitution_ratio") @db.Decimal(12, 5)
+  servingSizeUnit     String          @default("per_100g") @map("serving_size_unit")
+  nutrientsJson       Json?           @map("nutrients_json") @db.JsonB
+  notes               String?
+  isActive            Boolean         @default(true) @map("is_active")
+  isDefault           Boolean         @default(false) @map("is_default")
+  isArchived          Boolean         @default(false) @map("is_archived")
+  version             Int             @default(1)
+  deletedAt           DateTime?       @map("deleted_at") @db.Timestamptz(3)
+  createdAt           DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family              Family          @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  feedingRecords      FeedingRecord[]
+
+  @@index([familyId, isArchived, deletedAt], name: "ix_formula_products_family")
+  @@map("formula_products")
   @@schema("public")
 }
 

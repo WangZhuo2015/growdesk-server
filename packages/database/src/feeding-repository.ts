@@ -186,7 +186,7 @@ export class FeedingRepository {
         return row.version;
       },
       execute: async (tx, meta) => {
-        const data: Prisma.FeedingRecordUpdateInput = {
+        const data: Prisma.FeedingRecordUncheckedUpdateInput = {
           version: meta.nextVersion,
           updatedAt: new Date(),
         };
@@ -271,6 +271,62 @@ export class FeedingRepository {
     });
   }
 
+  async restore(
+    principal: UserPrincipal,
+    input: {
+      commandId: string;
+      requestHash: string;
+      id: string;
+      familyId: string;
+      babyId: string;
+      baseVersion: number;
+    }
+  ): Promise<CommandExecutionResult<FeedingRecordEntity>> {
+    return await executeFamilyUnitOfWork<FeedingRecordEntity>(this.prisma, {
+      principal,
+      familyId: input.familyId,
+      babyId: input.babyId,
+      commandId: input.commandId,
+      requestHash: input.requestHash,
+      operation: "restore",
+      entityType: "feeding",
+      entityId: input.id,
+      baseVersion: input.baseVersion,
+      getExistingVersion: async (tx) => {
+        const row = await tx.feedingRecord.findUnique({
+          where: { id: input.id },
+          select: { version: true, deletedAt: true },
+        });
+        if (!row) return null;
+        return row.version;
+      },
+      execute: async (tx, meta) => {
+        const row = await tx.feedingRecord.update({
+          where: { id: input.id },
+          data: {
+            version: meta.nextVersion,
+            deletedAt: null,
+            updatedAt: new Date(),
+          },
+        });
+
+        const entity = mapFeedingRow(row);
+        return {
+          result: entity,
+          payload: {
+            id: entity.id,
+            feedingType: entity.feedingType,
+            occurredAt: entity.occurredAt.toISOString(),
+            amountMl: entity.amountMl,
+            version: entity.version,
+          },
+          summary: `Restored feeding: ${entity.id}`,
+          occurredAt: entity.occurredAt,
+        };
+      },
+    });
+  }
+
   async findById(
     principal: UserPrincipal,
     familyId: string,
@@ -343,3 +399,6 @@ export class FeedingRepository {
     return rows.map(mapFeedingRow);
   }
 }
+
+export { FeedingRepository as ScopedFeedingRepository };
+

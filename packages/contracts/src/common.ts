@@ -118,3 +118,31 @@ export const FamilyAndMemberParamSchema = Type.Object(
 export const FamilyAndMemberParam = FamilyAndMemberParamSchema;
 export type FamilyAndMemberParam = Static<typeof FamilyAndMemberParamSchema>;
 
+export const BabyIdParamSchema = Type.Object(
+  { babyId: UuidString },
+  { additionalProperties: false }
+);
+export const BabyIdParam = BabyIdParamSchema;
+export type BabyIdParam = Static<typeof BabyIdParamSchema>;
+
+export const BabyAndIdParamSchema = Type.Object(
+  { babyId: UuidString, id: UuidString },
+  { additionalProperties: false }
+);
+export const BabyAndIdParam = BabyAndIdParamSchema;
+export type BabyAndIdParam = Static<typeof BabyAndIdParamSchema>;
+
+export const FamilyIdParamSchema = Type.Object(
+  { familyId: UuidString },
+  { additionalProperties: false }
+);
+export const FamilyIdParam = FamilyIdParamSchema;
+export type FamilyIdParam = Static<typeof FamilyIdParamSchema>;
+
+export const FamilyAndProductParamSchema = Type.Object(
+  { familyId: UuidString, id: UuidString },
+  { additionalProperties: false }
+);
+export const FamilyAndProductParam = FamilyAndProductParamSchema;
+export type FamilyAndProductParam = Static<typeof FamilyAndProductParamSchema>;
+

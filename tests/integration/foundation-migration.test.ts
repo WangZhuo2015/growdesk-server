@@ -61,7 +61,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(foundationSql);
       }
 
-      // 3. Verify all expected foundation tables exist
+      // 3. Apply 202609120003_care_feeding if not already applied
+      const feedingSql = fs.readFileSync("prisma/migrations/202609120003_care_feeding/migration.sql", "utf8");
+      const { rows: feedRows } = await client.query("SELECT to_regclass('public.formula_products') as exists");
+      if (!feedRows[0]?.exists) {
+        await client.query(feedingSql);
+      }
+
+      // 4. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -83,6 +90,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "task_outbox",
         "timeline_entries",
         "feeding_records",
+        "formula_products",
       ];
 
       const { rows } = await client.query(
