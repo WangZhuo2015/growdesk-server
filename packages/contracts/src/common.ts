@@ -101,3 +101,20 @@ export const SuccessStatusResponseSchema = Type.Object(
 );
 
 export type SuccessStatusResponse = Static<typeof SuccessStatusResponseSchema>;
+
+export const IdParamSchema = Type.Object(
+  { id: UuidString },
+  { additionalProperties: false }
+);
+
+export const IdParam = IdParamSchema;
+export type IdParam = Static<typeof IdParamSchema>;
+
+export const FamilyAndMemberParamSchema = Type.Object(
+  { id: UuidString, userId: UuidString },
+  { additionalProperties: false }
+);
+
+export const FamilyAndMemberParam = FamilyAndMemberParamSchema;
+export type FamilyAndMemberParam = Static<typeof FamilyAndMemberParamSchema>;
+

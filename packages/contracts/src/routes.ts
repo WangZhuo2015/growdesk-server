@@ -49,6 +49,9 @@ import {
   BabyListResponseSchema,
   CreateBabyRequestSchema,
   UpdateBabyRequestSchema,
+  BabyMemberListResponseSchema,
+  AddBabyMemberRequestSchema,
+  RemoveBabyMemberResponseSchema,
 } from "./family.js";
 import {
   FeedingRecordResponseSchema,
@@ -494,6 +497,37 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     params: IdParam,
     body: UpdateBabyRequestSchema,
     responses: { 200: BabyResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/babies/:id/members",
+    operationId: "listBabyMembers",
+    summary: "List caregivers assigned to baby",
+    tags: ["Baby"],
+    implementationStatus: "PLANNED_SH03",
+    params: IdParam,
+    responses: { 200: BabyMemberListResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
+  },
+  {
+    method: "POST",
+    path: "/api/v1/babies/:id/members",
+    operationId: "addBabyMember",
+    summary: "Add caregiver to baby",
+    tags: ["Baby"],
+    implementationStatus: "PLANNED_SH03",
+    params: IdParam,
+    body: AddBabyMemberRequestSchema,
+    responses: { 201: SuccessStatusResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
+  },
+  {
+    method: "DELETE",
+    path: "/api/v1/babies/:id/members/:userId",
+    operationId: "removeBabyMember",
+    summary: "Revoke caregiver from baby (with last admin safeguard)",
+    tags: ["Baby"],
+    implementationStatus: "PLANNED_SH03",
+    params: FamilyAndMemberParam,
+    responses: { 200: RemoveBabyMemberResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 5. Care Records - Feeding (SH-04F)

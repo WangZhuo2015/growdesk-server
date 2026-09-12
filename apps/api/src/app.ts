@@ -14,6 +14,21 @@ import {
   RevokeSessionResponseSchema,
   SuccessStatusResponseSchema,
   CurrentUserResponseSchema,
+  FamilySchema,
+  FamilyMemberSchema,
+  BabySchema,
+  BabyMemberSchema,
+  FamilyResponseSchema,
+  FamilyListResponseSchema,
+  FamilyMemberListResponseSchema,
+  PreviewFamilyInviteResponseSchema,
+  JoinFamilyResponseSchema,
+  CreateFamilyInviteResponseSchema,
+  RemoveFamilyMemberResponseSchema,
+  BabyResponseSchema,
+  BabyListResponseSchema,
+  BabyMemberListResponseSchema,
+  RemoveBabyMemberResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -28,6 +43,8 @@ import {
 } from "./readiness.js";
 import { authPlugin } from "./plugins/auth-plugin.js";
 import { authRoutes } from "./routes/auth-routes.js";
+import { familyRoutes } from "./routes/family-routes.js";
+import { babyRoutes } from "./routes/baby-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -76,6 +93,21 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(RevokeSessionResponseSchema);
   app.addSchema(SuccessStatusResponseSchema);
   app.addSchema(CurrentUserResponseSchema);
+  app.addSchema(FamilySchema);
+  app.addSchema(FamilyMemberSchema);
+  app.addSchema(BabySchema);
+  app.addSchema(BabyMemberSchema);
+  app.addSchema(FamilyResponseSchema);
+  app.addSchema(FamilyListResponseSchema);
+  app.addSchema(FamilyMemberListResponseSchema);
+  app.addSchema(PreviewFamilyInviteResponseSchema);
+  app.addSchema(JoinFamilyResponseSchema);
+  app.addSchema(CreateFamilyInviteResponseSchema);
+  app.addSchema(RemoveFamilyMemberResponseSchema);
+  app.addSchema(BabyResponseSchema);
+  app.addSchema(BabyListResponseSchema);
+  app.addSchema(BabyMemberListResponseSchema);
+  app.addSchema(RemoveBabyMemberResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -162,6 +194,14 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       pool: databaseContext.pool,
       replayStore: options.replayStore,
       jwtSecret: options.jwtSecret,
+    });
+
+    app.register(familyRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(babyRoutes, {
+      prisma: databaseContext.prisma,
     });
   }
 

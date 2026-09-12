@@ -248,3 +248,58 @@ export const UpdateBabyRequestSchema = Type.Object(
 );
 
 export type UpdateBabyRequest = Static<typeof UpdateBabyRequestSchema>;
+
+export const BabyMemberRoleSchema = Type.Union([
+  Type.Literal("admin"),
+  Type.Literal("member"),
+  Type.Literal("viewer"),
+]);
+
+export type BabyMemberRole = Static<typeof BabyMemberRoleSchema>;
+
+export const BabyMemberSchema = Type.Object(
+  {
+    userId: UuidString,
+    babyId: UuidString,
+    familyId: UuidString,
+    role: BabyMemberRoleSchema,
+    displayName: Type.String(),
+    joinedAt: DateTimeString,
+  },
+  { $id: "BabyMember", additionalProperties: false }
+);
+
+export type BabyMember = Static<typeof BabyMemberSchema>;
+
+export const BabyMemberListResponseSchema = Type.Object(
+  {
+    data: Type.Array(BabyMemberSchema),
+  },
+  { $id: "BabyMemberListResponse", additionalProperties: false }
+);
+
+export type BabyMemberListResponse = Static<typeof BabyMemberListResponseSchema>;
+
+export const AddBabyMemberRequestSchema = Type.Object(
+  {
+    userId: UuidString,
+    role: Type.Optional(BabyMemberRoleSchema),
+  },
+  { $id: "AddBabyMemberRequest", additionalProperties: false }
+);
+
+export type AddBabyMemberRequest = Static<typeof AddBabyMemberRequestSchema>;
+
+export const RemoveBabyMemberResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        removed: Type.Literal(true),
+      },
+      { additionalProperties: false }
+    ),
+  },
+  { $id: "RemoveBabyMemberResponse", additionalProperties: false }
+);
+
+export type RemoveBabyMemberResponse = Static<typeof RemoveBabyMemberResponseSchema>;

@@ -101,6 +101,7 @@ export async function buildContractApp() {
     contracts.FamilySchema,
     contracts.FamilyMemberSchema,
     contracts.BabySchema,
+    contracts.BabyMemberSchema,
     contracts.FeedingRecordSchema,
     contracts.SleepRecordSchema,
     contracts.DiaperRecordSchema,
