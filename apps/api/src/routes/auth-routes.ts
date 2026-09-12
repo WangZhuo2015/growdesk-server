@@ -17,17 +17,27 @@ import {
   RegenerateRecoveryCodesRequestSchema,
   RegenerateRecoveryCodesResponseSchema,
   RecoverPasswordRequestSchema,
+  BffSessionExchangeRequestSchema,
+  BffSessionExchangeResponseSchema,
+  BffSessionRevokeRequestSchema,
   type RegisterRequest,
   type LoginRequest,
   type RefreshTokenRequest,
   type ChangePasswordRequest,
   type RegenerateRecoveryCodesRequest,
   type RecoverPasswordRequest,
+  type BffSessionExchangeRequest,
+  type BffSessionRevokeRequest,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/tokens.js";
 import { createSession, revokeSession, rotateRefreshToken } from "../auth/session-service.js";
+import {
+  createOrBindBffSession,
+  exchangeBffSession,
+  revokeBffSession,
+} from "../auth/bff-session-service.js";
 import {
   changePasswordTx,
   regenerateRecoveryCodesTx,
@@ -569,6 +579,110 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
         return;
       }
 
+      reply.status(200).send({
+        data: {
+          success: true,
+        },
+      });
+    },
+  );
+
+  // 10. POST /api/v1/auth/bff/session
+  fastify.post<{ Body: BffSessionExchangeRequest }>(
+    "/api/v1/auth/bff/session",
+    {
+      schema: {
+        body: BffSessionExchangeRequestSchema,
+        response: {
+          200: BffSessionExchangeResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionSecretHash, userId, username, password, deviceLabel } = request.body;
+      const requestId = (request.id as string) || crypto.randomUUID();
+
+      // Case 1: If username and password are provided, perform initial login & bind
+      if (username && password) {
+        const cleanUsername = username.trim().toLowerCase();
+        const user = await prisma.user.findUnique({
+          where: { username: cleanUsername },
+        });
+
+        const DUMMY_HASH = "$2a$12$e8qW7M11jAeVyXz0KkL7mOSX92/wP538fCg/yK04V5gGkLd/d091W";
+        const isValid = user
+          ? (await verifyPassword(password, user.passwordHash)).valid
+          : (await verifyPassword(password, DUMMY_HASH)).valid;
+
+        if (!user || !isValid || user.deletedAt !== null) {
+          reply.status(401).send({
+            error: {
+              code: "INVALID_CREDENTIALS",
+              message: "Invalid username or password",
+              requestId,
+            },
+          });
+          return;
+        }
+
+        const result = await createOrBindBffSession({
+          prisma,
+          sessionSecretHash,
+          userId: user.id,
+          deviceLabel: deviceLabel || "Web Browser",
+          jwtSecret,
+        });
+
+        reply.status(200).send({
+          data: result,
+        });
+        return;
+      }
+
+      // Case 2: Exchange / refresh token using sessionSecretHash
+      const exchangeResult = await exchangeBffSession({
+        prisma,
+        pool,
+        replayStore,
+        sessionSecretHash,
+        userId: userId ?? undefined,
+        jwtSecret,
+      });
+
+      if (!exchangeResult.success) {
+        reply.status(exchangeResult.statusCode).send({
+          error: {
+            code: exchangeResult.code,
+            message: exchangeResult.message,
+            requestId,
+          },
+        });
+        return;
+      }
+
+      reply.status(200).send({
+        data: exchangeResult.data,
+      });
+    },
+  );
+
+  // 11. DELETE /api/v1/auth/bff/session
+  fastify.delete<{ Body: BffSessionRevokeRequest }>(
+    "/api/v1/auth/bff/session",
+    {
+      schema: {
+        body: BffSessionRevokeRequestSchema,
+        response: {
+          200: SuccessStatusResponseSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sessionSecretHash } = request.body;
+      await revokeBffSession(prisma, sessionSecretHash);
       reply.status(200).send({
         data: {
           success: true,

@@ -3613,8 +3613,7 @@
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "sessionSecretHash",
-                  "userId"
+                  "sessionSecretHash"
                 ],
                 "properties": {
                   "sessionSecretHash": {
@@ -3625,6 +3624,14 @@
                   "userId": {
                     "format": "uuid",
                     "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "username": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "password": {
+                    "minLength": 1,
                     "type": "string"
                   },
                   "deviceLabel": {
@@ -3702,6 +3709,78 @@
                               "type": "string"
                             }
                           }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revokeBffSession",
+        "summary": "Revoke Next.js BFF session by session secret hash",
+        "tags": [
+          "Auth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "sessionSecretHash"
+                ],
+                "properties": {
+                  "sessionSecretHash": {
+                    "minLength": 64,
+                    "maxLength": 64,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "PLANNED_SH03",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
                         }
                       }
                     }

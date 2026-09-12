@@ -179,13 +179,24 @@ export type RecoverPasswordRequest = Static<typeof RecoverPasswordRequestSchema>
 export const BffSessionExchangeRequestSchema = Type.Object(
   {
     sessionSecretHash: Type.String({ minLength: 64, maxLength: 64 }),
-    userId: UuidString,
+    userId: Type.Optional(UuidString),
+    username: Type.Optional(Type.String({ minLength: 1 })),
+    password: Type.Optional(Type.String({ minLength: 1 })),
     deviceLabel: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
   },
   { $id: "BffSessionExchangeRequest", additionalProperties: false }
 );
 
 export type BffSessionExchangeRequest = Static<typeof BffSessionExchangeRequestSchema>;
+
+export const BffSessionRevokeRequestSchema = Type.Object(
+  {
+    sessionSecretHash: Type.String({ minLength: 64, maxLength: 64 }),
+  },
+  { $id: "BffSessionRevokeRequest", additionalProperties: false }
+);
+
+export type BffSessionRevokeRequest = Static<typeof BffSessionRevokeRequestSchema>;
 
 export const BffSessionExchangeResponseSchema = Type.Object(
   {

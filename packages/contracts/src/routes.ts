@@ -24,6 +24,7 @@ import {
   RecoverPasswordRequestSchema,
   BffSessionExchangeRequestSchema,
   BffSessionExchangeResponseSchema,
+  BffSessionRevokeRequestSchema,
 } from "./auth.js";
 import {
   CurrentUserResponseSchema,
@@ -312,6 +313,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH03",
     body: BffSessionExchangeRequestSchema,
     responses: { 200: BffSessionExchangeResponseSchema, 401: ApiErrorRef },
+  },
+  {
+    method: "DELETE",
+    path: "/api/v1/auth/bff/session",
+    operationId: "revokeBffSession",
+    summary: "Revoke Next.js BFF session by session secret hash",
+    tags: ["Auth"],
+    implementationStatus: "PLANNED_SH03",
+    body: BffSessionRevokeRequestSchema,
+    responses: { 200: SuccessStatusResponseSchema, 401: ApiErrorRef },
   },
 
   // 3. User & Profile

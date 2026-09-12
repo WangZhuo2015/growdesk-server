@@ -103,6 +103,13 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(growthSql);
       }
 
+      // 8. Apply 202609120009_bff_sessions if not already applied
+      const bffSql = fs.readFileSync("prisma/migrations/202609120009_bff_sessions/migration.sql", "utf8");
+      const { rows: bffRows } = await client.query("SELECT to_regclass('public.bff_sessions') as exists");
+      if (!bffRows[0]?.exists) {
+        await client.query(bffSql);
+      }
+
       // 9. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
@@ -115,6 +122,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "device_sessions",
         "refresh_credentials",
         "recovery_codes",
+        "bff_sessions",
         "legacy_invite_code_mappings",
         "idempotency_receipts",
         "legacy_idempotency_mappings",

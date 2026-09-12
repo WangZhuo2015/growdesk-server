@@ -30,6 +30,7 @@ model User {
   deviceSessions          DeviceSession[]
   refreshCredentials      RefreshCredential[]
   recoveryCodes           RecoveryCode[]
+  bffSessions             BffSession[]
   userChanges             UserChange[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
@@ -182,6 +183,7 @@ model DeviceSession {
   absoluteExpiresAt  DateTime            @map("absolute_expires_at") @db.Timestamptz(3)
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshCredentials RefreshCredential[]
+  bffSessions        BffSession[]
 
   @@index([userId, revokedAt, absoluteExpiresAt], name: "ix_device_sessions_user_valid")
   @@map("device_sessions")
@@ -220,6 +222,29 @@ model RecoveryCode {
 
   @@index([userId, batchId, usedAt, revokedAt], name: "ix_recovery_codes_user_batch")
   @@map("recovery_codes")
+  @@schema("public")
+}
+
+model BffSession {
+  id                    String        @id
+  sessionSecretHash     String        @unique @map("session_secret_hash")
+  userId                String        @map("user_id")
+  sessionId             String        @map("session_id")
+  encryptedRefreshToken String        @map("encrypted_refresh_token")
+  rotationId            String        @map("rotation_id")
+  currentAccessToken    String?       @map("current_access_token")
+  accessTokenExpiresAt  DateTime?     @map("access_token_expires_at") @db.Timestamptz(3)
+  idleExpiresAt         DateTime      @map("idle_expires_at") @db.Timestamptz(3)
+  absoluteExpiresAt     DateTime      @map("absolute_expires_at") @db.Timestamptz(3)
+  revokedAt             DateTime?     @map("revoked_at") @db.Timestamptz(3)
+  createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session               DeviceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionSecretHash, revokedAt, absoluteExpiresAt], name: "ix_bff_sessions_valid")
+  @@index([userId], name: "ix_bff_sessions_user")
+  @@map("bff_sessions")
   @@schema("public")
 }
 
