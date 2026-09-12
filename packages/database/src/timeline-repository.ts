@@ -48,7 +48,7 @@ export class TimelineRepository {
     principal: UserPrincipal,
     familyId: string,
     babyId: string,
-    options: { limit?: number; beforeOccurredAt?: Date; beforeId?: string } = {}
+    options: { limit?: number; beforeOccurredAt?: Date; beforeId?: string; entityType?: string } = {}
   ): Promise<ReadonlyArray<TimelineEntryEntity>> {
     const hasFamily = principal.familyMemberships.some(
       (m) => m.familyId === familyId && m.status === "active"
@@ -56,9 +56,9 @@ export class TimelineRepository {
     if (!hasFamily) throw new FamilyAccessDeniedError(familyId);
 
     const hasBaby = principal.babyMemberships?.some(
-      (m) => m.userId === principal.userId && m.babyId === babyId && m.status === "active"
+      (m) => m.familyId === familyId && m.babyId === babyId && m.status === "active"
     );
-    if (!hasBaby) throw new BabyAccessDeniedError(babyId);
+    if (!hasBaby) throw new BabyAccessDeniedError(babyId, "ACCESS_DENIED");
 
     const limit = Math.min(options.limit ?? 50, 200);
 
@@ -67,6 +67,10 @@ export class TimelineRepository {
       babyId,
       deletedAt: null,
     };
+
+    if (options.entityType) {
+      where.entityType = options.entityType;
+    }
 
     if (options.beforeOccurredAt) {
       if (options.beforeId) {
@@ -91,3 +95,5 @@ export class TimelineRepository {
     return rows.map(mapTimelineRow);
   }
 }
+
+export { TimelineRepository as ScopedTimelineRepository };

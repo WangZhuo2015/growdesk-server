@@ -57,6 +57,8 @@ import {
   GrowthMeasurementResponseSchema,
   GrowthMeasurementListResponseSchema,
   GrowthChartResponseSchema,
+  TimelineEntrySchema,
+  TimelineResponseSchema,
   DeleteRecordResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
@@ -81,6 +83,7 @@ import { sleepRoutes } from "./routes/sleep-routes.js";
 import { foodRoutes } from "./routes/food-routes.js";
 import { supplementRoutes } from "./routes/supplement-routes.js";
 import { growthRoutes } from "./routes/growth-routes.js";
+import { timelineRoutes } from "./routes/timeline-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -172,6 +175,8 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(GrowthMeasurementResponseSchema);
   app.addSchema(GrowthMeasurementListResponseSchema);
   app.addSchema(GrowthChartResponseSchema);
+  app.addSchema(TimelineEntrySchema);
+  app.addSchema(TimelineResponseSchema);
   app.addSchema(DeleteRecordResponseSchema);
 
   // Standard API Error Envelope Handler
@@ -294,6 +299,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     });
 
     app.register(growthRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(timelineRoutes, {
       prisma: databaseContext.prisma,
     });
   }
