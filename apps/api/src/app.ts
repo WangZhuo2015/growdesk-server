@@ -39,6 +39,9 @@ import {
   DiaperRecordSchema,
   DiaperRecordResponseSchema,
   DiaperListResponseSchema,
+  SleepRecordSchema,
+  SleepRecordResponseSchema,
+  SleepListResponseSchema,
   DeleteRecordResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
@@ -59,6 +62,7 @@ import { babyRoutes } from "./routes/baby-routes.js";
 import { feedingRoutes } from "./routes/feeding-routes.js";
 import { formulaProductRoutes } from "./routes/formula-product-routes.js";
 import { diaperRoutes } from "./routes/diaper-routes.js";
+import { sleepRoutes } from "./routes/sleep-routes.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -132,6 +136,9 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(DiaperRecordSchema);
   app.addSchema(DiaperRecordResponseSchema);
   app.addSchema(DiaperListResponseSchema);
+  app.addSchema(SleepRecordSchema);
+  app.addSchema(SleepRecordResponseSchema);
+  app.addSchema(SleepListResponseSchema);
   app.addSchema(DeleteRecordResponseSchema);
 
   // Standard API Error Envelope Handler
@@ -238,6 +245,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     });
 
     app.register(diaperRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(sleepRoutes, {
       prisma: databaseContext.prisma,
     });
   }

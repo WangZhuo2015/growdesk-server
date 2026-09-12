@@ -57,6 +57,7 @@ model Family {
   feedingRecords  FeedingRecord[]
   formulaProducts FormulaProduct[]
   diaperRecords   DiaperRecord[]
+  sleepRecords    SleepRecord[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -102,6 +103,7 @@ model Baby {
   timelineEntries TimelineEntry[]
   feedingRecords  FeedingRecord[]
   diaperRecords   DiaperRecord[]
+  sleepRecords    SleepRecord[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -461,6 +463,31 @@ model DiaperRecord {
   @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_diaper_records_baby_timeline")
   @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_diaper_records_family_timeline")
   @@map("diaper_records")
+  @@schema("public")
+}
+
+model SleepRecord {
+  id               String    @id
+  familyId         String    @map("family_id")
+  babyId           String    @map("baby_id")
+  sleepType        String    @map("sleep_type")
+  startedAt        DateTime  @map("started_at") @db.Timestamptz(3)
+  endedAt          DateTime? @map("ended_at") @db.Timestamptz(3)
+  nightWakingCount Int       @default(0) @map("night_waking_count")
+  notes            String?
+  source           String    @default("manual")
+  sourceAgent      String?   @map("source_agent")
+  recordedByUserId String?   @map("recorded_by_user_id")
+  version          Int       @default(1)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby             Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@index([babyId, deletedAt, startedAt(sort: Desc), id(sort: Desc)], name: "ix_sleep_records_baby_timeline")
+  @@index([familyId, deletedAt, startedAt(sort: Desc)], name: "ix_sleep_records_family_timeline")
+  @@map("sleep_records")
   @@schema("public")
 }
 

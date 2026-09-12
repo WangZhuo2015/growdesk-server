@@ -75,7 +75,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(diaperSql);
       }
 
-      // 5. Verify all expected foundation tables exist
+      // 5. Apply 202609120005_care_sleep if not already applied
+      const sleepSql = fs.readFileSync("prisma/migrations/202609120005_care_sleep/migration.sql", "utf8");
+      const { rows: sleepRows } = await client.query("SELECT to_regclass('public.sleep_records') as exists");
+      if (!sleepRows[0]?.exists) {
+        await client.query(sleepSql);
+      }
+
+      // 6. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -99,6 +106,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "feeding_records",
         "formula_products",
         "diaper_records",
+        "sleep_records",
       ];
 
       const { rows } = await client.query(
