@@ -3,3 +3,4 @@ config --quiet: PASS
 Synthetic credentials only; no daemon or host mutation
 Assertions PASS: separate project, API loopback port3180, no PG/Redis published port, isolated networks, superuser credential absent from API, pinned image digests
 Postgres initialization script sh -n: PASS
+2026-09-12 ingress fix: dedicated API normal bridge, PG/Redis internal-only, loopback3180 assertions PASS; remote Docker runtime verified separately in runtime.json

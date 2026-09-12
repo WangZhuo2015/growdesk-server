@@ -1,0 +1,3 @@
+{"nginxMaster": 892230, "reloadRequestedAt": 1789197768.9816043}
+GrowDesk nginx include validated, gracefully reloaded, TLS readiness passed
+Added only TCP 8443 firewall rule; existing nginx files preserved

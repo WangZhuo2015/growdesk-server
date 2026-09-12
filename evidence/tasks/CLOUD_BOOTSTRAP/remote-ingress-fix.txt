@@ -1,0 +1,144 @@
+#1 [internal] load local bake definitions
+#1 reading from stdin 843B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.09kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#3 DONE 0.8s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#4 CACHED
+
+#5 [internal] load metadata for docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#5 DONE 0.0s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 323B done
+#6 DONE 0.0s
+
+#7 [runtime  1/15] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#7 resolve docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c 0.0s done
+#7 DONE 0.0s
+
+#8 [internal] load build context
+#8 transferring context: 217.85kB done
+#8 DONE 0.0s
+
+#9 [runtime  2/15] WORKDIR /app
+#9 CACHED
+
+#10 [build 3/8] COPY package.json package-lock.json tsconfig.json tsconfig.backend.json ./
+#10 CACHED
+
+#11 [build 4/8] COPY apps ./apps
+#11 DONE 0.0s
+
+#12 [build 5/8] COPY packages ./packages
+#12 DONE 0.0s
+
+#13 [build 6/8] RUN npm ci --ignore-scripts --no-audit --no-fund
+#13 3.162 npm warn deprecated cron-parser@4.9.0: v4 is no longer maintained, upgrade to v5
+#13 8.541 
+#13 8.541 added 323 packages in 8s
+#13 DONE 17.0s
+
+#14 [build 7/8] RUN npm run backend:build
+#14 0.393 
+#14 0.393 > growdesk-server@0.1.0 backend:build
+#14 0.393 > npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+#14 0.393 
+#14 0.545 
+#14 0.545 > @growdesk/contracts@0.1.0 build
+#14 0.545 > tsc -p tsconfig.json
+#14 0.545 
+#14 1.975 
+#14 1.975 > @growdesk/domain@0.1.0 build
+#14 1.975 > tsc -p tsconfig.json
+#14 1.975 
+#14 3.225 
+#14 3.225 > @growdesk/database@0.1.0 build
+#14 3.225 > tsc -p tsconfig.json
+#14 3.225 
+#14 4.493 
+#14 4.493 > @growdesk/adapters@0.1.0 build
+#14 4.493 > tsc -p tsconfig.json
+#14 4.493 
+#14 5.870 
+#14 5.870 > @growdesk/testkit@0.1.0 build
+#14 5.870 > tsc -p tsconfig.json
+#14 5.870 
+#14 7.063 
+#14 7.063 > @growdesk/api@0.1.0 build
+#14 7.063 > tsc -p tsconfig.json
+#14 7.063 
+#14 9.153 
+#14 9.153 > @growdesk/worker@0.1.0 build
+#14 9.153 > tsc -p tsconfig.json
+#14 9.153 
+#14 10.34 
+#14 10.34 > @growdesk/scheduler@0.1.0 build
+#14 10.34 > tsc -p tsconfig.json
+#14 10.34 
+#14 DONE 11.5s
+
+#15 [build 8/8] RUN npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+#15 7.490 
+#15 7.490 removed 88 packages in 7s
+#15 DONE 7.5s
+
+#16 [runtime  8/15] COPY --from=build /app/packages/adapters/package.json ./packages/adapters/package.json
+#16 CACHED
+
+#17 [runtime  4/15] COPY --from=build /app/package-lock.json ./package-lock.json
+#17 CACHED
+
+#18 [runtime  5/15] COPY --from=build /app/node_modules ./node_modules
+#18 CACHED
+
+#19 [runtime  6/15] COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+#19 CACHED
+
+#20 [runtime  7/15] COPY --from=build /app/apps/api/dist ./apps/api/dist
+#20 CACHED
+
+#21 [runtime 12/15] COPY --from=build /app/packages/database/package.json ./packages/database/package.json
+#21 CACHED
+
+#22 [runtime 10/15] COPY --from=build /app/packages/contracts/package.json ./packages/contracts/package.json
+#22 CACHED
+
+#23 [runtime  3/15] COPY --from=build /app/package.json ./package.json
+#23 CACHED
+
+#24 [runtime  9/15] COPY --from=build /app/packages/adapters/dist ./packages/adapters/dist
+#24 CACHED
+
+#25 [runtime 13/15] COPY --from=build /app/packages/database/dist ./packages/database/dist
+#25 CACHED
+
+#26 [runtime 11/15] COPY --from=build /app/packages/contracts/dist ./packages/contracts/dist
+#26 CACHED
+
+#27 [runtime 14/15] COPY --from=build /app/packages/domain/package.json ./packages/domain/package.json
+#27 CACHED
+
+#28 [runtime 15/15] COPY --from=build /app/packages/domain/dist ./packages/domain/dist
+#28 CACHED
+
+#29 exporting to image
+#29 exporting layers 0.0s done
+#29 exporting manifest sha256:fca36b97cf63f607d07bcae23068f2fd6fb3bc1325e7f9a157a70a959d0a75b8 0.0s done
+#29 exporting config sha256:65e38ffd01ac1261de903bbed4d56124db54fe187269d4927445d441ab90891c 0.0s done
+#29 exporting attestation manifest sha256:f289fb747e420b5eaa6f4cc2986d27ca333d8ed50dd92095957246ae95d2b3bb 0.0s done
+#29 exporting manifest list sha256:fa644502641b74adaf7f9265eb38a72e53f9db9508a4256507087693317cdafb 0.0s done
+#29 naming to docker.io/library/growdesk-api:eab46cba648611f22bd5a0c7721a5e102b39597e
+#29 naming to docker.io/library/growdesk-api:eab46cba648611f22bd5a0c7721a5e102b39597e done
+#29 unpacking to docker.io/library/growdesk-api:eab46cba648611f22bd5a0c7721a5e102b39597e 0.0s done
+#29 DONE 0.2s
+
+#30 resolving provenance for metadata file
+#30 DONE 0.0s

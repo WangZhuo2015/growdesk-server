@@ -1,0 +1,61 @@
+{
+  "growdesk-api-1": {
+    "health": "healthy",
+    "image": "growdesk-api:eab46cba648611f22bd5a0c7721a5e102b39597e",
+    "imageId": "sha256:fa644502641b74adaf7f9265eb38a72e53f9db9508a4256507087693317cdafb",
+    "user": "node",
+    "ports": {
+      "3080/tcp": [
+        {
+          "HostIp": "127.0.0.1",
+          "HostPort": "3180"
+        }
+      ]
+    },
+    "networks": [
+      "growdesk-db",
+      "growdesk-ingress",
+      "growdesk-redis"
+    ],
+    "restart": "unless-stopped",
+    "memory": 805306368
+  },
+  "growdesk-postgres-1": {
+    "health": "healthy",
+    "image": "postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af",
+    "imageId": "sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af",
+    "user": "",
+    "ports": {
+      "5432/tcp": null
+    },
+    "networks": [
+      "growdesk-db"
+    ],
+    "restart": "unless-stopped",
+    "memory": 2147483648
+  },
+  "growdesk-redis-1": {
+    "health": "healthy",
+    "image": "redis:8.10.1-alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576",
+    "imageId": "sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576",
+    "user": "",
+    "ports": {
+      "6379/tcp": null
+    },
+    "networks": [
+      "growdesk-redis"
+    ],
+    "restart": "unless-stopped",
+    "memory": 536870912
+  },
+  "ready": {
+    "status": "ok",
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    }
+  },
+  "databaseRole": "growdesk|f|f|f|f|f"
+}

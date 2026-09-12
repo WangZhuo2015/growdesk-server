@@ -1,0 +1,30 @@
+{
+  "services": {
+    "baselineCount": 41,
+    "changed": []
+  },
+  "containers": {
+    "baselineCount": 3,
+    "changed": []
+  },
+  "nginxConfigHashes": {
+    "baselineCount": 4,
+    "changed": []
+  },
+  "http": {
+    "baselineCount": 3,
+    "changed": []
+  },
+  "reloadMonitor": {
+    "samples": 135,
+    "failures": 0,
+    "spansReload": true,
+    "master": 892230
+  },
+  "legacyPidFile": "Empty before and after; process evidence used instead.",
+  "verifiedMasterAfter": {
+    "pid": 892230,
+    "command": "nginx: master process /usr/sbin/nginx -c /etc/sing-box/nginx.conf",
+    "executable": "/usr/sbin/nginx"
+  }
+}

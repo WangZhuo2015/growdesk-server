@@ -68,3 +68,30 @@ curl --fail --max-time 10 http://127.0.0.1:3180/health/ready
 ## 6. 回滚边界
 
 如果新 nginx include 导致检查失败，恢复/移除该 include、用同一实例 `-t` 后 reload；保留其他配置不变。若仅 GrowDesk API 失败，可以停止新 API 或切回上一个已记录镜像。PG/Redis named volumes 必须保留，不能通过删除卷“修复”问题。当前没有业务 schema migration，后续数据库变更采用 forward fix，不将生产库降级。
+
+
+## 7. 当前主机的实际运行参数（2026-09-12）
+
+SSH：`ssh -o BatchMode=yes -o HostKeyAlias=161.33.201.230 ubuntu@ampere.zwang.fun`。域名已核对指向目标IP；直连IP在当前本地代理路径曾卡在SSH banner前。
+
+Compose v5.5.1 位于 `/home/ubuntu/growdesk/bin/docker-compose`，Buildx v0.37.1 位于独立 Docker 配置目录；未升级系统 Docker 或重启旧容器。此主机需 sudo：
+
+```sh
+sudo env DOCKER_CONFIG=/home/ubuntu/growdesk/docker-config \
+  /home/ubuntu/growdesk/bin/docker-compose \
+  --env-file /home/ubuntu/growdesk/shared/runtime.env \
+  -f /home/ubuntu/growdesk/releases/eab46cba648611f22bd5a0c7721a5e102b39597e/deploy/compose.yaml ps
+curl --noproxy '*' --fail https://ampere.zwang.fun:8443/health/ready
+```
+
+后续发布创建新的不可变 release 目录，核验源码包哈希，再只更新 `runtime.env` 的 `GROWDESK_IMAGE_TAG`；保留密码和600权限。`bootstrap-target.py` 仅用于首次引导，不替代升级发布步骤。
+
+nginx原PID文件为空，不能依赖 `nginx -s reload`。`activate-nginx.py` 使用精确 master 命令及 `/proc/PID/exe` 双重确认后发 SIGHUP；脚本只用于首次接入，已有include时主动拒绝重复覆盖。调整路由时必须重新 `nginx -t -c /etc/sing-box/nginx.conf`，再对核实的 master 发HUP。
+
+撤销本次公网入口：移除且仅移除 `/etc/sing-box/nginx.d/growdesk.conf`，检查配置后平滑重载上述master；`systemctl disable --now growdesk-firewall.service`，移除本次unit后daemon-reload；用以下精确规则删除本次放行：
+
+```sh
+sudo iptables -D INPUT -p tcp --dport 8443 -m comment --comment 'GrowDesk HTTPS' -j ACCEPT
+```
+
+需要停止API时，使用上面的完整Compose命令追加 `stop api`。保留PG/Redis卷和运行配置，禁止 `down -v`。不修改已有80/443站点、旧PG16/Redis、BabyPanel或全局Docker网络。

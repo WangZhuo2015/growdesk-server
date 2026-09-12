@@ -6,7 +6,7 @@
 
 2026-09-11：BOOT-01 工具链与隔离环境已完成本地复核，见 `evidence/reviews/2026-09-11-r3/REVIEW.md`。当前推进 BOOT-02 正式工作区与测试基础，业务 API、数据库模型、同步服务尚未完成。保留所有未提交修改，不重新初始化。
 
-2026-09-12：本轮补齐真实 PG/Redis `/health/ready`、独立容器部署与现有 singbox nginx 接入模板。当前云业务仍未完成；已通过同一 IP 对应域名恢复 SSH，正在独立部署准备。最新状态见 [CLOUD_BOOTSTRAP 报告](evidence/tasks/CLOUD_BOOTSTRAP/REPORT.md) 和 [部署手册](deploy/HOST_RUNBOOK.zh-CN.md)。
+2026-09-12：本轮补齐真实 PG/Redis `/health/ready`、独立容器部署与现有 singbox nginx 接入模板。基础服务已部署到 `https://ampere.zwang.fun:8443`，PG/Redis真实健康及公网TLS检查通过；当前云业务仍未完成。最新状态见 [CLOUD_BOOTSTRAP 报告](evidence/tasks/CLOUD_BOOTSTRAP/REPORT.md) 和 [部署手册](deploy/HOST_RUNBOOK.zh-CN.md)。
 
 - 服务端：本仓库根；不再创建嵌套 backend 目录。
 - iOS：同级 `../growdesk-ios`，独立 Git/Xcode 工程。
