@@ -13,6 +13,10 @@
 - Android：同级 `../growdesk-android`；本轮计划不包含 Android 实现任务。
 - 旧 Web：`../baby_panel_for_cecilia`，用于只读参考；兼容改造须作为独立任务追踪。
 
+## 当前优先路线：保留 Web，与 iOS 共用后端
+
+2026-09-12 用户已确认统一后端方案。执行拆分见 [09 详细任务计划](docs/plan/implementation/09_WEB_IOS_SHARED_BACKEND.md)，给 Gemini 的首轮提示词见 [任务交接入口](docs/plan/GEMINI_SHARED_BACKEND_HANDOFF.md)。先做 SH-00 现状/调用/写入口盘点，再按依赖执行；允许提前开发隔离 Web 兼容层，正式切换仍保留 BE-10/11 和迁移演练门禁。下文旧 BOOT/BE 入口用于核对前置，不是重做已完成工作。
+
 ## 现在怎么开始
 
 1. 读取 [Agent 手册](docs/plan/implementation/06_AGENT_EXECUTION_PLAYBOOK.md) 与根 AGENTS.md，记录当前分支、HEAD（无提交时记 UNBORN）和已有未提交文件。

@@ -197,6 +197,8 @@ G1/G2/G3/G6必须由独立review检查具体代码/测试证据。较弱Agent按
 
 ### BE-12：Web兼容和旧写入口退休
 
+> 2026-09-12 执行拆分补充：[09共享后端计划](09_WEB_IOS_SHARED_BACKEND.md)允许提前实施隔离环境的Web兼容层与单领域联调；本节完整功能、迁移演练及正式切换前置保持不变。
+
 - 前置：BE-10/11、03至少一次演练。
 - 输出：兼容route字段映射表、Web API SDK/同源路由、旧DB调用禁止检查。
 - 步骤：①保留Next页面，UI通过新API；②必要server components通过服务API取数；③保持cookie/CSRF转换在Web边界；④旧API字段兼容映射；⑤停旧定时任务/stdio直连DB并改新服务；⑥架构扫描生产可达代码不得再连SQLite或旧全局prisma。
