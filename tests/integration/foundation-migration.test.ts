@@ -68,7 +68,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(feedingSql);
       }
 
-      // 4. Verify all expected foundation tables exist
+      // 4. Apply 202609120004_care_diaper if not already applied
+      const diaperSql = fs.readFileSync("prisma/migrations/202609120004_care_diaper/migration.sql", "utf8");
+      const { rows: diaperRows } = await client.query("SELECT to_regclass('public.diaper_records') as exists");
+      if (!diaperRows[0]?.exists) {
+        await client.query(diaperSql);
+      }
+
+      // 5. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -91,6 +98,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "timeline_entries",
         "feeding_records",
         "formula_products",
+        "diaper_records",
       ];
 
       const { rows } = await client.query(

@@ -5,5 +5,6 @@ export * from "./client.js";
 export * from "./unit-of-work.js";
 export * from "./feeding-repository.js";
 export * from "./formula-product-repository.js";
+export * from "./diaper-repository.js";
 export * from "./timeline-repository.js";
 export type { PrismaClient, Prisma } from "./generated/client.js";
