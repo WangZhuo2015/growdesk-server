@@ -9,6 +9,7 @@ import {
   AuthTokenPairSchema,
   RegisterResponseSchema,
   LoginResponseSchema,
+  RefreshTokenResponseSchema,
   SessionListResponseSchema,
   RevokeSessionResponseSchema,
   SuccessStatusResponseSchema,
@@ -27,6 +28,7 @@ import {
 } from "./readiness.js";
 import { authPlugin } from "./plugins/auth-plugin.js";
 import { authRoutes } from "./routes/auth-routes.js";
+import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
   readonly logger?: boolean;
@@ -34,6 +36,7 @@ export interface ApiAppOptions {
   readonly redisUrl?: string;
   readonly readiness?: ReadinessDependencies;
   readonly databaseContext?: DatabaseContext;
+  readonly replayStore?: ReplayStore;
   readonly jwtSecret?: string;
 }
 
@@ -68,6 +71,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(AuthTokenPairSchema);
   app.addSchema(RegisterResponseSchema);
   app.addSchema(LoginResponseSchema);
+  app.addSchema(RefreshTokenResponseSchema);
   app.addSchema(SessionListResponseSchema);
   app.addSchema(RevokeSessionResponseSchema);
   app.addSchema(SuccessStatusResponseSchema);
@@ -155,6 +159,8 @@ export function buildApiApp(options: ApiAppOptions = {}) {
 
     app.register(authRoutes, {
       prisma: databaseContext.prisma,
+      pool: databaseContext.pool,
+      replayStore: options.replayStore,
       jwtSecret: options.jwtSecret,
     });
   }

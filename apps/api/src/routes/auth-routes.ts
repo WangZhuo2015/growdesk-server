@@ -1,30 +1,38 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { PrismaClient } from "@growdesk/database";
+import type pg from "pg";
 import {
   ApiErrorEnvelopeSchema,
   RegisterRequestSchema,
   RegisterResponseSchema,
   LoginRequestSchema,
   LoginResponseSchema,
+  RefreshTokenRequestSchema,
+  RefreshTokenResponseSchema,
   SessionListResponseSchema,
   RevokeSessionResponseSchema,
   SuccessStatusResponseSchema,
   CurrentUserResponseSchema,
   type RegisterRequest,
   type LoginRequest,
+  type RefreshTokenRequest,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/tokens.js";
-import { createSession, revokeSession } from "../auth/session-service.js";
+import { createSession, revokeSession, rotateRefreshToken } from "../auth/session-service.js";
+import { ReplayStore } from "../auth/replay-store.js";
 
 export interface AuthRoutesOptions {
   readonly prisma: PrismaClient;
+  readonly pool: pg.Pool;
+  readonly replayStore?: ReplayStore;
   readonly jwtSecret?: string;
 }
 
 export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, options) => {
-  const { prisma, jwtSecret } = options;
+  const { prisma, pool, jwtSecret } = options;
+  const replayStore = options.replayStore ?? new ReplayStore();
 
   // 1. POST /api/v1/auth/register
   fastify.post<{ Body: RegisterRequest }>(
@@ -229,7 +237,50 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
     },
   );
 
-  // 3. POST /api/v1/auth/logout
+  // 3. POST /api/v1/auth/refresh
+  fastify.post<{ Body: RefreshTokenRequest }>(
+    "/api/v1/auth/refresh",
+    {
+      schema: {
+        body: RefreshTokenRequestSchema,
+        response: {
+          200: RefreshTokenResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const { refreshToken, rotationId } = request.body;
+      const requestId = (request.id as string) || crypto.randomUUID();
+
+      const result = await rotateRefreshToken({
+        pool,
+        rawRefreshToken: refreshToken,
+        rotationId,
+        replayStore,
+        jwtSecret,
+      });
+
+      if (!result.success) {
+        reply.status(result.statusCode).send({
+          error: {
+            code: result.code,
+            message: result.message,
+            requestId,
+          },
+        });
+        return;
+      }
+
+      reply.status(200).send({
+        data: result.data,
+      });
+    },
+  );
+
+  // 4. POST /api/v1/auth/logout
   fastify.post(
     "/api/v1/auth/logout",
     {
@@ -252,7 +303,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
     },
   );
 
-  // 4. GET /api/v1/auth/sessions
+  // 5. GET /api/v1/auth/sessions
   fastify.get(
     "/api/v1/auth/sessions",
     {
@@ -287,7 +338,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
     },
   );
 
-  // 5. DELETE /api/v1/auth/sessions/:id
+  // 6. DELETE /api/v1/auth/sessions/:id
   fastify.delete<{ Params: { id: string } }>(
     "/api/v1/auth/sessions/:id",
     {
@@ -325,7 +376,7 @@ export const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify,
     },
   );
 
-  // 6. GET /api/v1/me
+  // 7. GET /api/v1/me
   fastify.get(
     "/api/v1/me",
     {
