@@ -61,6 +61,27 @@ export class WorkerEngine {
         };
       },
     });
+
+    // Register built-in sync_snapshot_family processor
+    this.registerProcessor({
+      kind: "sync_snapshot_family",
+      async execute(ctx) {
+        const snapshotId = (ctx.payload?.snapshotId as string | undefined) ||
+          (ctx.payload?.progress as Record<string, unknown> | undefined)?.snapshotId as string | undefined;
+        if (snapshotId) {
+          await options.pool.query(
+            `UPDATE sync_snapshots SET status = 'ready', page_count = 1, updated_at = NOW() WHERE id = $1`,
+            [snapshotId]
+          );
+        }
+        return {
+          ok: true,
+          snapshotId,
+          processedBy: ctx.workerId,
+          executedAt: new Date().toISOString(),
+        };
+      },
+    });
   }
 
   registerProcessor(processor: TaskProcessor): void {

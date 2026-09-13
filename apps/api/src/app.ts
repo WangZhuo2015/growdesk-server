@@ -92,6 +92,16 @@ import {
   DailySummaryRunResponseSchema,
   DailySummaryItemSchema,
   DailySummaryListResponseSchema,
+  SyncCommandSchema,
+  SyncCommandBatchRequestSchema,
+  SyncCommandResultItemSchema,
+  SyncCommandBatchResponseSchema,
+  SyncChangeItemSchema,
+  FamilyChangesResponseSchema,
+  UserChangesResponseSchema,
+  CreateSyncSnapshotResponseSchema,
+  SyncSnapshotSchema,
+  SyncSnapshotResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -120,11 +130,13 @@ import { attachmentRoutes } from "./routes/attachment-routes.js";
 import { medicalRoutes } from "./routes/medical-routes.js";
 import { notificationRoutes } from "./routes/notification-routes.js";
 import { aiRoutes } from "./routes/ai-routes.js";
+import { syncRoutes } from "./routes/sync-routes.js";
 import { AttachmentService } from "./services/attachment-service.js";
 import { MedicalService } from "./services/medical-service.js";
 import { VaccineService } from "./services/vaccine-service.js";
 import { NotificationService } from "./services/notification-service.js";
 import { AiService } from "./services/ai-service.js";
+import { SyncService } from "./services/sync-service.js";
 import { StorageDriver, AwsS3StorageDriver, MockStorageDriver } from "./storage/s3-storage-service.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
@@ -253,6 +265,16 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(DailySummaryRunResponseSchema);
   app.addSchema(DailySummaryItemSchema);
   app.addSchema(DailySummaryListResponseSchema);
+  app.addSchema(SyncCommandSchema);
+  app.addSchema(SyncCommandBatchRequestSchema);
+  app.addSchema(SyncCommandResultItemSchema);
+  app.addSchema(SyncCommandBatchResponseSchema);
+  app.addSchema(SyncChangeItemSchema);
+  app.addSchema(FamilyChangesResponseSchema);
+  app.addSchema(UserChangesResponseSchema);
+  app.addSchema(CreateSyncSnapshotResponseSchema);
+  app.addSchema(SyncSnapshotSchema);
+  app.addSchema(SyncSnapshotResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -398,6 +420,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     const vaccineService = new VaccineService(databaseContext.prisma);
     const notificationService = new NotificationService(databaseContext.prisma);
     const aiService = new AiService(databaseContext.prisma, databaseContext.pool);
+    const syncService = new SyncService(databaseContext.prisma);
 
     app.register(attachmentRoutes, {
       attachmentService,
@@ -414,6 +437,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
 
     app.register(aiRoutes, {
       aiService,
+    });
+
+    app.register(syncRoutes, {
+      syncService,
     });
   }
 

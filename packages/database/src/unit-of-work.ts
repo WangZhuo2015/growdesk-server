@@ -99,11 +99,15 @@ export async function executeFamilyUnitOfWork<T>(
       if (!hasAccess) {
         throw new FamilyAccessDeniedError(familyId);
       }
+      const summaryObj = existingReceipt.resultSummary as {
+        familyCursor?: string;
+        version?: number;
+      } | null;
       return {
         replayed: true,
         result: existingReceipt.responseBody as T,
-        version: command.baseVersion ?? 1,
-        familyCursor: "0",
+        version: summaryObj?.version ?? command.baseVersion ?? 1,
+        familyCursor: summaryObj?.familyCursor ?? "0",
       };
     }
 
@@ -244,6 +248,13 @@ export async function executeFamilyUnitOfWork<T>(
       },
     });
 
+    const changePayload: Record<string, unknown> = {
+      ...(mutation.payload && typeof mutation.payload === "object"
+        ? (mutation.payload as Record<string, unknown>)
+        : {}),
+      ...(command.babyId ? { babyId: command.babyId } : {}),
+    };
+
     await tx.familyChange.create({
       data: {
         familyId,
@@ -252,7 +263,7 @@ export async function executeFamilyUnitOfWork<T>(
         entityId: command.entityId,
         version: nextVersion,
         op: command.operation === "delete" ? "delete" : "upsert",
-        payload: mutation.payload as Prisma.InputJsonValue,
+        payload: changePayload as Prisma.InputJsonValue,
         schemaVersion: 1,
         createdAt: new Date(),
       },
@@ -266,7 +277,11 @@ export async function executeFamilyUnitOfWork<T>(
         commandId: command.commandId,
         requestHash: command.requestHash,
         resultCode: 200,
-        resultSummary: { summary: mutation.summary } as Prisma.InputJsonValue,
+        resultSummary: {
+          summary: mutation.summary,
+          familyCursor: nextCursor.toString(),
+          version: nextVersion,
+        } as Prisma.InputJsonValue,
         responseBody: mutation.result as Prisma.InputJsonValue,
         completedAt: new Date(),
       },

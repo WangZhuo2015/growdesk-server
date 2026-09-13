@@ -12,4 +12,6 @@ export * from "./supplement-repository.js";
 export * from "./growth-repository.js";
 export * from "./timeline-repository.js";
 export * from "./task-repository.js";
+export * from "./sync-cursor.js";
 export { Prisma, type PrismaClient } from "./generated/client.js";
+

@@ -73,3 +73,16 @@ export class FencingTokenMismatchError extends DatabaseError {
     super(message, "FENCING_TOKEN_MISMATCH", 409);
   }
 }
+
+export class InvalidSyncCursorError extends DatabaseError {
+  constructor(message = "Invalid or tampered sync cursor") {
+    super(message, "INVALID_SYNC_CURSOR", 400);
+  }
+}
+
+export class SyncResetRequiredError extends DatabaseError {
+  constructor(message = "Sync state is out of date or epoch mismatch; full sync reset required") {
+    super(message, "SYNC_RESET_REQUIRED", 410);
+  }
+}
+

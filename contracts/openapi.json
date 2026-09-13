@@ -15981,7 +15981,7 @@
             }
           }
         },
-        "x-implementation-status": "PLANNED_SH09",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -16183,7 +16183,7 @@
             "description": "UUID v4 string"
           }
         ],
-        "x-implementation-status": "PLANNED_SH09",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -16346,7 +16346,7 @@
             "description": "Page size"
           }
         ],
-        "x-implementation-status": "PLANNED_SH09",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -16488,7 +16488,7 @@
             "description": "UUID v4 string"
           }
         ],
-        "x-implementation-status": "PLANNED_SH09",
+        "x-implementation-status": "READY",
         "responses": {
           "202": {
             "description": "Default Response",
@@ -16579,7 +16579,7 @@
             "description": "UUID v4 string"
           }
         ],
-        "x-implementation-status": "PLANNED_SH09",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
