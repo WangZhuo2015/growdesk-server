@@ -1,0 +1,5 @@
+
+> growdesk-server@0.1.0 backend:lint
+> eslint . && node scripts/check-architecture.mjs
+
+Architecture check passed (22 TypeScript source files).

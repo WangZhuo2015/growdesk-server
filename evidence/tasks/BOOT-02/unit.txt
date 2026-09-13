@@ -1,0 +1,95 @@
+
+> growdesk-server@0.1.0 backend:test:unit
+> npm run backend:build && node --import tsx --test "packages/*/tests/**/*.test.ts" "apps/*/tests/**/*.test.ts" "tests/unit/**/*.test.ts"
+
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ health liveness is a real Fastify route (208.333083ms)
+✔ health route does not expose business endpoints in the baseline (3.047667ms)
+✔ scheduler requires both database and Redis configuration before starting (2.076833ms)
+✔ scheduler lifecycle stops cleanly without dispatching jobs (0.372916ms)
+✔ worker requires both database and Redis configuration before starting (0.6235ms)
+✔ worker lifecycle stops cleanly without claiming jobs (0.546541ms)
+✔ Redis guard accepts an isolated loopback test URL without connecting (0.525792ms)
+✔ runtime Redis supports an explicitly configured ACL user (0.094333ms)
+✔ Redis guard rejects remoteHost before a connection (0.31ms)
+✔ Redis guard rejects defaultPort before a connection (0.102583ms)
+✔ Redis guard rejects noPassword before a connection (0.062167ms)
+✔ Redis guard rejects query before a connection (0.058292ms)
+✔ database guard accepts an owned PostgreSQL test URL without connecting (2.650208ms)
+✔ database guard rejects sqlite before a connection (0.367125ms)
+✔ database guard rejects productionHost before a connection (0.129166ms)
+✔ database guard rejects unknownHost before a connection (0.080833ms)
+✔ database guard rejects productionDatabase before a connection (0.067958ms)
+✔ database guard rejects wrongRole before a connection (0.061333ms)
+✔ database guard rejects defaultPort before a connection (0.076834ms)
+✔ database guard rejects driverOverride before a connection (0.062542ms)
+✔ database guard rejects strictTls before a connection (0.065584ms)
+✔ login without an active binding does not enable sync (1.543125ms)
+✔ unexpected runtime operation fails closed even with a valid binding (0.105ms)
+✔ unknown runtime family role cannot read cloud data (0.071958ms)
+✔ pending rejects upload and download (0.075708ms)
+✔ paused rejects upload and download (0.068625ms)
+✔ revoked rejects upload and download (0.034417ms)
+✔ switching bindingId cannot reuse an old binding (0.063541ms)
+✔ switching installationId cannot reuse an old binding (0.032625ms)
+✔ switching localVaultId cannot reuse an old binding (0.202959ms)
+✔ switching familyId cannot reuse an old binding (0.099458ms)
+✔ switching accounts cannot reuse an active binding (0.089541ms)
+✔ late requests from a previous generation are rejected after re-enable (0.062209ms)
+✔ expired consent does not silently approve a new policy (0.058416ms)
+✔ removed family membership rejects a still-active binding (0.045791ms)
+✔ viewer can pull but cannot upload; consenting member can upload (0.066458ms)
+✔ accepts exact isolated runner connection (0.636375ms)
+✔ rejects sqlite before any connection and without exposing secret (0.245667ms)
+✔ rejects productionHost before any connection and without exposing secret (0.089584ms)
+✔ rejects unknownHost before any connection and without exposing secret (0.057709ms)
+✔ rejects wrongRole before any connection and without exposing secret (0.061375ms)
+✔ rejects wrongDatabase before any connection and without exposing secret (0.04925ms)
+✔ rejects wrongPort before any connection and without exposing secret (0.061917ms)
+✔ rejects queryBypass before any connection and without exposing secret (0.065792ms)
+✔ rejects wrongSecret before any connection and without exposing secret (0.057542ms)
+✔ backend import boundaries are enforced (220.685292ms)
+✔ architecture rules catch package subpaths and relative boundary bypasses (5.105792ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 823.120958

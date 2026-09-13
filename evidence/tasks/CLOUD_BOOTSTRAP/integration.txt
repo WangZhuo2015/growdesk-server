@@ -1,0 +1,17 @@
+
+> growdesk-server@0.1.0 backend:test:integration
+> python3 scripts/test-integration.py
+
+✔ isolated PostgreSQL enforces role, ownership, constraints and rollback (30.859833ms)
+✔ isolated authenticated Redis has working expiry and atomic NX writes (6.754792ms)
+✔ foundation HTTP readiness checks owned PostgreSQL and Redis with real drivers (211.044375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2785.682167
+Owned PostgreSQL/Redis integration checks passed; test process exited successfully.
+Owned test processes stopped and private data directory removed.

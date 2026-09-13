@@ -1,0 +1,45 @@
+npm warn deprecated cron-parser@4.9.0: v4 is no longer maintained, upgrade to v5
+
+added 324 packages in 4s
+
+> growdesk-server@0.1.0 backend:typecheck
+> tsc -p tsconfig.backend.json --noEmit
+
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+
+Clean source copy: lockfile installation, typecheck and build passed. No .env or existing node_modules copied.

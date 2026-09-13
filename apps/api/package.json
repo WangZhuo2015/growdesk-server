@@ -1,0 +1,22 @@
+{
+  "name": "@growdesk/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@growdesk/adapters": "0.1.0",
+    "@growdesk/contracts": "0.1.0",
+    "@growdesk/database": "0.1.0",
+    "@growdesk/domain": "0.1.0",
+    "@fastify/type-provider-typebox": "5.2.0",
+    "fastify": "5.12.4"
+  }
+}

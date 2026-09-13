@@ -1,0 +1,37 @@
+# Install as one NEW include in the already-running singbox nginx only after
+# resolving all placeholders from live host inspection. Do not replace nginx.conf.
+# This template assumes nginx can reach the host loopback namespace.
+server {
+    listen __PUBLIC_TLS_PORT__ ssl;
+    server_name __SERVER_NAME__;
+    ssl_certificate __EXISTING_CERTIFICATE_PATH__;
+    ssl_certificate_key __EXISTING_CERTIFICATE_KEY_PATH__;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    server_tokens off;
+
+    # Foundation exposure only. Business routes require their own acceptance.
+    client_max_body_size 1m;
+    location = /health/live {
+        proxy_pass http://127.0.0.1:__API_LOOPBACK_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-ID $request_id;
+        proxy_connect_timeout 2s;
+        proxy_read_timeout 10s;
+        add_header Cache-Control "no-store" always;
+    }
+    location = /health/ready {
+        proxy_pass http://127.0.0.1:__API_LOOPBACK_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-ID $request_id;
+        proxy_connect_timeout 2s;
+        proxy_read_timeout 10s;
+        add_header Cache-Control "no-store" always;
+    }
+    location / { return 404; }
+}

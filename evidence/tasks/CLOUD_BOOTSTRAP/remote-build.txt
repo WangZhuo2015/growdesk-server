@@ -1,0 +1,181 @@
+ Image growdesk-api:e9ac5cd19e16dc71072e9277bfe843074ff33385 Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 843B done
+#1 DONE 0.0s
+
+#2 [internal] load build definition from Dockerfile
+#2 transferring dockerfile:
+#2 transferring dockerfile: 2.09kB done
+#2 DONE 0.0s
+
+#3 resolve image config for docker-image://docker.io/docker/dockerfile:1.7
+#3 DONE 1.8s
+
+#4 docker-image://docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+#4 resolve docker.io/docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e 0.0s done
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 0B / 11.24MB 0.2s
+#4 sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 11.24MB / 11.24MB 0.3s done
+#4 extracting sha256:6e230fe0035dc5b9d8d5e65513d1f11ae3b25d14362031fb540a4c23bf862933 0.1s done
+#4 DONE 0.5s
+
+#5 [internal] load metadata for docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#5 DONE 1.6s
+
+#6 [internal] load .dockerignore
+#6 transferring context: 323B done
+#6 DONE 0.0s
+
+#7 [internal] load build context
+#7 transferring context: 217.85kB 0.0s done
+#7 DONE 0.1s
+
+#8 [build 1/8] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#8 resolve docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c 0.0s done
+#8 DONE 0.1s
+
+#8 [build 1/8] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#8 sha256:3088e5d81f6c96895c4dd84a1a6be23463475271e0161998c3778e6e0d3b779e 0B / 448B 0.2s
+#8 sha256:3088e5d81f6c96895c4dd84a1a6be23463475271e0161998c3778e6e0d3b779e 448B / 448B 0.2s done
+#8 sha256:e1c65dfe66b20104dd803408cac9546d50916e25617ab4fae2a5393699130d13 0B / 1.71MB 0.3s
+#8 sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 0B / 49.42MB 0.2s
+#8 sha256:d759f9a318ae7eec6597f34adfd39ad99cf95717de4de60f8ae164a5ef73eea6 0B / 3.31kB 0.2s
+#8 sha256:e1c65dfe66b20104dd803408cac9546d50916e25617ab4fae2a5393699130d13 1.71MB / 1.71MB 0.4s done
+#8 sha256:1dbbb2db815c2527e90ef5a3e4dfb957cfe7b61b6a7fc59722f1f64b1a1b611e 0B / 28.12MB 0.2s
+#8 sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 10.49MB / 49.42MB 0.6s
+#8 sha256:d759f9a318ae7eec6597f34adfd39ad99cf95717de4de60f8ae164a5ef73eea6 3.31kB / 3.31kB 0.5s done
+#8 sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 44.04MB / 49.42MB 0.8s
+#8 sha256:1dbbb2db815c2527e90ef5a3e4dfb957cfe7b61b6a7fc59722f1f64b1a1b611e 14.68MB / 28.12MB 0.5s
+#8 sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 49.42MB / 49.42MB 0.9s
+#8 sha256:1dbbb2db815c2527e90ef5a3e4dfb957cfe7b61b6a7fc59722f1f64b1a1b611e 28.12MB / 28.12MB 0.6s done
+#8 sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 49.42MB / 49.42MB 0.9s done
+#8 extracting sha256:1dbbb2db815c2527e90ef5a3e4dfb957cfe7b61b6a7fc59722f1f64b1a1b611e
+#8 extracting sha256:1dbbb2db815c2527e90ef5a3e4dfb957cfe7b61b6a7fc59722f1f64b1a1b611e 0.6s done
+#8 DONE 1.7s
+
+#8 [build 1/8] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#8 extracting sha256:d759f9a318ae7eec6597f34adfd39ad99cf95717de4de60f8ae164a5ef73eea6 0.0s done
+#8 extracting sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa
+#8 extracting sha256:e1f9ac703c9e1599d00a93d4c8d305fe4cd258e573328c3363cfe127518f97fa 0.8s done
+#8 DONE 2.5s
+
+#8 [build 1/8] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#8 extracting sha256:e1c65dfe66b20104dd803408cac9546d50916e25617ab4fae2a5393699130d13 0.0s done
+#8 extracting sha256:3088e5d81f6c96895c4dd84a1a6be23463475271e0161998c3778e6e0d3b779e 0.0s done
+#8 DONE 2.5s
+
+#9 [build 2/8] WORKDIR /app
+#9 DONE 3.8s
+
+#10 [build 3/8] COPY package.json package-lock.json tsconfig.json tsconfig.backend.json ./
+#10 DONE 0.1s
+
+#11 [build 4/8] COPY apps ./apps
+#11 DONE 0.0s
+
+#12 [build 5/8] COPY packages ./packages
+#12 DONE 0.0s
+
+#13 [build 6/8] RUN npm ci --ignore-scripts --no-audit --no-fund
+#13 3.440 npm warn deprecated cron-parser@4.9.0: v4 is no longer maintained, upgrade to v5
+#13 8.793 
+#13 8.793 added 323 packages in 8s
+#13 DONE 16.9s
+
+#14 [build 7/8] RUN npm run backend:build
+#14 0.407 
+#14 0.407 > growdesk-server@0.1.0 backend:build
+#14 0.407 > npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+#14 0.407 
+#14 0.561 
+#14 0.561 > @growdesk/contracts@0.1.0 build
+#14 0.561 > tsc -p tsconfig.json
+#14 0.561 
+#14 1.991 
+#14 1.991 > @growdesk/domain@0.1.0 build
+#14 1.991 > tsc -p tsconfig.json
+#14 1.991 
+#14 3.238 
+#14 3.238 > @growdesk/database@0.1.0 build
+#14 3.238 > tsc -p tsconfig.json
+#14 3.238 
+#14 4.489 
+#14 4.489 > @growdesk/adapters@0.1.0 build
+#14 4.489 > tsc -p tsconfig.json
+#14 4.489 
+#14 5.879 
+#14 5.879 > @growdesk/testkit@0.1.0 build
+#14 5.879 > tsc -p tsconfig.json
+#14 5.879 
+#14 7.063 
+#14 7.063 > @growdesk/api@0.1.0 build
+#14 7.063 > tsc -p tsconfig.json
+#14 7.063 
+#14 9.113 
+#14 9.113 > @growdesk/worker@0.1.0 build
+#14 9.113 > tsc -p tsconfig.json
+#14 9.113 
+#14 10.30 
+#14 10.30 > @growdesk/scheduler@0.1.0 build
+#14 10.30 > tsc -p tsconfig.json
+#14 10.30 
+#14 DONE 11.5s
+
+#15 [build 8/8] RUN npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+#15 7.599 
+#15 7.599 removed 88 packages in 7s
+#15 DONE 7.6s
+
+#16 [runtime  3/15] COPY --from=build /app/package.json ./package.json
+#16 DONE 0.0s
+
+#17 [runtime  4/15] COPY --from=build /app/package-lock.json ./package-lock.json
+#17 DONE 0.1s
+
+#18 [runtime  5/15] COPY --from=build /app/node_modules ./node_modules
+#18 DONE 7.7s
+
+#19 [runtime  6/15] COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+#19 DONE 0.1s
+
+#20 [runtime  7/15] COPY --from=build /app/apps/api/dist ./apps/api/dist
+#20 DONE 0.1s
+
+#21 [runtime  8/15] COPY --from=build /app/packages/adapters/package.json ./packages/adapters/package.json
+#21 DONE 0.0s
+
+#22 [runtime  9/15] COPY --from=build /app/packages/adapters/dist ./packages/adapters/dist
+#22 DONE 0.0s
+
+#23 [runtime 10/15] COPY --from=build /app/packages/contracts/package.json ./packages/contracts/package.json
+#23 DONE 0.0s
+
+#24 [runtime 11/15] COPY --from=build /app/packages/contracts/dist ./packages/contracts/dist
+#24 DONE 0.0s
+
+#25 [runtime 12/15] COPY --from=build /app/packages/database/package.json ./packages/database/package.json
+#25 DONE 0.0s
+
+#26 [runtime 13/15] COPY --from=build /app/packages/database/dist ./packages/database/dist
+#26 DONE 0.0s
+
+#27 [runtime 14/15] COPY --from=build /app/packages/domain/package.json ./packages/domain/package.json
+#27 DONE 0.0s
+
+#28 [runtime 15/15] COPY --from=build /app/packages/domain/dist ./packages/domain/dist
+#28 DONE 0.0s
+
+#29 exporting to image
+#29 exporting layers
+#29 exporting layers 13.7s done
+#29 exporting manifest sha256:bbcd3923ee901fcf60113726334071f16c6709c08c1cbc97ea0e9ea0b469a33a 0.0s done
+#29 exporting config sha256:704a02dd1c40b34f71e91d00187691fd84f3d9ec7133d9bee70c882ac78786d6 0.0s done
+#29 exporting attestation manifest sha256:73c02ca225eee26193798faa0af276519b7a867f90ddb62b4029c3fc7c767fe6 0.0s done
+#29 exporting manifest list sha256:eb059116a59d88d3386820d9fb8fd5a07a23557f9ca705f2ccf60f42eaf42d4c 0.0s done
+#29 naming to docker.io/library/growdesk-api:e9ac5cd19e16dc71072e9277bfe843074ff33385 done
+#29 unpacking to docker.io/library/growdesk-api:e9ac5cd19e16dc71072e9277bfe843074ff33385
+#29 unpacking to docker.io/library/growdesk-api:e9ac5cd19e16dc71072e9277bfe843074ff33385 2.9s done
+#29 DONE 16.7s
+
+#30 resolving provenance for metadata file
+#30 DONE 0.0s
+ Image growdesk-api:e9ac5cd19e16dc71072e9277bfe843074ff33385 Built 

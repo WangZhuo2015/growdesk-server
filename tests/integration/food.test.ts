@@ -1,0 +1,478 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import { buildApiApp } from "../../apps/api/src/app.js";
+import { createDatabaseContext } from "../../packages/database/src/client.js";
+import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
+
+interface OwnedRun {
+  directory: string;
+  token: string;
+  database: string;
+  user: string;
+  password: string;
+  pgPort: number;
+  redisPort: number;
+}
+
+function readRun(): OwnedRun {
+  const file = process.env.BOOT02_RUN_FILE;
+  if (!file) throw new Error("Integration tests require the managed test runner");
+  const real = fs.realpathSync(file);
+  const parent = path.dirname(real);
+  if (path.dirname(parent) !== fs.realpathSync(os.tmpdir()) || !path.basename(parent).startsWith("growdesk-integration-")) {
+    throw new Error("Integration manifest is outside its private run");
+  }
+  const stat = fs.statSync(real);
+  if (stat.uid !== process.getuid?.() || stat.mode & 0o077) throw new Error("Unsafe manifest permissions");
+  return JSON.parse(fs.readFileSync(real, "utf8")) as OwnedRun;
+}
+
+test("SH-04FO: Food Record Pipeline suite", async (t) => {
+  const run = readRun();
+  const identity = {
+    host: "127.0.0.1" as const,
+    port: run.pgPort,
+    database: run.database,
+    role: run.user,
+    password: run.password,
+  };
+  const url = requireTestDatabaseUrl(
+    `postgresql://${run.user}:${run.password}@127.0.0.1:${run.pgPort}/${run.database}?sslmode=disable`,
+    identity,
+  );
+
+  const jwtSecret = "integration-test-auth-secret-min-32-chars-long!";
+  const ctx = createDatabaseContext({ url });
+  const app = buildApiApp({
+    databaseContext: ctx,
+    jwtSecret,
+  });
+
+  t.after(async () => {
+    await app.close();
+    await ctx.close();
+  });
+
+  // Ensure all migrations up to 202609120006_care_food are applied to test database
+  const migrations = [
+    "prisma/migrations/202609120001_identity/migration.sql",
+    "prisma/migrations/202609120002_foundation/migration.sql",
+    "prisma/migrations/202609120003_care_feeding/migration.sql",
+    "prisma/migrations/202609120004_care_diaper/migration.sql",
+    "prisma/migrations/202609120005_care_sleep/migration.sql",
+    "prisma/migrations/202609120006_care_food/migration.sql",
+  ];
+
+  for (const m of migrations) {
+    const sql = fs.readFileSync(m, "utf8");
+    await ctx.pool.query(sql).catch(() => {});
+  }
+
+  // Identities
+  const userAName = `test_food_a_${Date.now()}`;
+  const userBName = `test_food_b_${Date.now()}`;
+  let tokenA = "";
+  let familyAId = "";
+  let babyAId = "";
+  let tokenB = "";
+  let familyBId = "";
+  let babyBId = "";
+
+  let foodRecordId = "";
+  const fixedIdempotencyKey = `food-idemp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Setup: Register User A (Family A, Baby A)
+  await t.test("Setup: Register User A and create Baby A", async () => {
+    const regRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/register",
+      payload: {
+        username: userAName,
+        password: "Password123!",
+        displayName: "Food User A",
+      },
+    });
+    assert.equal(regRes.statusCode, 201);
+    tokenA = regRes.json<{ data: { accessToken: string } }>().data.accessToken;
+
+    const famRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/families",
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    const famListA = famRes.json<{ data: Array<{ id: string }> }>().data;
+    assert.ok(famListA[0]);
+    familyAId = famListA[0].id;
+
+    const babyRes = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyAId}/babies`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        name: "test_food_baby_a",
+        birthDate: "2026-01-01",
+        gender: "girl",
+      },
+    });
+    assert.equal(babyRes.statusCode, 201, `Create baby A failed: ${babyRes.payload}`);
+    babyAId = babyRes.json<{ data: { id: string } }>().data.id;
+  });
+
+  // Setup: Register User B (Family B, Baby B)
+  await t.test("Setup: Register User B and create Baby B", async () => {
+    const regRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/register",
+      payload: {
+        username: userBName,
+        password: "Password123!",
+        displayName: "Food User B",
+      },
+    });
+    assert.equal(regRes.statusCode, 201);
+    tokenB = regRes.json<{ data: { accessToken: string } }>().data.accessToken;
+
+    const famRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/families",
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    const famListB = famRes.json<{ data: Array<{ id: string }> }>().data;
+    assert.ok(famListB[0]);
+    familyBId = famListB[0].id;
+
+    const babyRes = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyBId}/babies`,
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        name: "test_food_baby_b",
+        birthDate: "2026-02-01",
+        gender: "boy",
+      },
+    });
+    assert.equal(babyRes.statusCode, 201, `Create baby B failed: ${babyRes.payload}`);
+    babyBId = babyRes.json<{ data: { id: string } }>().data.id;
+  });
+
+  // FO-01: Create food record creates entity and timeline projection
+  await t.test("FO-01: Create food record creates entity and timeline projection", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/food`,
+      headers: {
+        authorization: `Bearer ${tokenA}`,
+        "idempotency-key": fixedIdempotencyKey,
+      },
+      payload: {
+        recordDate: "2026-09-12",
+        mealType: "lunch",
+        occurredAt: "2026-09-12T12:30:00.000Z",
+        foodItemIds: ["food_iron_cereal", "pumpkin_puree"],
+        portionDescription: "half bowl (approx 60ml)",
+        reaction: "like",
+        notes: "Ate eagerly without spilling",
+      },
+    });
+    assert.equal(res.statusCode, 201, `Create food record failed: ${res.payload}`);
+    const body = res.json<{
+      data: {
+        id: string;
+        recordDate: string;
+        mealType: string;
+        foodItemIds: string[];
+        portionDescription: string | null;
+        reaction: string | null;
+        version: string;
+      };
+    }>();
+
+    assert.ok(body.data.id);
+    assert.equal(body.data.recordDate, "2026-09-12");
+    assert.equal(body.data.mealType, "lunch");
+    assert.deepEqual(body.data.foodItemIds, ["food_iron_cereal", "pumpkin_puree"]);
+    assert.equal(body.data.reaction, "like");
+    assert.equal(body.data.version, "1");
+    foodRecordId = body.data.id;
+
+    // Verify timeline projection entry
+    const { rows: tlRows } = await ctx.pool.query(
+      `SELECT * FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'food'`,
+      [foodRecordId]
+    );
+    assert.equal(tlRows.length, 1);
+    assert.equal(tlRows[0].family_id, familyAId);
+    assert.equal(tlRows[0].baby_id, babyAId);
+  });
+
+  // FO-02: Same Idempotency-Key and payload returns replayed result
+  await t.test("FO-02: Idempotent replay with same key returns cached result", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/food`,
+      headers: {
+        authorization: `Bearer ${tokenA}`,
+        "idempotency-key": fixedIdempotencyKey,
+      },
+      payload: {
+        recordDate: "2026-09-12",
+        mealType: "lunch",
+        occurredAt: "2026-09-12T12:30:00.000Z",
+        foodItemIds: ["food_iron_cereal", "pumpkin_puree"],
+        portionDescription: "half bowl (approx 60ml)",
+        reaction: "like",
+        notes: "Ate eagerly without spilling",
+      },
+    });
+    assert.equal(res.statusCode, 201);
+    const body = res.json<{ data: { id: string; version: string } }>();
+    assert.equal(body.data.id, foodRecordId);
+    assert.equal(body.data.version, "1");
+  });
+
+  // FO-03: Reusing Idempotency-Key with different payload triggers 409
+  await t.test("FO-03: Reusing Idempotency-Key with different payload triggers 409", async () => {
+    const res = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/food`,
+      headers: {
+        authorization: `Bearer ${tokenA}`,
+        "idempotency-key": fixedIdempotencyKey,
+      },
+      payload: {
+        recordDate: "2026-09-12",
+        mealType: "dinner", // Different meal type!
+        foodItemIds: ["apple_puree"],
+      },
+    });
+    assert.equal(res.statusCode, 409);
+    const body = res.json<{ error: { code: string } }>();
+    assert.equal(body.error.code, "IDEMPOTENCY_KEY_REUSED");
+  });
+
+  // FO-04: Keyset pagination works stably
+  await t.test("FO-04: Keyset pagination works stably across food records", async () => {
+    // Create second food record on earlier date
+    await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/food`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        recordDate: "2026-09-11",
+        mealType: "breakfast",
+        foodItemIds: ["oatmeal"],
+      },
+    });
+
+    const page1Res = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/food?limit=1`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(page1Res.statusCode, 200);
+    const page1 = page1Res.json<{
+      data: Array<{ id: string; recordDate: string }>;
+      page: { nextCursor: string | null };
+    }>();
+    assert.equal(page1.data.length, 1);
+    assert.ok(page1.page.nextCursor);
+
+    const page2Res = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/food?limit=1&cursor=${encodeURIComponent(page1.page.nextCursor!)}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(page2Res.statusCode, 200);
+    const page2 = page2Res.json<{
+      data: Array<{ id: string; recordDate: string }>;
+    }>();
+    assert.equal(page2.data.length, 1);
+    assert.notEqual(page1.data[0]?.id, page2.data[0]?.id);
+  });
+
+  // FO-05: Optimistic locking detects concurrency conflicts on baseVersion
+  await t.test("FO-05: Optimistic locking detects concurrency conflicts", async () => {
+    // Update version 1 -> 2
+    const updateRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        baseVersion: "1",
+        portionDescription: "full bowl (approx 120ml)",
+      },
+    });
+    assert.equal(updateRes.statusCode, 200);
+    const updateBody = updateRes.json<{ data: { version: string } }>();
+    assert.equal(updateBody.data.version, "2");
+
+    // Second update with outdated baseVersion "1" fails with 409
+    const conflictRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        baseVersion: "1",
+        portionDescription: "another update",
+      },
+    });
+    assert.equal(conflictRes.statusCode, 409);
+    const conflictBody = conflictRes.json<{ error: { code: string } }>();
+    assert.equal(conflictBody.error.code, "CONCURRENCY_CONFLICT");
+  });
+
+  // FO-06: User B cannot access or modify Baby A's food records
+  await t.test("FO-06: User B cannot access or modify Baby A's food records", async () => {
+    const listRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/food`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(listRes.statusCode, 403);
+
+    const getRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(getRes.statusCode, 403);
+
+    const patchRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}`,
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: { baseVersion: "2", notes: "Unauthorized" },
+    });
+    assert.equal(patchRes.statusCode, 403);
+  });
+
+  // FO-07: Delete food record soft-deletes and removes active timeline projection
+  await t.test("FO-07: Delete food record soft-deletes and removes active timeline", async () => {
+    const delRes = await app.inject({
+      method: "DELETE",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}?baseVersion=2`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(delRes.statusCode, 200);
+    const delBody = delRes.json<{ data: { id: string; deleted: boolean } }>();
+    assert.equal(delBody.data.id, foodRecordId);
+    assert.equal(delBody.data.deleted, true);
+
+    // Record is no longer retrievable via GET
+    const getRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/food/${foodRecordId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(getRes.statusCode, 404);
+
+    // Timeline entry is marked deleted
+    const { rows: tlRows } = await ctx.pool.query(
+      `SELECT * FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'food'`,
+      [foodRecordId]
+    );
+    assert.equal(tlRows.length, 1);
+    assert.ok(tlRows[0].deleted_at !== null);
+
+    // Active timeline returns 0
+    const { rows: activeTlRows } = await ctx.pool.query(
+      `SELECT * FROM timeline_entries WHERE entity_id = $1 AND entity_type = 'food' AND deleted_at IS NULL`,
+      [foodRecordId]
+    );
+    assert.equal(activeTlRows.length, 0);
+  });
+
+  // FO-08: Food Library Items (create custom and list items)
+  await t.test("FO-08: Food Library Items management", async () => {
+    // Create custom food item in Family A
+    const createRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/food/items",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        name: "Grandma's Organic Mashed Sweet Potato",
+        category: "vegetable",
+        allergenRisk: "low",
+        recommendedAgeMonths: 6,
+      },
+    });
+    assert.equal(createRes.statusCode, 201, `Create food item failed: ${createRes.payload}`);
+    const createdItem = createRes.json<{ id: string; name: string }>();
+    assert.ok(createdItem.id);
+    assert.equal(createdItem.name, "Grandma's Organic Mashed Sweet Potato");
+
+    // List food items for User A includes the custom item
+    const listRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/food/items",
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(listRes.statusCode, 200);
+    const listBody = listRes.json<{ data: Array<{ id: string; name: string }> }>();
+    assert.ok(listBody.data.some((i) => i.id === createdItem.id));
+  });
+
+  // FO-09: Food Guidelines
+  await t.test("FO-09: Food Guidelines returns age-stage guidance", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/v1/food/guidelines",
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(res.statusCode, 200);
+    const body = res.json<{
+      data: Array<{ monthAge: number; title: string; forbiddenFoods: string[] }>;
+    }>();
+    assert.ok(body.data.length >= 4);
+    assert.ok(body.data.some((g) => g.monthAge === 6));
+    assert.ok(body.data.some((g) => g.forbiddenFoods.includes("honey")));
+  });
+
+  // FO-10: Baby Food Plan
+  await t.test("FO-10: Baby Food Plan save and get with tenant isolation", async () => {
+    // Save food plan for Baby A
+    const saveRes = await app.inject({
+      method: "PUT",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        planData: {
+          week: "2026-W37",
+          days: {
+            monday: ["iron_cereal", "avocado"],
+            tuesday: ["iron_cereal", "pumpkin"],
+          },
+        },
+      },
+    });
+    assert.equal(saveRes.statusCode, 200);
+    const saveBody = saveRes.json<{
+      data: { babyId: string; planData: { week: string } };
+    }>();
+    assert.equal(saveBody.data.babyId, babyAId);
+    assert.equal(saveBody.data.planData.week, "2026-W37");
+
+    // Get food plan for Baby A
+    const getRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(getRes.statusCode, 200);
+    const getBody = getRes.json<{
+      data: { babyId: string; planData: { week: string } };
+    }>();
+    assert.equal(getBody.data.planData.week, "2026-W37");
+
+    // User B cannot access Baby A's food plan
+    const forbiddenRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(forbiddenRes.statusCode, 403);
+  });
+});

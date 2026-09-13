@@ -1,0 +1,32 @@
+✔ login without an active binding does not enable sync (0.826666ms)
+✔ unexpected runtime operation fails closed even with a valid binding (0.075167ms)
+✔ unknown runtime family role cannot read cloud data (0.075542ms)
+✔ pending rejects upload and download (0.077334ms)
+✔ paused rejects upload and download (0.063875ms)
+✔ revoked rejects upload and download (0.040417ms)
+✔ switching bindingId cannot reuse an old binding (0.054292ms)
+✔ switching installationId cannot reuse an old binding (0.039084ms)
+✔ switching localVaultId cannot reuse an old binding (0.058625ms)
+✔ switching familyId cannot reuse an old binding (0.089417ms)
+✔ switching accounts cannot reuse an active binding (0.462375ms)
+✔ late requests from a previous generation are rejected after re-enable (0.0615ms)
+✔ expired consent does not silently approve a new policy (0.053375ms)
+✔ removed family membership rejects a still-active binding (0.046292ms)
+✔ viewer can pull but cannot upload; consenting member can upload (0.068ms)
+✔ accepts exact isolated runner connection (0.652375ms)
+✔ rejects sqlite before any connection and without exposing secret (0.216458ms)
+✔ rejects productionHost before any connection and without exposing secret (0.060958ms)
+✔ rejects unknownHost before any connection and without exposing secret (0.057583ms)
+✔ rejects wrongRole before any connection and without exposing secret (0.060542ms)
+✔ rejects wrongDatabase before any connection and without exposing secret (0.044ms)
+✔ rejects wrongPort before any connection and without exposing secret (0.068458ms)
+✔ rejects queryBypass before any connection and without exposing secret (0.066792ms)
+✔ rejects wrongSecret before any connection and without exposing secret (0.076541ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 91.96925

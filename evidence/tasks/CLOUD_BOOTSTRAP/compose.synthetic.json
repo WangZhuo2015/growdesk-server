@@ -1,0 +1,243 @@
+{
+  "configs": {
+    "growdesk-postgres-init": {
+      "name": "growdesk_growdesk-postgres-init",
+      "content": "#!/bin/sh\nset -eu\n\ncase \"$${GROWDESK_DB_PASSWORD:-}\" in\n  \"\"|*[!A-Za-z0-9._-]*)\n    echo \"GROWDESK_DB_PASSWORD must be a non-empty URL-safe value\" \u003e\u00262\n    exit 1\n    ;;\nesac\n\npsql \\\n  --username \"$${POSTGRES_USER}\" \\\n  --dbname \"$${POSTGRES_DB}\" \\\n  --set=ON_ERROR_STOP=1 \u003c\u003c'SQL'\n\\getenv app_password GROWDESK_DB_PASSWORD\nSELECT format(\n  'CREATE ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L',\n  :'app_password'\n)\nWHERE NOT EXISTS (\n  SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'growdesk'\n)\n\\gexec\n\nALTER ROLE growdesk LOGIN INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD :'app_password';\nREVOKE ALL ON DATABASE growdesk FROM PUBLIC;\nGRANT CONNECT ON DATABASE growdesk TO growdesk;\nREVOKE ALL ON SCHEMA public FROM PUBLIC;\nGRANT USAGE ON SCHEMA public TO growdesk;\nSQL\n"
+    }
+  },
+  "name": "growdesk",
+  "networks": {
+    "growdesk-db": {
+      "name": "growdesk-db",
+      "ipam": {},
+      "internal": true
+    },
+    "growdesk-ingress": {
+      "name": "growdesk-ingress",
+      "ipam": {}
+    },
+    "growdesk-redis": {
+      "name": "growdesk-redis",
+      "ipam": {},
+      "internal": true
+    }
+  },
+  "services": {
+    "api": {
+      "build": {
+        "context": "/Users/wangzhuo/Documents/GitHub/growdesk-server",
+        "dockerfile": "Dockerfile",
+        "args": {
+          "BUILD_REVISION": "test_image_tag",
+          "NODE_IMAGE": "node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c"
+        }
+      },
+      "cap_drop": [
+        "ALL"
+      ],
+      "command": null,
+      "depends_on": {
+        "postgres": {
+          "condition": "service_healthy",
+          "required": true
+        },
+        "redis": {
+          "condition": "service_healthy",
+          "required": true
+        }
+      },
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": 1,
+            "memory": "805306368"
+          },
+          "reservations": {
+            "cpus": 0.25,
+            "memory": "268435456"
+          }
+        },
+        "placement": {}
+      },
+      "entrypoint": null,
+      "environment": {
+        "DATABASE_URL": "postgresql://growdesk:test_app@postgres:5432/growdesk",
+        "HOST": "0.0.0.0",
+        "NODE_ENV": "production",
+        "PORT": "3080",
+        "REDIS_URL": "redis://:test_redis@redis:6379/0"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3080/health/ready') .then((response) =\u003e { if (!response.ok) throw new Error('not ready'); }) .catch(() =\u003e process.exit(1));"
+        ],
+        "timeout": "5s",
+        "interval": "15s",
+        "retries": 5,
+        "start_period": "20s"
+      },
+      "image": "growdesk-api:test_image_tag",
+      "init": true,
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "networks": {
+        "growdesk-db": null,
+        "growdesk-ingress": null,
+        "growdesk-redis": null
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "host_ip": "127.0.0.1",
+          "target": 3080,
+          "published": "3180",
+          "protocol": "tcp"
+        }
+      ],
+      "read_only": true,
+      "restart": "unless-stopped",
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "stop_grace_period": "20s",
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=64m"
+      ]
+    },
+    "postgres": {
+      "command": null,
+      "configs": [
+        {
+          "source": "growdesk-postgres-init",
+          "target": "/docker-entrypoint-initdb.d/10-create-growdesk-role.sh",
+          "mode": "0555"
+        }
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": 2,
+            "memory": "2147483648"
+          },
+          "reservations": {
+            "cpus": 0.5,
+            "memory": "536870912"
+          }
+        },
+        "placement": {}
+      },
+      "entrypoint": null,
+      "environment": {
+        "GROWDESK_DB_PASSWORD": "test_app",
+        "PGDATA": "/var/lib/postgresql/18/docker",
+        "POSTGRES_DB": "growdesk",
+        "POSTGRES_PASSWORD": "test_super",
+        "POSTGRES_USER": "postgres"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""
+        ],
+        "timeout": "5s",
+        "interval": "10s",
+        "retries": 10,
+        "start_period": "20s"
+      },
+      "image": "postgres:18.6-bookworm@sha256:1c59e2c3c818eaa0f0628f695b36e7c9e362d6b219b36a54a32df645cbd7e1af",
+      "init": true,
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "networks": {
+        "growdesk-db": null
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "1m0s",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "growdesk-postgres-data",
+          "target": "/var/lib/postgresql",
+          "volume": {}
+        }
+      ]
+    },
+    "redis": {
+      "command": [
+        "sh",
+        "-ec",
+        "case \"$${REDIS_PASSWORD:-}\" in\n  \"\"|*[!A-Za-z0-9._-]*)\n    echo \"REDIS_PASSWORD must be a non-empty URL-safe value\" \u003e\u00262\n    exit 1\n    ;;\nesac\nexec redis-server --appendonly yes --appendfsync everysec \\\n  --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 384mb \\\n  --maxmemory-policy noeviction\n"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": 0.5,
+            "memory": "536870912"
+          },
+          "reservations": {
+            "cpus": 0.1,
+            "memory": "134217728"
+          }
+        },
+        "placement": {}
+      },
+      "entrypoint": null,
+      "environment": {
+        "REDIS_PASSWORD": "test_redis"
+      },
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "redis-cli --no-auth-warning -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"
+        ],
+        "timeout": "5s",
+        "interval": "10s",
+        "retries": 10,
+        "start_period": "10s"
+      },
+      "image": "redis:8.10.1-alpine@sha256:becdda6c7f4b3fb42e42fd7f120bbf5c54c4caaaf16f26da24e4563d2c1f0576",
+      "init": true,
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-file": "5",
+          "max-size": "10m"
+        }
+      },
+      "networks": {
+        "growdesk-redis": null
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "30s",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "growdesk-redis-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ]
+    }
+  },
+  "volumes": {
+    "growdesk-postgres-data": {
+      "name": "growdesk-postgres-data"
+    },
+    "growdesk-redis-data": {
+      "name": "growdesk-redis-data"
+    }
+  }
+}

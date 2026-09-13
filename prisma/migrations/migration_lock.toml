@@ -1,0 +1,3 @@
+# This is a new PostgreSQL migration history. It must never replay the legacy
+# SQLite migration directories from the old Baby Panel application.
+provider = "postgresql"

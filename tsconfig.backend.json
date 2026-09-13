@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@growdesk/adapters": ["packages/adapters/src/index.ts"],
+      "@growdesk/contracts": ["packages/contracts/src/index.ts"],
+      "@growdesk/database": ["packages/database/src/index.ts"],
+      "@growdesk/domain": ["packages/domain/src/index.ts"],
+      "@growdesk/testkit": ["packages/testkit/src/index.ts"]
+    }
+  },
+  "include": [
+    "apps/*/src/**/*.ts",
+    "apps/*/tests/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "packages/*/tests/**/*.ts",
+    "tests/unit/**/*.ts",
+    "tests/integration/**/*.ts"
+  ]
+}

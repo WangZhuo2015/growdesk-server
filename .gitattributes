@@ -1,0 +1,3 @@
+# Preserve raw validation output as evidence.
+evidence/**/*.txt -whitespace
+evidence/**/*.log -whitespace

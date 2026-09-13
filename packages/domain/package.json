@@ -6,13 +6,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@growdesk/contracts": "^0.1.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.8.0"
+    "@growdesk/contracts": "0.1.0"
   }
 }
