@@ -60,6 +60,25 @@ import {
   TimelineEntrySchema,
   TimelineResponseSchema,
   DeleteRecordResponseSchema,
+  AttachmentSchema,
+  AttachmentResponseSchema,
+  CreateAttachmentRequestSchema,
+  CompleteAttachmentRequestSchema,
+  UploadUrlResponseSchema,
+  MedicalReportSchema,
+  MedicalReportResponseSchema,
+  MedicalReportListResponseSchema,
+  CreateMedicalReportRequestSchema,
+  UpdateMedicalReportRequestSchema,
+  VaccineScheduleItemSchema,
+  VaccineScheduleResponseSchema,
+  VaccineRecordSchema,
+  VaccineRecordResponseSchema,
+  VaccineListResponseSchema,
+  CreateVaccineRecordRequestSchema,
+  RegisterPushDeviceRequestSchema,
+  NotificationItemSchema,
+  NotificationListResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -84,6 +103,14 @@ import { foodRoutes } from "./routes/food-routes.js";
 import { supplementRoutes } from "./routes/supplement-routes.js";
 import { growthRoutes } from "./routes/growth-routes.js";
 import { timelineRoutes } from "./routes/timeline-routes.js";
+import { attachmentRoutes } from "./routes/attachment-routes.js";
+import { medicalRoutes } from "./routes/medical-routes.js";
+import { notificationRoutes } from "./routes/notification-routes.js";
+import { AttachmentService } from "./services/attachment-service.js";
+import { MedicalService } from "./services/medical-service.js";
+import { VaccineService } from "./services/vaccine-service.js";
+import { NotificationService } from "./services/notification-service.js";
+import { StorageDriver, AwsS3StorageDriver, MockStorageDriver } from "./storage/s3-storage-service.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
 export interface ApiAppOptions {
@@ -94,6 +121,7 @@ export interface ApiAppOptions {
   readonly databaseContext?: DatabaseContext;
   readonly replayStore?: ReplayStore;
   readonly jwtSecret?: string;
+  readonly storageDriver?: StorageDriver;
 }
 
 /**
@@ -178,6 +206,25 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(TimelineEntrySchema);
   app.addSchema(TimelineResponseSchema);
   app.addSchema(DeleteRecordResponseSchema);
+  app.addSchema(AttachmentSchema);
+  app.addSchema(AttachmentResponseSchema);
+  app.addSchema(CreateAttachmentRequestSchema);
+  app.addSchema(CompleteAttachmentRequestSchema);
+  app.addSchema(UploadUrlResponseSchema);
+  app.addSchema(MedicalReportSchema);
+  app.addSchema(MedicalReportResponseSchema);
+  app.addSchema(MedicalReportListResponseSchema);
+  app.addSchema(CreateMedicalReportRequestSchema);
+  app.addSchema(UpdateMedicalReportRequestSchema);
+  app.addSchema(VaccineScheduleItemSchema);
+  app.addSchema(VaccineScheduleResponseSchema);
+  app.addSchema(VaccineRecordSchema);
+  app.addSchema(VaccineRecordResponseSchema);
+  app.addSchema(VaccineListResponseSchema);
+  app.addSchema(CreateVaccineRecordRequestSchema);
+  app.addSchema(RegisterPushDeviceRequestSchema);
+  app.addSchema(NotificationItemSchema);
+  app.addSchema(NotificationListResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -304,6 +351,36 @@ export function buildApiApp(options: ApiAppOptions = {}) {
 
     app.register(timelineRoutes, {
       prisma: databaseContext.prisma,
+    });
+
+    const storageDriver = options.storageDriver ?? (
+      process.env.S3_BUCKET
+        ? new AwsS3StorageDriver({
+            bucket: process.env.S3_BUCKET,
+            endpoint: process.env.S3_ENDPOINT,
+            region: process.env.S3_REGION,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          })
+        : new MockStorageDriver()
+    );
+
+    const attachmentService = new AttachmentService(databaseContext.prisma, storageDriver);
+    const medicalService = new MedicalService(databaseContext.prisma);
+    const vaccineService = new VaccineService(databaseContext.prisma);
+    const notificationService = new NotificationService(databaseContext.prisma);
+
+    app.register(attachmentRoutes, {
+      attachmentService,
+    });
+
+    app.register(medicalRoutes, {
+      medicalService,
+      vaccineService,
+    });
+
+    app.register(notificationRoutes, {
+      notificationService,
     });
   }
 

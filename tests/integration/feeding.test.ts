@@ -64,15 +64,17 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
   }
 
   const foundationSql = fs.readFileSync("prisma/migrations/202609120002_foundation/migration.sql", "utf8");
-  const { rows: fRows } = await ctx.pool.query("SELECT to_regclass('public.device_sessions') as exists");
-  if (!fRows[0]?.exists) {
+  try {
     await ctx.pool.query(foundationSql);
+  } catch {
+    // Ignore concurrent application
   }
 
   const feedingSql = fs.readFileSync("prisma/migrations/202609120003_care_feeding/migration.sql", "utf8");
-  const { rows: checkRows } = await ctx.pool.query("SELECT to_regclass('public.formula_products') as exists");
-  if (!checkRows[0]?.exists) {
+  try {
     await ctx.pool.query(feedingSql);
+  } catch {
+    // Ignore concurrent application
   }
 
   // Identities

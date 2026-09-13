@@ -32,6 +32,11 @@ model User {
   recoveryCodes           RecoveryCode[]
   bffSessions             BffSession[]
   userChanges             UserChange[]
+  attachments             Attachment[]
+  medicalReports          MedicalReport[]
+  vaccineRecords          VaccineRecord[]
+  pushDevices             PushDevice[]
+  notifications           Notification[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
   @@map("users")
@@ -65,6 +70,9 @@ model Family {
   babyFoodPlans   BabyFoodPlan[]
   supplementRecords SupplementRecord[]
   growthMeasurements GrowthMeasurement[]
+  attachments        Attachment[]
+  medicalReports     MedicalReport[]
+  vaccineRecords     VaccineRecord[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -115,6 +123,8 @@ model Baby {
   foodPlan        BabyFoodPlan?
   supplementRecords SupplementRecord[]
   growthMeasurements GrowthMeasurement[]
+  medicalReports  MedicalReport[]
+  vaccineRecords  VaccineRecord[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -638,6 +648,151 @@ model GrowthMeasurement {
   @@index([babyId, deletedAt, measurementDate(sort: Desc), id(sort: Desc)], name: "ix_growth_measurements_baby_timeline")
   @@index([familyId, deletedAt, measurementDate(sort: Desc)], name: "ix_growth_measurements_family_timeline")
   @@map("growth_measurements")
+  @@schema("public")
+}
+
+model Attachment {
+  id         String    @id
+  familyId   String    @map("family_id")
+  babyId     String?   @map("baby_id")
+  uploaderId String    @map("uploader_id")
+  purpose    String    @db.VarChar(50)
+  mimeType   String    @map("mime_type") @db.VarChar(100)
+  byteSize   Int       @map("byte_size")
+  sha256     String    @db.Char(64)
+  objectKey  String    @map("object_key") @db.VarChar(500)
+  status     String    @default("pending") @db.VarChar(20)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  uploader User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  medicalReports MedicalReportAttachment[]
+
+  @@index([familyId, status], name: "ix_attachments_family_status")
+  @@index([babyId, status], name: "ix_attachments_baby_status")
+  @@index([sha256], name: "ix_attachments_sha256")
+  @@map("attachments")
+  @@schema("public")
+}
+
+model MedicalReport {
+  id          String    @id
+  familyId    String    @map("family_id")
+  babyId      String    @map("baby_id")
+  caregiverId String    @map("caregiver_id")
+  reportDate  DateTime  @map("report_date") @db.Date
+  title       String    @db.VarChar(100)
+  hospital    String?   @db.VarChar(100)
+  department  String?   @db.VarChar(100)
+  diagnosis   String?   @db.VarChar(500)
+  notes       String?   @db.VarChar(2000)
+  version     Int       @default(1)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby      Baby   @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  caregiver User   @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  attachments MedicalReportAttachment[]
+
+  @@index([babyId, deletedAt, reportDate(sort: Desc), id(sort: Desc)], name: "ix_medical_reports_baby_timeline")
+  @@index([familyId, deletedAt, reportDate(sort: Desc)], name: "ix_medical_reports_family_timeline")
+  @@map("medical_reports")
+  @@schema("public")
+}
+
+model MedicalReportAttachment {
+  id           String   @id
+  reportId     String   @map("report_id")
+  attachmentId String   @map("attachment_id")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  report     MedicalReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  attachment Attachment    @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, attachmentId], name: "uq_medical_report_attachments")
+  @@map("medical_report_attachments")
+  @@schema("public")
+}
+
+model VaccineSchedule {
+  id                   String   @id
+  vaccineCode          String   @map("vaccine_code") @db.VarChar(100)
+  name                 String   @db.VarChar(200)
+  recommendedAgeMonths Int      @map("recommended_age_months")
+  doseNumber           Int      @map("dose_number")
+  mandatory            Boolean  @default(false)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([vaccineCode, doseNumber], name: "uq_vaccine_schedules_code_dose")
+  @@map("vaccine_schedules")
+  @@schema("public")
+}
+
+model VaccineRecord {
+  id               String    @id
+  familyId         String    @map("family_id")
+  babyId           String    @map("baby_id")
+  caregiverId      String    @map("caregiver_id")
+  vaccineCode      String    @map("vaccine_code") @db.VarChar(100)
+  administeredDate DateTime  @map("administered_date") @db.Date
+  clinic           String?   @db.VarChar(200)
+  batchNumber      String?   @map("batch_number") @db.VarChar(100)
+  notes            String?   @db.VarChar(1000)
+  version          Int       @default(1)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby      Baby   @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  caregiver User   @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, deletedAt, administeredDate(sort: Desc), id(sort: Desc)], name: "ix_vaccine_records_baby_timeline")
+  @@index([familyId, deletedAt, administeredDate(sort: Desc)], name: "ix_vaccine_records_family_timeline")
+  @@map("vaccine_records")
+  @@schema("public")
+}
+
+model PushDevice {
+  id             String   @id
+  userId         String   @map("user_id")
+  installationId String   @map("installation_id") @db.VarChar(128)
+  platform       String   @db.VarChar(20)
+  environment    String   @db.VarChar(20)
+  token          String
+  deviceLabel    String?  @map("device_label") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, installationId], name: "uq_push_devices_user_installation")
+  @@index([installationId], name: "ix_push_devices_installation")
+  @@map("push_devices")
+  @@schema("public")
+}
+
+model Notification {
+  id        String    @id
+  userId    String    @map("user_id")
+  eventKey  String    @map("event_key") @db.VarChar(100)
+  title     String    @db.VarChar(200)
+  body      String
+  data      Json?     @db.JsonB
+  readAt    DateTime? @map("read_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc), id(sort: Desc)], name: "ix_notifications_user_timeline")
+  @@map("notifications")
   @@schema("public")
 }
 

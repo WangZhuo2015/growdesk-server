@@ -61,3 +61,9 @@ export class BabyAccessDeniedError extends DatabaseError {
     );
   }
 }
+
+export class BadRequestError extends DatabaseError {
+  constructor(message: string, code = "BAD_REQUEST") {
+    super(message, code, 400);
+  }
+}

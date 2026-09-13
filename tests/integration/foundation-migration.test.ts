@@ -110,7 +110,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(bffSql);
       }
 
-      // 9. Verify all expected foundation tables exist
+      // 9. Apply 202609120010_attachments_medical_vaccines if not already applied
+      const amvSql = fs.readFileSync("prisma/migrations/202609120010_attachments_medical_vaccines/migration.sql", "utf8");
+      const { rows: amvRows } = await client.query("SELECT to_regclass('public.attachments') as exists");
+      if (!amvRows[0]?.exists) {
+        await client.query(amvSql);
+      }
+
+      // 10. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -142,6 +149,13 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "baby_food_plans",
         "supplement_records",
         "growth_measurements",
+        "attachments",
+        "medical_reports",
+        "medical_report_attachments",
+        "vaccine_schedules",
+        "vaccine_records",
+        "push_devices",
+        "notifications",
       ];
 
       const { rows } = await client.query(

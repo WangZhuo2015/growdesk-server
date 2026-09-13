@@ -64,21 +64,24 @@ test("SH-04D: Diaper Record Pipeline suite", async (t) => {
   }
 
   const foundationSql = fs.readFileSync("prisma/migrations/202609120002_foundation/migration.sql", "utf8");
-  const { rows: fRows } = await ctx.pool.query("SELECT to_regclass('public.device_sessions') as exists");
-  if (!fRows[0]?.exists) {
+  try {
     await ctx.pool.query(foundationSql);
+  } catch {
+    // Ignore concurrent application
   }
 
   const feedingSql = fs.readFileSync("prisma/migrations/202609120003_care_feeding/migration.sql", "utf8");
-  const { rows: feedRows } = await ctx.pool.query("SELECT to_regclass('public.formula_products') as exists");
-  if (!feedRows[0]?.exists) {
+  try {
     await ctx.pool.query(feedingSql);
+  } catch {
+    // Ignore concurrent application
   }
 
   const diaperSql = fs.readFileSync("prisma/migrations/202609120004_care_diaper/migration.sql", "utf8");
-  const { rows: checkRows } = await ctx.pool.query("SELECT to_regclass('public.diaper_records') as exists");
-  if (!checkRows[0]?.exists) {
+  try {
     await ctx.pool.query(diaperSql);
+  } catch {
+    // Ignore concurrent application
   }
 
   // Identities
