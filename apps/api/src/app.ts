@@ -79,6 +79,19 @@ import {
   RegisterPushDeviceRequestSchema,
   NotificationItemSchema,
   NotificationListResponseSchema,
+  AiSessionSchema,
+  AiSessionResponseSchema,
+  AiSessionListResponseSchema,
+  AiMessageSchema,
+  AiMessageListResponseSchema,
+  AiRunSchema,
+  AiRunResponseSchema,
+  AiRunConfirmResponseSchema,
+  AiRunRetryResponseSchema,
+  VoiceRunResponseSchema,
+  DailySummaryRunResponseSchema,
+  DailySummaryItemSchema,
+  DailySummaryListResponseSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -106,10 +119,12 @@ import { timelineRoutes } from "./routes/timeline-routes.js";
 import { attachmentRoutes } from "./routes/attachment-routes.js";
 import { medicalRoutes } from "./routes/medical-routes.js";
 import { notificationRoutes } from "./routes/notification-routes.js";
+import { aiRoutes } from "./routes/ai-routes.js";
 import { AttachmentService } from "./services/attachment-service.js";
 import { MedicalService } from "./services/medical-service.js";
 import { VaccineService } from "./services/vaccine-service.js";
 import { NotificationService } from "./services/notification-service.js";
+import { AiService } from "./services/ai-service.js";
 import { StorageDriver, AwsS3StorageDriver, MockStorageDriver } from "./storage/s3-storage-service.js";
 import type { ReplayStore } from "./auth/replay-store.js";
 
@@ -225,6 +240,19 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(RegisterPushDeviceRequestSchema);
   app.addSchema(NotificationItemSchema);
   app.addSchema(NotificationListResponseSchema);
+  app.addSchema(AiSessionSchema);
+  app.addSchema(AiSessionResponseSchema);
+  app.addSchema(AiSessionListResponseSchema);
+  app.addSchema(AiMessageSchema);
+  app.addSchema(AiMessageListResponseSchema);
+  app.addSchema(AiRunSchema);
+  app.addSchema(AiRunResponseSchema);
+  app.addSchema(AiRunConfirmResponseSchema);
+  app.addSchema(AiRunRetryResponseSchema);
+  app.addSchema(VoiceRunResponseSchema);
+  app.addSchema(DailySummaryRunResponseSchema);
+  app.addSchema(DailySummaryItemSchema);
+  app.addSchema(DailySummaryListResponseSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -369,6 +397,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     const medicalService = new MedicalService(databaseContext.prisma);
     const vaccineService = new VaccineService(databaseContext.prisma);
     const notificationService = new NotificationService(databaseContext.prisma);
+    const aiService = new AiService(databaseContext.prisma, databaseContext.pool);
 
     app.register(attachmentRoutes, {
       attachmentService,
@@ -381,6 +410,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
 
     app.register(notificationRoutes, {
       notificationService,
+    });
+
+    app.register(aiRoutes, {
+      aiService,
     });
   }
 

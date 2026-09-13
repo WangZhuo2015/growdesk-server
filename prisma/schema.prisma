@@ -37,6 +37,8 @@ model User {
   vaccineRecords          VaccineRecord[]
   pushDevices             PushDevice[]
   notifications           Notification[]
+  aiSessions              AiSession[]
+  aiRuns                  AiRun[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
   @@map("users")
@@ -73,6 +75,7 @@ model Family {
   attachments        Attachment[]
   medicalReports     MedicalReport[]
   vaccineRecords     VaccineRecord[]
+  dailySummaries     DailySummary[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -125,6 +128,9 @@ model Baby {
   growthMeasurements GrowthMeasurement[]
   medicalReports  MedicalReport[]
   vaccineRecords  VaccineRecord[]
+  aiSessions      AiSession[]
+  aiRuns          AiRun[]
+  dailySummaries  DailySummary[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -379,6 +385,7 @@ model TaskExecution {
   nextEventSeq      Int       @default(0) @map("next_event_seq")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  aiRun             AiRun?
 
   @@index([status, leaseExpiresAt], name: "ix_task_executions_status_lease")
   @@index([ownerScope, kind, status], name: "ix_task_executions_scope_kind")
@@ -793,6 +800,99 @@ model Notification {
 
   @@index([userId, readAt, createdAt(sort: Desc), id(sort: Desc)], name: "ix_notifications_user_timeline")
   @@map("notifications")
+  @@schema("public")
+}
+
+model AiSession {
+  id          String          @id
+  userId      String          @map("user_id")
+  babyId      String?         @map("baby_id")
+  title       String          @default("新对话")
+  contextType String          @default("general") @map("context_type")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baby        Baby?           @relation(fields: [babyId], references: [id], onDelete: SetNull)
+  messages    AiChatMessage[]
+  runs        AiRun[]
+
+  @@index([userId, updatedAt(sort: Desc)], name: "ix_ai_sessions_user_updated")
+  @@index([babyId, updatedAt(sort: Desc)], name: "ix_ai_sessions_baby_updated")
+  @@map("ai_sessions")
+  @@schema("public")
+}
+
+model AiChatMessage {
+  id        String    @id
+  sessionId String    @map("session_id")
+  role      String
+  content   String
+  image     String?
+  toolsJson String?   @map("tools_json")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  session   AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt(sort: Asc)], name: "ix_ai_messages_session_created")
+  @@map("ai_messages")
+  @@schema("public")
+}
+
+model AiRun {
+  id            String        @id
+  sessionId     String        @map("session_id")
+  userId        String        @map("user_id")
+  babyId        String?       @map("baby_id")
+  lastEventSeq  BigInt        @default(0) @map("last_event_seq")
+  resultSummary String?       @map("result_summary")
+  proposedPlan  Json?         @map("proposed_plan") @db.JsonB
+  errorCode     String?       @map("error_code")
+  errorMessage  String?       @map("error_message")
+  startedAt     DateTime?     @map("started_at") @db.Timestamptz(3)
+  finishedAt    DateTime?     @map("finished_at") @db.Timestamptz(3)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  taskExecution TaskExecution @relation(fields: [id], references: [id], onDelete: Cascade)
+  session       AiSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  baby          Baby?         @relation(fields: [babyId], references: [id], onDelete: SetNull)
+  events        AiRunEvent[]
+
+  @@index([sessionId, createdAt(sort: Desc)], name: "ix_ai_runs_session")
+  @@index([userId, createdAt(sort: Desc)], name: "ix_ai_runs_user")
+  @@map("ai_runs")
+  @@schema("public")
+}
+
+model AiRunEvent {
+  id        String   @id
+  runId     String   @map("run_id")
+  sequence  BigInt
+  eventType String   @map("event_type")
+  payload   Json     @default("{}") @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  run       AiRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, sequence], name: "uq_ai_run_events_seq")
+  @@index([runId, sequence(sort: Asc)], name: "ix_ai_run_events_run")
+  @@map("ai_run_events")
+  @@schema("public")
+}
+
+model DailySummary {
+  id         String   @id
+  babyId     String   @map("baby_id")
+  familyId   String   @map("family_id")
+  targetDate DateTime @map("target_date") @db.Date
+  content    String
+  version    BigInt   @default(1)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  baby       Baby     @relation(fields: [babyId], references: [id], onDelete: Cascade)
+  family     Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, targetDate], name: "uq_daily_summaries_baby_date")
+  @@index([familyId, targetDate(sort: Desc)], name: "ix_daily_summaries_family_date")
+  @@map("daily_summaries")
   @@schema("public")
 }
 

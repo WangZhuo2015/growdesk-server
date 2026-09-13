@@ -67,3 +67,9 @@ export class BadRequestError extends DatabaseError {
     super(message, code, 400);
   }
 }
+
+export class FencingTokenMismatchError extends DatabaseError {
+  constructor(message = "Fencing token mismatch: task has been claimed by another worker or lease has expired") {
+    super(message, "FENCING_TOKEN_MISMATCH", 409);
+  }
+}

@@ -117,7 +117,14 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(amvSql);
       }
 
-      // 10. Verify all expected foundation tables exist
+      // 10. Apply 202609130011_tasks_and_ai if not already applied
+      const aiSql = fs.readFileSync("prisma/migrations/202609130011_tasks_and_ai/migration.sql", "utf8");
+      const { rows: aiRows } = await client.query("SELECT to_regclass('public.ai_sessions') as exists");
+      if (!aiRows[0]?.exists) {
+        await client.query(aiSql);
+      }
+
+      // 11. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -156,6 +163,11 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "vaccine_records",
         "push_devices",
         "notifications",
+        "ai_sessions",
+        "ai_messages",
+        "ai_runs",
+        "ai_run_events",
+        "daily_summaries",
       ];
 
       const { rows } = await client.query(

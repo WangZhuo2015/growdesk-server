@@ -2,6 +2,7 @@ import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { parseRedisConfig, type RedisConfig } from "@growdesk/adapters";
 import { parseDatabaseConfig, type DatabaseConfig } from "@growdesk/database";
+export * from "./worker-engine.js";
 
 export interface WorkerDependencies {
   readonly database: DatabaseConfig;

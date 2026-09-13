@@ -11,4 +11,5 @@ export * from "./food-repository.js";
 export * from "./supplement-repository.js";
 export * from "./growth-repository.js";
 export * from "./timeline-repository.js";
-export type { PrismaClient, Prisma } from "./generated/client.js";
+export * from "./task-repository.js";
+export { Prisma, type PrismaClient } from "./generated/client.js";
