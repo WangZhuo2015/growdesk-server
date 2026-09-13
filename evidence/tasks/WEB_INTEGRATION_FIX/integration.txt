@@ -1,0 +1,249 @@
+
+> growdesk-server@0.1.0 backend:test:integration
+> python3 scripts/test-integration.py
+
+✔ isolated PostgreSQL enforces role, ownership, constraints and rollback (19.284583ms)
+✔ isolated authenticated Redis has working expiry and atomic NX writes (6.639916ms)
+✔ foundation HTTP readiness checks owned PostgreSQL and Redis with real drivers (2141.454459ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4595.090875
+Legacy import integration PASS: atomic rollback, same batch retry, changed batch refusal, multi-family composite FK, user deletion preserves shared baby, archive private.
+▶ SH-07: AI Sessions, Runs & Lifecycle suite
+  ✔ Setup: Register User A and User B, create families and babies (4020.940334ms)
+  ✔ AI-01: Create AI session and list messages (22.853083ms)
+  ✔ AI-02: Create AI run returns 202 with unified TaskExecution and AiRun (108.991334ms)
+  ✔ AI-03: Get AI run status matches current state (40.779583ms)
+  ✔ AI-04: Confirming proposed actions requires awaiting_confirmation state (76.727958ms)
+  ✔ AI-05: Cancelling run updates task state (29.461042ms)
+  ✔ AI-06: Retrying failed run increments attempt and re-enqueues (39.855625ms)
+  ✔ AI-07: User B cannot access, read or confirm User A's AI run (404/403) (30.495875ms)
+  ✔ AI-08: Voice Run creation and Baby access validation (14.403209ms)
+  ✔ AI-09: Daily summary creation and listing with tenant boundary (37.86075ms)
+✔ SH-07: AI Sessions, Runs & Lifecycle suite (5062.146ms)
+▶ SH-06: S3 Attachments Pipeline suite
+  ✔ Setup: Register User A and User B (3489.337417ms)
+  ✔ ATT-01: Initialize attachment upload capability (31.019875ms)
+  ✔ ATT-02: Complete attachment with matching metadata marks ready (32.942875ms)
+  ✔ ATT-03: Mismatched checksum triggers 400 and marks attachment failed (18.520833ms)
+  ✔ ATT-04: Cannot renew upload URL for ready attachment (8.701917ms)
+  ✔ ATT-05: Cross-tenant isolation prevents User B access (25.787666ms)
+  ✔ ATT-06: Delete attachment soft-deletes record (17.41675ms)
+✔ SH-06: S3 Attachments Pipeline suite (4295.590209ms)
+▶ SH-03D: Password Change & Recovery Codes suite
+  ✔ Setup: Register user (3385.234125ms)
+  ✔ Setup: Second login creates session 2 (266.194709ms)
+  ✔ RC-01: Change password with wrong current password fails with 401 (151.463583ms)
+  ✔ RC-02: Change password with valid credentials revokes session 2 while keeping session 1 (1102.277125ms)
+  ✔ RC-03: Login verifies new password and rejects old password (1712.530917ms)
+  ✔ RC-04: Regenerate recovery codes with wrong password fails with 401 (683.574ms)
+  ✔ RC-05: Regenerate recovery codes returns 10 codes and batchId (593.247709ms)
+  ✔ RC-06: Regenerating second batch revokes first batch in DB (688.2235ms)
+  ✔ RC-07: Recovery with revoked code from batch 1 fails with 401 (2.73825ms)
+  ✔ RC-08: Recovery with wrong username or bogus code fails closed with 401 (1.997ms)
+  ✔ RC-09: Valid recovery code resets password, marks code used, revokes batch and all sessions (653.159916ms)
+  ✔ RC-10: Re-using the consumed recovery code fails with 401 (10.363375ms)
+  ✔ RC-11: User can login with new recovered password (336.04575ms)
+✔ SH-03D: Password Change & Recovery Codes suite (10055.791459ms)
+▶ SH-03B: Refresh Token Rotation & Replay Reuse Detection suite
+  ✔ R-01: Atomic refresh rotation issues successor and marks predecessor used (125.320375ms)
+  ✔ R-02: Same rotationId replay within 60s returns cached successor (lost response tolerance) (5.213167ms)
+  ✔ R-03: Token reuse with different rotationId triggers 409 and revokes session family (38.61725ms)
+  ✔ R-04: Non-existent refresh token fails closed with 401 INVALID_REFRESH_TOKEN (4.585ms)
+✔ SH-03B: Refresh Token Rotation & Replay Reuse Detection suite (3958.104833ms)
+▶ SH-03A: Authentication, DeviceSession, and Principal resolution suite
+  ✔ A-01: User registration creates user, default family, and initial session (3052.210375ms)
+  ✔ A-02: Username duplicate registration rejected with 409 USERNAME_EXISTS (13.164584ms)
+  ✔ A-03: User login with valid credentials creates new session (392.834708ms)
+  ✔ A-04: User login with invalid password rejected with 401 INVALID_CREDENTIALS (126.126083ms)
+  ✔ A-05: Legacy bcrypt hash transparently upgraded on successful login (831.308292ms)
+  ✔ A-06: Authenticated request resolves UserPrincipal and accesses /me (23.234375ms)
+  ✔ A-07: List active sessions returns all active DeviceSessions (22.758875ms)
+  ✔ A-08: Logout revokes session and subsequent requests fail with 401 (19.574375ms)
+  ✔ A-09: Explicit session revocation by ID terminates that session only (612.630334ms)
+✔ SH-03A: Authentication, DeviceSession, and Principal resolution suite (5513.282584ms)
+▶ SH-05: BFF Session Management suite
+  ✔ Setup: Register test user (3311.608417ms)
+  ✔ BFF-01: Initial login & bind with username, password, and sessionSecretHash (162.640042ms)
+  ✔ BFF-02: Exchange sessionSecretHash for active accessToken (38.231959ms)
+  ✔ BFF-03: Concurrent exchange requests succeed without conflict (75.251959ms)
+  ✔ BFF-04: Revoke session and verify subsequent exchange returns 401 (36.967458ms)
+✔ SH-05: BFF Session Management suite (4274.622166ms)
+▶ SH-04D: Diaper Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (3601.649625ms)
+  ✔ Setup: Register User B in separate Family B (201.983167ms)
+  ✔ D-01: Create diaper record creates entity and atomic timeline projection (52.0195ms)
+  ✔ D-02: Same Idempotency-Key and payload returns replayed result (11.266ms)
+  ✔ D-03: Reusing Idempotency-Key with different payload triggers 409 (6.772417ms)
+  ✔ D-04: Keyset pagination works stably (212.433416ms)
+  ✔ D-05: Optimistic locking detects concurrency conflicts (92.257666ms)
+  ✔ D-06: User B cannot access or modify Baby A's diaper records (32.731208ms)
+  ✔ D-07: Delete diaper record soft-deletes and removes timeline projection (33.621291ms)
+  ✔ D-08: Create poop diaper record with color and consistency (25.98825ms)
+✔ SH-04D: Diaper Record Pipeline suite (4833.643458ms)
+▶ SH-03C: Family and Baby Authorization & Management suite
+  ✔ FB-01: User A creates a new family -> User A is admin, permissionVersion is 1 (84.777125ms)
+  ✔ FB-02: User C creates Family 2; User A and C listFamilies return strictly isolated data (70.732125ms)
+  ✔ FB-03: Create family invite -> preview without auth works (14.46475ms)
+  ✔ FB-04: User B joins Family 1 via inviteCode -> becomes member, but has NO baby access (41.465125ms)
+  ✔ FB-05: User A creates Baby 1; User B cannot see Baby 1 in list or get (140.006792ms)
+  ✔ FB-06: User A adds User B as caregiver to Baby 1 -> User B now sees and gets Baby 1 (81.605458ms)
+  ✔ FB-07: Cross-tenant isolation: Cannot add User C (from Family 2) to Baby 1 (Family 1) (14.767041ms)
+  ✔ FB-08: Last family admin protection: User A cannot demote self while only admin (16.218625ms)
+  ✔ FB-09: Last baby admin protection: User A cannot be revoked from Baby 1 while only baby admin (50.57175ms)
+  ✔ FB-10: Promote User B to baby admin -> now User A can be revoked from Baby 1 (127.168333ms)
+  ✔ FB-11: Viewer permissions: demoting family member or baby role to viewer denies write/create (42.559792ms)
+  ✔ FB-12: Removing User A from Family 1 cascades revocation of baby membership (73.525667ms)
+✔ SH-03C: Family and Baby Authorization & Management suite (5176.733834ms)
+▶ SH-04F: Feeding Record Pipeline & Formula Products suite
+  ✔ Setup: Register User A and create Baby A (3703.903667ms)
+  ✔ Setup: Register User B in separate Family B (278.877875ms)
+  ✔ FP-01: Create formula product in Family A catalog (29.711042ms)
+  ✔ FP-02: List formula products adheres to family boundary (30.715625ms)
+  ✔ FEED-01: Create feeding record creates entity and atomic timeline projection (59.798875ms)
+  ✔ FEED-02: Same Idempotency-Key and payload returns replayed result (73.655958ms)
+  ✔ FEED-03: Reusing Idempotency-Key with different payload triggers 409 (9.84375ms)
+  ✔ FEED-04: Formula product from another family is rejected (23.298583ms)
+  ✔ FEED-05: Keyset pagination works stably (119.284917ms)
+  ✔ FEED-06: Optimistic locking detects concurrency conflicts (68.097875ms)
+  ✔ FEED-07: User B cannot access or modify Baby A's feeding records (28.974166ms)
+  ✔ FEED-08: Delete feeding record soft-deletes and removes timeline projection (36.418833ms)
+✔ SH-04F: Feeding Record Pipeline & Formula Products suite (5025.971ms)
+▶ SH-04FO: Food Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (3100.3845ms)
+  ✔ Setup: Register User B and create Baby B (174.725375ms)
+  ✔ FO-01: Create food record creates entity and timeline projection (67.915916ms)
+  ✔ FO-02: Idempotent replay with same key returns cached result (16.884167ms)
+  ✔ FO-03: Reusing Idempotency-Key with different payload triggers 409 (8.751667ms)
+  ✔ FO-04: Keyset pagination works stably across food records (104.104375ms)
+  ✔ FO-05: Optimistic locking detects concurrency conflicts (68.204041ms)
+  ✔ FO-06: User B cannot access or modify Baby A's food records (25.533083ms)
+  ✔ FO-07: Delete food record soft-deletes and removes active timeline (30.645ms)
+  ✔ FO-08: Food Library Items management (19.479583ms)
+  ✔ FO-09: Food Guidelines returns age-stage guidance (8.638792ms)
+  ✔ FO-10: Baby Food Plan save and get with tenant isolation (54.722208ms)
+✔ SH-04FO: Food Record Pipeline suite (4287.612667ms)
+✔ SH-02A: foundation migration applies cleanly and establishes all core tables (80.916584ms)
+✔ SH-02A: composite foreign keys prevent cross-family baby reference (21.326292ms)
+✔ SH-02A: check constraints reject invalid values and enforce version/cursor non-negative (12.5995ms)
+✔ SH-02A: user deletion cascades credentials/sessions but preserves shared baby (45.548417ms)
+✔ SH-02A: idempotency receipt primary key enforces actor/scope/command uniqueness (17.050584ms)
+✔ SH-02A: index query plan confirms timeline index usage (11.248917ms)
+▶ SH-04G: Growth Measurement Pipeline & WHO Percentiles suite
+  ✔ Setup: Register User A and User B, create families and babies (3131.966958ms)
+  ✔ G-01: Create growth measurement with timeline projection (62.167333ms)
+  ✔ G-02: Idempotency replay with same key returns cached result (11.120541ms)
+  ✔ G-03: Reusing Idempotency-Key with different payload triggers 409 (10.831875ms)
+  ✔ G-04: Keyset pagination works stably across growth measurements (123.011333ms)
+  ✔ G-05: Optimistic locking detects concurrency conflicts on baseVersion (146.41925ms)
+  ✔ G-06: User B cannot access or modify Baby A's growth measurements (403) (21.970875ms)
+  ✔ G-07: Delete growth measurement soft-deletes and removes active timeline projection (57.038583ms)
+  ✔ G-08: Get Growth Chart returns historical measurements overlaid with WHO percentiles (43.651042ms)
+✔ SH-04G: Growth Measurement Pipeline & WHO Percentiles suite (4124.153667ms)
+▶ SH-06: Medical Reports, Vaccines & Notifications Pipeline suite
+  ✔ Setup: Register User A and User B, create babies (3026.186125ms)
+  ✔ MED-01: Create medical report and verify atomic timeline projection (38.66275ms)
+  ✔ MED-02: Idempotency replay with same key returns cached result (16.263875ms)
+  ✔ MED-03: Keyset pagination works stably across reports (98.059ms)
+  ✔ MED-04: baseVersion optimistic concurrency conflict detection (36.084542ms)
+  ✔ MED-05: User B cannot access Baby A's medical report (9.133416ms)
+  ✔ MED-06: Delete medical report soft-deletes and removes timeline projection (15.914083ms)
+  ✔ VAC-01: Get standard vaccine schedule returns recommendations (3.478167ms)
+  ✔ VAC-02: Create vaccine record and verify atomic timeline projection (17.617375ms)
+  ✔ VAC-03: List vaccine records returns baby's vaccinations (17.259458ms)
+  ✔ VAC-04: User B cannot access Baby A's vaccine records (9.263583ms)
+  ✔ VAC-05: Delete vaccine record removes record and timeline projection (18.091458ms)
+  ✔ NOTIF-01: Push device registration and notification listing (23.064292ms)
+✔ SH-06: Medical Reports, Vaccines & Notifications Pipeline suite (3935.4315ms)
+▶ SH-04S: Sleep Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (2685.5385ms)
+  ✔ Setup: Register User B and create Baby B (286.481625ms)
+  ✔ S-01: Create ongoing sleep record with timeline projection (52.430125ms)
+  ✔ S-02: Creating second active sleep while first ongoing fails with 409 (30.43175ms)
+  ✔ S-03: Idempotency replay returns cached ongoing sleep (24.280042ms)
+  ✔ S-04: End sleep session via PATCH with endedAt (55.981209ms)
+  ✔ S-05: Concurrency conflict 409 on outdated baseVersion (19.010667ms)
+  ✔ S-06: Create finished sleep with cross-midnight interval (27.956084ms)
+  ✔ S-07: Invalid interval (endedAt < startedAt) rejected with 400 (3.591291ms)
+  ✔ S-08: Keyset pagination works stably across sleep records (27.374584ms)
+  ✔ S-09: Multi-tenant cross-baby isolation (25.194083ms)
+  ✔ S-10: Soft-delete removes record and timeline projection (40.714875ms)
+✔ SH-04S: Sleep Record Pipeline suite (3704.471375ms)
+▶ SH-04SU: Supplement Record Pipeline suite
+  ✔ Setup: Register User A and User B, create families and babies (3000.690542ms)
+  ✔ SU-01: Create supplement record with timeline projection (43.02525ms)
+  ✔ SU-02: Idempotency replay with same key returns cached result (8.840792ms)
+  ✔ SU-03: Reusing Idempotency-Key with different payload triggers 409 (10.319083ms)
+  ✔ SU-04: Keyset pagination works stably across supplement records (101.55ms)
+  ✔ SU-05: Optimistic locking detects concurrency conflicts on baseVersion (32.654ms)
+  ✔ SU-06: User B cannot access or modify Baby A's supplement records (403) (12.203334ms)
+  ✔ SU-07: Delete supplement record soft-deletes and removes active timeline projection (26.331583ms)
+✔ SH-04SU: Supplement Record Pipeline suite (3627.573208ms)
+▶ SH-09: Local-First Sync Protocol & State Machine Suite
+  ✔ 00. Setup: Register users, create family and baby memberships (2765.221625ms)
+  ✔ SYNC-01: Batch command execution creates multi-domain records and advances cursor (132.383167ms)
+  ✔ SYNC-02: Command idempotency replay returns cached cursor and version (8.207875ms)
+  ✔ SYNC-03: Intra-batch duplicate entityId is rejected with 422 BATCH_DEPENDENCY_UNRESOLVED (2.531ms)
+  ✔ SYNC-04: Optimistic concurrency conflict returns status: conflict with currentVersion (12.216041ms)
+  ✔ SYNC-05: Family incremental change feed pagination and mode transition (58.186167ms)
+  ✔ SYNC-06: Epoch mismatch returns 410 SYNC_RESET_REQUIRED (2.74625ms)
+  ✔ SYNC-07: Cursor tampering and cross-family cursor throws 400 INVALID_SYNC_CURSOR (13.512166ms)
+  ✔ SYNC-08: BabyMember revocation filters out baby changes from feed (17.087583ms)
+  ✔ SYNC-09: User changes feed pagination (5.358042ms)
+  ✔ SYNC-10: Bootstrap snapshot queueing and background processing (20.667334ms)
+✔ SH-09: Local-First Sync Protocol & State Machine Suite (3493.53575ms)
+▶ SH-07: Durable Task Engine & Worker/Scheduler Infrastructure suite
+  ✔ TASK-01: Outbox transactional creation alongside TaskExecution (164.6995ms)
+  ✔ TASK-02: Conditional claim atomically increments fence token and sets lease (36.022625ms)
+  ✔ TASK-03: Stale worker with outdated fence token is strictly rejected on completion (26.479958ms)
+  ✔ TASK-04: Periodic heartbeat extends lease correctly (63.192042ms)
+  ✔ TASK-05: Worker honors cancellation request and aborts gracefully (548.218375ms)
+  ✔ TASK-06: Outbox dispatcher claims with FOR UPDATE SKIP LOCKED and closes dispatched records (8.158583ms)
+  ✔ TASK-07: Scheduler reconciliation detects expired running tasks and re-enqueues within retry limit (5.392042ms)
+  ✔ TASK-08: Task reaching max attempts is transitioned to failed with error details (5.397625ms)
+  ✔ TASK-09: Park task puts execution in awaiting_confirmation and releases lease (5.354958ms)
+✔ SH-07: Durable Task Engine & Worker/Scheduler Infrastructure suite (1176.80475ms)
+▶ SH-04TL: Unified Timeline Pipeline suite
+  ✔ Setup: Register User A and User B, create families and babies (2688.017542ms)
+  ✔ TL-01: Create events across 6 care domains and verify timeline projection (155.253084ms)
+  ✔ TL-02: Keyset pagination works stably across multi-domain timeline entries (11.378375ms)
+  ✔ TL-03: Soft-deleting a care record removes it from timeline (17.325917ms)
+  ✔ TL-04: Multi-tenant cross-baby isolation (403) (5.083083ms)
+✔ SH-04TL: Unified Timeline Pipeline suite (3259.634041ms)
+▶ SH-02B: UnitOfWork full transaction and concurrency suite
+  ✔ B-01: Idempotent replay returns cached result without re-executing (195.41325ms)
+  ✔ B-02: Key reuse with different payload throws 409 IDEMPOTENCY_KEY_REUSED (2.9575ms)
+  ✔ B-04: Concurrency conflict detected on baseVersion mismatch (31.972ms)
+  ✔ B-05: Transaction atomicity rolls back all changes on callback error (100.709542ms)
+  ✔ B-06: Baby access denied if BabyMember row is missing or viewer (20.010584ms)
+  ✔ B-07: Concurrent commands serialize under FamilySyncState row lock (74.618083ms)
+  ✔ B-08: Timeline projection is maintained atomically with keyset pagination (17.166542ms)
+✔ SH-02B: UnitOfWork full transaction and concurrency suite (512.911667ms)
+ℹ tests 192
+ℹ suites 0
+ℹ pass 192
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11419.1305
+▶ Web feeding: mixed records, client versions, scope binding and 200-row pagination
+  ✔ a valid own-baby path cannot be used to mutate another family's record ID (27.363458ms)
+  ✔ stale deletes conflict; correct deletes and idempotent replays succeed (43.095375ms)
+  ✔ a 200-row page advertises and returns its 201st row on the next page (60.059833ms)
+✔ Web feeding: mixed records, client versions, scope binding and 200-row pagination (1599.565458ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2060.554084
+Owned PostgreSQL/Redis integration checks passed; test process exited successfully.
+Owned test processes stopped and private data directory removed.

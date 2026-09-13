@@ -117,7 +117,7 @@ export class FeedingRepository {
       baseVersion: null,
       getExistingVersion: async (tx) => {
         const row = await tx.feedingRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true },
         });
         return row?.version ?? null;
@@ -179,7 +179,7 @@ export class FeedingRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.feedingRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -203,7 +203,7 @@ export class FeedingRepository {
         if (input.notes !== undefined) data.notes = input.notes;
 
         const row = await tx.feedingRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data,
         });
 
@@ -240,7 +240,7 @@ export class FeedingRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.feedingRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -248,7 +248,7 @@ export class FeedingRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.feedingRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: new Date(),
@@ -294,7 +294,7 @@ export class FeedingRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.feedingRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row) return null;
@@ -302,7 +302,7 @@ export class FeedingRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.feedingRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: null,
@@ -368,7 +368,8 @@ export class FeedingRepository {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    // Service requests page size + 1 as a sentinel, including at the public 200 limit.
+    const limit = Math.min(options.limit ?? 50, 201);
 
     const where: Prisma.FeedingRecordWhereInput = {
       familyId,
@@ -401,4 +402,3 @@ export class FeedingRepository {
 }
 
 export { FeedingRepository as ScopedFeedingRepository };
-

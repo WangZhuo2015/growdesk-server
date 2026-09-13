@@ -55,6 +55,7 @@ import {
   RemoveBabyMemberResponseSchema,
 } from "./family.js";
 import {
+  DeleteFeedingQuerySchema,
   FeedingRecordResponseSchema,
   FeedingListResponseSchema,
   CreateFeedingRequestSchema,
@@ -589,11 +590,12 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     method: "DELETE",
     path: "/api/v1/babies/:babyId/records/feeding/:id",
     operationId: "deleteFeedingRecord",
-    summary: "Soft-delete feeding record",
+    summary: "Soft-delete feeding record with the client-observed version",
     tags: ["Records"],
     implementationStatus: "PLANNED_SH04F",
     params: BabyAndIdParam,
-    responses: { 200: DeleteRecordResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
+    querystring: DeleteFeedingQuerySchema,
+    responses: { 200: DeleteRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 6. Care Records - Sleep (SH-04S)

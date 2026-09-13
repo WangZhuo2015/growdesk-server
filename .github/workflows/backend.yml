@@ -3,6 +3,8 @@ name: GrowDesk backend
 on:
   push:
     paths:
+      - "prisma/**"
+      - "contracts/**"
       - "apps/**"
       - "packages/**"
       - "scripts/**"
@@ -15,6 +17,8 @@ on:
       - ".github/workflows/backend.yml"
   pull_request:
     paths:
+      - "prisma/**"
+      - "contracts/**"
       - "apps/**"
       - "packages/**"
       - "scripts/**"
@@ -40,8 +44,9 @@ jobs:
           node-version: 24.x
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm run backend:typecheck
+      - run: npm run backend:db:generate
       - run: npm run backend:build
+      - run: npm run backend:typecheck
       - run: npm run backend:lint
       - run: npm run backend:test:guard
       - run: npm run backend:test:unit
@@ -61,5 +66,7 @@ jobs:
           echo "PG_BIN=$(brew --prefix postgresql@18)/bin" >> "$GITHUB_ENV"
           echo "REDIS_BIN=$(brew --prefix redis)/bin" >> "$GITHUB_ENV"
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:db:generate
+      - run: npm run backend:build
       - run: npm run backend:test:integration -- --suite infrastructure
       - run: python3 tests/integration/runner-lifecycle.test.py

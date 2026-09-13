@@ -405,6 +405,12 @@
                 "enum": [
                   "formula"
                 ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "mixed"
+                ]
               }
             ]
           },
@@ -6367,6 +6373,12 @@
                                 "enum": [
                                   "formula"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "mixed"
+                                ]
                               }
                             ]
                           },
@@ -6507,6 +6519,12 @@
                         "enum": [
                           "formula"
                         ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "mixed"
+                        ]
                       }
                     ]
                   },
@@ -6637,6 +6655,12 @@
                               "type": "string",
                               "enum": [
                                 "formula"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "mixed"
                               ]
                             }
                           ]
@@ -6845,6 +6869,12 @@
                               "enum": [
                                 "formula"
                               ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "mixed"
+                              ]
                             }
                           ]
                         },
@@ -6984,6 +7014,12 @@
                         "enum": [
                           "formula"
                         ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "mixed"
+                        ]
                       }
                     ]
                   },
@@ -7116,6 +7152,12 @@
                               "enum": [
                                 "formula"
                               ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "mixed"
+                              ]
                             }
                           ]
                         },
@@ -7236,11 +7278,21 @@
       },
       "delete": {
         "operationId": "deleteFeedingRecord",
-        "summary": "Soft-delete feeding record",
+        "summary": "Soft-delete feeding record with the client-observed version",
         "tags": [
           "Records"
         ],
         "parameters": [
+          {
+            "schema": {
+              "pattern": "^[1-9]\\d*$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "baseVersion",
+            "required": true,
+            "description": "Version observed by the client; never replaced with the latest server version"
+          },
           {
             "schema": {
               "format": "uuid",
@@ -7301,6 +7353,16 @@
               }
             }
           },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Standard API Error Envelope",
             "content": {
@@ -7322,6 +7384,16 @@
             }
           },
           "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

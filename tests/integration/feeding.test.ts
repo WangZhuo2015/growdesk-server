@@ -426,7 +426,7 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
     // DELETE Baby A's record with User B token fails
     const deleteRes = await app.inject({
       method: "DELETE",
-      url: `/api/v1/babies/${babyAId}/records/feeding/${feedingRecordId}`,
+      url: `/api/v1/babies/${babyAId}/records/feeding/${feedingRecordId}?baseVersion=2`,
       headers: { authorization: `Bearer ${tokenB}` },
     });
     assert.ok(deleteRes.statusCode === 403 || deleteRes.statusCode === 404);
@@ -436,7 +436,7 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
   await t.test("FEED-08: Delete feeding record soft-deletes and removes timeline projection", async () => {
     const delRes = await app.inject({
       method: "DELETE",
-      url: `/api/v1/babies/${babyAId}/records/feeding/${feedingRecordId}`,
+      url: `/api/v1/babies/${babyAId}/records/feeding/${feedingRecordId}?baseVersion=2`,
       headers: { authorization: `Bearer ${tokenA}` },
     });
     assert.equal(delRes.statusCode, 200);

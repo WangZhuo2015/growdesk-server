@@ -17,9 +17,16 @@ export const FeedingTypeSchema = Type.Union([
   Type.Literal("breast"),
   Type.Literal("bottle"),
   Type.Literal("formula"),
+  Type.Literal("mixed"),
 ]);
 
 export type FeedingType = Static<typeof FeedingTypeSchema>;
+
+export const DeleteFeedingQuerySchema = Type.Object(
+  { baseVersion: Type.String({ pattern: "^[1-9]\\d*$", description: "Version observed by the client; never replaced with the latest server version" }) },
+  { $id: "DeleteFeedingQuery", additionalProperties: false },
+);
+export type DeleteFeedingQuery = Static<typeof DeleteFeedingQuerySchema>;
 
 export const FeedingRecordSchema = Type.Object(
   {

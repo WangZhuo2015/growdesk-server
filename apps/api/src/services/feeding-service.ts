@@ -14,6 +14,7 @@ import type {
   FeedingType,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
+import { readRecordVersion } from "../routes/record-version.js";
 
 export interface KeysetPaginationQuery {
   readonly cursor?: string;
@@ -52,7 +53,7 @@ export function mapEntityToFeedingRecord(entity: FeedingRecordEntity): FeedingRe
     id: entity.id,
     babyId: entity.babyId,
     familyId: entity.familyId,
-    feedingType: (["breast", "bottle", "formula"].includes(entity.feedingType)
+    feedingType: (["breast", "bottle", "formula", "mixed"].includes(entity.feedingType)
       ? entity.feedingType
       : "formula") as FeedingType,
     occurredAt: toIso(entity.occurredAt),
@@ -238,7 +239,7 @@ export class FeedingService {
     }
 
     const commandId = idempotencyKey || crypto.randomUUID();
-    const baseVersion = parseInt(body.baseVersion, 10);
+    const baseVersion = readRecordVersion(body.baseVersion);
     const occurredAt = body.occurredAt ? new Date(body.occurredAt) : undefined;
 
     const requestHash = crypto
@@ -287,19 +288,14 @@ export class FeedingService {
     principal: UserPrincipal,
     babyId: string,
     id: string,
-    baseVersion = 1,
+    baseVersion: number,
     idempotencyKey?: string
   ): Promise<{ success: true; id: string }> {
     const familyId = await this.resolveBabyFamily(babyId);
 
-    const existing = await this.prisma.feedingRecord.findUnique({
-      where: { id },
-      select: { version: true, deletedAt: true },
-    });
-    if (!existing || existing.deletedAt !== null) {
-      throw new RecordNotFoundError("feeding_record", id);
-    }
-    const version = existing.version;
+    // The repository checks the client's version and the entity scope inside the UoW.
+    // A pre-read of the latest version would defeat optimistic locking and receipt replay.
+    readRecordVersion(String(baseVersion));
 
     const commandId = idempotencyKey || crypto.randomUUID();
     const requestHash = crypto
@@ -311,7 +307,7 @@ export class FeedingService {
           id,
           familyId,
           babyId,
-          baseVersion: version,
+          baseVersion,
         })
       )
       .digest("hex");
@@ -322,7 +318,7 @@ export class FeedingService {
       id,
       familyId,
       babyId,
-      baseVersion: version,
+      baseVersion,
     });
 
     return { success: true, id };

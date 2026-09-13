@@ -91,8 +91,11 @@ def main():
                     with socket.create_connection(('127.0.0.1', redisport), timeout=.1): break
                 except OSError: time.sleep(.1)
             else: raise RuntimeError('Redis readiness timed out')
+            # Prove instance ownership before any migration or concurrent business suite.
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts'], env=env)
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
-            command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts', 'tests/integration/foundation-migration.test.ts', 'tests/integration/unit-of-work.test.ts', 'tests/integration/auth.test.ts', 'tests/integration/auth-refresh.test.ts', 'tests/integration/family-baby.test.ts', 'tests/integration/auth-recovery.test.ts', 'tests/integration/feeding.test.ts', 'tests/integration/diaper.test.ts', 'tests/integration/sleep.test.ts', 'tests/integration/food.test.ts', 'tests/integration/supplement.test.ts', 'tests/integration/growth.test.ts', 'tests/integration/timeline.test.ts', 'tests/integration/bff-session.test.ts', 'tests/integration/attachments.test.ts', 'tests/integration/medical-vaccines.test.ts', 'tests/integration/tasks.test.ts', 'tests/integration/ai-runs.test.ts', 'tests/integration/sync.test.ts'], env=env)
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/foundation-migration.test.ts', 'tests/integration/unit-of-work.test.ts', 'tests/integration/auth.test.ts', 'tests/integration/auth-refresh.test.ts', 'tests/integration/family-baby.test.ts', 'tests/integration/auth-recovery.test.ts', 'tests/integration/feeding.test.ts', 'tests/integration/diaper.test.ts', 'tests/integration/sleep.test.ts', 'tests/integration/food.test.ts', 'tests/integration/supplement.test.ts', 'tests/integration/growth.test.ts', 'tests/integration/timeline.test.ts', 'tests/integration/bff-session.test.ts', 'tests/integration/attachments.test.ts', 'tests/integration/medical-vaccines.test.ts', 'tests/integration/tasks.test.ts', 'tests/integration/ai-runs.test.ts', 'tests/integration/sync.test.ts'], env=env)
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/web-feeding-regression.test.ts'], env=env)
             print('Owned PostgreSQL/Redis integration checks passed; test process exited successfully.', flush=True)
         finally:
             # Popen handles identify only children started here, never PID files from other runs.

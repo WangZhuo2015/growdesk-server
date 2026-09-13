@@ -10,6 +10,8 @@ import {
   FeedingRecordResponseSchema,
   FeedingListResponseSchema,
   DeleteRecordResponseSchema,
+  DeleteFeedingQuerySchema,
+  type DeleteFeedingQuery,
   type BabyIdParam,
   type BabyAndIdParam,
   type PaginationQuery,
@@ -17,6 +19,7 @@ import {
   type UpdateFeedingRequest,
 } from "@growdesk/contracts";
 import { FeedingService } from "../services/feeding-service.js";
+import { readRecordVersion } from "./record-version.js";
 
 export interface FeedingRoutesOptions {
   readonly prisma: PrismaClient;
@@ -126,14 +129,17 @@ export const feedingRoutes: FastifyPluginAsync<FeedingRoutesOptions> = async (fa
   );
 
   // 5. DELETE /api/v1/babies/:babyId/records/feeding/:id
-  fastify.delete<{ Params: BabyAndIdParam }>(
+  fastify.delete<{ Params: BabyAndIdParam; Querystring: DeleteFeedingQuery }>(
     "/api/v1/babies/:babyId/records/feeding/:id",
     {
       preHandler: [fastify.authenticate],
       schema: {
         params: BabyAndIdParamSchema,
+        querystring: DeleteFeedingQuerySchema,
         response: {
           200: DeleteRecordResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
           404: ApiErrorEnvelopeSchema,
@@ -144,7 +150,7 @@ export const feedingRoutes: FastifyPluginAsync<FeedingRoutesOptions> = async (fa
       const principal = request.principal!;
       const { babyId, id } = request.params;
       const idempotencyKey = request.headers["idempotency-key"] as string | undefined;
-      const result = await service.deleteFeedingRecord(principal, babyId, id, 1, idempotencyKey);
+      const result = await service.deleteFeedingRecord(principal, babyId, id, readRecordVersion(request.query.baseVersion), idempotencyKey);
       reply.status(200).send({
         data: {
           id: result.id,

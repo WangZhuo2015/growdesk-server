@@ -1,0 +1,47 @@
+[
+  {
+    "command": "/bin/zsh -lc 'node --version; npm --version; npm run backend:db:generate'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'git diff --check; npm run backend:typecheck'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:build'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:contracts:check'",
+    "exitCode": 1,
+    "status": "failed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:lint'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:contracts:generate'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:contracts:check'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:test:unit'",
+    "exitCode": 0,
+    "status": "completed"
+  },
+  {
+    "command": "/bin/zsh -lc 'npm run backend:db:validate'",
+    "exitCode": 0,
+    "status": "completed"
+  }
+]
