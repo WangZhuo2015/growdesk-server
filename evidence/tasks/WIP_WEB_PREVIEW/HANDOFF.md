@@ -1,5 +1,7 @@
 # WIP — GrowDesk / 旧 Web 隔离接入交接
 
+给接手ChatGPT的完整入口：[CHATGPT_HANDOFF.md](../../../CHATGPT_HANDOFF.md)。
+
 日期：2026-09-14。状态：**WIP / IMPLEMENTED_NOT_REVIEWED / NOT_DEPLOYED**。
 用户要求先保存、提交并 push 当前进度，由其他 agent 继续。不要把现有报告里的 ACCEPTED 当作本批已验收。
 
