@@ -17,6 +17,7 @@ import {
   AiRunConfirmRequest,
   CreateVoiceRunRequest,
   CreateDailySummaryRunRequest,
+  canonicalJsonStringify,
   type CreateFeedingRequest,
 } from "@growdesk/contracts";
 
@@ -432,8 +433,9 @@ export class AiService {
     if (!plan.planHash || !plan.expiresAt || actions.length === 0) {
       throw new ConcurrencyConflictError("Proposed plan is missing or malformed");
     }
-    const computedPlanHash = createHash("sha256").update(JSON.stringify(actions)).digest("hex");
-    if (plan.planHash !== body.planHash || computedPlanHash !== plan.planHash) {
+    const computedPlanHash = createHash("sha256").update(canonicalJsonStringify(actions)).digest("hex");
+    const rawPlanHash = createHash("sha256").update(JSON.stringify(actions)).digest("hex");
+    if (plan.planHash !== body.planHash || (computedPlanHash !== plan.planHash && rawPlanHash !== plan.planHash)) {
       throw new ConcurrencyConflictError("Plan hash mismatch or proposed plan was modified");
     }
     const expiresAtMs = Date.parse(plan.expiresAt);

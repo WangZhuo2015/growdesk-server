@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
 import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
+import { canonicalJsonStringify } from "../../packages/contracts/src/common.js";
 
 interface OwnedRun {
   directory: string;
@@ -286,7 +287,7 @@ test("SH-07: AI Sessions, Runs & Lifecycle suite", async (t) => {
       },
     },
   ];
-  const testPlanHash = crypto.createHash("sha256").update(JSON.stringify(testPlanActions)).digest("hex");
+  const testPlanHash = crypto.createHash("sha256").update(canonicalJsonStringify(testPlanActions)).digest("hex");
 
   await t.test("AI-04: Confirming proposed actions requires awaiting_confirmation state", async () => {
     // Attempting to confirm while queued fails with 409

@@ -41,76 +41,146 @@ function getOutdoorAdvice(weatherCode: number, temp: number, uv: number, rainPro
   return "适合户外活动";
 }
 
-function getAirQualityLevel(aqi: number): string {
-  if (aqi <= 50) return "优";
-  if (aqi <= 100) return "良";
-  if (aqi <= 150) return "轻度污染";
-  if (aqi <= 200) return "中度污染";
-  return "重度污染";
+/** Open-Meteo european_aqi uses 20-point European bands, not US/China AQI bands. */
+function getAirQualityLevel(aqi: number | null): string {
+  if (aqi === null) return "暂无数据";
+  if (aqi <= 20) return "优";
+  if (aqi <= 40) return "尚可";
+  if (aqi <= 60) return "一般";
+  if (aqi <= 80) return "差";
+  if (aqi <= 100) return "很差";
+  return "极差";
 }
 
-export async function weatherResponse(request: Request) {
+interface ForecastData {
+  current: { temperature_2m: number; relative_humidity_2m: number; weather_code: number };
+  daily: { uv_index_max: number[]; precipitation_probability_max: number[] };
+  hourly: { time: string[]; temperature_2m: number[]; weather_code: number[] };
+}
+
+type JsonObject = Record<string, unknown>;
+function object(value: unknown): value is JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function finite(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+function percent(value: unknown): value is number {
+  return finite(value) && value >= 0 && value <= 100;
+}
+function weatherCode(value: unknown): value is number {
+  return finite(value) && Number.isInteger(value) && value >= 0;
+}
+function numbers(value: unknown, valid: (item: unknown) => item is number = finite): value is number[] {
+  return Array.isArray(value) && value.length > 0 && value.every(valid);
+}
+function localHour(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):00$/.test(value)) return false;
+  const instant = new Date(`${value}:00Z`);
+  return Number.isFinite(instant.getTime()) && instant.toISOString().slice(0, 16) === value;
+}
+
+/** Validate external JSON before any numeric operations; no unchecked casting. */
+export function parseForecast(value: unknown): ForecastData {
+  if (!object(value) || !object(value.current) || !object(value.daily) || !object(value.hourly)) {
+    throw new Error("Invalid forecast structure");
+  }
+  const { current, daily, hourly } = value;
+  if (!finite(current.temperature_2m) || !percent(current.relative_humidity_2m) || !weatherCode(current.weather_code)
+    || !numbers(daily.uv_index_max, (item): item is number => finite(item) && item >= 0)
+    || !numbers(daily.precipitation_probability_max, percent)
+    || daily.uv_index_max.length !== daily.precipitation_probability_max.length
+    || !Array.isArray(hourly.time) || !hourly.time.length || !hourly.time.every(localHour)
+    || !numbers(hourly.temperature_2m) || !numbers(hourly.weather_code, weatherCode)
+    || hourly.time.length !== hourly.temperature_2m.length || hourly.time.length !== hourly.weather_code.length) {
+    throw new Error("Invalid forecast values");
+  }
+  const times = hourly.time;
+  if (times.some((time, index) => index > 0 && time <= times[index - 1]!)) {
+    throw new Error("Forecast hours are not strictly ordered");
+  }
+  return {
+    current: { temperature_2m: current.temperature_2m, relative_humidity_2m: current.relative_humidity_2m, weather_code: current.weather_code },
+    daily: { uv_index_max: daily.uv_index_max, precipitation_probability_max: daily.precipitation_probability_max },
+    hourly: { time: times, temperature_2m: hourly.temperature_2m, weather_code: hourly.weather_code },
+  };
+}
+
+export function parseEuropeanAqi(value: unknown): number | null {
+  if (!object(value) || !object(value.current)) return null;
+  const aqi = value.current.european_aqi;
+  return finite(aqi) && aqi >= 0 ? aqi : null;
+}
+
+interface WeatherDependencies {
+  fetchImpl?: typeof fetch;
+  now?: () => Date;
+}
+
+function coordinate(raw: string | null, fallback: number, min: number, max: number): number {
+  if (raw === null) return fallback;
+  if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)) throw new Error("Invalid coordinate");
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < min || value > max) throw new Error("Invalid coordinate");
+  return value;
+}
+
+function shanghaiHour(now: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai", hourCycle: "h23",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit",
+  }).formatToParts(now);
+  const value = (type: string) => parts.find(part => part.type === type)!.value;
+  return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:00`;
+}
+
+export async function weatherResponse(request: Request, deps: WeatherDependencies = {}): Promise<Response> {
+  const fetchImpl = deps.fetchImpl ?? fetch;
+  const now = deps.now ?? (() => new Date());
+  let lat: number;
+  let lon: number;
+  let city: string;
   try {
     const { searchParams } = new URL(request.url);
-    const latParam = parseFloat(searchParams.get("lat") ?? "");
-    const lonParam = parseFloat(searchParams.get("lon") ?? "");
-    const cityParam = searchParams.get("city");
+    lat = coordinate(searchParams.get("lat"), DEFAULT_LAT, -90, 90);
+    lon = coordinate(searchParams.get("lon"), DEFAULT_LON, -180, 180);
+    city = searchParams.get("city")?.trim() || (lat === DEFAULT_LAT && lon === DEFAULT_LON ? DEFAULT_CITY : "当前位置");
+    if (city.length > 100) throw new Error("Invalid city");
+  } catch {
+    return Response.json({ error: "天气查询参数无效" }, { status: 400 });
+  }
 
-    const lat = Number.isFinite(latParam) ? latParam : DEFAULT_LAT;
-    const lon = Number.isFinite(lonParam) ? lonParam : DEFAULT_LON;
-    const city = cityParam || (lat === DEFAULT_LAT && lon === DEFAULT_LON ? DEFAULT_CITY : "当前位置");
-
-    // Fetch weather from Open-Meteo
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,weather_code&daily=uv_index_max,precipitation_probability_max&timezone=Asia%2FShanghai&forecast_days=1`;
+  try {
+    // Two days keep the next-eight-hours display meaningful near midnight.
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,weather_code&daily=uv_index_max,precipitation_probability_max&timezone=Asia%2FShanghai&forecast_days=2`;
     const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi&timezone=Asia%2FShanghai`;
-
-    const [weatherRes, airRes] = await Promise.all([
-      fetch(weatherUrl, { signal: AbortSignal.timeout(10000) }), // cache 10 min
-      fetch(airUrl, { signal: AbortSignal.timeout(10000) }),
+    const [weatherRes, airQuality] = await Promise.all([
+      fetchImpl(weatherUrl, { signal: AbortSignal.timeout(10000) }),
+      // Air quality is optional, but absent data must never be reported as AQI 0.
+      (async (): Promise<number | null> => {
+        try {
+          const response = await fetchImpl(airUrl, { signal: AbortSignal.timeout(10000) });
+          return response.ok ? parseEuropeanAqi(await response.json()) : null;
+        } catch { return null; }
+      })(),
     ]);
-
-    if (!weatherRes.ok) {
-      throw new Error(`Open-Meteo weather responded with ${weatherRes.status}`);
-    }
-
-    const weatherData = await weatherRes.json();
-    const airData = airRes.ok ? await airRes.json() : {};
-    if (!weatherData.current || !weatherData.daily || !weatherData.hourly) {
-      throw new Error("Open-Meteo response is missing current/daily/hourly data");
-    }
-
-    const current = weatherData.current;
-    const daily = weatherData.daily;
-    const hourly = weatherData.hourly;
-    const airQuality = airData.current?.european_aqi ?? 0;
-
-    const weatherInfo = WMO_CODE_MAP[current.weather_code] ?? { condition: "多云", icon: "⛅" };
-    const uv = Math.round(daily.uv_index_max?.[0] ?? 0);
-    const rainProb = daily.precipitation_probability_max?.[0] ?? 0;
-
-    // Build hourly forecast for next 8 hours (Asia/Shanghai local hour)
-    const hourPart = new Intl.DateTimeFormat("en-GB", {
-      timeZone: "Asia/Shanghai",
-      hour: "2-digit",
-      hour12: false,
-    }).formatToParts(new Date()).find((p) => p.type === "hour")?.value;
-    let currentHour = hourPart ? parseInt(hourPart, 10) : 0;
-    if (currentHour === 24) currentHour = 0;
-
-    const hourlyForecast = [];
-    for (let i = 0; i < 8; i++) {
-      const idx = currentHour + i;
-      if (idx < hourly.time?.length) {
-        const hourCode = hourly.weather_code[idx];
-        const hourInfo = WMO_CODE_MAP[hourCode] ?? { condition: "多云", icon: "⛅" };
-        hourlyForecast.push({
-          time: `${String(idx % 24).padStart(2, "0")}:00`,
-          temperature: Math.round(hourly.temperature_2m[idx]),
-          condition: hourInfo.icon,
-        });
-      }
-    }
-
+    if (!weatherRes.ok) throw new Error("Forecast provider unavailable");
+    const { current, daily, hourly } = parseForecast(await weatherRes.json());
+    const unknownWeather = { condition: "天气未知", icon: "❔" };
+    const weatherInfo = WMO_CODE_MAP[current.weather_code] ?? unknownWeather;
+    const uv = Math.round(daily.uv_index_max[0]!);
+    const rainProb = daily.precipitation_probability_max[0]!;
+    const currentHour = shanghaiHour(now());
+    const hourlyForecast = hourly.time
+      .map((time, index) => ({ time, index }))
+      .filter(item => item.time >= currentHour)
+      .slice(0, 8)
+      .map(({ time, index }) => ({
+        time: time.slice(11, 16),
+        temperature: Math.round(hourly.temperature_2m[index]!),
+        condition: (WMO_CODE_MAP[hourly.weather_code[index]!] ?? unknownWeather).icon,
+      }));
+    if (!hourlyForecast.length) throw new Error("Forecast does not cover the current hour");
     return Response.json({
       city,
       temperature: Math.round(current.temperature_2m),
@@ -119,14 +189,13 @@ export async function weatherResponse(request: Request) {
       rainProbability: rainProb,
       humidity: current.relative_humidity_2m,
       airQuality: getAirQualityLevel(airQuality),
-      outdoorAdvice: getOutdoorAdvice(current.weather_code, current.temperature_2m, uv, rainProb),
+      outdoorAdvice: WMO_CODE_MAP[current.weather_code]
+        ? getOutdoorAdvice(current.weather_code, current.temperature_2m, uv, rainProb)
+        : "天气信息不足，请查看当地预报",
       hourlyForecast,
     });
-  } catch (error) {
-    console.error("GET /api/weather error:", error);
-    return Response.json(
-      { error: "获取天气数据失败" },
-      { status: 500 }
-    );
+  } catch {
+    // Keep malformed/failed upstream responses out of the route's success cache.
+    return Response.json({ error: "获取天气数据失败" }, { status: 502 });
   }
 }

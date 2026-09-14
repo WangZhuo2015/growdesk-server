@@ -124,7 +124,34 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         await client.query(aiSql);
       }
 
-      // 11. Verify all expected foundation tables exist
+      // 11. Apply 202609130012_legacy_mixed_feeding if not already applied
+      const { rows: feedingCheckRows } = await client.query(`
+        SELECT check_clause FROM information_schema.check_constraints
+        WHERE constraint_name = 'feeding_records_feeding_type_check'
+      `);
+      if (!feedingCheckRows[0]?.check_clause?.includes("mixed")) {
+        const mixedSql = fs.readFileSync("prisma/migrations/202609130012_legacy_mixed_feeding/migration.sql", "utf8");
+        await client.query(mixedSql);
+      }
+
+      // 12. Apply 202609140013_medical_items if not already applied
+      const { rows: itemRows } = await client.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'medical_reports' AND column_name = 'items'
+      `);
+      if (itemRows.length === 0) {
+        const medicalItemsSql = fs.readFileSync("prisma/migrations/202609140013_medical_items/migration.sql", "utf8");
+        await client.query(medicalItemsSql);
+      }
+
+      // 13. Apply 202609140014_book_status if not already applied
+      const { rows: bookRows } = await client.query("SELECT to_regclass('public.family_book_statuses') as exists");
+      if (!bookRows[0]?.exists) {
+        const bookSql = fs.readFileSync("prisma/migrations/202609140014_book_status/migration.sql", "utf8");
+        await client.query(bookSql);
+      }
+
+      // 14. Verify all expected foundation tables exist
       const expectedTables = [
         "users",
         "families",
@@ -168,6 +195,7 @@ test("SH-02A: foundation migration applies cleanly and establishes all core tabl
         "ai_runs",
         "ai_run_events",
         "daily_summaries",
+        "family_book_statuses",
       ];
 
       const { rows } = await client.query(
