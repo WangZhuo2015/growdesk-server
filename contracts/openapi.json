@@ -1207,6 +1207,95 @@
             "description": "UUID v4 string",
             "type": "string"
           },
+          "items": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "value",
+                "status"
+              ],
+              "properties": {
+                "id": {
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "maxLength": 1000,
+                      "type": "string"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "unit": {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                "referenceRange": {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "normal"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "high"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "low"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "abnormal"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "positive"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "negative"
+                      ]
+                    }
+                  ]
+                },
+                "interpretation": {
+                  "maxLength": 2000,
+                  "type": "string"
+                }
+              }
+            }
+          },
           "reportDate": {
             "format": "date",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -2297,6 +2386,10 @@
           "id": {
             "type": "string"
           },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          },
           "monthAge": {
             "minimum": 0,
             "type": "integer"
@@ -2325,6 +2418,10 @@
           "id": {
             "type": "string"
           },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          },
           "monthAge": {
             "minimum": 0,
             "type": "integer"
@@ -2350,6 +2447,10 @@
           "id": {
             "type": "string"
           },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          },
           "monthAge": {
             "minimum": 0,
             "type": "integer"
@@ -2373,6 +2474,13 @@
         ],
         "properties": {
           "id": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "version": {
             "type": "string"
           },
           "title": {
@@ -12867,6 +12975,95 @@
                             "description": "UUID v4 string",
                             "type": "string"
                           },
+                          "items": {
+                            "maxItems": 500,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "name",
+                                "value",
+                                "status"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "minLength": 1,
+                                  "maxLength": 100,
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "minLength": 1,
+                                  "maxLength": 200,
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "anyOf": [
+                                    {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ]
+                                },
+                                "unit": {
+                                  "maxLength": 100,
+                                  "type": "string"
+                                },
+                                "referenceRange": {
+                                  "maxLength": 500,
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "normal"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "high"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "low"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "abnormal"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "positive"
+                                      ]
+                                    },
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "negative"
+                                      ]
+                                    }
+                                  ]
+                                },
+                                "interpretation": {
+                                  "maxLength": 2000,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
                           "reportDate": {
                             "format": "date",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -12981,6 +13178,117 @@
                   "title"
                 ],
                 "properties": {
+                  "items": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "value",
+                        "status"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "maxLength": 1000,
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "referenceRange": {
+                          "maxLength": 500,
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "normal"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "high"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "low"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "abnormal"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "positive"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "negative"
+                              ]
+                            }
+                          ]
+                        },
+                        "interpretation": {
+                          "maxLength": 2000,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "growthData": {
+                    "additionalProperties": false,
+                    "minProperties": 1,
+                    "type": "object",
+                    "properties": {
+                      "weightKg": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string"
+                      },
+                      "heightCm": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string"
+                      },
+                      "headCircumferenceCm": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string"
+                      }
+                    }
+                  },
                   "reportDate": {
                     "format": "date",
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -13081,6 +13389,95 @@
                           "format": "uuid",
                           "description": "UUID v4 string",
                           "type": "string"
+                        },
+                        "items": {
+                          "maxItems": 500,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "value",
+                              "status"
+                            ],
+                            "properties": {
+                              "id": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "maxLength": 1000,
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "unit": {
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "referenceRange": {
+                                "maxLength": 500,
+                                "type": "string"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "normal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "high"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "low"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "abnormal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "positive"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "negative"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "interpretation": {
+                                "maxLength": 2000,
+                                "type": "string"
+                              }
+                            }
+                          }
                         },
                         "reportDate": {
                           "format": "date",
@@ -13250,6 +13647,95 @@
                           "description": "UUID v4 string",
                           "type": "string"
                         },
+                        "items": {
+                          "maxItems": 500,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "value",
+                              "status"
+                            ],
+                            "properties": {
+                              "id": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "maxLength": 1000,
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "unit": {
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "referenceRange": {
+                                "maxLength": 500,
+                                "type": "string"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "normal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "high"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "low"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "abnormal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "positive"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "negative"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "interpretation": {
+                                "maxLength": 2000,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
                         "reportDate": {
                           "format": "date",
                           "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -13363,6 +13849,95 @@
                     "description": "64-bit integer represented as string",
                     "type": "string"
                   },
+                  "items": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name",
+                        "value",
+                        "status"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "value": {
+                          "anyOf": [
+                            {
+                              "maxLength": 1000,
+                              "type": "string"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "referenceRange": {
+                          "maxLength": 500,
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "normal"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "high"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "low"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "abnormal"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "positive"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "negative"
+                              ]
+                            }
+                          ]
+                        },
+                        "interpretation": {
+                          "maxLength": 2000,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
                   "reportDate": {
                     "format": "date",
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -13473,6 +14048,95 @@
                           "format": "uuid",
                           "description": "UUID v4 string",
                           "type": "string"
+                        },
+                        "items": {
+                          "maxItems": 500,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name",
+                              "value",
+                              "status"
+                            ],
+                            "properties": {
+                              "id": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "maxLength": 1000,
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ]
+                              },
+                              "unit": {
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "referenceRange": {
+                                "maxLength": 500,
+                                "type": "string"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "normal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "high"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "low"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "abnormal"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "positive"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "negative"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "interpretation": {
+                                "maxLength": 2000,
+                                "type": "string"
+                              }
+                            }
+                          }
                         },
                         "reportDate": {
                           "format": "date",
@@ -14918,6 +15582,194 @@
                           "nullable": true
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/runs/{id}/events": {
+      "get": {
+        "operationId": "getAiRunEvents",
+        "summary": "Replay durable AI run events over a resumable SSE stream",
+        "tags": [
+          "AI"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^\\d+$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "description": "64-bit integer represented as string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH07",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "runId",
+                    "seq",
+                    "attempt",
+                    "type",
+                    "payload"
+                  ],
+                  "properties": {
+                    "runId": {
+                      "format": "uuid",
+                      "description": "UUID v4 string",
+                      "type": "string"
+                    },
+                    "seq": {
+                      "pattern": "^\\d+$",
+                      "description": "64-bit integer represented as string",
+                      "type": "string"
+                    },
+                    "attempt": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "type": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "queued"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "run_started"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "text_delta"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tool_proposed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tool_started"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tool_succeeded"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "awaiting_confirmation"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "attempt_restarted"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "run_failed"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "run_cancelled"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "run_succeeded"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "confirmed"
+                          ]
+                        }
+                      ]
+                    },
+                    "payload": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -18814,6 +19666,10 @@
                           "id": {
                             "type": "string"
                           },
+                          "details": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
                           "monthAge": {
                             "minimum": 0,
                             "type": "integer"
@@ -18829,6 +19685,10 @@
                           }
                         }
                       }
+                    },
+                    "dataRelease": {
+                      "type": "object",
+                      "additionalProperties": {}
                     }
                   }
                 }
@@ -18882,6 +19742,10 @@
                         "properties": {
                           "id": {
                             "type": "string"
+                          },
+                          "details": {
+                            "type": "object",
+                            "additionalProperties": {}
                           },
                           "monthAge": {
                             "minimum": 0,
@@ -18949,6 +19813,10 @@
                           "id": {
                             "type": "string"
                           },
+                          "details": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
                           "monthAge": {
                             "minimum": 0,
                             "type": "integer"
@@ -19015,6 +19883,13 @@
                           "id": {
                             "type": "string"
                           },
+                          "details": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          },
+                          "version": {
+                            "type": "string"
+                          },
                           "title": {
                             "type": "string"
                           },
@@ -19079,7 +19954,7 @@
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "status"
+                  "familyId"
                 ],
                 "properties": {
                   "status": {
@@ -19103,6 +19978,21 @@
                         ]
                       }
                     ]
+                  },
+                  "isFavorite": {
+                    "type": "boolean"
+                  },
+                  "readCount": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "familyId": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "baseVersion": {
+                    "pattern": "^[0-9]+$",
+                    "type": "string"
                   }
                 }
               }
@@ -19144,6 +20034,56 @@
                           "enum": [
                             true
                           ]
+                        },
+                        "book": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "title",
+                            "category",
+                            "status"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "details": {
+                              "type": "object",
+                              "additionalProperties": {}
+                            },
+                            "version": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "unread"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "reading"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "finished"
+                                  ]
+                                }
+                              ]
+                            }
+                          }
                         }
                       }
                     }
