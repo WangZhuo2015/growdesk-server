@@ -2,6 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parseEuropeanAqi, parseForecast, weatherResponse } from "../src/services/weather-service.js";
 
+/** Assert the decoded JSON container before accessing fields under Node 24's unknown-returning Response.json(). */
+function object(value: unknown): Record<string, unknown> {
+  assert.ok(value !== null && typeof value === "object" && !Array.isArray(value), "Expected a JSON object");
+  return value as Record<string, unknown>;
+}
+
 function forecast() {
   return {
     current: { temperature_2m: 26.4, relative_humidity_2m: 55, weather_code: 0 },
@@ -27,21 +33,23 @@ test("validated weather preserves the old UI shape and crosses midnight", async 
   };
   const response = await weatherResponse(new Request("https://test.invalid/api/v1/weather"), { fetchImpl, now });
   assert.equal(response.status, 200);
-  const body = await response.json();
+  const body = object(await response.json());
   assert.equal(body.city, "苏州");
   assert.equal(body.temperature, 26);
   assert.equal(body.airQuality, "优");
-  assert.equal(body.hourlyForecast.length, 8);
-  assert.equal(body.hourlyForecast[0].time, "23:00");
-  assert.equal(body.hourlyForecast[1].time, "00:00");
-  assert.equal(body.hourlyForecast[1].temperature, 22);
+  const hourly = body.hourlyForecast;
+  assert.ok(Array.isArray(hourly), "Expected hourly forecast array");
+  assert.equal(hourly.length, 8);
+  assert.equal(object(hourly[0]).time, "23:00");
+  assert.equal(object(hourly[1]).time, "00:00");
+  assert.equal(object(hourly[1]).temperature, 22);
   assert.ok(urls.some(url => url.includes("forecast_days=2")));
 });
 
 test("European AQI is not classified using unrelated 50-point thresholds", async () => {
   for (const [aqi, expected] of [[0, "优"], [20, "优"], [21, "尚可"], [40, "尚可"], [41, "一般"], [60, "一般"], [61, "差"], [80, "差"], [81, "很差"], [100, "很差"], [101, "极差"]] as const) {
     const response = await weatherResponse(new Request("https://test.invalid/weather"), { fetchImpl: transport(forecast(), { current: { european_aqi: aqi } }), now });
-    assert.equal((await response.json()).airQuality, expected);
+    assert.equal(object(await response.json()).airQuality, expected);
   }
 });
 
@@ -50,7 +58,7 @@ test("invalid/missing AQI stays unavailable instead of appearing excellent", asy
     assert.equal(parseEuropeanAqi(air), null);
     const response = await weatherResponse(new Request("https://test.invalid/weather"), { fetchImpl: transport(forecast(), air), now });
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).airQuality, "暂无数据");
+    assert.equal(object(await response.json()).airQuality, "暂无数据");
   }
   assert.equal(parseEuropeanAqi({ current: { european_aqi: Infinity } }), null);
 });
@@ -64,7 +72,7 @@ test("optional AQI HTTP, JSON and network failures do not fabricate a measuremen
     };
     const response = await weatherResponse(new Request("https://test.invalid/weather"), { fetchImpl, now });
     assert.equal(response.status, 200);
-    assert.equal((await response.json()).airQuality, "暂无数据");
+    assert.equal(object(await response.json()).airQuality, "暂无数据");
   }
 });
 
@@ -97,7 +105,7 @@ test("forecast failures return 502, never a cacheable successful response", asyn
     };
     const response = await weatherResponse(new Request("https://test.invalid/weather"), { fetchImpl, now: mode === "stale" ? () => new Date("2026-09-20T00:00:00Z") : now });
     assert.equal(response.status, 502);
-    assert.equal((await response.json()).temperature, undefined);
+    assert.equal(object(await response.json()).temperature, undefined);
   }
 });
 
@@ -119,7 +127,7 @@ test("valid custom coordinates and unknown WMO codes remain explicit", async () 
     return Response.json(url.hostname.includes("air-quality") ? {} : value);
   };
   const response = await weatherResponse(new Request("https://test.invalid/weather?lat=0&lon=-180&city=test_city"), { fetchImpl, now });
-  const body = await response.json();
+  const body = object(await response.json());
   assert.equal(body.city, "test_city");
   assert.equal(body.condition, "天气未知");
   assert.equal(body.outdoorAdvice, "天气信息不足，请查看当地预报");
