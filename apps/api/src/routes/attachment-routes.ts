@@ -22,6 +22,10 @@ export const attachmentRoutes: FastifyPluginAsync<AttachmentRoutesOptions> = asy
 ) => {
   const { attachmentService } = opts;
 
+  fastify.get<{ Params: { id: string } }>("/api/v1/attachments/:id/download-url", { preHandler: [fastify.authenticate] }, async request => ({
+    data: await attachmentService.getDownloadUrl(request.principal!, request.params.id),
+  }));
+
   // POST /api/v1/attachments - Initialize upload
   fastify.post<{
     Body: CreateAttachmentRequest;

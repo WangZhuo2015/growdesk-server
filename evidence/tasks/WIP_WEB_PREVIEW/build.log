@@ -1,0 +1,42 @@
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+src/services/weather-service.ts(78,10): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(78,34): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(78,56): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(82,21): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(83,19): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(84,20): error TS18046: 'weatherData' is of type 'unknown'.
+src/services/weather-service.ts(85,24): error TS18046: 'airData' is of type 'unknown'.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path /home/ubuntu/Github/growdesk-server-preview/apps/api
+npm error workspace @growdesk/api@0.1.0
+npm error location /home/ubuntu/Github/growdesk-server-preview/apps/api
+npm error command failed
+npm error command sh -c tsc -p tsconfig.json

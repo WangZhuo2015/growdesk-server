@@ -1,3 +1,4 @@
+import { readRecordVersion } from "./record-version.js";
 import { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { MedicalService } from "../services/medical-service.js";
 import { VaccineService } from "../services/vaccine-service.js";
@@ -289,7 +290,8 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
     const result = await medicalService.deleteMedicalReport(
       principal,
       request.params.babyId,
-      reportId
+      reportId,
+      readRecordVersion((request.body as { baseVersion?: unknown } | undefined)?.baseVersion ?? (request.query as { baseVersion?: unknown }).baseVersion)
     );
     return reply.status(200).send(result);
   };

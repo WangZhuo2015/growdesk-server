@@ -1,6 +1,7 @@
 import { Type, type Static } from "@sinclair/typebox";
 import {
   Nullable,
+  DecimalString,
   DateTimeString,
   DateString,
   BigIntString,
@@ -12,11 +13,22 @@ import {
 // 1. Medical Reports
 // ==========================================
 
+export const MedicalReportItemSchema = Type.Object({
+  id: Type.String({ minLength: 1, maxLength: 100 }),
+  name: Type.String({ minLength: 1, maxLength: 200 }),
+  value: Type.Union([Type.String({ maxLength: 1000 }), Type.Number()]),
+  unit: Type.Optional(Type.String({ maxLength: 100 })),
+  referenceRange: Type.Optional(Type.String({ maxLength: 500 })),
+  status: Type.Union(["normal", "high", "low", "abnormal", "positive", "negative"].map(value => Type.Literal(value))),
+  interpretation: Type.Optional(Type.String({ maxLength: 2000 })),
+}, { additionalProperties: false });
+
 export const MedicalReportSchema = Type.Object(
   {
     id: UuidString,
     babyId: UuidString,
     familyId: UuidString,
+    items: Type.Optional(Type.Array(MedicalReportItemSchema, { maxItems: 500 })),
     reportDate: DateString,
     title: Type.String({ minLength: 1, maxLength: 100 }),
     hospital: Nullable(Type.String({ maxLength: 100 })),
@@ -35,6 +47,10 @@ export type MedicalReport = Static<typeof MedicalReportSchema>;
 
 export const CreateMedicalReportRequestSchema = Type.Object(
   {
+    items: Type.Optional(Type.Array(MedicalReportItemSchema, { maxItems: 500 })),
+    growthData: Type.Optional(Type.Object({
+      weightKg: Type.Optional(DecimalString), heightCm: Type.Optional(DecimalString), headCircumferenceCm: Type.Optional(DecimalString),
+    }, { additionalProperties: false, minProperties: 1 })),
     reportDate: DateString,
     title: Type.String({ minLength: 1, maxLength: 100 }),
     hospital: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
@@ -51,6 +67,7 @@ export type CreateMedicalReportRequest = Static<typeof CreateMedicalReportReques
 export const UpdateMedicalReportRequestSchema = Type.Object(
   {
     baseVersion: BigIntString,
+    items: Type.Optional(Type.Array(MedicalReportItemSchema, { maxItems: 500 })),
     reportDate: Type.Optional(DateString),
     title: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
     hospital: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),

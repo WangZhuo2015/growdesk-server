@@ -1,5 +1,7 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify";
 import { AiService } from "../services/ai-service.js";
+import { BadRequestError } from "@growdesk/database";
+import { once } from "node:events";
 import {
   CreateAiSessionRequest,
   CreateAiSessionRequestSchema,
@@ -24,10 +26,45 @@ import {
   PaginationQuery,
   PaginationQuerySchema,
   ApiErrorEnvelopeSchema,
+  AiRunEventsQuery,
+  AiRunEventsQuerySchema,
 } from "@growdesk/contracts";
 
 export interface AiRoutesOptions {
   aiService: AiService;
+}
+
+function parseEventCursor(value: string | undefined): bigint | null {
+  if (value === undefined || value.trim() === "") return null;
+  if (!/^\d+$/.test(value.trim())) {
+    throw new BadRequestError("SSE event cursor must be a non-negative integer", "INVALID_EVENT_CURSOR");
+  }
+  try {
+    return BigInt(value.trim());
+  } catch {
+    throw new BadRequestError("SSE event cursor is outside the supported range", "INVALID_EVENT_CURSOR");
+  }
+}
+
+async function writeSseFrame(raw: NodeJS.WritableStream & { writableEnded?: boolean; writableLength?: number; destroyed?: boolean }, frame: string): Promise<boolean> {
+  if (raw.writableEnded || raw.destroyed) return false;
+  if ((raw.writableLength ?? 0) > 64 * 1024) {
+    if (typeof (raw as unknown as { destroy?: () => void }).destroy === "function") (raw as unknown as { destroy: () => void }).destroy();
+    return false;
+  }
+  const accepted = raw.write(frame);
+  if (!accepted) {
+    try {
+      await once(raw, "drain");
+    } catch {
+      return false;
+    }
+  }
+  return !(raw.writableEnded || raw.destroyed);
+}
+
+function sseFrame(event: { seq: string; type: string; payload: Record<string, unknown>; runId: string; attempt: number }): string {
+  return `id: ${event.seq}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
 }
 
 export const aiRoutes: FastifyPluginAsync<AiRoutesOptions> = async (
@@ -122,6 +159,7 @@ export const aiRoutes: FastifyPluginAsync<AiRoutesOptions> = async (
           400: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
           404: ApiErrorEnvelopeSchema,
+          503: ApiErrorEnvelopeSchema,
         },
       },
     },
@@ -133,6 +171,74 @@ export const aiRoutes: FastifyPluginAsync<AiRoutesOptions> = async (
       );
       return reply.status(202).send(result);
     }
+  );
+
+  // GET /api/v1/ai/runs/:id/events - Replay durable AI events over SSE
+  fastify.get<{
+    Params: { id: string };
+    Querystring: AiRunEventsQuery;
+  }>(
+    "/api/v1/ai/runs/:id/events",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        querystring: AiRunEventsQuerySchema,
+        response: {
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+          404: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const queryCursor = parseEventCursor(request.query.after);
+      const headerValue = request.headers["last-event-id"];
+      const headerCursor = parseEventCursor(Array.isArray(headerValue) ? headerValue[0] : headerValue);
+      if (queryCursor !== null && headerCursor !== null && queryCursor !== headerCursor) {
+        throw new BadRequestError("after and Last-Event-ID must identify the same cursor", "EVENT_CURSOR_CONFLICT");
+      }
+      let cursor = headerCursor ?? queryCursor ?? 0n;
+      let open = true;
+      const raw = reply.raw;
+      const close = (): void => {
+        open = false;
+      };
+      request.raw.once("close", close);
+      reply.hijack();
+      raw.writeHead(200, {
+        "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache, no-transform",
+        connection: "keep-alive",
+        "x-accel-buffering": "no",
+      });
+
+      let lastHeartbeat = Date.now();
+      try {
+        while (open && !raw.writableEnded && !raw.destroyed) {
+          const batch = await aiService.listRunEvents(request.principal!, request.params.id, cursor, 100);
+          for (const event of batch.events) {
+            if (!await writeSseFrame(raw, sseFrame(event))) {
+              open = false;
+              break;
+            }
+            cursor = BigInt(event.seq);
+          }
+          if (!open || batch.terminal) break;
+          const now = Date.now();
+          if (now - lastHeartbeat >= 15_000) {
+            if (!await writeSseFrame(raw, ": heartbeat\n\n")) {
+              open = false;
+              break;
+            }
+            lastHeartbeat = now;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
+      } finally {
+        request.raw.off("close", close);
+        if (!raw.writableEnded && !raw.destroyed) raw.end();
+      }
+    },
   );
 
   // GET /api/v1/ai/runs/:id - Get AI run status

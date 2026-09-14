@@ -1,9 +1,9 @@
 import { Type, type Static } from "@sinclair/typebox";
-import { SuccessStatusResponseSchema } from "./common.js";
 
 export const DevelopmentMilestoneSchema = Type.Object(
   {
     id: Type.String(),
+    details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     monthAge: Type.Integer({ minimum: 0 }),
     category: Type.String(),
     title: Type.String(),
@@ -17,6 +17,7 @@ export type DevelopmentMilestone = Static<typeof DevelopmentMilestoneSchema>;
 export const MilestoneListResponseSchema = Type.Object(
   {
     data: Type.Array(DevelopmentMilestoneSchema),
+    dataRelease: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
   },
   { $id: "MilestoneListResponse", additionalProperties: false }
 );
@@ -26,6 +27,7 @@ export type MilestoneListResponse = Static<typeof MilestoneListResponseSchema>;
 export const ActivityRecommendationSchema = Type.Object(
   {
     id: Type.String(),
+    details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     monthAge: Type.Integer({ minimum: 0 }),
     title: Type.String(),
     content: Type.String(),
@@ -47,6 +49,7 @@ export type ActivityListResponse = Static<typeof ActivityListResponseSchema>;
 export const WarningSignSchema = Type.Object(
   {
     id: Type.String(),
+    details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     monthAge: Type.Integer({ minimum: 0 }),
     signText: Type.String(),
     actionAdvice: Type.String(),
@@ -76,6 +79,8 @@ export type BookStatus = Static<typeof BookStatusSchema>;
 export const BookSchema = Type.Object(
   {
     id: Type.String(),
+    details: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
+    version: Type.Optional(Type.String()),
     title: Type.String(),
     category: Type.String(),
     status: BookStatusSchema,
@@ -96,12 +101,18 @@ export type BookListResponse = Static<typeof BookListResponseSchema>;
 
 export const UpdateBookStatusRequestSchema = Type.Object(
   {
-    status: BookStatusSchema,
+    status: Type.Optional(BookStatusSchema),
+    isFavorite: Type.Optional(Type.Boolean()),
+    readCount: Type.Optional(Type.Integer({ minimum: 0 })),
+    familyId: Type.String({ minLength: 1 }),
+    baseVersion: Type.Optional(Type.String({ pattern: "^[0-9]+$" })),
   },
   { $id: "UpdateBookStatusRequest", additionalProperties: false }
 );
 
 export type UpdateBookStatusRequest = Static<typeof UpdateBookStatusRequestSchema>;
 
-export const UpdateBookStatusResponseSchema = SuccessStatusResponseSchema;
+export const UpdateBookStatusResponseSchema = Type.Object({
+  data: Type.Object({ success: Type.Literal(true), book: Type.Optional(BookSchema) }, { additionalProperties: false }),
+}, { $id: "UpdateBookStatusResponse", additionalProperties: false });
 export type UpdateBookStatusResponse = Static<typeof UpdateBookStatusResponseSchema>;
