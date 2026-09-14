@@ -17,7 +17,7 @@
 | [baby_panel_for_cecilia](https://github.com/WangZhuo2015/baby_panel_for_cecilia/tree/codex/wip-growdesk-web-integration-20260914) | `codex/wip-growdesk-web-integration-20260914` | `35cdb7ea15f1c5a0e02c674a63d258d3d3d8bb98` |
 | [growdesk-server](https://github.com/WangZhuo2015/growdesk-server/tree/codex/wip-growdesk-web-integration-20260914) | `codex/wip-growdesk-web-integration-20260914` | `ee355d809b6b153215d9fb215173fc7198885ccd` |
 
-**分发状态（2026-09-14）：本机已提交上述WIP，但当前GitHub认证推送返回403，尚未确认远端分支存在。若分支链接不可访问，请使用随附源码ZIP或Git bundle；ZIP内MANIFEST.json记录实际快照HEAD，离线补丁以该SHA为base。具备写权限的宿主将bundle分支推送后，才可按下文向该WIP分支提PR。**
+**分发状态（2026-09-14）：两个仓库的WIP分支现已成功推送到GitHub，可直接使用上表链接获取源码并向该WIP分支提PR。此前生成的离线ZIP仍对应其MANIFEST.json中的精确快照，之后的分发状态文档更新不改变代码；离线补丁以ZIP清单SHA为base，在线开发以实际检出HEAD为base。**
 
 这两个code baseline之后可能仅有交接文档提交。若你能clone，以实际检出的WIP HEAD作为你的base SHA并在交付中报告；不要从main开始、不要误把main缺失的WIP功能又实现一遍。
 
