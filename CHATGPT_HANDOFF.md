@@ -17,6 +17,8 @@
 | [baby_panel_for_cecilia](https://github.com/WangZhuo2015/baby_panel_for_cecilia/tree/codex/wip-growdesk-web-integration-20260914) | `codex/wip-growdesk-web-integration-20260914` | `35cdb7ea15f1c5a0e02c674a63d258d3d3d8bb98` |
 | [growdesk-server](https://github.com/WangZhuo2015/growdesk-server/tree/codex/wip-growdesk-web-integration-20260914) | `codex/wip-growdesk-web-integration-20260914` | `ee355d809b6b153215d9fb215173fc7198885ccd` |
 
+**分发状态（2026-09-14）：本机已提交上述WIP，但当前GitHub认证推送返回403，尚未确认远端分支存在。若分支链接不可访问，请使用随附源码ZIP或Git bundle；ZIP内MANIFEST.json记录实际快照HEAD，离线补丁以该SHA为base。具备写权限的宿主将bundle分支推送后，才可按下文向该WIP分支提PR。**
+
 这两个code baseline之后可能仅有交接文档提交。若你能clone，以实际检出的WIP HEAD作为你的base SHA并在交付中报告；不要从main开始、不要误把main缺失的WIP功能又实现一遍。
 
 Web的WIP基线是合并提交：父分支最新远端 `4511348` 与旧运行目录已提交的 `143f4a9`。后者包含尚未在当时远端出现的11个本地提交：持久AI会话、多奶粉、睡眠计时、细粒度MCP/使用统计、布局及日报等。保留这些功能，不能用旧远端文件覆盖掉。
