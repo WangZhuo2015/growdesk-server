@@ -1,0 +1,81 @@
+name: Assemble full integration v4
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.integration-submission/manifest-v4.json]
+permissions:
+  contents: write
+concurrency:
+  group: integration-v4-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24.x }
+      - name: Apply guarded source edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,subprocess
+          root=pathlib.Path.cwd(); stage=root/'.integration-submission'; m=json.loads((stage/'manifest-v4.json').read_text())
+          assert m['repository']==os.environ['GITHUB_REPOSITORY']=='WangZhuo2015/growdesk-server'
+          assert m['base']=='d3ce9990f88a680c16a50fce61f29abac4ffc78c'
+          subprocess.run(['git','merge-base','--is-ancestor',m['base'],'HEAD'],check=True)
+          allowed=set(m['paths']); planned={}; used=[]
+          def blob(data): return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          def part(name):
+              raw=(stage/name).read_text()
+              raw=re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', raw)
+              return json.loads(raw)
+          for name in m['parts']:
+              p=stage/name; used.append(str(p.relative_to(root)))
+              for e in part(name):
+                  path=pathlib.Path(e['path']); key=str(path); target=root/path
+                  assert key in allowed and key not in planned and not path.is_absolute() and '..' not in path.parts
+                  assert target.resolve().is_relative_to(root) and not any(x.is_symlink() for x in [target,*target.parents])
+                  if target.exists() and blob(target.read_bytes())==e['target']:
+                      planned[key]=target.read_bytes(); continue
+                  if e['original'] is None:
+                      assert not target.exists(),key; original=b''
+                  else:
+                      original=target.read_bytes(); assert blob(original)==e['original'],('original',key,blob(original),e['original'])
+                  lines=original.decode().splitlines(keepends=True); prev=0; out=[]
+                  for start,end,text in e['edits']:
+                      assert prev<=start<=end<=len(lines),('range',key,start,end,len(lines)); out.extend(lines[prev:start]); out.append(text); prev=end
+                  out.extend(lines[prev:]); result=''.join(out).encode(); assert len(result)<=1_000_000; planned[key]=result
+          assert set(planned)==allowed,(sorted(allowed-set(planned)),sorted(set(planned)-allowed))
+          for key,data in planned.items():
+              p=root/key; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(data)
+          pathlib.Path(os.environ['RUNNER_TEMP'],'paths.json').write_text(json.dumps(list(planned)))
+          pathlib.Path(os.environ['RUNNER_TEMP'],'used.json').write_text(json.dumps(used+['.integration-submission/manifest-v4.json']))
+          print('Applied',len(planned),'guarded paths')
+          PY
+          git diff --check
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:db:generate
+      - run: npm run backend:build
+      - run: npm run backend:contracts:generate && npm run backend:contracts:check
+      - run: npm run backend:typecheck && npm run backend:lint && npm run backend:test:unit
+      - name: Commit assembled business source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path.cwd(); paths=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'paths.json').read_text()); used=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'used.json').read_text())
+          for name in used:
+              p=root/name
+              if p.exists(): p.unlink()
+          subprocess.run(['git','add','--',*paths,'contracts/openapi.json',*used],check=True); subprocess.run(['git','diff','--cached','--check'],check=True)
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'feat(integration): complete durable Web AI and media backend'
+          test "$(git ls-remote origin refs/heads/codex/ai-integration-complete-20260916 | cut -f1)" = "$GITHUB_SHA"
+          git push origin HEAD:refs/heads/codex/ai-integration-complete-20260916
