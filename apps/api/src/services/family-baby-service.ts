@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { PrismaClient } from "@growdesk/database";
+import { PrismaClient, type Prisma } from "@growdesk/database";
 import {
   type UserPrincipal,
   type FamilyRole,
@@ -34,6 +34,15 @@ export class ApiError extends Error {
     this.statusCode = statusCode;
     this.code = code;
   }
+}
+
+async function verifyAvatarReference(tx: Prisma.TransactionClient, avatarUrl: string | null | undefined, familyId: string, babyId: string, userId: string) {
+  if (!avatarUrl) return;
+  const match = /^\/api\/attachments\/([a-f0-9-]{36})$/i.exec(avatarUrl);
+  if (!match) throw new ApiError(422, "INVALID_AVATAR", "Use an uploaded avatar attachment");
+  const attachment = await tx.attachment.findFirst({ where: { id: match[1], familyId, purpose: "avatar", status: "ready", deletedAt: null, OR: [{ babyId }, { babyId: null, uploaderId: userId }] } });
+  if (!attachment) throw new ApiError(403, "AVATAR_ACCESS_DENIED", "Avatar attachment is not available for this baby");
+  if (!attachment.babyId) await tx.attachment.update({ where: { id: attachment.id }, data: { babyId } });
 }
 
 /** Helper to convert Prisma Family to Contract Family */
@@ -905,6 +914,8 @@ export class FamilyBabyService {
         },
       });
 
+      await verifyAvatarReference(tx, data.avatarUrl, familyId, babyId, principal.userId);
+
       // 4. Create Creator's BabyMember (admin)
       await tx.babyMember.create({
         data: {
@@ -1032,6 +1043,8 @@ export class FamilyBabyService {
       if (babyMember.role !== "admin" && babyMember.role !== "member") {
         throw new ApiError(403, "FORBIDDEN", "Baby viewers cannot modify baby details");
       }
+
+      if (data.avatarUrl !== undefined && data.avatarUrl !== baby.avatarUrl) await verifyAvatarReference(tx, data.avatarUrl, baby.familyId, baby.id, principal.userId);
 
       // Calculate gestational age if updated
       let gestationalAge = baby.gestationalAge;

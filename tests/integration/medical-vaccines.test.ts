@@ -318,7 +318,7 @@ test("SH-06: Medical Reports, Vaccines & Notifications Pipeline suite", async (t
   await t.test("MED-06: Delete medical report soft-deletes and removes timeline projection", async () => {
     const delRes = await app.inject({
       method: "DELETE",
-      url: `/api/v1/babies/${babyAId}/medical/reports/${report1Id}`,
+      url: `/api/v1/babies/${babyAId}/medical/reports/${report1Id}?baseVersion=2`,
       headers: { authorization: `Bearer ${tokenA}` },
     });
     assert.equal(delRes.statusCode, 200, `Delete failed: ${delRes.body}`);

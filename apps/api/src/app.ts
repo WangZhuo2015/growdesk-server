@@ -1,3 +1,6 @@
+import { weatherRoutes } from "./routes/weather-routes.js";
+import { bookRoutes } from "./routes/book-routes.js";
+import { knowledgeRoutes } from "./routes/knowledge-routes.js";
 import Fastify from "fastify";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import {
@@ -362,6 +365,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       replayStore: options.replayStore,
       jwtSecret: options.jwtSecret,
     });
+
+    app.register(knowledgeRoutes);
+    app.register(weatherRoutes);
+    app.register(bookRoutes, { prisma: databaseContext.prisma });
 
     app.register(familyRoutes, {
       prisma: databaseContext.prisma,

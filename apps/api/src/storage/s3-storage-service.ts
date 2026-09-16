@@ -115,7 +115,23 @@ export class AwsS3StorageDriver implements StorageDriver {
         };
       }
 
-      return { valid: true, actualSize, actualSha256: params.expectedSha256 };
+      const object = await this.client.send(new GetObjectCommand({
+        Bucket: this.bucket, Key: params.objectKey,
+      }));
+      if (!object.Body) return { valid: false, error: "Object body is missing" };
+      const hash = crypto.createHash("sha256");
+      let bytes = 0;
+      for await (const chunk of object.Body as AsyncIterable<Uint8Array>) {
+        bytes += chunk.length;
+        if (bytes > params.expectedByteSize) return { valid: false, error: "Object exceeds declared size" };
+        hash.update(chunk);
+      }
+      const actualSha256 = hash.digest("hex");
+      return {
+        valid: bytes === params.expectedByteSize && actualSha256 === params.expectedSha256,
+        actualSize: bytes, actualSha256,
+        ...(actualSha256 !== params.expectedSha256 ? { error: "Object checksum mismatch" } : {}),
+      };
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       return { valid: false, error: `S3 HeadObject failed: ${errorMsg}` };

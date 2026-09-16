@@ -96,6 +96,46 @@ export const AiRunStatusSchema = Type.Union([
 
 export type AiRunStatus = Static<typeof AiRunStatusSchema>;
 
+/** Durable event names emitted by the worker and replayed through the SSE cursor. */
+export const AiRunEventTypeSchema = Type.Union([
+  Type.Literal("queued"),
+  Type.Literal("run_started"),
+  Type.Literal("text_delta"),
+  Type.Literal("tool_proposed"),
+  Type.Literal("tool_started"),
+  Type.Literal("tool_succeeded"),
+  Type.Literal("awaiting_confirmation"),
+  Type.Literal("attempt_restarted"),
+  Type.Literal("run_failed"),
+  Type.Literal("run_cancelled"),
+  Type.Literal("run_succeeded"),
+  Type.Literal("confirmed"),
+]);
+
+export type AiRunEventType = Static<typeof AiRunEventTypeSchema>;
+
+export const AiRunEventSchema = Type.Object(
+  {
+    runId: UuidString,
+    seq: BigIntString,
+    attempt: Type.Integer({ minimum: 1 }),
+    type: AiRunEventTypeSchema,
+    payload: Type.Record(Type.String(), Type.Unknown()),
+  },
+  { $id: "AiRunEvent", additionalProperties: false },
+);
+
+export type AiRunEvent = Static<typeof AiRunEventSchema>;
+
+export const AiRunEventsQuerySchema = Type.Object(
+  {
+    after: Type.Optional(BigIntString),
+  },
+  { $id: "AiRunEventsQuery", additionalProperties: false },
+);
+
+export type AiRunEventsQuery = Static<typeof AiRunEventsQuerySchema>;
+
 export const CreateAiRunRequestSchema = Type.Object(
   {
     clientMessageId: UuidString,

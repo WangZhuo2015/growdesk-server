@@ -14,7 +14,11 @@ function readPort(raw: string | undefined): number {
 }
 
 export async function startApiServer(): Promise<void> {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret || jwtSecret.length < 32) throw new Error("JWT_SECRET must contain at least 32 characters");
+  if (!process.env.S3_BUCKET) throw new Error("S3_BUCKET is required for persistent attachment storage");
   const app = buildApiApp({
+    jwtSecret,
     logger: true,
     databaseUrl: process.env.DATABASE_URL,
     redisUrl: process.env.REDIS_URL,

@@ -42,7 +42,7 @@ export class MedicalService {
       (m) => m.babyId === babyId && m.status === "active"
     );
 
-    if (!membership) {
+    if (!membership || !principal.familyMemberships.some(m => m.familyId === membership.familyId && m.status === "active" && (!requireWrite || m.role !== "viewer"))) {
       throw new BabyAccessDeniedError(babyId);
     }
 
@@ -111,6 +111,7 @@ export class MedicalService {
       diagnosis: r.diagnosis,
       attachmentIds: r.attachments.map((a) => a.attachmentId),
       notes: r.notes,
+      items: (Array.isArray(r.items) ? r.items : []) as MedicalReport["items"],
       version: String(r.version),
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
@@ -176,6 +177,7 @@ export class MedicalService {
           department: input.department ?? null,
           diagnosis: input.diagnosis ?? null,
           notes: input.notes ?? null,
+          items: (input.items ?? []) as Prisma.InputJsonValue,
           version: 1,
         },
       });
@@ -183,6 +185,8 @@ export class MedicalService {
       // 4. Attach attachments
       if (input.attachmentIds && input.attachmentIds.length > 0) {
         for (const attId of input.attachmentIds) {
+          const attachment = await tx.attachment.findFirst({ where: { id: attId, familyId, babyId, status: "ready", deletedAt: null, purpose: "medical_report" } });
+          if (!attachment) throw new RecordNotFoundError("Attachment", attId);
           await tx.medicalReportAttachment.create({
             data: {
               id: crypto.randomUUID(),
@@ -212,6 +216,17 @@ export class MedicalService {
           version: 1,
         },
       });
+
+      if (input.growthData) {
+        const measurement = await tx.growthMeasurement.create({ data: {
+          id: crypto.randomUUID(), familyId, babyId, measurementDate: reportDate,
+          ...input.growthData, notes: `Medical report: ${reportId}`, version: 1,
+        } });
+        await tx.timelineEntry.create({ data: {
+          id: crypto.randomUUID(), familyId, babyId, entityType: "growth", entityId: measurement.id,
+          occurredAt: reportDate, summary: "生长测量", details: { medicalReportId: reportId, ...input.growthData }, source: "ui_manual", version: 1,
+        } });
+      }
 
       // 6. Record idempotency receipt
       if (idempotencyKey) {
@@ -253,6 +268,7 @@ export class MedicalService {
       diagnosis: result.diagnosis,
       attachmentIds: result.attachments.map((a) => a.attachmentId),
       notes: result.notes,
+      items: (Array.isArray(result.items) ? result.items : []) as MedicalReport["items"],
       version: String(result.version),
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
@@ -288,6 +304,7 @@ export class MedicalService {
       diagnosis: report.diagnosis,
       attachmentIds: report.attachments.map((a) => a.attachmentId),
       notes: report.notes,
+      items: (Array.isArray(report.items) ? report.items : []) as MedicalReport["items"],
       version: String(report.version),
       createdAt: report.createdAt.toISOString(),
       updatedAt: report.updatedAt.toISOString(),
@@ -305,6 +322,7 @@ export class MedicalService {
     const expectedVersion = Number(input.baseVersion);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM public.medical_reports WHERE id = ${reportId} AND baby_id = ${babyId} AND family_id = ${familyId} FOR UPDATE`;
       // 1. Lock report row
       const existing = await tx.medicalReport.findUnique({
         where: { id: reportId },
@@ -332,6 +350,7 @@ export class MedicalService {
       if (input.department !== undefined) updateData.department = input.department;
       if (input.diagnosis !== undefined) updateData.diagnosis = input.diagnosis;
       if (input.notes !== undefined) updateData.notes = input.notes;
+      if (input.items !== undefined) updateData.items = input.items as Prisma.InputJsonValue;
 
       const updated = await tx.medicalReport.update({
         where: { id: reportId },
@@ -345,6 +364,8 @@ export class MedicalService {
         });
 
         for (const attId of input.attachmentIds) {
+          const attachment = await tx.attachment.findFirst({ where: { id: attId, familyId, babyId, status: "ready", deletedAt: null, purpose: "medical_report" } });
+          if (!attachment) throw new RecordNotFoundError("Attachment", attId);
           await tx.medicalReportAttachment.create({
             data: {
               id: crypto.randomUUID(),
@@ -401,6 +422,7 @@ export class MedicalService {
       diagnosis: result.diagnosis,
       attachmentIds: result.attachments.map((a) => a.attachmentId),
       notes: result.notes,
+      items: (Array.isArray(result.items) ? result.items : []) as MedicalReport["items"],
       version: String(result.version),
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
@@ -410,11 +432,13 @@ export class MedicalService {
   async deleteMedicalReport(
     principal: UserPrincipal,
     babyId: string,
-    reportId: string
+    reportId: string,
+    baseVersion: number
   ): Promise<{ data: { id: string; deleted: true } }> {
     const { familyId } = await this.assertBabyAccess(principal, babyId, true);
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM public.medical_reports WHERE id = ${reportId} AND baby_id = ${babyId} AND family_id = ${familyId} FOR UPDATE`;
       const existing = await tx.medicalReport.findUnique({
         where: { id: reportId },
       });
@@ -423,6 +447,8 @@ export class MedicalService {
         throw new RecordNotFoundError("MedicalReport", reportId);
       }
 
+      if (existing.version !== baseVersion) throw new ConcurrencyConflictError("Medical report changed; reload before deleting");
+      await tx.timelineEntry.updateMany({ where: { familyId, babyId, entityType: "medical", entityId: reportId }, data: { deletedAt: new Date(), version: { increment: 1 } } });
       await tx.medicalReport.update({
         where: { id: reportId },
         data: { deletedAt: new Date() },

@@ -60,7 +60,9 @@ export class TimelineRepository {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId, "ACCESS_DENIED");
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    // Public pages remain capped at 200. The service requests one additional
+    // row to distinguish a full final page from a page with more history.
+    const limit = Math.min(options.limit ?? 50, 201);
 
     const where: Prisma.TimelineEntryWhereInput = {
       familyId,

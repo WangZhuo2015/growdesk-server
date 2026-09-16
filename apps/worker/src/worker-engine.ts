@@ -89,6 +89,32 @@ export class WorkerEngine {
   }
 
   /**
+   * Rebuild task input from the durable outbox before claiming the task.
+   * Reconcile and retry rows may carry only control metadata, so the original
+   * input must remain authoritative in PostgreSQL rather than in a BullMQ job.
+   */
+  async loadTaskPayload(
+    taskId: string,
+    dispatchedPayload: Record<string, unknown> = {},
+  ): Promise<Record<string, unknown>> {
+    const result = await this.pool.query<{ payload: unknown }>(
+      `SELECT payload
+       FROM task_outbox
+       WHERE aggregate_id = $1
+       ORDER BY created_at ASC, id ASC`,
+      [taskId],
+    );
+    const merged: Record<string, unknown> = {};
+    for (const row of result.rows) {
+      if (row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)) {
+        Object.assign(merged, row.payload as Record<string, unknown>);
+      }
+    }
+    Object.assign(merged, dispatchedPayload);
+    return merged;
+  }
+
+  /**
    * Directly processes a specific task by claiming it, running the processor,
    * sending periodic heartbeats, and completing/failing atomically.
    */
@@ -237,8 +263,11 @@ export class WorkerEngine {
         };
       }
 
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorCode =
+        error && typeof error === "object" && "code" in error && typeof error.code === "string"
+          ? error.code
+          : "EXECUTION_FAILED";
 
       try {
         await TaskExecutionRepository.failTask(
@@ -247,7 +276,7 @@ export class WorkerEngine {
           this.workerId,
           claim.fenceToken,
           {
-            code: "EXECUTION_FAILED",
+            code: errorCode,
             message: errorMessage,
           }
         );

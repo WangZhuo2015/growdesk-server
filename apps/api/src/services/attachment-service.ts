@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { PrismaClient, RecordNotFoundError, FamilyAccessDeniedError, BadRequestError } from "@growdesk/database";
+import { PrismaClient, RecordNotFoundError, FamilyAccessDeniedError, BadRequestError, BabyAccessDeniedError } from "@growdesk/database";
 import { UserPrincipal } from "@growdesk/domain";
 import { StorageDriver } from "../storage/s3-storage-service.js";
 import {
@@ -28,6 +28,23 @@ export class AttachmentService {
     private readonly prisma: PrismaClient,
     private readonly storageDriver: StorageDriver
   ) {}
+
+  private authorize(principal: UserPrincipal, attachment: { familyId: string; babyId: string | null; uploaderId: string }, write = false, uploaderOnly = false) {
+    const family = principal.familyMemberships.find(m => m.familyId === attachment.familyId && m.status === "active");
+    if (!family || (write && family.role === "viewer")) throw new FamilyAccessDeniedError(attachment.familyId);
+    if (attachment.babyId) {
+      const baby = principal.babyMemberships?.find(m => m.babyId === attachment.babyId && m.familyId === attachment.familyId && m.status === "active");
+      if (!baby || (write && baby.role === "viewer")) throw new BabyAccessDeniedError(attachment.babyId, "ACCESS_DENIED");
+    }
+    if (uploaderOnly && attachment.uploaderId !== principal.userId) throw new FamilyAccessDeniedError(attachment.familyId);
+  }
+
+  async getDownloadUrl(principal: UserPrincipal, attachmentId: string) {
+    const attachment = await this.getAttachment(principal, attachmentId);
+    if (attachment.status !== "ready") throw new BadRequestError("Attachment is not ready");
+    const url = await this.storageDriver.generatePresignedDownloadUrl({ objectKey: attachment.objectKey, expiresInSeconds: 60 });
+    return { downloadUrl: url.downloadUrl, mimeType: attachment.mimeType, byteSize: attachment.byteSize };
+  }
 
   async createAttachment(
     principal: UserPrincipal,
@@ -59,6 +76,8 @@ export class AttachmentService {
         throw new Error(`User has no access to baby ${babyId}`);
       }
     }
+
+    this.authorize(principal, { familyId, babyId, uploaderId: principal.userId }, true);
 
     // 2. Validate MIME type
     if (!ALLOWED_MIME_TYPES.has(input.mimeType)) {
@@ -122,12 +141,7 @@ export class AttachmentService {
       throw new RecordNotFoundError("Attachment", attachmentId);
     }
 
-    const hasFamily = principal.familyMemberships.some(
-      (m) => m.familyId === attachment.familyId && m.status === "active"
-    );
-    if (!hasFamily) {
-      throw new FamilyAccessDeniedError(attachment.familyId);
-    }
+    this.authorize(principal, attachment, true, true);
 
     if (attachment.status === "ready") {
       return { data: { success: true } };
@@ -181,12 +195,7 @@ export class AttachmentService {
       throw new RecordNotFoundError("Attachment", attachmentId);
     }
 
-    const hasFamily = principal.familyMemberships.some(
-      (m) => m.familyId === attachment.familyId && m.status === "active"
-    );
-    if (!hasFamily) {
-      throw new FamilyAccessDeniedError(attachment.familyId);
-    }
+    this.authorize(principal, attachment, true, true);
 
     if (attachment.status !== "pending") {
       throw new BadRequestError(`Cannot renew upload URL for attachment with status: ${attachment.status}`);
@@ -206,7 +215,7 @@ export class AttachmentService {
     });
 
     return {
-      uploadUrl,
+      uploadUrl: uploadUrl.uploadUrl,
       expiresAt: expiresAt.toISOString(),
     };
   }
@@ -220,12 +229,7 @@ export class AttachmentService {
       throw new RecordNotFoundError("Attachment", attachmentId);
     }
 
-    const hasFamily = principal.familyMemberships.some(
-      (m) => m.familyId === attachment.familyId && m.status === "active"
-    );
-    if (!hasFamily) {
-      throw new FamilyAccessDeniedError(attachment.familyId);
-    }
+    this.authorize(principal, attachment, false);
 
     return attachment;
   }
@@ -239,12 +243,7 @@ export class AttachmentService {
       throw new RecordNotFoundError("Attachment", attachmentId);
     }
 
-    const hasFamily = principal.familyMemberships.some(
-      (m) => m.familyId === attachment.familyId && m.status === "active"
-    );
-    if (!hasFamily) {
-      throw new FamilyAccessDeniedError(attachment.familyId);
-    }
+    this.authorize(principal, attachment, true);
 
     await this.prisma.attachment.update({
       where: { id: attachmentId },

@@ -1,0 +1,15 @@
+✔ AI API preflight rejects an absent provider with 503 (1.387567ms)
+✔ AI API preflight accepts only explicit fixture responses (0.323802ms)
+✔ AI API preflight accepts approved compatible provider configuration (0.256562ms)
+✔ knowledge preserves source details and filters exact milestone month and activity range (280.490815ms)
+✔ AI provider fails explicitly when no provider is configured (1.587169ms)
+✔ fixture provider requires an explicit response and emits persisted-style text deltas (1.339487ms)
+✔ OpenAI-compatible HTTP fixture streams text without contacting an external provider (59.414269ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 878.503557
