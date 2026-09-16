@@ -1,0 +1,22 @@
+name: Integration review source
+on:
+  push:
+    branches: [codex/complete-integration-20260916]
+    paths: [.github/workflows/integration-review-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive tracked source only
+        run: |
+          git archive --format=tar.gz --output=review-source.tar.gz HEAD -- . ':!*.db' ':!*.db-*' ':!.env*' ':!evidence' ':!scratch' ':!.data' ':!public/uploads' ':!uploads'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: review-source
+          path: review-source.tar.gz
+          retention-days: 1
