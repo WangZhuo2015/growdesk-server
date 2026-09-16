@@ -1,0 +1,25 @@
+name: AI integration source
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.github/workflows/ai-review-source.yml]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Package tracked source only
+        run: |
+          mkdir -p "$RUNNER_TEMP/review"
+          git archive --format=tar HEAD | gzip > "$RUNNER_TEMP/review/source.tar.gz"
+          git rev-parse HEAD > "$RUNNER_TEMP/review/HEAD.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-review-source
+          path: ${{ runner.temp }}/review
+          retention-days: 1
