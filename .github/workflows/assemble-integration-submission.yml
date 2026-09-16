@@ -1,0 +1,95 @@
+name: Validate integration submission
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.integration-submission/manifest.json]
+permissions:
+  contents: write
+concurrency:
+  group: integration-submission-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - name: Validate original blobs, explicit paths and every resulting blob before applying
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/codex/ai-integration-complete-20260916
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          root = pathlib.Path.cwd()
+          stage = root / '.integration-submission'
+          manifest = json.loads((stage/'manifest.json').read_text())
+          assert manifest['repository'] == os.environ['GITHUB_REPOSITORY'] == 'WangZhuo2015/growdesk-server'
+          assert manifest['base'] == 'd3ce9990f88a680c16a50fce61f29abac4ffc78c'
+          subprocess.run(['git','merge-base','--is-ancestor',manifest['base'],'HEAD'],check=True)
+          allowed = set(manifest['paths']); planned = {}; parts = []
+          def blob(data):
+              return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          for part in manifest['parts']:
+              name = part['file']; assert pathlib.Path(name).name == name and name.startswith('part-') and name.endswith('.json')
+              data = (stage/name).read_bytes(); assert hashlib.sha256(data).hexdigest() == part['sha256']
+              parts.append('.integration-submission/'+name)
+              for entry in json.loads(data):
+                  path = pathlib.Path(entry['path'])
+                  assert not path.is_absolute() and '..' not in path.parts and path.parts[0] in ['apps','packages','prisma','scripts','tests','evidence','docs']
+                  assert path.suffix in ['.ts','.tsx','.py','.mjs','.json','.prisma','.sql','.md'] and str(path) in allowed and str(path) not in planned
+                  target = root/path
+                  assert target.resolve().is_relative_to(root)
+                  assert not any(p.is_symlink() for p in [target,*target.parents])
+                  if entry['original'] is None:
+                      assert not target.exists(); original = b''
+                  else:
+                      original = target.read_bytes(); assert blob(original) == entry['original'], str(path)
+                  lines = original.decode('utf-8').splitlines(keepends=True)
+                  previous = 0; output = []
+                  for start,end,text in entry['edits']:
+                      assert isinstance(start,int) and isinstance(end,int) and previous <= start <= end <= len(lines)
+                      output.extend(lines[previous:start]); output.append(text); previous = end
+                  output.extend(lines[previous:]); result = ''.join(output).encode('utf-8')
+                  assert len(result) <= 1000000 and blob(result) == entry['target'], str(path)
+                  planned[str(path)] = result
+          assert set(planned) == allowed
+          for name,data in planned.items():
+              target = root/name; target.parent.mkdir(parents=True,exist_ok=True); target.write_bytes(data)
+          pathlib.Path(os.environ['RUNNER_TEMP'],'integration-paths.json').write_text(json.dumps(list(planned)))
+          pathlib.Path(os.environ['RUNNER_TEMP'],'integration-parts.json').write_text(json.dumps(parts+['.integration-submission/manifest.json']))
+          print('Validated and applied',len(planned),'explicit source paths.')
+          PY
+          git diff --check
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:db:generate
+      - run: npm run backend:build
+      - run: npm run backend:contracts:generate && npm run backend:contracts:check
+      - run: npm run backend:typecheck && npm run backend:lint && npm run backend:test:unit
+      - name: Commit validated source to this feature branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path.cwd(); manifest=json.loads((root/'.integration-submission/manifest.json').read_text())
+          data=(root/'contracts/openapi.json').read_bytes()
+          actual=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          assert actual==manifest['openapiBlob'], 'Generated contract snapshot mismatch'
+          paths=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'integration-paths.json').read_text())+['contracts/openapi.json']
+          parts=json.loads(pathlib.Path(os.environ['RUNNER_TEMP'],'integration-parts.json').read_text())
+          for name in parts:(root/name).unlink()
+          subprocess.run(['git','add','--',*paths,*parts],check=True)
+          subprocess.run(['git','diff','--cached','--check'],check=True)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(integration): persist Web AI tasks, media, histories and atomic confirmations'
+          current="$(git ls-remote origin refs/heads/codex/ai-integration-complete-20260916 | cut -f1)"
+          test "$current" = "$GITHUB_SHA"
+          git push origin HEAD:refs/heads/codex/ai-integration-complete-20260916
