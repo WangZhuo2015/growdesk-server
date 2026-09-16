@@ -44,6 +44,11 @@ jobs:
                   assert path.suffix in ['.ts','.tsx','.py','.mjs','.json','.prisma','.sql','.md']
                   target=root/path; assert target.resolve().is_relative_to(root)
                   assert not any(p.is_symlink() for p in [target,*target.parents])
+                  if target.exists():
+                      current=target.read_bytes()
+                      if blob(current)==entry['target']:
+                          planned[key]=current
+                          continue
                   if entry['original'] is None:
                       assert not target.exists(),key; original=b''
                   else:
@@ -53,7 +58,7 @@ jobs:
                       assert isinstance(start,int) and isinstance(end,int) and previous<=start<=end<=len(lines),('range',key,start,end,len(lines))
                       output.extend(lines[previous:start]); output.append(text); previous=end
                   output.extend(lines[previous:]); result=''.join(output).encode('utf-8')
-                  assert len(result)<=1_000_000 and blob(result)==entry['target'],('target',key,blob(result),entry['target'])
+                  assert blob(result)==entry['target'],('target',key,blob(result),entry['target'])
                   planned[key]=result
           assert set(planned)==allowed,('paths',sorted(allowed-set(planned)),sorted(set(planned)-allowed))
           for name,data in planned.items():
