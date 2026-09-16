@@ -1,0 +1,28 @@
+name: Isolated object store
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.github/workflows/isolated-object-store.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.24.8
+          cache: false
+      - name: Build pinned upstream source; no production service is started
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          set -euo pipefail
+          GOBIN="$RUNNER_TEMP/object-store" go install github.com/minio/minio@RELEASE.2025-10-15T17-29-55Z
+          sha256sum "$RUNNER_TEMP/object-store/minio" > "$RUNNER_TEMP/object-store/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: isolated-object-store
+          path: ${{ runner.temp }}/object-store
+          retention-days: 1
