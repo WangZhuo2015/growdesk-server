@@ -1,264 +1,60 @@
-import { randomUUID } from "node:crypto";
-import pg from "pg";
-import { FencingTokenMismatchError } from "@growdesk/database";
-import type { TaskExecutionContext, TaskProcessor } from "./worker-engine.js";
-import {
-  AiProviderError,
-  type AiProvider,
-  type AiProviderAction,
-  createAiProvider,
-  planHash,
-} from "./ai-provider.js";
-
-interface AiRunRow {
-  readonly id: string;
-  readonly session_id: string;
-  readonly baby_id: string | null;
-}
-
-interface FenceGuard {
-  readonly workerId: string;
-  readonly fenceToken: bigint;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return value as Record<string, unknown>;
-}
-
-function stringValue(value: unknown): string | null {
-  return typeof value === "string" && value.length > 0 ? value : null;
-}
-
-async function appendEvent(
-  pool: pg.Pool,
-  runId: string,
-  attempt: number,
-  eventType: string,
-  payload: Record<string, unknown>,
-  guard: FenceGuard,
-): Promise<string> {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const seqResult = await client.query<{ last_event_seq: string }>(
-      `UPDATE ai_runs
-       SET last_event_seq = last_event_seq + 1, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $1
-         AND EXISTS (
-           SELECT 1 FROM task_executions
-           WHERE id = $1 AND status = 'running' AND lease_owner = $2 AND fence_token = $3
-         )
-       RETURNING last_event_seq`,
-      [runId, guard.workerId, guard.fenceToken.toString()],
-    );
-    const row = seqResult.rows[0];
-    if (!row) throw new FencingTokenMismatchError("AI run event rejected by task fence");
-    const sequence = row.last_event_seq;
-    await client.query(
-      `INSERT INTO ai_run_events (id, run_id, sequence, event_type, payload, created_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, CURRENT_TIMESTAMP)`,
-      [randomUUID(), runId, sequence, eventType, JSON.stringify({ ...payload, attempt })],
-    );
-    await client.query("COMMIT");
-    return sequence;
-  } catch (error) {
-    try {
-      await client.query("ROLLBACK");
-    } catch {
-      // Preserve the original database/fence error.
-    }
-    throw error;
-  } finally {
-    client.release();
+import {randomUUID,createHash} from 'node:crypto';
+import type pg from 'pg';
+import {requireWebBaby,WebAccessError} from '@growdesk/database';
+import {Value} from '@sinclair/typebox/value';
+import {Type} from '@sinclair/typebox';
+import * as C from '@growdesk/contracts';
+import type {TaskProcessor} from './worker-engine.js';
+import {type AiProvider,type AiProviderAction,createAiProvider,planHash,AiProviderError} from './ai-provider.js';
+import {authorizedChatContext} from './chat-context.js';
+import {createPrivateMediaReader,type PrivateMedia,type ReadPrivateMedia} from './private-media.js';
+export interface AiChatProcessorOptions {provider?:AiProvider;env?:NodeJS.ProcessEnv;confirmationTtlMs?:number;readMedia?:ReadPrivateMedia}
+interface Run {id:string;session_id:string;user_id:string;baby_id:string|null}
+const schemaPairs={feeding:[C.CreateFeedingRequestSchema,C.UpdateFeedingRequestSchema],sleep:[C.CreateSleepRequestSchema,C.UpdateSleepRequestSchema],diaper:[C.CreateDiaperRequestSchema,C.UpdateDiaperRequestSchema],food:[C.CreateFoodRequestSchema,C.UpdateFoodRequestSchema],supplement:[C.CreateSupplementRequestSchema,C.UpdateSupplementRequestSchema],growth:[C.CreateGrowthMeasurementRequestSchema,C.UpdateGrowthMeasurementRequestSchema],medical:[C.CreateMedicalReportRequestSchema,C.UpdateMedicalReportRequestSchema],vaccine:[C.CreateVaccineRecordRequestSchema,C.CreateVaccineRecordRequestSchema]} as const;
+function validateActions(actions:ReadonlyArray<AiProviderAction>){
+  if(actions.some(action=>action.entityType==='vaccine'&&action.operation==='update'))throw new AiProviderError('Vaccine update is not a canonical operation','AI_PROVIDER_INVALID_RESPONSE');
+  if(actions.length>20)throw new AiProviderError('Too many proposed actions','AI_PROVIDER_INVALID_RESPONSE');const seen=new Set<string>();
+  for(const a of actions){if(!Value.Check(C.UuidString,a.actionId)||seen.has(a.actionId)||!Object.hasOwn(schemaPairs,a.entityType))throw new AiProviderError('Invalid or duplicate proposed action','AI_PROVIDER_INVALID_RESPONSE');seen.add(a.actionId);const p=schemaPairs[a.entityType as keyof typeof schemaPairs];
+    const schema=a.operation==='create'?p[0]:a.operation==='update'?Type.Object({...p[1].properties,id:C.UuidString},{additionalProperties:false}):a.operation==='delete'?Type.Object({id:C.UuidString,baseVersion:Type.String({pattern:'^[1-9][0-9]*$'})},{additionalProperties:false}):null;
+    if(!schema||!Value.Check(schema,a.payload))throw new AiProviderError('Proposed change does not match the canonical care contract','AI_PROVIDER_INVALID_RESPONSE');
   }
 }
-
-async function updateRun(
-  pool: pg.Pool,
-  runId: string,
-  data: {
-    readonly resultSummary?: string | null;
-    readonly proposedPlan?: Record<string, unknown> | null;
-    readonly errorCode?: string | null;
-    readonly errorMessage?: string | null;
-    readonly started?: boolean;
-    readonly finished?: boolean;
-  },
-  guard: FenceGuard,
-): Promise<void> {
-  const sets: string[] = ["updated_at = CURRENT_TIMESTAMP"];
-  const values: unknown[] = [runId, guard.workerId, guard.fenceToken.toString()];
-  const add = (sql: string, value: unknown): void => {
-    values.push(value);
-    sets.push(`${sql} $${values.length}`);
-  };
-  if (data.resultSummary !== undefined) add("result_summary =", data.resultSummary);
-  if (data.proposedPlan !== undefined) add("proposed_plan =", data.proposedPlan ? JSON.stringify(data.proposedPlan) : null);
-  if (data.errorCode !== undefined) add("error_code =", data.errorCode);
-  if (data.errorMessage !== undefined) add("error_message =", data.errorMessage);
-  if (data.started) sets.push("started_at = COALESCE(started_at, CURRENT_TIMESTAMP)");
-  if (data.finished) sets.push("finished_at = CURRENT_TIMESTAMP");
-  const result = await pool.query(
-    `UPDATE ai_runs SET ${sets.join(", ")}
-     WHERE id = $1
-       AND EXISTS (
-         SELECT 1 FROM task_executions
-         WHERE id = $1 AND status = 'running' AND lease_owner = $2 AND fence_token = $3
-       )`,
-    values,
-  );
-  if (result.rowCount === 0) throw new FencingTokenMismatchError("AI run update rejected by task fence");
-}
-
-function validateProviderActions(actions: ReadonlyArray<AiProviderAction>): AiProviderAction[] {
-  const seen = new Set<string>();
-  return actions.map((action, index) => {
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(action.actionId)) {
-      throw new AiProviderError(`Provider action at index ${index} has an invalid UUID actionId`, "AI_PROVIDER_INVALID_RESPONSE");
-    }
-    if (seen.has(action.actionId)) {
-      throw new AiProviderError(`Provider returned duplicate actionId '${action.actionId}'`, "AI_PROVIDER_INVALID_RESPONSE");
-    }
-    seen.add(action.actionId);
-    return action;
-  });
-}
-
-export interface AiChatProcessorOptions {
-  readonly provider?: AiProvider;
-  readonly env?: NodeJS.ProcessEnv;
-  readonly confirmationTtlMs?: number;
-}
-
-/** Durable processor for the persisted ai_chat_run task kind. */
-export function createAiChatProcessor(
-  pool: pg.Pool,
-  options: AiChatProcessorOptions = {},
-): TaskProcessor {
-  const provider = options.provider ?? createAiProvider(options.env);
-  const confirmationTtlMs = options.confirmationTtlMs ?? 30 * 60 * 1000;
-
-  return {
-    kind: "ai_chat_run",
-    async execute(ctx: TaskExecutionContext) {
-      const guard: FenceGuard = { workerId: ctx.workerId, fenceToken: ctx.fenceToken };
-      const runResult = await pool.query<AiRunRow>(
-        "SELECT id, session_id, baby_id FROM ai_runs WHERE id = $1",
-        [ctx.taskId],
-      );
-      const run = runResult.rows[0];
-      if (!run) throw new AiProviderError("AI run row is missing", "AI_INPUT_NOT_FOUND", { statusCode: 500 });
-
-      const payload = asRecord(ctx.payload);
-      const message = stringValue(payload.message);
-      if (!message) {
-        throw new AiProviderError("AI run input message is missing", "AI_INPUT_INVALID", { statusCode: 400 });
+/** All chat input, output, ownership and pending confirmations are authoritative in PostgreSQL. */
+export function createAiChatProcessor(pool:pg.Pool,options:AiChatProcessorOptions={}):TaskProcessor {
+  const provider=options.provider??createAiProvider(options.env);const read=options.readMedia??createPrivateMediaReader(options.env??process.env);
+  return {kind:'ai_chat_run',async execute(ctx){
+    const run=(await pool.query<Run>('SELECT id,session_id,user_id,baby_id FROM ai_runs WHERE id=$1',[ctx.taskId])).rows[0];
+    if(!run||ctx.ownerScope!==`user:${run.user_id}`)throw new WebAccessError(404,'RUN_NOT_FOUND','Authorized chat input is absent');
+    const s=await pool.query('SELECT id FROM ai_sessions WHERE id=$1 AND user_id=$2',[run.session_id,run.user_id]);if(!s.rowCount)throw new WebAccessError(404,'SESSION_NOT_FOUND','Conversation was removed');
+    if(run.baby_id)await requireWebBaby(pool,run.user_id,run.baby_id);
+    const input=(await pool.query<{payload:Record<string,unknown>}>('SELECT payload FROM task_outbox WHERE aggregate_id=$1 ORDER BY created_at,id',[run.id])).rows.map(x=>x.payload).find(x=>typeof x.message==='string');
+    if(!input||typeof input.message!=='string')throw new WebAccessError(400,'AI_INPUT_INVALID','Chat input missing from durable outbox');
+    const context=await authorizedChatContext(pool,run.user_id,run.baby_id,run.session_id);
+    const ids=Array.isArray(input.attachmentIds)?input.attachmentIds as string[]:[];const images:Array<{bytes:Uint8Array;mimeType:string}>=[];let total=0;
+    for(const id of ids){const a=(await pool.query<PrivateMedia>("SELECT id,object_key,mime_type,byte_size,sha256 FROM attachments WHERE id=$1 AND uploader_id=$2 AND baby_id=$3 AND status='ready' AND deleted_at IS NULL AND mime_type IN ('image/jpeg','image/png','image/webp')",[id,run.user_id,run.baby_id])).rows[0];if(!a)throw new WebAccessError(404,'ATTACHMENT_NOT_FOUND','Private chat image is unavailable');const bytes=await read(a,ctx.signal);if(bytes.byteLength!==Number(a.byte_size)||createHash('sha256').update(bytes).digest('hex')!==a.sha256)throw new WebAccessError(502,'ATTACHMENT_INTEGRITY','Private image integrity check failed');total+=bytes.byteLength;if(total>25000000)throw new WebAccessError(413,'CHAT_MEDIA_TOO_LARGE','Chat media exceeds 25 MB');images.push({bytes,mimeType:a.mime_type});}
+    const started=await pool.query("UPDATE ai_runs SET started_at=clock_timestamp() WHERE id=$1 AND EXISTS(SELECT 1 FROM task_executions WHERE id=$1 AND status='running' AND lease_owner=$2 AND fence_token=$3 AND lease_expires_at>clock_timestamp() AND cancel_requested_at IS NULL)",[run.id,ctx.workerId,ctx.fenceToken.toString()]);if(!started.rowCount)throw new WebAccessError(409,'STALE_WORKER','Worker lease is no longer valid');
+    const answer=await provider.generate({sessionId:run.session_id,babyId:run.baby_id,message:input.message,attachmentIds:ids,context,images,signal:ctx.signal});
+    if(ctx.isCancelled())throw new WebAccessError(409,'TASK_CANCELLED','Chat cancelled');validateActions(answer.actions);
+    const plan=answer.actions.length?{actions:answer.actions,planHash:planHash(answer.actions),expiresAt:new Date(Date.now()+(options.confirmationTtlMs??1800000)).toISOString()}:null;
+    return {result:{text:answer.text,usage:answer.usage??null},...(plan?{parkPlan:plan}:{}),publish:async(db:pg.PoolClient)=>{
+      if(run.baby_id)await requireWebBaby(db,run.user_id,run.baby_id,true);
+      const session=await db.query('SELECT id FROM ai_sessions WHERE id=$1 AND user_id=$2 FOR UPDATE',[run.session_id,run.user_id]);if(!session.rowCount)throw new WebAccessError(404,'SESSION_NOT_FOUND','Conversation removed before publication');
+      for(const id of ids){if(!(await db.query("SELECT id FROM attachments WHERE id=$1 AND uploader_id=$2 AND baby_id=$3 AND status='ready' AND deleted_at IS NULL FOR SHARE",[id,run.user_id,run.baby_id])).rowCount)throw new WebAccessError(404,'ATTACHMENT_NOT_FOUND','Attachment revoked before publication');}
+      const saved=await db.query(`INSERT INTO ai_messages(id,session_id,role,content,tools_json,created_at) VALUES($1,$2,'assistant',$3,$4,clock_timestamp()) ON CONFLICT(id) DO UPDATE SET content=EXCLUDED.content,tools_json=EXCLUDED.tools_json,created_at=EXCLUDED.created_at WHERE ai_messages.session_id=EXCLUDED.session_id AND ai_messages.role='assistant'`,[run.id,run.session_id,answer.text,plan?JSON.stringify(plan.actions.map(a=>({name:a.entityType,status:'pending',summary:a.summary}))):null]);
+      if(saved.rowCount!==1)throw new WebAccessError(409,'MESSAGE_ID_REUSED','Assistant message identifier belongs to different content');
+      const next=(await db.query<{last_event_seq:string}>('UPDATE ai_runs SET result_summary=$2,proposed_plan=$3::jsonb,error_code=NULL,error_message=NULL,last_event_seq=last_event_seq+1,finished_at=CASE WHEN $3::jsonb IS NULL THEN clock_timestamp() ELSE NULL END,updated_at=clock_timestamp() WHERE id=$1 RETURNING last_event_seq',[run.id,answer.text,plan?JSON.stringify(plan):null])).rows[0]!;
+      await db.query('INSERT INTO ai_run_events(id,run_id,sequence,event_type,payload) VALUES($1,$2,$3,$4,$5::jsonb)',[randomUUID(),run.id,next.last_event_seq,plan?'awaiting_confirmation':'run_succeeded',JSON.stringify({attempt:ctx.attempt,text:answer.text,plan})]);await db.query('UPDATE ai_sessions SET updated_at=clock_timestamp() WHERE id=$1',[run.session_id]);
+      const voiceSession=(await db.query<{context_type:string}>('SELECT context_type FROM ai_sessions WHERE id=$1',[run.session_id])).rows[0];
+      if(voiceSession?.context_type==='voice'&&run.baby_id){
+        const authorized=await requireWebBaby(db,run.user_id,run.baby_id,true);
+        await db.query(`INSERT INTO web_voice_logs(id,user_id,baby_id,prompt,reply,is_async,is_fast_path,acknowledged,created_at,family_id)
+          VALUES($1,$2,$3,$4,$5,true,false,false,clock_timestamp(),$6) ON CONFLICT(id) DO UPDATE SET reply=EXCLUDED.reply,acknowledged=false
+          WHERE web_voice_logs.user_id=EXCLUDED.user_id AND web_voice_logs.baby_id=EXCLUDED.baby_id`,
+          [run.id,run.user_id,run.baby_id,input.message,answer.text+(plan?'\n请在网页核对并确认提案，记录尚未写入。':''),authorized.family_id]);
+        await db.query(`INSERT INTO notifications(id,user_id,event_key,title,body,data,created_at) VALUES($1,$2,$3,$4,$5,$6::jsonb,clock_timestamp())
+          ON CONFLICT(id) DO NOTHING`,[`voice-${run.id}-${ctx.attempt}`,run.user_id,`voice:${run.id}:${ctx.attempt}`,plan?'语音提案待确认':'语音回复已就绪',plan?'请在网页核对后确认，尚未写入记录。':'打开语音记录查看回复。',JSON.stringify({babyId:run.baby_id,sessionId:run.session_id,runId:run.id,logId:run.id})]);
       }
-      const attachmentIds = Array.isArray(payload.attachmentIds)
-        ? payload.attachmentIds.filter((value): value is string => typeof value === "string")
-        : [];
-
-      await updateRun(pool, ctx.taskId, { started: true }, guard);
-      await appendEvent(pool, ctx.taskId, ctx.attempt, "run_started", { provider: provider.name }, guard);
-
-      let pendingText = "";
-      let flushChain = Promise.resolve();
-      let flushTimer: NodeJS.Timeout | undefined;
-      const flush = async (): Promise<void> => {
-        if (!pendingText) return flushChain;
-        const text = pendingText;
-        pendingText = "";
-        flushChain = flushChain.then(async () => {
-          await appendEvent(pool, ctx.taskId, ctx.attempt, "text_delta", { text }, guard);
-        });
-        await flushChain;
-      };
-      const scheduleFlush = (): void => {
-        if (flushTimer) return;
-        flushTimer = setTimeout(() => {
-          flushTimer = undefined;
-          void flush();
-        }, 200);
-      };
-
-      try {
-        const result = await provider.generate({
-          sessionId: run.session_id,
-          babyId: run.baby_id,
-          message,
-          attachmentIds,
-          onTextDelta: async (delta) => {
-            if (ctx.isCancelled()) return;
-            pendingText += delta;
-            if (pendingText.length >= 2048) await flush();
-            else scheduleFlush();
-          },
-        });
-        if (flushTimer) {
-          clearTimeout(flushTimer);
-          flushTimer = undefined;
-        }
-        await flush();
-        if (ctx.isCancelled()) {
-          await appendEvent(pool, ctx.taskId, ctx.attempt, "run_cancelled", {}, guard);
-          await updateRun(pool, ctx.taskId, { finished: true }, guard);
-          return { result: { cancelled: true } };
-        }
-
-        const actions = validateProviderActions(result.actions);
-        if (actions.length > 0) {
-          const expiresAt = new Date(Date.now() + confirmationTtlMs).toISOString();
-          const proposedPlan = {
-            planHash: planHash(actions),
-            actions,
-            expiresAt,
-          };
-          await updateRun(pool, ctx.taskId, {
-            resultSummary: result.text || null,
-            proposedPlan,
-          }, guard);
-          await appendEvent(pool, ctx.taskId, ctx.attempt, "tool_proposed", { plan: proposedPlan }, guard);
-          await appendEvent(pool, ctx.taskId, ctx.attempt, "awaiting_confirmation", {
-            planHash: proposedPlan.planHash,
-            expiresAt,
-          }, guard);
-          return { parkPlan: proposedPlan };
-        }
-
-        await updateRun(pool, ctx.taskId, { resultSummary: result.text || null, finished: true }, guard);
-        await appendEvent(pool, ctx.taskId, ctx.attempt, "run_succeeded", {
-          text: result.text,
-          usage: result.usage ?? null,
-        }, guard);
-        return { result: { text: result.text, usage: result.usage ?? null } };
-      } catch (error) {
-        if (flushTimer) clearTimeout(flushTimer);
-        if (error instanceof FencingTokenMismatchError) throw error;
-        const code = error instanceof AiProviderError ? error.code : "AI_PROVIDER_ERROR";
-        const messageText = error instanceof Error ? error.message : String(error);
-        try {
-          await updateRun(pool, ctx.taskId, { errorCode: code, errorMessage: messageText, finished: true }, guard);
-          await appendEvent(pool, ctx.taskId, ctx.attempt, "run_failed", { code, message: messageText }, guard);
-        } catch (persistenceError) {
-          if (persistenceError instanceof FencingTokenMismatchError) throw persistenceError;
-        }
-        throw error;
-      }
-    },
-  };
+    }};
+  }};
 }
-
-/** Explicit processor result for task kinds whose domain pipeline is not wired yet. */
-export function createUnsupportedAiProcessor(kind: string): TaskProcessor {
-  return {
-    kind,
-    async execute() {
-      throw new AiProviderError(
-        `Task kind '${kind}' has no configured processor in this release`,
-        "TASK_PROCESSOR_UNAVAILABLE",
-        { statusCode: 503 },
-      );
-    },
-  };
-}
+export function createUnsupportedAiProcessor(kind:string):TaskProcessor {return {kind,async execute(){throw new AiProviderError(`Task kind '${kind}' has no configured processor`,'TASK_PROCESSOR_UNAVAILABLE',{statusCode:503});}};}
