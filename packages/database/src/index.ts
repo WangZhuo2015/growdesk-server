@@ -14,4 +14,4 @@ export * from "./timeline-repository.js";
 export * from "./task-repository.js";
 export * from "./sync-cursor.js";
 export { Prisma, type PrismaClient } from "./generated/client.js";
-export { publishTaskResult } from "./task-publication.js";
+
