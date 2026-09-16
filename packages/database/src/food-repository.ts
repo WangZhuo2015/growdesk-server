@@ -118,7 +118,7 @@ export class FoodRepository {
       baseVersion: null,
       getExistingVersion: async (tx) => {
         const row = await tx.foodRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true },
         });
         return row?.version ?? null;
@@ -178,7 +178,7 @@ export class FoodRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.foodRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -186,7 +186,7 @@ export class FoodRepository {
       },
       execute: async (tx, meta) => {
         const existing = await tx.foodRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
         });
         if (!existing || existing.deletedAt !== null) {
           throw new RecordNotFoundError("food_record", input.id);
@@ -220,7 +220,7 @@ export class FoodRepository {
         }
 
         const row = await tx.foodRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data,
         });
 
@@ -262,7 +262,7 @@ export class FoodRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.foodRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -270,7 +270,7 @@ export class FoodRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.foodRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: new Date(),
@@ -318,7 +318,7 @@ export class FoodRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.foodRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row) return null;
@@ -326,7 +326,7 @@ export class FoodRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.foodRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: null,
@@ -397,7 +397,8 @@ export class FoodRepository {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    // The API returns at most 200 rows; preserve its extra lookahead row.
+    const limit = Math.min(options.limit ?? 50, 201);
 
     const where: Prisma.FoodRecordWhereInput = {
       familyId,
