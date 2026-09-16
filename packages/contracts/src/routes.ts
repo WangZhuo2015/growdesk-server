@@ -116,6 +116,8 @@ import {
   CreateDailySummaryRunRequestSchema,
   DailySummaryRunResponseSchema,
   DailySummaryListResponseSchema,
+  AiRunEventsQuerySchema,
+  AiRunEventSchema,
 } from "./ai.js";
 import {
   SyncCommandBatchRequestSchema,
@@ -1065,7 +1067,18 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH07",
     params: IdParam,
     body: CreateAiRunRequestSchema,
-    responses: { 202: AiRunResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 404: ApiErrorRef },
+    responses: { 202: AiRunResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 404: ApiErrorRef, 503: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/ai/runs/:id/events",
+    operationId: "getAiRunEvents",
+    summary: "Replay durable AI run events over a resumable SSE stream",
+    tags: ["AI"],
+    implementationStatus: "PLANNED_SH07",
+    params: IdParam,
+    querystring: AiRunEventsQuerySchema,
+    responses: { 200: AiRunEventSchema, 400: ApiErrorRef, 401: ApiErrorRef, 404: ApiErrorRef },
   },
   {
     method: "GET",

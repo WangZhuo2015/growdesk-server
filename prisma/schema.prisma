@@ -63,6 +63,7 @@ model Family {
   familyChanges   FamilyChange[]
   timelineEntries TimelineEntry[]
   feedingRecords  FeedingRecord[]
+  bookStatuses FamilyBookStatus[]
   formulaProducts FormulaProduct[]
   diaperRecords   DiaperRecord[]
   sleepRecords    SleepRecord[]
@@ -697,6 +698,7 @@ model MedicalReport {
   department  String?   @db.VarChar(100)
   diagnosis   String?   @db.VarChar(500)
   notes       String?   @db.VarChar(2000)
+  items       Json      @default("[]") @db.JsonB
   version     Int       @default(1)
   deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -938,4 +940,20 @@ model LegacyImportRow {
   @@index([babyId], name: "ix_legacy_import_rows_baby_id")
   @@map("import_rows")
   @@schema("legacy_import")
+}
+
+model FamilyBookStatus {
+  id         String   @id
+  familyId   String   @map("family_id")
+  bookId     String   @map("book_id")
+  status     String   @default("unread")
+  isFavorite Boolean  @default(false) @map("is_favorite")
+  readCount  Int      @default(0) @map("read_count")
+  version    Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family     Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  @@unique([familyId, bookId], name: "uq_family_book_status")
+  @@map("family_book_statuses")
+  @@schema("public")
 }

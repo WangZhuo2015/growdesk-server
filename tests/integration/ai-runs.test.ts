@@ -7,6 +7,7 @@ import crypto from "node:crypto";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
 import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
+import { canonicalJsonStringify } from "../../packages/contracts/src/common.js";
 
 interface OwnedRun {
   directory: string;
@@ -50,6 +51,16 @@ test("SH-07: AI Sessions, Runs & Lifecycle suite", async (t) => {
   );
 
   const jwtSecret = "integration-test-auth-secret-min-32-chars-long!";
+  const previousProvider = process.env.GROWDESK_AI_PROVIDER;
+  const previousFixture = process.env.GROWDESK_AI_FIXTURE_TEXT;
+  process.env.GROWDESK_AI_PROVIDER = "fixture";
+  process.env.GROWDESK_AI_FIXTURE_TEXT = "integration fixture";
+  t.after(() => {
+    if (previousProvider === undefined) delete process.env.GROWDESK_AI_PROVIDER;
+    else process.env.GROWDESK_AI_PROVIDER = previousProvider;
+    if (previousFixture === undefined) delete process.env.GROWDESK_AI_FIXTURE_TEXT;
+    else process.env.GROWDESK_AI_FIXTURE_TEXT = previousFixture;
+  });
   const ctx = createDatabaseContext({ url });
   const app = buildApiApp({
     databaseContext: ctx,
@@ -263,7 +274,20 @@ test("SH-07: AI Sessions, Runs & Lifecycle suite", async (t) => {
   });
 
   const testActionId = crypto.randomUUID();
-  const testPlanHash = "plan_hash_sample_abc_123";
+  const testPlanActions = [
+    {
+      actionId: testActionId,
+      entityType: "feeding",
+      operation: "create",
+      summary: "记录配方奶 150ml",
+      payload: {
+        feedingType: "formula",
+        occurredAt: new Date().toISOString(),
+        amountMl: "150.0",
+      },
+    },
+  ];
+  const testPlanHash = crypto.createHash("sha256").update(canonicalJsonStringify(testPlanActions)).digest("hex");
 
   await t.test("AI-04: Confirming proposed actions requires awaiting_confirmation state", async () => {
     // Attempting to confirm while queued fails with 409
@@ -281,15 +305,7 @@ test("SH-07: AI Sessions, Runs & Lifecycle suite", async (t) => {
     // Simulate worker parking the task with a proposed plan
     const proposedPlan = {
       planHash: testPlanHash,
-      actions: [
-        {
-          actionId: testActionId,
-          entityType: "feeding",
-          operation: "create",
-          summary: "记录配方奶 150ml",
-          payload: { amountMl: "150.0" },
-        },
-      ],
+      actions: testPlanActions,
       expiresAt: new Date(Date.now() + 1800_000).toISOString(),
     };
 

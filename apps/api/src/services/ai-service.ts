@@ -10,13 +10,99 @@ import {
   TaskExecutionRepository,
 } from "@growdesk/database";
 import { UserPrincipal } from "@growdesk/domain";
+import { FeedingService } from "./feeding-service.js";
 import {
   CreateAiSessionRequest,
   CreateAiRunRequest,
   AiRunConfirmRequest,
   CreateVoiceRunRequest,
   CreateDailySummaryRunRequest,
+  canonicalJsonStringify,
+  type CreateFeedingRequest,
 } from "@growdesk/contracts";
+
+export class AiProviderUnavailableError extends Error {
+  readonly statusCode = 503;
+  readonly code = "AI_PROVIDER_NOT_CONFIGURED";
+
+  constructor() {
+    super(
+      "AI provider is not configured. Configure the approved provider, or explicitly select fixture with a fixture response for tests.",
+    );
+    this.name = "AiProviderUnavailableError";
+  }
+}
+
+/** API-side preflight: asynchronous runs must fail clearly before persistence when no provider is usable. */
+export function assertAiProviderConfigured(env: NodeJS.ProcessEnv = process.env): void {
+  const mode = (env.GROWDESK_AI_PROVIDER ?? "").trim().toLowerCase();
+  if (mode === "fixture") {
+    if (env.GROWDESK_AI_FIXTURE_RESPONSE ?? env.GROWDESK_AI_FIXTURE_TEXT) return;
+    throw new AiProviderUnavailableError();
+  }
+  if (mode === "openai-compatible" || mode === "openai" || mode === "compat") {
+    const baseUrl = env.GROWDESK_AI_BASE_URL?.trim();
+    const apiKey = (env.GROWDESK_AI_API_KEY ?? env.AI_API_KEY ?? env.OPENAI_API_KEY ?? "").trim();
+    if (baseUrl && apiKey) return;
+  }
+  throw new AiProviderUnavailableError();
+}
+
+interface ProposedActionData {
+  readonly actionId: string;
+  readonly entityType: string;
+  readonly operation: string;
+  readonly summary: string;
+  readonly payload: Record<string, unknown>;
+}
+
+interface ProposedPlanData {
+  readonly planHash: string;
+  readonly actions: ReadonlyArray<ProposedActionData>;
+  readonly expiresAt: string;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function asFeedingRequest(action: ProposedActionData): CreateFeedingRequest {
+  const payload = action.payload;
+  const feedingType = payload.feedingType;
+  const occurredAt = payload.occurredAt;
+  if (
+    (feedingType !== "breast" && feedingType !== "bottle" && feedingType !== "formula" && feedingType !== "mixed") ||
+    typeof occurredAt !== "string" ||
+    Number.isNaN(Date.parse(occurredAt))
+  ) {
+    throw new BadRequestError(
+      "A feeding action requires a valid feedingType and occurredAt",
+      "AI_ACTION_INVALID",
+    );
+  }
+  const result: CreateFeedingRequest = {
+    feedingType,
+    occurredAt,
+    amountMl: payload.amountMl === undefined || payload.amountMl === null ? payload.amountMl ?? undefined : String(payload.amountMl),
+    leftMinutes: payload.leftMinutes === undefined || payload.leftMinutes === null ? payload.leftMinutes : Number(payload.leftMinutes),
+    rightMinutes: payload.rightMinutes === undefined || payload.rightMinutes === null ? payload.rightMinutes : Number(payload.rightMinutes),
+    spitUp: payload.spitUp === undefined ? false : Boolean(payload.spitUp),
+    formulaProductId: payload.formulaProductId === undefined ? undefined : payload.formulaProductId === null ? null : String(payload.formulaProductId),
+    notes: payload.notes === undefined ? undefined : payload.notes === null ? null : String(payload.notes),
+    source: "ai_chat",
+    sourceAgent: "ai_chat",
+  };
+  if (result.amountMl !== undefined && result.amountMl !== null && !/^-?\d+(\.\d+)?$/.test(result.amountMl)) {
+    throw new BadRequestError("amountMl in the feeding action must be a decimal string", "AI_ACTION_INVALID");
+  }
+  for (const value of [result.leftMinutes, result.rightMinutes]) {
+    if (value !== undefined && value !== null && (!Number.isInteger(value) || value < 0)) {
+      throw new BadRequestError("feeding duration values must be non-negative integers", "AI_ACTION_INVALID");
+    }
+  }
+  return result;
+}
 
 export class AiService {
   constructor(
@@ -146,6 +232,7 @@ export class AiService {
     if (!session || session.userId !== principal.userId) {
       throw new RecordNotFoundError("AiSession", sessionId);
     }
+    assertAiProviderConfigured();
 
     const runId = randomUUID();
     const now = new Date();
@@ -274,6 +361,47 @@ export class AiService {
     };
   }
 
+  async listRunEvents(
+    principal: UserPrincipal,
+    runId: string,
+    after: bigint = 0n,
+    limit = 100,
+  ) {
+    const run = await this.prisma.aiRun.findUnique({
+      where: { id: runId },
+      include: { taskExecution: true },
+    });
+    if (!run || run.userId !== principal.userId) {
+      throw new RecordNotFoundError("AiRun", runId);
+    }
+
+    const events = await this.prisma.aiRunEvent.findMany({
+      where: { runId, sequence: { gt: after } },
+      orderBy: { sequence: "asc" },
+      take: Math.min(Math.max(limit, 1), 100),
+    });
+    return {
+      status: run.taskExecution.status,
+      terminal: ["succeeded", "failed", "cancelled"].includes(run.taskExecution.status),
+      events: events.map((event) => {
+        const storedPayload = asRecord(event.payload);
+        const storedAttempt = storedPayload.attempt;
+        const payload = { ...storedPayload };
+        delete payload.attempt;
+        const attempt = typeof storedAttempt === "number" && Number.isInteger(storedAttempt) && storedAttempt > 0
+          ? storedAttempt
+          : Math.max(run.taskExecution.attempt, 1);
+        return {
+          runId,
+          seq: event.sequence.toString(),
+          attempt,
+          type: event.eventType,
+          payload,
+        };
+      }),
+    };
+  }
+
   async confirmRun(principal: UserPrincipal, runId: string, body: AiRunConfirmRequest) {
     const run = await this.prisma.aiRun.findUnique({
       where: { id: runId },
@@ -283,45 +411,118 @@ export class AiService {
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
     }
-
     if (run.taskExecution.status !== "awaiting_confirmation") {
       throw new ConcurrencyConflictError(
-        `Run is in '${run.taskExecution.status}', only runs in 'awaiting_confirmation' can be confirmed`
+        `Run is in '${run.taskExecution.status}', only runs in 'awaiting_confirmation' can be confirmed`,
       );
     }
 
-    const plan = run.proposedPlan as { planHash?: string } | null;
-    if (!plan || plan.planHash !== body.planHash) {
-      throw new ConcurrencyConflictError("Plan hash mismatch or proposed plan expired");
+    const plan = asRecord(run.proposedPlan) as unknown as ProposedPlanData;
+    const actions = Array.isArray(plan.actions)
+      ? plan.actions.map((action) => {
+          const candidate = asRecord(action);
+          return {
+            actionId: String(candidate.actionId ?? ""),
+            entityType: String(candidate.entityType ?? ""),
+            operation: String(candidate.operation ?? ""),
+            summary: String(candidate.summary ?? ""),
+            payload: asRecord(candidate.payload),
+          } satisfies ProposedActionData;
+        })
+      : [];
+    if (!plan.planHash || !plan.expiresAt || actions.length === 0) {
+      throw new ConcurrencyConflictError("Proposed plan is missing or malformed");
+    }
+    const computedPlanHash = createHash("sha256").update(canonicalJsonStringify(actions)).digest("hex");
+    const rawPlanHash = createHash("sha256").update(JSON.stringify(actions)).digest("hex");
+    if (plan.planHash !== body.planHash || (computedPlanHash !== plan.planHash && rawPlanHash !== plan.planHash)) {
+      throw new ConcurrencyConflictError("Plan hash mismatch or proposed plan was modified");
+    }
+    const expiresAtMs = Date.parse(plan.expiresAt);
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      throw new ConcurrencyConflictError("Proposed plan has expired; create a new run");
     }
 
+    const requested = new Set(body.actionIds);
+    if (requested.size !== body.actionIds.length) {
+      throw new BadRequestError("actionIds must not contain duplicates", "AI_ACTION_INVALID");
+    }
+    const selected = actions.filter((action) => requested.has(action.actionId));
+    if (selected.length !== body.actionIds.length) {
+      throw new BadRequestError("Confirmation may select only actions in the persisted plan", "AI_ACTION_INVALID");
+    }
+    // This release deliberately exposes one fully transactional domain action.
+    // Other tool kinds are rejected before any side effect rather than reported
+    // as if they had been applied.
+    if (selected.length !== 1 || selected[0]!.entityType !== "feeding" || selected[0]!.operation !== "create") {
+      throw new BadRequestError(
+        "Only one feeding create action is currently executable; unsupported actions must be re-planned",
+        "AI_ACTION_UNSUPPORTED",
+      );
+    }
+    if (!run.babyId) {
+      throw new BadRequestError("A feeding action requires a baby-scoped AI session", "AI_ACTION_INVALID");
+    }
+
+    await this.assertBabyAccess(principal, run.babyId);
+    const action = selected[0]!;
+    const feeding = await new FeedingService(this.prisma).createFeedingRecord(
+      principal,
+      run.babyId,
+      asFeedingRequest(action),
+      action.actionId,
+    );
+
     await this.prisma.$transaction(async (tx) => {
-      await tx.taskExecution.update({
-        where: { id: runId },
+      const locked = await tx.$queryRaw<Array<{ last_event_seq: bigint }>>(
+        Prisma.sql`SELECT last_event_seq FROM ai_runs WHERE id = ${runId} FOR UPDATE`,
+      );
+      const currentSeq = locked[0]?.last_event_seq;
+      if (currentSeq === undefined) throw new RecordNotFoundError("AiRun", runId);
+      const now = new Date();
+      const transition = await tx.taskExecution.updateMany({
+        where: { id: runId, status: "awaiting_confirmation" },
         data: {
           status: "succeeded",
           leaseOwner: null,
           leaseExpiresAt: null,
-          updatedAt: new Date(),
+          resultRef: { actionIds: [action.actionId], feedingId: feeding.id },
+          updatedAt: now,
         },
       });
+      if (transition.count !== 1) {
+        throw new ConcurrencyConflictError("Run was confirmed by another request");
+      }
 
+      const events = [
+        { eventType: "tool_started", payload: { actionId: action.actionId } },
+        {
+          eventType: "tool_succeeded",
+          payload: { actionId: action.actionId, result: feeding },
+        },
+        { eventType: "run_succeeded", payload: { actionIds: [action.actionId] } },
+      ];
+      for (let index = 0; index < events.length; index += 1) {
+        const event = events[index]!;
+        await tx.aiRunEvent.create({
+          data: {
+            id: randomUUID(),
+            runId,
+            sequence: currentSeq + BigInt(index + 1),
+            eventType: event.eventType,
+            payload: event.payload,
+            createdAt: now,
+          },
+        });
+      }
       await tx.aiRun.update({
         where: { id: runId },
         data: {
-          finishedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-
-      await tx.aiRunEvent.create({
-        data: {
-          id: randomUUID(),
-          runId,
-          sequence: run.lastEventSeq + 1n,
-          eventType: "confirmed",
-          payload: { actionIds: body.actionIds },
-          createdAt: new Date(),
+          lastEventSeq: currentSeq + BigInt(events.length),
+          resultSummary: `已执行：${action.summary}`,
+          proposedPlan: Prisma.DbNull,
+          finishedAt: now,
+          updatedAt: now,
         },
       });
     });
@@ -330,7 +531,7 @@ export class AiService {
       data: {
         runId,
         status: "succeeded" as const,
-        appliedActionCount: body.actionIds.length,
+        appliedActionCount: 1,
       },
     };
   }

@@ -146,3 +146,21 @@ export const FamilyAndProductParamSchema = Type.Object(
 export const FamilyAndProductParam = FamilyAndProductParamSchema;
 export type FamilyAndProductParam = Static<typeof FamilyAndProductParamSchema>;
 
+/**
+ * Canonical JSON stringifier with deterministic, sorted object keys.
+ * Ensures consistent hashes across JSONB persistence and in-memory payloads.
+ */
+export function canonicalJsonStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalJsonStringify(item)).join(",")}]`;
+  }
+  const obj = value as Record<string, unknown>;
+  const sortedKeys = Object.keys(obj).sort();
+  const entries = sortedKeys
+    .filter((k) => obj[k] !== undefined)
+    .map((k) => `${JSON.stringify(k)}:${canonicalJsonStringify(obj[k])}`);
+  return `{${entries.join(",")}}`;
+}
