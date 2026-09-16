@@ -1,0 +1,50 @@
+name: Prune reviewed merged branches
+on:
+  push:
+    branches: [codex/complete-integration-20260916, main]
+    paths: [.github/workflows/prune-reviewed-branches.yml]
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  prune:
+    if: github.repository == 'WangZhuo2015/growdesk-server'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify reachability and compare-and-delete reviewed refs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          expected = {
+              'codex/growdesk-feature-parity-20260914': '890be564387018ae87441ec9c6f58d4dcb8e5f5e',
+              'codex/wip-growdesk-web-integration-20260914': 'ed8b4f5e00bec3317dcf8c2e01c5f2415481b94f',
+              'codex/merge-readiness-20260916': '913b14b7395402c1718c66c3c7a7bb5c49ec097f',
+          }
+          git('fetch', '--prune', 'origin')
+          main = git('rev-parse', 'refs/remotes/origin/main')
+          prs = json.loads(subprocess.check_output(['gh', 'pr', 'list', '--state', 'open', '--limit', '100', '--json', 'headRefName'], text=True))
+          if len(prs) >= 100:
+              raise SystemExit('Refusing incomplete PR inventory')
+          open_heads = {p['headRefName'] for p in prs}
+          refs = {ref.removeprefix('refs/heads/'): sha for sha, ref in (line.split() for line in git('ls-remote', '--heads', 'origin').splitlines())}
+          if os.environ['GITHUB_REF'] == 'refs/heads/main':
+              name = 'codex/complete-integration-20260916'
+              if name in refs: expected[name] = refs[name]
+          for name, sha in expected.items():
+              if name not in refs:
+                  print('Already absent:', name); continue
+              if refs[name] != sha or name in open_heads:
+                  print('Preserved changed/open branch:', name); continue
+              if subprocess.run(['git', 'merge-base', '--is-ancestor', sha, main]).returncode != 0:
+                  print('Preserved unmerged branch:', name); continue
+              ref = 'refs/heads/' + name
+              subprocess.run(['git', 'push', '--force-with-lease=' + ref + ':' + sha, 'origin', ':' + ref], check=True)
+              print('Deleted merged branch:', name, sha)
+          PY
