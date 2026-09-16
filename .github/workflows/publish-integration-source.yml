@@ -1,0 +1,67 @@
+name: Publish assembled integration source
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.integration-submission/publish.json]
+permissions:
+  contents: write
+concurrency:
+  group: publish-integration-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply guarded patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re,subprocess
+          root=pathlib.Path.cwd(); stage=root/'.integration-submission'; m=json.loads((stage/'publish.json').read_text())
+          assert m['repository']==os.environ['GITHUB_REPOSITORY']=='WangZhuo2015/growdesk-server'
+          assert m['base']=='d3ce9990f88a680c16a50fce61f29abac4ffc78c'
+          subprocess.run(['git','merge-base','--is-ancestor',m['base'],'HEAD'],check=True)
+          allowed=set(m['paths']); planned={}
+          def blob(data): return hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+          def part(name):
+              raw=(stage/name).read_text(); raw=re.sub(r'\\(?!["\\/bfnrtu])',r'\\\\',raw); return json.loads(raw)
+          for name in m['parts']:
+              for e in part(name):
+                  key=e['path']; p=root/key
+                  if key not in allowed or key in planned: raise AssertionError(key)
+                  if p.exists() and blob(p.read_bytes())==e['target']:
+                      planned[key]=p.read_bytes(); continue
+                  if e['original'] is None:
+                      if p.exists(): raise AssertionError(('expected-new',key)); original=b''
+                  else:
+                      original=p.read_bytes()
+                      if blob(original)!=e['original']: raise AssertionError(('original',key,blob(original),e['original']))
+                  lines=original.decode().splitlines(keepends=True); prev=0; out=[]
+                  for start,end,text in e['edits']:
+                      if not prev<=start<=end<=len(lines): raise AssertionError(('range',key,start,end,len(lines)))
+                      out.extend(lines[prev:start]); out.append(text); prev=end
+                  out.extend(lines[prev:]); data=''.join(out).encode(); planned[key]=data
+          if set(planned)!=allowed: raise AssertionError(('paths',sorted(allowed-set(planned)),sorted(set(planned)-allowed)))
+          for key,data in planned.items():
+              p=root/key; p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(data)
+          PY
+          git diff --check
+      - name: Remove temporary assembly files and commit business source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .integration-submission
+          rm -f .github/workflows/ai-review-source.yml .github/workflows/integration-test-kit.yml .github/workflows/isolated-service-tools.yml .github/workflows/isolated-object-store.yml .github/workflows/assemble-integration-submission.yml .github/workflows/assemble-integration-submission-v2.yml .github/workflows/assemble-integration-submission-v3.yml .github/workflows/assemble-integration-submission-v4.yml .github/workflows/publish-integration-source.yml
+          git add -A
+          git diff --cached --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m 'feat(integration): complete durable Web AI and media backend'
+          current="$(git ls-remote origin refs/heads/codex/ai-integration-complete-20260916 | cut -f1)"
+          test "$current" = "$GITHUB_SHA"
+          git push origin HEAD:refs/heads/codex/ai-integration-complete-20260916
