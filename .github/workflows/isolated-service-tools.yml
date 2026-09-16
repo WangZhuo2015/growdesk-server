@@ -1,0 +1,31 @@
+name: Isolated service tools
+on:
+  push:
+    branches: [codex/ai-integration-complete-20260916]
+    paths: [.github/workflows/isolated-service-tools.yml]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Extract official test service executables without starting a database
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/services/postgres" "$RUNNER_TEMP/services/redis"
+          docker pull postgres:18-bookworm
+          docker pull redis:8-bookworm
+          pg="$(docker create postgres:18-bookworm)"
+          rd="$(docker create redis:8-bookworm)"
+          trap 'docker rm -v "$pg" "$rd" >/dev/null' EXIT
+          docker export "$pg" | tar -x -C "$RUNNER_TEMP/services/postgres" --wildcards 'usr/lib/postgresql/*' 'usr/lib/x86_64-linux-gnu/*' 'usr/share/postgresql/*'
+          docker export "$rd" | tar -x -C "$RUNNER_TEMP/services/redis" --wildcards 'usr/local/bin/redis-server' 'usr/lib/x86_64-linux-gnu/*'
+          docker image inspect postgres:18-bookworm redis:8-bookworm --format '{{json .RepoDigests}}' > "$RUNNER_TEMP/services/image-digests.txt"
+          tar -czf "$RUNNER_TEMP/isolated-services.tar.gz" -C "$RUNNER_TEMP/services" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: isolated-service-tools
+          path: ${{ runner.temp }}/isolated-services.tar.gz
+          retention-days: 1
