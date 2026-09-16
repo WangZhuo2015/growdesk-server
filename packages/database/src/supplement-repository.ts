@@ -90,7 +90,7 @@ export class SupplementRepository {
       baseVersion: null,
       getExistingVersion: async (tx) => {
         const row = await tx.supplementRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true },
         });
         return row?.version ?? null;
@@ -142,7 +142,7 @@ export class SupplementRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.supplementRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -150,7 +150,7 @@ export class SupplementRepository {
       },
       execute: async (tx, meta) => {
         const existing = await tx.supplementRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
         });
         if (!existing || existing.deletedAt !== null) {
           throw new RecordNotFoundError("supplement_record", input.id);
@@ -175,7 +175,7 @@ export class SupplementRepository {
         }
 
         const row = await tx.supplementRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data,
         });
 
@@ -212,7 +212,7 @@ export class SupplementRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.supplementRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -220,7 +220,7 @@ export class SupplementRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.supplementRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: new Date(),
@@ -266,7 +266,7 @@ export class SupplementRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.supplementRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row) return null;
@@ -274,7 +274,7 @@ export class SupplementRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.supplementRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: null,
@@ -340,7 +340,8 @@ export class SupplementRepository {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    // The API returns at most 200 rows; preserve its extra lookahead row.
+    const limit = Math.min(options.limit ?? 50, 201);
 
     const where: Prisma.SupplementRecordWhereInput = {
       familyId,
