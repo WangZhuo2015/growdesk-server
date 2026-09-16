@@ -14,4 +14,6 @@ export * from "./nutrition.js";
 export * from "./knowledge.js";
 export * from "./appConfig.js";
 export * from "./mcp.js";
-export * from "./routes.js";
+export type { HttpMethod, RouteDefinition } from "./routes.js";
+export { ROUTE_DEFINITIONS } from "./all-routes.js";
+export * from "./web-ai.js";
