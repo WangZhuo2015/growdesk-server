@@ -1,3 +1,4 @@
+import { webAiRoutes } from "./routes/web-ai-routes.js";
 import { weatherRoutes } from "./routes/weather-routes.js";
 import { bookRoutes } from "./routes/book-routes.js";
 import { knowledgeRoutes } from "./routes/knowledge-routes.js";
@@ -445,6 +446,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     app.register(aiRoutes, {
       aiService,
     });
+
+    // The Web plugin uses its own inline contracts. Do not register every
+    // exported schema: nested/aliased $ids can break the existing validators.
+    app.register(webAiRoutes, { pool: databaseContext.pool });
 
     app.register(syncRoutes, {
       syncService,
