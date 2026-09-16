@@ -100,7 +100,7 @@ export class SleepRepository {
       baseVersion: null,
       getExistingVersion: async (tx) => {
         const row = await tx.sleepRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true },
         });
         return row?.version ?? null;
@@ -175,7 +175,7 @@ export class SleepRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.sleepRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -183,7 +183,7 @@ export class SleepRepository {
       },
       execute: async (tx, meta) => {
         const existing = await tx.sleepRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
         });
         if (!existing || existing.deletedAt !== null) {
           throw new RecordNotFoundError("sleep_record", input.id);
@@ -240,7 +240,7 @@ export class SleepRepository {
         }
 
         const row = await tx.sleepRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data,
         });
 
@@ -278,7 +278,7 @@ export class SleepRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.sleepRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row || row.deletedAt !== null) return null;
@@ -286,7 +286,7 @@ export class SleepRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.sleepRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: new Date(),
@@ -332,7 +332,7 @@ export class SleepRepository {
       baseVersion: input.baseVersion,
       getExistingVersion: async (tx) => {
         const row = await tx.sleepRecord.findUnique({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           select: { version: true, deletedAt: true },
         });
         if (!row) return null;
@@ -340,7 +340,7 @@ export class SleepRepository {
       },
       execute: async (tx, meta) => {
         const row = await tx.sleepRecord.update({
-          where: { id: input.id },
+          where: { id: input.id, familyId: input.familyId, babyId: input.babyId },
           data: {
             version: meta.nextVersion,
             deletedAt: null,
@@ -434,7 +434,8 @@ export class SleepRepository {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    // The API returns at most 200 rows; preserve its extra lookahead row.
+    const limit = Math.min(options.limit ?? 50, 201);
 
     const where: Prisma.SleepRecordWhereInput = {
       familyId,
