@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { PrismaClient, RecordNotFoundError, FamilyAccessDeniedError, BadRequestError, BabyAccessDeniedError } from "@growdesk/database";
 import { UserPrincipal } from "@growdesk/domain";
-import { StorageDriver } from "../storage/s3-storage-service.js";
+import { StorageDriver, type StorageObject } from "../storage/s3-storage-service.js";
 import {
   AttachmentPurpose,
   CreateAttachmentRequest,
@@ -39,11 +39,17 @@ export class AttachmentService {
     if (uploaderOnly && attachment.uploaderId !== principal.userId) throw new FamilyAccessDeniedError(attachment.familyId);
   }
 
-  async getDownloadUrl(principal: UserPrincipal, attachmentId: string) {
+  async getContent(principal: UserPrincipal, attachmentId: string): Promise<StorageObject & { mimeType: string; byteSize: number }> {
     const attachment = await this.getAttachment(principal, attachmentId);
     if (attachment.status !== "ready") throw new BadRequestError("Attachment is not ready");
-    const url = await this.storageDriver.generatePresignedDownloadUrl({ objectKey: attachment.objectKey, expiresInSeconds: 60 });
-    return { downloadUrl: url.downloadUrl, mimeType: attachment.mimeType, byteSize: attachment.byteSize };
+    const object = await this.storageDriver.getObject(attachment.objectKey);
+    return {
+      ...object,
+      // The attachment row is the authorized application metadata. The
+      // storage content type is advisory and is never allowed to override it.
+      mimeType: attachment.mimeType,
+      byteSize: attachment.byteSize,
+    };
   }
 
   async createAttachment(

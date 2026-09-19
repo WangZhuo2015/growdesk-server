@@ -138,6 +138,26 @@ describe("GrowDesk Contracts Test Suite", () => {
     }
   });
 
+  test("attachment content is documented as binary media while errors remain JSON", async () => {
+    const generated = await generateCanonicalOpenApi();
+    const operation = generated.paths["/api/v1/attachments/{id}/content"].get;
+    const successContent = operation.responses["200"].content;
+
+    assert.deepEqual(Object.keys(successContent), [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "audio/m4a",
+      "audio/wav",
+      "audio/mpeg",
+      "audio/mp4",
+      "application/pdf",
+    ]);
+    assert.equal(successContent["application/json"], undefined);
+    assert.equal(operation.responses["403"].content["application/json"].schema.$ref, "#/components/schemas/ApiErrorEnvelope");
+  });
+
   test("Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff", async () => {
     const generated = await generateCanonicalOpenApi();
     const diskPath = path.join(root, "contracts", "openapi.json");

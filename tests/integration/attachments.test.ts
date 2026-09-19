@@ -204,7 +204,28 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(updated.status, "ready");
   });
 
-  await t.test("ATT-03: Mismatched checksum triggers 400 and marks attachment failed", async () => {
+  await t.test("ATT-03: Authorized content is streamed through the API", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: `/api/v1/attachments/${attachmentId}/content`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+
+    assert.equal(res.statusCode, 200, res.payload);
+    assert.equal(res.headers["content-type"], "image/jpeg");
+    assert.equal(res.headers["cache-control"], "private, no-store");
+    assert.equal(res.headers["x-content-type-options"], "nosniff");
+    assert.deepEqual(Buffer.from(res.payload), testPayload);
+
+    const legacy = await app.inject({
+      method: "GET",
+      url: `/api/v1/attachments/${attachmentId}/download-url`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(legacy.statusCode, 404, "signed read URL endpoint must stay closed");
+  });
+
+  await t.test("ATT-04: Mismatched checksum triggers 400 and marks attachment failed", async () => {
     // Create a second attachment
     const resCreate = await app.inject({
       method: "POST",
@@ -237,7 +258,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(updated.status, "failed");
   });
 
-  await t.test("ATT-04: Cannot renew upload URL for ready attachment", async () => {
+  await t.test("ATT-05: Cannot renew upload URL for ready attachment", async () => {
     const res = await app.inject({
       method: "GET",
       url: `/api/v1/attachments/${attachmentId}/upload-url`,
@@ -249,7 +270,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.match(body.error.message, /Cannot renew/);
   });
 
-  await t.test("ATT-05: Cross-tenant isolation prevents User B access", async () => {
+  await t.test("ATT-06: Cross-tenant isolation prevents User B access", async () => {
     const resComplete = await app.inject({
       method: "POST",
       url: `/api/v1/attachments/${attachmentId}/complete`,
@@ -261,6 +282,13 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     });
     assert.equal(resComplete.statusCode, 403);
 
+    const resContent = await app.inject({
+      method: "GET",
+      url: `/api/v1/attachments/${attachmentId}/content`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(resContent.statusCode, 403);
+
     const resDelete = await app.inject({
       method: "DELETE",
       url: `/api/v1/attachments/${attachmentId}`,
@@ -269,7 +297,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(resDelete.statusCode, 403);
   });
 
-  await t.test("ATT-06: Delete attachment soft-deletes record", async () => {
+  await t.test("ATT-07: Delete attachment soft-deletes record", async () => {
     const res = await app.inject({
       method: "DELETE",
       url: `/api/v1/attachments/${attachmentId}`,
@@ -279,5 +307,12 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(res.statusCode, 200);
     const deleted = await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: attachmentId } });
     assert.ok(deleted.deletedAt !== null);
+
+    const resContent = await app.inject({
+      method: "GET",
+      url: `/api/v1/attachments/${attachmentId}/content`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(resContent.statusCode, 404);
   });
 });

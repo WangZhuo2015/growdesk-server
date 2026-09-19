@@ -88,3 +88,9 @@ export type UploadUrlResponse = Static<typeof UploadUrlResponseSchema>;
 
 export const DeleteAttachmentResponseSchema = SuccessStatusResponseSchema;
 export type DeleteAttachmentResponse = Static<typeof DeleteAttachmentResponseSchema>;
+
+/** Binary content is streamed by the authenticated API, never returned as a signed read URL. */
+export const AttachmentContentResponseSchema = Type.String({
+  format: "binary",
+  description: "Authorized attachment bytes streamed from private object storage",
+});

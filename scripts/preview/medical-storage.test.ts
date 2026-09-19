@@ -42,10 +42,11 @@ test('real preview PG and S3 preserve medical items, enforce attachment scope an
   assert.equal((await fetch(attachment.uploadUrl, { method: 'PUT', headers: { 'content-type': 'image/png' }, body: bytes })).status, 200);
   const complete = await app.inject({ method: 'POST', url: `/api/v1/attachments/${attachment.id}/complete`, headers: a.headers, payload: { sha256, byteSize: bytes.length } });
   assert.equal(complete.statusCode, 200, complete.payload);
-  const download = await app.inject({ url: `/api/v1/attachments/${attachment.id}/download-url`, headers: a.headers });
-  assert.equal(download.statusCode, 200, download.payload);
-  assert.deepEqual(Buffer.from(await (await fetch(download.json().data.downloadUrl)).arrayBuffer()), bytes);
-  assert.equal((await app.inject({ url: `/api/v1/attachments/${attachment.id}/download-url`, headers: b.headers })).statusCode, 403);
+  const content = await app.inject({ url: `/api/v1/attachments/${attachment.id}/content`, headers: a.headers });
+  assert.equal(content.statusCode, 200, content.payload);
+  assert.equal(content.headers['content-type'], 'image/png');
+  assert.deepEqual(Buffer.from(content.payload), bytes);
+  assert.equal((await app.inject({ url: `/api/v1/attachments/${attachment.id}/content`, headers: b.headers })).statusCode, 403);
   const items = [{ id: 'test_item', name: 'test_indicator', value: '12.3', unit: 'test_unit', status: 'normal', interpretation: 'test_preserved' }];
   const path = `/api/v1/babies/${a.babyId}/medical-reports`;
   const report = await app.inject({ method: 'POST', url: path, headers: { ...a.headers, 'idempotency-key': randomUUID() }, payload: { reportDate: '2026-09-14', title: 'test_report', items, attachmentIds: [attachment.id], growthData: { weightKg: '8.10' } } });

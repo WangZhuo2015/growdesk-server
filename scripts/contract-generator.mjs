@@ -151,11 +151,25 @@ export async function buildContractApp() {
   for (const route of contracts.ROUTE_DEFINITIONS) {
     const fastifyPath = route.path;
 
+    const response = Object.fromEntries(
+      Object.entries(route.responses).map(([status, responseSchema]) => {
+        const mediaTypes = route.responseContentTypes?.[Number(status)];
+        if (!mediaTypes) return [status, responseSchema];
+        if (mediaTypes.length === 0 || mediaTypes.some((mediaType) => typeof mediaType !== "string" || mediaType.length === 0)) {
+          throw new Error(`Route ${route.operationId} has invalid response content types for ${status}`);
+        }
+        return [status, {
+          ...(typeof responseSchema.description === "string" ? { description: responseSchema.description } : {}),
+          content: Object.fromEntries(mediaTypes.map((mediaType) => [mediaType, { schema: responseSchema }])),
+        }];
+      }),
+    );
+
     const schema = {
       operationId: route.operationId,
       summary: route.summary,
       tags: route.tags,
-      response: route.responses,
+      response,
       "x-implementation-status": route.implementationStatus,
     };
 

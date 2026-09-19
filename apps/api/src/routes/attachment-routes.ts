@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { Readable } from "node:stream";
 import { AttachmentService } from "../services/attachment-service.js";
 import {
   CreateAttachmentRequest,
@@ -10,6 +11,7 @@ import {
   UploadUrlResponseSchema,
   DeleteAttachmentResponseSchema,
   ApiErrorEnvelopeSchema,
+  IdParamSchema,
 } from "@growdesk/contracts";
 
 export interface AttachmentRoutesOptions {
@@ -22,9 +24,34 @@ export const attachmentRoutes: FastifyPluginAsync<AttachmentRoutesOptions> = asy
 ) => {
   const { attachmentService } = opts;
 
-  fastify.get<{ Params: { id: string } }>("/api/v1/attachments/:id/download-url", { preHandler: [fastify.authenticate] }, async request => ({
-    data: await attachmentService.getDownloadUrl(request.principal!, request.params.id),
-  }));
+  // Content is always streamed through the authenticated API. The old
+  // download-url endpoint intentionally no longer exists: returning a
+  // signed read URL would let the object outlive this authorization check.
+  fastify.get<{ Params: { id: string } }>(
+    "/api/v1/attachments/:id/content",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        params: IdParamSchema,
+        response: {
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
+          404: ApiErrorEnvelopeSchema,
+          503: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const content = await attachmentService.getContent(request.principal!, request.params.id);
+      reply
+        .header("content-type", content.mimeType)
+        .header("content-length", String(content.contentLength ?? content.byteSize))
+        .header("cache-control", "private, no-store")
+        .header("x-content-type-options", "nosniff");
+      return reply.send(Readable.from(content.body, { objectMode: false }));
+    },
+  );
 
   // POST /api/v1/attachments - Initialize upload
   fastify.post<{

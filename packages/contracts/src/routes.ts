@@ -133,6 +133,7 @@ import {
   CompleteAttachmentRequestSchema,
   UploadUrlResponseSchema,
   DeleteAttachmentResponseSchema,
+  AttachmentContentResponseSchema,
 } from "./attachments.js";
 import {
   RegisterPushDeviceRequestSchema,
@@ -187,6 +188,8 @@ export interface RouteDefinition {
   querystring?: TSchema;
   headers?: TSchema;
   responses: Record<number, TSchema>;
+  /** Override Swagger's JSON default for responses whose wire body is not JSON. */
+  responseContentTypes?: Partial<Record<number, readonly string[]>>;
 }
 
 const IdParam = Type.Object({ id: UuidString }, { additionalProperties: false });
@@ -1210,6 +1213,29 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   },
 
   // 15. Attachments (SH-06)
+  {
+    method: "GET",
+    path: "/api/v1/attachments/:id/content",
+    operationId: "getAttachmentContent",
+    summary: "Stream an authorized attachment from private object storage",
+    tags: ["Attachments"],
+    implementationStatus: "PLANNED_SH06",
+    params: IdParam,
+    responseContentTypes: {
+      200: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/heic",
+        "audio/m4a",
+        "audio/wav",
+        "audio/mpeg",
+        "audio/mp4",
+        "application/pdf",
+      ],
+    },
+    responses: { 200: AttachmentContentResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 503: ApiErrorRef },
+  },
   {
     method: "POST",
     path: "/api/v1/attachments",

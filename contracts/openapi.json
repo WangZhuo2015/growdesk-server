@@ -17873,6 +17873,148 @@
         }
       }
     },
+    "/api/v1/attachments/{id}/content": {
+      "get": {
+        "operationId": "getAttachmentContent",
+        "summary": "Stream an authorized attachment from private object storage",
+        "tags": [
+          "Attachments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Authorized attachment bytes streamed from private object storage",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "image/heic": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "audio/m4a": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "audio/wav": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "audio/mpeg": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "audio/mp4": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "format": "binary",
+                  "description": "Authorized attachment bytes streamed from private object storage",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/attachments": {
       "post": {
         "operationId": "createAttachment",
