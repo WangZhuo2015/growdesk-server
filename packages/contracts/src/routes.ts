@@ -1275,7 +1275,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["Attachments"],
     implementationStatus: "PLANNED_SH06",
     params: IdParam,
-    responses: { 200: DeleteAttachmentResponseSchema, 401: ApiErrorRef, 404: ApiErrorRef },
+    responses: { 200: DeleteAttachmentResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef, 503: ApiErrorRef },
   },
 
   // 16. Push Devices & Notifications (SH-06)

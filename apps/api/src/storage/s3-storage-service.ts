@@ -23,6 +23,18 @@ export class StorageObjectUnavailableError extends Error {
   }
 }
 
+export class StorageObjectDeleteError extends Error {
+  readonly statusCode = 503;
+  readonly code = "ATTACHMENT_STORAGE_DELETE_FAILED";
+
+  constructor() {
+    super("Attachment storage deletion is temporarily unavailable");
+    this.name = "StorageObjectDeleteError";
+  }
+}
+
+const STORAGE_DELETE_TIMEOUT_MS = 10_000;
+
 export interface StorageDriver {
   generatePresignedUploadUrl(params: {
     objectKey: string;
@@ -157,12 +169,23 @@ export class AwsS3StorageDriver implements StorageDriver {
   }
 
   async deleteObject(objectKey: string): Promise<void> {
-    await this.client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: objectKey,
-      })
-    );
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), STORAGE_DELETE_TIMEOUT_MS);
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: objectKey,
+        }),
+        { abortSignal: abortController.signal },
+      );
+    } catch {
+      // Do not expose provider errors or credentials. The caller must keep the
+      // database row retryable and return a non-success response.
+      throw new StorageObjectDeleteError();
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 }
 

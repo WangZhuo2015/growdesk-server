@@ -40,6 +40,7 @@ async function verifyAvatarReference(tx: Prisma.TransactionClient, avatarUrl: st
   if (!avatarUrl) return;
   const match = /^\/api\/attachments\/([a-f0-9-]{36})$/i.exec(avatarUrl);
   if (!match) throw new ApiError(422, "INVALID_AVATAR", "Use an uploaded avatar attachment");
+  await tx.$queryRaw`SELECT id FROM public.attachments WHERE id = ${match[1]} FOR UPDATE`;
   const attachment = await tx.attachment.findFirst({ where: { id: match[1], familyId, purpose: "avatar", status: "ready", deletedAt: null, OR: [{ babyId }, { babyId: null, uploaderId: userId }] } });
   if (!attachment) throw new ApiError(403, "AVATAR_ACCESS_DENIED", "Avatar attachment is not available for this baby");
   if (!attachment.babyId) await tx.attachment.update({ where: { id: attachment.id }, data: { babyId } });

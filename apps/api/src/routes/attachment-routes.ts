@@ -145,6 +145,8 @@ export const attachmentRoutes: FastifyPluginAsync<AttachmentRoutesOptions> = asy
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
           404: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
+          503: ApiErrorEnvelopeSchema,
         },
       },
     },

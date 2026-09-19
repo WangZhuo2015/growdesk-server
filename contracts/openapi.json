@@ -18431,6 +18431,16 @@
               }
             }
           },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Standard API Error Envelope",
             "content": {
@@ -18441,7 +18451,37 @@
               }
             }
           },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

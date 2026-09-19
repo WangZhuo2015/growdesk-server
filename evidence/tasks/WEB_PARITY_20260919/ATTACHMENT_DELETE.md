@@ -1,0 +1,9 @@
+# Retryable attachment deletion — IMPLEMENTED_NOT_REVIEWED
+
+Deletion previously marked the database row deleted and swallowed object-store failures. It now locks the attachment in a PostgreSQL transaction, rejects existing medical/avatar references with 409, deletes the object, then marks the row deleted. Object-store errors return 503 and leave the database row available for retry. AWS deletion has a 10-second abort deadline; the transaction deadline is 15 seconds. Medical and avatar binding use the same attachment row lock in their existing transaction, with deterministic lock ordering for medical sets.
+
+Current verification: `/tmp/growdesk-owned-s3-ui-round17b.log` has 203/203 backend main tests passing and the separate actual MinIO HTTP test passing. The fault-injected driver verifies non-success on delete failure, unchanged database visibility and successful retry; it is not evidence of an actual provider outage. The avatar concurrency test holds deletion at the storage boundary and requires an actual waiting PostgreSQL attachment row lock in `pg_stat_activity`, then verifies deletion wins and binding is denied. Referenced avatar deletion returns 409 before touching storage. Actual MinIO verifies private reads, bytes, missing-object 503/recovery and physical deletion. UI failures in this run remain separate open failures and are not waived by these passes.
+
+The old test's swallowed ad-hoc DDL was removed. This suite now requires the fully migrated owned database; the runner applies migrations with ON_ERROR_STOP. Contract generation/check passed with explicit DELETE 409/503 responses.
+
+Not implemented: the plan's asynchronous delete_pending/outbox/worker cleanup flow. This change provides bounded synchronous deletion and explicit retry, not complete BE-07 acceptance. Medical attachment concurrency uses the same lock protocol but has not received a separate interleaving test. No production deployment or production data mutation occurred.
