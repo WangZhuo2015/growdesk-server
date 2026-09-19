@@ -42,6 +42,17 @@ export const GrowthMeasurementSchema = Type.Object(
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
+    // Read-only fields promoted from imported legacy growth rows.  This is a
+    // deliberately small whitelist; the source JSONB metadata is never part
+    // of the public growth response.
+    legacyDate: Type.Optional(Nullable(DateString)),
+    legacyAgeInMonths: Type.Optional(Nullable(Type.Integer({ minimum: 0 }))),
+    legacyAgeLabel: Type.Optional(Nullable(Type.String())),
+    legacyPercentile: Type.Optional(Nullable(Type.Integer({ minimum: 0, maximum: 100 }))),
+    legacyClientId: Type.Optional(Nullable(Type.String())),
+    legacyRecordedById: Type.Optional(Nullable(Type.String())),
+    legacySource: Type.Optional(Nullable(Type.String())),
+    legacySourceAgent: Type.Optional(Nullable(Type.String())),
   },
   { $id: "GrowthMeasurement", additionalProperties: false }
 );

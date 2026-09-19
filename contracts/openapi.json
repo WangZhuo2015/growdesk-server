@@ -1086,6 +1086,44 @@
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
             "type": "string"
+          },
+          "legacyDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "legacyAgeInMonths": {
+            "minimum": 0,
+            "type": "integer",
+            "nullable": true
+          },
+          "legacyAgeLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "legacyPercentile": {
+            "minimum": 0,
+            "maximum": 100,
+            "type": "integer",
+            "nullable": true
+          },
+          "legacyClientId": {
+            "type": "string",
+            "nullable": true
+          },
+          "legacyRecordedById": {
+            "type": "string",
+            "nullable": true
+          },
+          "legacySource": {
+            "type": "string",
+            "nullable": true
+          },
+          "legacySourceAgent": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -12079,6 +12117,44 @@
                             "format": "date-time",
                             "description": "RFC3339 UTC timestamp",
                             "type": "string"
+                          },
+                          "legacyDate": {
+                            "format": "date",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "description": "YYYY-MM-DD calendar date",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacyAgeInMonths": {
+                            "minimum": 0,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "legacyAgeLabel": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacyPercentile": {
+                            "minimum": 0,
+                            "maximum": 100,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "legacyClientId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacyRecordedById": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacySource": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacySourceAgent": {
+                            "type": "string",
+                            "nullable": true
                           }
                         }
                       }
@@ -12284,6 +12360,44 @@
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
+                        },
+                        "legacyDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyAgeInMonths": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyAgeLabel": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyPercentile": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyClientId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyRecordedById": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySource": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySourceAgent": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -12457,6 +12571,44 @@
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
+                        },
+                        "legacyDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyAgeInMonths": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyAgeLabel": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyPercentile": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyClientId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyRecordedById": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySource": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySourceAgent": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -12672,6 +12824,44 @@
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
+                        },
+                        "legacyDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyAgeInMonths": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyAgeLabel": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyPercentile": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyClientId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyRecordedById": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySource": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacySourceAgent": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -12954,6 +13144,44 @@
                                 "format": "date-time",
                                 "description": "RFC3339 UTC timestamp",
                                 "type": "string"
+                              },
+                              "legacyDate": {
+                                "format": "date",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "description": "YYYY-MM-DD calendar date",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "legacyAgeInMonths": {
+                                "minimum": 0,
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "legacyAgeLabel": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "legacyPercentile": {
+                                "minimum": 0,
+                                "maximum": 100,
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "legacyClientId": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "legacyRecordedById": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "legacySource": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "legacySourceAgent": {
+                                "type": "string",
+                                "nullable": true
                               }
                             }
                           }
