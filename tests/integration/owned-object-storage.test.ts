@@ -119,6 +119,15 @@ test('owned S3 uses real signed PUT, private objects, checksum validation and ph
     assert.equal(content.headers.get('x-content-type-options'), 'nosniff');
     assert.deepEqual(Buffer.from(await content.arrayBuffer()), bytes);
     assert.equal((await fetch(`${identity.endpoint}/${identity.bucket}/${attachment.objectKey}`)).status, 403);
+    // Missing storage bytes must not be presented as a successful empty image.
+    await driver.deleteObject(attachment.objectKey);
+    const missingContent = await api('GET', `${attPath}/content`, tokenA);
+    assert.equal(missingContent.status, 503);
+    assert.match(missingContent.headers.get('content-type') || '', /application\/json/);
+    assert.equal((await fetch(attachment.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: bytes })).status, 200);
+    const recoveredContent = await api('GET', `${attPath}/content`, tokenA);
+    assert.equal(recoveredContent.status, 200);
+    assert.deepEqual(Buffer.from(await recoveredContent.arrayBuffer()), bytes);
     assert.equal((await api('DELETE', attPath, tokenA)).status, 200);
     await assert.rejects(client.send(new HeadObjectCommand({ Bucket: identity.bucket, Key: attachment.objectKey })),
       (error: any) => error.$metadata?.httpStatusCode === 404);

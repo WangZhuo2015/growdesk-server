@@ -11,12 +11,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createServer } from "node:http";
 import net, { type AddressInfo } from "node:net";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
-import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
+import { type DeleteObjectsCommandOutput, S3Client, CreateBucketCommand, ListObjectsV2Command, DeleteObjectsCommand, DeleteBucketCommand } from "@aws-sdk/client-s3";
+import { AwsS3StorageDriver } from "../../apps/api/src/storage/s3-storage-service.js";
+import { requireTestObjectStorage, type TestObjectStorageIdentity, requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
 import { goldenClockArgs } from "./golden-clock.js";
 
 interface OwnedRun {
@@ -27,6 +30,7 @@ interface OwnedRun {
   pgPort: number;
   redisPort: number;
   token: string;
+  s3?: TestObjectStorageIdentity;
 }
 
 interface HttpResult {
@@ -292,7 +296,29 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     throw error;
   }
   const jwtSecret = "test_http_parity_jwt_secret_at_least_32_chars";
-  const api = buildApiApp({ databaseContext: database, jwtSecret });
+  const storage = run.s3 ? requireTestObjectStorage(run.s3, run.token) : undefined;
+  let storageClient: S3Client | undefined;
+  if (storage) {
+    process.kill(storage.pid, 0);
+    storageClient = new S3Client({ endpoint: storage.endpoint, region: storage.region, forcePathStyle: true,
+      credentials: { accessKeyId: storage.accessKeyId, secretAccessKey: storage.secretAccessKey } });
+    await storageClient.send(new CreateBucketCommand({ Bucket: storage.bucket }));
+    t.after(async () => {
+      try {
+        // This exact run-token bucket belongs exclusively to this child stack.
+        for (;;) {
+          const page = await storageClient!.send(new ListObjectsV2Command({ Bucket: storage.bucket }));
+          const objects = (page.Contents || []).flatMap((object) => object.Key ? [{ Key: object.Key }] : []);
+          if (!objects.length) break;
+          const deleted: DeleteObjectsCommandOutput = await storageClient!.send(new DeleteObjectsCommand({ Bucket: storage.bucket, Delete: { Objects: objects } }));
+          assert.equal(deleted.Errors?.length || 0, 0, "owned object cleanup failed");
+        }
+        await storageClient!.send(new DeleteBucketCommand({ Bucket: storage.bucket }));
+      } finally { storageClient!.destroy(); }
+    });
+  }
+  const api = buildApiApp({ databaseContext: database, jwtSecret,
+    ...(storage ? { storageDriver: new AwsS3StorageDriver({ ...storage, forcePathStyle: true }) } : {}) });
   const users: string[] = [];
   const families: string[] = [];
   let webProcess: ChildProcess | null = null;
@@ -309,6 +335,26 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   const webOrigin = `http://127.0.0.1:${webPort}`;
   const uiManifestPath = path.join(run.directory, "web-ui-manifest.json");
 
+  // External OCR is deliberately virtual; database, BFF and object storage remain real.
+  // Standalone Next changes cwd to its build directory, so reject profile overrides there.
+  assert.equal(fs.existsSync(path.join(path.dirname(standalone), "llm-profiles.json")), false,
+    "Standalone build must not contain a live LLM profile");
+  const virtualAi = createServer(async (request, response) => {
+    if (request.method !== "POST" || request.url !== "/v1/chat/completions" ||
+        request.headers.authorization !== "Bearer test_owned_virtual_ai") {
+      response.writeHead(403).end(); return;
+    }
+    for await (const _chunk of request) { /* consume synthetic image request */ }
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify({
+      title: "test_virtual_ocr", category: "general", date: "2026-09-19",
+      hospital: "test_virtual_hospital", aiSummary: "test_virtual_ocr_response", items: [],
+    }) } }] }));
+  });
+  await new Promise<void>((resolve) => virtualAi.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise<void>((resolve, reject) => virtualAi.close(error => error ? reject(error) : resolve())));
+  const virtualAiUrl = `http://127.0.0.1:${(virtualAi.address() as AddressInfo).port}/v1`;
+
   const startWeb = async () => {
     if (webProcess && webProcess.exitCode === null) return;
     webLogFd = fs.openSync(webLogPath, "a", 0o600);
@@ -321,6 +367,10 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
       GROWDESK_API_URL: apiOrigin,
       GROWDESK_WEB_ORIGIN: webOrigin,
       NEXT_TELEMETRY_DISABLED: "1",
+      AI_BASE_URL: virtualAiUrl, OPENAI_BASE_URL: virtualAiUrl,
+      AI_API_KEY: "test_owned_virtual_ai", OPENAI_API_KEY: "test_owned_virtual_ai",
+      OPENROUTER_API_KEY: "", AI_MODEL: "test_virtual", AI_VISION_MODEL: "test_virtual",
+
       // The migrated Web must not discover or mutate its checked-in SQLite DB.
       DATABASE_URL: `file:${path.join(runtimeDir, "unused-test-only.db")}`,
     };
@@ -411,7 +461,8 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     apiBaseUrl: apiOrigin,
     database: { host: "127.0.0.1", port: run.pgPort, name: run.database, database: run.database, role: run.user },
     redis: { host: "127.0.0.1", port: run.redisPort },
-    storage: { s3Covered: false },
+    storage: { s3Covered: Boolean(storage), driver: storage ? "owned-minio" : "mock" },
+    externalAi: { mode: "owned-loopback-virtual", realProviderCovered: false },
   }) + "\n", { mode: 0o600 });
   fs.chmodSync(uiManifestPath, 0o600);
 
