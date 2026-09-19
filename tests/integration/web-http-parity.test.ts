@@ -497,6 +497,40 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     { notes: "test_http_growth_updated" },
   );
 
+  const savedRecipes: any[] = [];
+  for (const [index, recipeDate] of ["2026-09-18", "2026-09-19", "2026-09-19"].entries()) {
+    const result = await request(webOrigin, "/api/food/plans", {
+      method: "POST", cookie: activeCookie, origin: webOrigin,
+      body: { babyId, date: recipeDate, name: `test_http_recipe_${index}`, ingredients: ["test_carrot"], steps: ["test_step"] },
+    });
+    const recipe = expectStatus(result, 201, "food recipe create");
+    assert.equal(recipe.babyId, babyId);
+    assert.equal(recipe.date, recipeDate);
+    assert.ok(recipe.id && recipe.createdAt);
+    savedRecipes.push(recipe);
+  }
+  const allRecipes = listFromBody(expectStatus(await request(webOrigin, `/api/food/plans?babyId=${babyId}`, { cookie: activeCookie }), 200, "recipe history"));
+  assert.deepEqual(allRecipes.map(row => row.id), [savedRecipes[1].id, savedRecipes[2].id, savedRecipes[0].id]);
+  for (const recipe of savedRecipes) assert.deepEqual(allRecipes.find(row => row.id === recipe.id), recipe, "recipe identity/content must survive later saves");
+  const dayRecipes = listFromBody(expectStatus(await request(webOrigin, `/api/food/plans?babyId=${babyId}&date=2026-09-19`, { cookie: activeCookie }), 200, "same-day recipes"));
+  assert.equal(dayRecipes.length, 2);
+  assert.equal(allRecipes.some(row => "supplementState" in row || "webRecipes" in row), false);
+
+  const pendingBody = { babyId, clientId: randomUUID(), name: "test_pending_vaccine", dose: "第1剂", scheduledDate: "2026-09-20", isCompleted: false };
+  const pending = expectStatus(await request(webOrigin, "/api/vaccines", { method: "POST", cookie: activeCookie, origin: webOrigin, body: pendingBody }), 201, "pending vaccine create");
+  assert.equal(pending.record.isCompleted, false);
+  assert.equal(pending.record.completedDate, null);
+  const repeatedPending = expectStatus(await request(webOrigin, "/api/vaccines", { method: "POST", cookie: activeCookie, origin: webOrigin, body: pendingBody }), 201, "pending vaccine idempotent retry");
+  assert.deepEqual(repeatedPending, pending);
+  const pendingId = idFromBody(pending.record);
+  const reminders = listFromBody(expectStatus(await request(webOrigin, `/api/notifications?babyId=${babyId}`, { cookie: activeCookie }), 200, "pending vaccine reminder"));
+  assert.ok(reminders.some(row => row.id === `vaccine-${pendingId}`), "a real saved pending record must produce its reminder");
+  expectStatus(await request(webOrigin, `/api/vaccines?id=${pendingId}&babyId=${babyId}`, { method: "DELETE", cookie: activeCookie, origin: webOrigin }), 200, "pending vaccine delete");
+  const afterPendingDelete = listFromBody(expectStatus(await request(webOrigin, `/api/notifications?babyId=${babyId}`, { cookie: activeCookie }), 200, "pending reminder removed"));
+  assert.equal(afterPendingDelete.some(row => row.id === `vaccine-${pendingId}`), false);
+  const preservedRecipes = listFromBody(expectStatus(await request(webOrigin, `/api/food/plans?babyId=${babyId}`, { cookie: activeCookie }), 200, "recipe history after pending mutation"));
+  assert.deepEqual(preservedRecipes, allRecipes);
+
   const invite = await request(webOrigin, "/api/family/invite", {
     method: "POST", cookie: activeCookie, origin: webOrigin,
     body: { familyId: aFamilyId, expiresInDays: 7 },
@@ -520,6 +554,8 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
 
   const foreignBaby = await request(webOrigin, `/api/baby?babyId=${encodeURIComponent(babyId)}`, { cookie: bCookie });
   assert.ok([403, 404].includes(foreignBaby.status), `foreign baby read must be denied: ${bodySummary(foreignBaby.body)}`);
+  const foreignRecipes = await request(webOrigin, `/api/food/plans?babyId=${babyId}`, { cookie: bCookie });
+  assert.ok([403, 404].includes(foreignRecipes.status), "foreign recipe history must be denied");
   const foreignFeed = await request(webOrigin, `/api/records/feeding?babyId=${encodeURIComponent(babyId)}`, { cookie: bCookie });
   assert.ok([403, 404].includes(foreignFeed.status), `foreign record read must be denied: ${bodySummary(foreignFeed.body)}`);
   const foreignWrite = await request(webOrigin, "/api/records/feeding", {
@@ -593,7 +629,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   assert.ok(canonicalTimelineRows.some((entry: any) => entry.entityId === medicalId && entry.entityType === "medical"), `canonical timeline omitted medical projection (${bodySummary({ medicalId, rows: canonicalTimelineSummary })})`);
   assert.ok(canonicalTimelineRows.some((entry: any) => entry.entityId === vaccineId && entry.entityType === "vaccine"), `canonical timeline omitted vaccine projection (${bodySummary({ vaccineId, rows: canonicalTimelineSummary })})`);
 
-  const webTimeline = await request(webOrigin, `/api/records/timeline?babyId=${encodeURIComponent(babyId)}`, { cookie: activeCookie });
+  const webTimeline = await request(webOrigin, `/api/records/timeline?babyId=${encodeURIComponent(babyId)}&date=2026-09-18`, { cookie: activeCookie });
   const webTimelineRows = listFromBody(expectStatus(webTimeline, 200, "Web timeline with medical and vaccine projections"));
   const webMedical = webTimelineRows.find((entry: any) => entry?.entityId === medicalId || entry?.recordId === medicalId || entry?.id === medicalId);
   const webVaccine = webTimelineRows.find((entry: any) => entry?.entityId === vaccineId || entry?.recordId === vaccineId || entry?.id === vaccineId);
