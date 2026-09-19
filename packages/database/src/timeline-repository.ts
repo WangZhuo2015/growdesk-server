@@ -68,11 +68,13 @@ export class TimelineRepository {
       familyId,
       babyId,
       deletedAt: null,
+      // The public care timeline contract excludes medical/vaccine projections.
+      // Filter before take/keyset pagination so those rows cannot consume pages.
+      entityType: {
+        in: ["feeding", "sleep", "diaper", "food", "supplement", "growth"]
+          .filter(type => !options.entityType || type === options.entityType),
+      },
     };
-
-    if (options.entityType) {
-      where.entityType = options.entityType;
-    }
 
     if (options.beforeOccurredAt) {
       if (options.beforeId) {

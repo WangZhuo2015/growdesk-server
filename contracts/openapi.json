@@ -19248,6 +19248,9 @@
                   "recommendedAgeMonths": {
                     "minimum": 0,
                     "type": "integer"
+                  },
+                  "tried": {
+                    "type": "boolean"
                   }
                 }
               }

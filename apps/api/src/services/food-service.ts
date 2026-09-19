@@ -345,6 +345,16 @@ export class FoodService {
       recommendedAgeMonths: body.recommendedAgeMonths,
     });
 
+    // Legacy Web "create as tried": persist the explicit family status in the
+    // same step so the new item shows up in the tried list immediately.
+    if (body.tried !== undefined) {
+      await this.libraryRepo.updateFamilyStatus(activeFamily.familyId, item.id, {
+        tried: body.tried,
+        reaction: null,
+      });
+      return { ...item, familyStatus: { tried: body.tried, reaction: null } } as FoodLibraryItem;
+    }
+
     return item as FoodLibraryItem;
   }
 

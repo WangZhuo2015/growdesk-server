@@ -582,6 +582,7 @@ export class AiService {
         data: {
           status: "queued",
           attempt: newAttempt,
+          cancelRequestedAt: null,
           leaseOwner: null,
           leaseExpiresAt: null,
           errorDetails: Prisma.JsonNull,

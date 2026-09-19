@@ -44,7 +44,10 @@ function harness(count: number) {
         assert.equal(query.where.deletedAt, null);
         const predicates = query.where.OR as Array<{ id?: { lt: string } }> | undefined;
         const beforeId = predicates?.find(predicate => predicate.id)?.id?.lt;
-        return rows.filter(row => !beforeId || row.id < beforeId).slice(0, query.take);
+        const typeFilter = query.where.entityType as string | { in: string[] } | undefined;
+        return rows.filter(row => (!beforeId || row.id < beforeId) &&
+          (!typeFilter || (typeof typeFilter === "string" ? row.entityType === typeFilter : typeFilter.in.includes(row.entityType))))
+          .slice(0, query.take);
       },
     },
   } as unknown as PrismaClient;
@@ -55,6 +58,24 @@ function harness(count: number) {
   } as unknown as UserPrincipal;
   return { rows, queries, prisma, principal, service: new TimelineService(prisma) };
 }
+
+test("timeline filters non-care projections before pagination without losing any supported kind", async () => {
+  const h = harness(8);
+  const kinds = ["vaccine", "medical", "feeding", "sleep", "diaper", "food", "supplement", "growth"];
+  h.rows.forEach((row, i) => { row.entityType = kinds[i]!; });
+  const first = await h.service.listTimeline(h.principal, BABY, { limit: 3 });
+  assert.deepEqual(first.data.map(row => row.entityType), ["feeding", "sleep", "diaper"],
+    "care timeline must exclude vaccine/medical before applying the page limit");
+  assert.ok(first.page.nextCursor);
+  const second = await h.service.listTimeline(h.principal, BABY, { limit: 3, cursor: first.page.nextCursor });
+  assert.deepEqual(second.data.map(row => row.entityType), ["food", "supplement", "growth"]);
+  assert.equal(second.page.nextCursor, null);
+  for (const entityType of ["vaccine", "medical", "unknown"]) {
+    const result = await h.service.listTimeline(h.principal, BABY, { entityType });
+    assert.deepEqual(result.data, [], "an explicit filter must not re-enable non-care entries");
+  }
+  assert.deepEqual((await h.service.listTimeline(h.principal, BABY, { entityType: "growth" })).data.map(row => row.entityType), ["growth"]);
+});
 
 test("maximum-size timeline page retains its lookahead and every tied-timestamp row", async () => {
   const h = harness(401);

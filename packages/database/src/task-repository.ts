@@ -487,6 +487,20 @@ export class TaskExecutionRepository {
     failedCount: number;
     requeuedOutboxCount: number;
   }> {
+    // A cancelled queued task cannot be claimed. Finish it here; leave a live
+    // running lease to its worker so cancellation cannot race active work.
+    await pool.query(`
+      UPDATE task_executions
+      SET status = 'cancelled',
+        lease_owner = NULL,
+        lease_expires_at = NULL,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE cancel_requested_at IS NOT NULL
+        AND status NOT IN ('succeeded', 'failed', 'cancelled')
+        AND (status <> 'running' OR lease_owner IS NULL
+          OR lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
+    `);
+
     // 1. Recover expired tasks
     const recoverQuery = `
       UPDATE task_executions
