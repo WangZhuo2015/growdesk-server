@@ -282,7 +282,10 @@ export class AttachmentService {
           deletedAt: null,
         },
       });
-      if (medicalReferences > 0 || avatarReferences > 0) {
+      const growthReferences = await tx.growthMeasurement.count({
+        where: { attachmentId },
+      });
+      if (medicalReferences > 0 || avatarReferences > 0 || growthReferences > 0) {
         throw new AttachmentInUseError();
       }
 
