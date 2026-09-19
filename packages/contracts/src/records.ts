@@ -416,6 +416,8 @@ export const TimelineEntityTypeSchema = Type.Union([
   Type.Literal("food"),
   Type.Literal("supplement"),
   Type.Literal("growth"),
+  Type.Literal("medical"),
+  Type.Literal("vaccine"),
 ]);
 
 export type TimelineEntityType = Static<typeof TimelineEntityTypeSchema>;

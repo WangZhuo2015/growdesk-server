@@ -923,6 +923,18 @@
                 "enum": [
                   "growth"
                 ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "medical"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "vaccine"
+                ]
               }
             ]
           },
@@ -11525,6 +11537,18 @@
                                 "type": "string",
                                 "enum": [
                                   "growth"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "medical"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "vaccine"
                                 ]
                               }
                             ]
