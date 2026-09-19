@@ -62,6 +62,13 @@ export function toContractFamily(family: {
   };
 }
 
+function toContractFamilyMemberRole(role: string): ContractFamilyMember["role"] {
+  if (role === "admin" || role === "member" || role === "viewer") return role;
+  // The database CHECK constraint should make this unreachable. Do not
+  // silently turn an unknown permission into a weaker-looking member role.
+  throw new ApiError(500, "INVALID_FAMILY_MEMBER_ROLE", "Family member has an unsupported role");
+}
+
 export function toDbGender(gender?: "boy" | "girl" | "other"): string {
   if (gender === "girl") return "female";
   if (gender === "boy") return "male";
@@ -518,10 +525,13 @@ export class FamilyBabyService {
     });
 
     return members.map((m) => ({
+      id: m.id,
       userId: m.userId,
       familyId: m.familyId,
-      role: m.role === "admin" ? "admin" : "member",
+      role: toContractFamilyMemberRole(m.role),
+      username: m.user.username,
       displayName: m.user.displayName,
+      relation: m.relation,
       joinedAt: m.createdAt.toISOString(),
     }));
   }

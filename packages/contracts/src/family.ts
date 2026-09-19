@@ -55,16 +55,28 @@ export type UpdateFamilyRequest = Static<typeof UpdateFamilyRequestSchema>;
 export const FamilyMemberRoleSchema = Type.Union([
   Type.Literal("admin"),
   Type.Literal("member"),
+  Type.Literal("viewer"),
 ]);
 
 export type FamilyMemberRole = Static<typeof FamilyMemberRoleSchema>;
 
+/** Family-management mutations currently allow promotion/demotion only between these roles. */
+export const FamilyMemberManageRoleSchema = Type.Union([
+  Type.Literal("admin"),
+  Type.Literal("member"),
+]);
+
+export type FamilyMemberManageRole = Static<typeof FamilyMemberManageRoleSchema>;
+
 export const FamilyMemberSchema = Type.Object(
   {
+    id: UuidString,
     userId: UuidString,
     familyId: UuidString,
     role: FamilyMemberRoleSchema,
+    username: Type.String({ minLength: 3, maxLength: 50 }),
     displayName: Type.String(),
+    relation: Type.String({ minLength: 1, maxLength: 50 }),
     joinedAt: DateTimeString,
   },
   { $id: "FamilyMember", additionalProperties: false }
@@ -83,7 +95,7 @@ export type FamilyMemberListResponse = Static<typeof FamilyMemberListResponseSch
 
 export const UpdateFamilyMemberRequestSchema = Type.Object(
   {
-    role: FamilyMemberRoleSchema,
+    role: FamilyMemberManageRoleSchema,
   },
   { $id: "UpdateFamilyMemberRequest", additionalProperties: false }
 );
