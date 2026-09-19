@@ -29,7 +29,7 @@ def main():
     def metadata():return dict(createdAt=date,updatedAt=date)
     tables={'User':[dict(id='test_user_'+str(i),username='test_user_'+str(i),passwordHash='$2b$10$'+'a'*53,displayName='test_user',**metadata()) for i in [1,2]],
       'Family':[dict(id='test_family_'+str(i),name='test_family',**metadata()) for i in [1,2]],
-      'Baby':[dict(id='test_baby_'+str(i),familyId='test_family_'+str(i),nickname='test_baby',gender='female',birthDate='2026-01-01',**metadata()) for i in [1,2]],
+      'Baby':[dict(id='test_baby_'+str(i),familyId='test_family_'+str(i),nickname='test_baby',gender='female',birthDate='2026-01-01',gestationalAge=38 if i==1 else None,**metadata()) for i in [1,2]],
       'FamilyMember':[dict(id='test_member_'+str(i),familyId='test_family_'+str(i),userId='test_user_'+str(i),role='admin',**metadata()) for i in [1,2]],
       'FeedingRecord':[dict(id='test_record',babyId='test_baby_1',notes="test_'\\; DROP TABLE users; --") ]}
     data=dict(formatVersion=1,timeZone='Asia/Shanghai',capturedAt=date,sourceId='test_source',sourceSha256='a'*64,tables=tables,excluded={})
@@ -41,6 +41,8 @@ def main():
     sql=module.render_import(data,'c'*64);execute(sql);execute(sql)
     assert execute('SELECT count(*) FROM public.users')=='2'
     assert execute('SELECT count(*) FROM public.baby_members')=='2'
+    assert execute("SELECT gestational_age FROM public.babies WHERE id='test_baby_1'")=='266'
+    assert execute("SELECT gestational_age IS NULL FROM public.babies WHERE id='test_baby_2'")=='t'
     assert execute('SELECT count(*) FROM legacy_import.import_rows')==str(sum(map(len,tables.values())))
     execute(module.render_import(data,'d'*64),success=False)
     assert execute('SELECT count(*) FROM legacy_import.import_batches')=='1'
