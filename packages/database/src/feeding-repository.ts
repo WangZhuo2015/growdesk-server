@@ -1,7 +1,17 @@
 import { PrismaClient, Prisma } from "./generated/client.js";
 import { UserPrincipal } from "@growdesk/domain";
-import { executeFamilyUnitOfWork, CommandExecutionResult } from "./unit-of-work.js";
-import { FamilyAccessDeniedError, BabyAccessDeniedError, RecordNotFoundError } from "./errors.js";
+import {
+  executeFamilyUnitOfWork,
+  CommandExecutionResult,
+  LegacyIdempotencyGoneError,
+  LegacyReplayResult,
+} from "./unit-of-work.js";
+import {
+  FamilyAccessDeniedError,
+  BabyAccessDeniedError,
+  RecordNotFoundError,
+  IdempotencyKeyReusedError,
+} from "./errors.js";
 
 export interface CreateFeedingInput {
   readonly commandId: string;
@@ -98,6 +108,21 @@ function mapFeedingRow(row: {
   };
 }
 
+function sameDate(actual: Date | null, expected: Date | null | undefined): boolean {
+  if (actual === null || expected === null || expected === undefined) {
+    return actual === (expected ?? null);
+  }
+  return actual.getTime() === expected.getTime();
+}
+
+function decimalText(value: Prisma.Decimal | string | number | null | undefined): string | null {
+  return value === null || value === undefined ? null : new Prisma.Decimal(value.toString()).toString();
+}
+
+function sameDecimal(actual: Prisma.Decimal | null, expected: string | number | null | undefined): boolean {
+  return decimalText(actual) === decimalText(expected);
+}
+
 export class FeedingRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -121,6 +146,44 @@ export class FeedingRepository {
           select: { version: true },
         });
         return row?.version ?? null;
+      },
+      findLegacyReplay: async (tx): Promise<LegacyReplayResult<FeedingRecordEntity> | null> => {
+        const legacyRows = await tx.feedingRecord.findMany({
+          where: {
+            familyId: input.familyId,
+            babyId: input.babyId,
+            legacyClientId: input.commandId,
+          },
+          orderBy: { id: "asc" },
+        });
+        if (legacyRows.length === 0) return null;
+
+        // A deleted imported row is a tombstone for the old key.  Do not
+        // revive it or create a replacement under the same client id.
+        if (legacyRows.some((row) => row.deletedAt !== null)) {
+          throw new LegacyIdempotencyGoneError(input.commandId);
+        }
+        if (legacyRows.length !== 1) {
+          throw new IdempotencyKeyReusedError(input.commandId);
+        }
+
+        const row = legacyRows[0];
+        if (!row) throw new IdempotencyKeyReusedError(input.commandId);
+        const sameFields =
+          row.feedingType === input.feedingType &&
+          sameDate(row.occurredAt, input.occurredAt) &&
+          sameDecimal(row.amountMl, input.amountMl) &&
+          row.leftMinutes === (input.leftMinutes ?? null) &&
+          row.rightMinutes === (input.rightMinutes ?? null) &&
+          row.durationMinutes === (input.durationMinutes ?? null) &&
+          row.spitUp === (input.spitUp ?? "false") &&
+          row.formulaProductId === (input.formulaProductId ?? null) &&
+          row.notes === (input.notes ?? null);
+        if (!sameFields) {
+          throw new IdempotencyKeyReusedError(input.commandId);
+        }
+
+        return { result: mapFeedingRow(row), version: row.version };
       },
       execute: async (tx, meta) => {
         const row = await tx.feedingRecord.create({
