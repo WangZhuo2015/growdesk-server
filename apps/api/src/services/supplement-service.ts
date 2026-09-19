@@ -54,6 +54,7 @@ export function mapEntityToSupplementRecord(entity: SupplementRecordEntity): Sup
     occurredAt: toIso(entity.occurredAt),
     amount: entity.amount,
     notes: entity.notes,
+    recordedByUserId: entity.recordedByUserId,
     version: entity.version.toString(),
     createdAt: toIso(entity.createdAt),
     updatedAt: toIso(entity.updatedAt),

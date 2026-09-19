@@ -98,11 +98,20 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
   if (!suppRows[0]?.exists) {
     await ctx.pool.query(supplementSql);
   }
+  const actorSql = fs.readFileSync("prisma/migrations/202609190017_supplement_record_actor/migration.sql", "utf8");
+  const { rows: actorRows } = await ctx.pool.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'supplement_records' AND column_name = 'recorded_by_user_id'`,
+  );
+  if (!actorRows[0]) {
+    await ctx.pool.query(actorSql);
+  }
 
   // Identities
   const userAName = `test_supp_a_${Date.now()}`;
   const userBName = `test_supp_b_${Date.now()}`;
   let tokenA = "";
+  let userAId = "";
   let familyAId = "";
   let babyAId = "";
   let tokenB = "";
@@ -124,7 +133,9 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
       },
     });
     assert.strictEqual(regResA.statusCode, 201);
-    tokenA = regResA.json<{ data: { accessToken: string } }>().data.accessToken;
+    const registration = regResA.json<{ data: { accessToken: string; user: { id: string } } }>().data;
+    tokenA = registration.accessToken;
+    userAId = registration.user.id;
 
     const famResA = await app.inject({
       method: "GET",
@@ -217,6 +228,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(body.data.supplementName, "Vitamin D3");
     assert.strictEqual(body.data.amount, "400 IU");
     assert.strictEqual(body.data.notes, "Morning drop");
+    assert.strictEqual(body.data.recordedByUserId, userAId);
     assert.strictEqual(body.data.version, "1");
     record1Version = body.data.version;
 
@@ -229,6 +241,11 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(tlRows[0].baby_id, babyAId);
     assert.strictEqual(tlRows[0].family_id, familyAId);
     assert.strictEqual(tlRows[0].deleted_at, null);
+    const { rows: actorRows } = await ctx.pool.query(
+      `SELECT recorded_by_user_id FROM supplement_records WHERE id = $1`,
+      [record1Id],
+    );
+    assert.strictEqual(actorRows[0]?.recorded_by_user_id, userAId);
   });
 
   await t.test("SU-02: Idempotency replay with same key returns cached result", async () => {
@@ -376,6 +393,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     const updated = validUpdateRes.json().data;
     assert.strictEqual(updated.supplementName, "Vitamin D3 + K2");
     assert.strictEqual(updated.amount, "600 IU");
+    assert.strictEqual(updated.recordedByUserId, userAId);
     assert.strictEqual(updated.version, "2");
     record1Version = updated.version;
   });

@@ -359,6 +359,7 @@ export const SupplementRecordSchema = Type.Object(
     occurredAt: DateTimeString,
     amount: Nullable(Type.String()),
     notes: Nullable(Type.String({ maxLength: 1000 })),
+    recordedByUserId: Type.Optional(Nullable(UuidString)),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,

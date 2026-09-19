@@ -888,6 +888,12 @@
             "type": "string",
             "nullable": true
           },
+          "recordedByUserId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string",
+            "nullable": true
+          },
           "version": {
             "pattern": "^\\d+$",
             "description": "64-bit integer represented as string",
@@ -10925,6 +10931,12 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "recordedByUserId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string",
+                            "nullable": true
+                          },
                           "version": {
                             "pattern": "^\\d+$",
                             "description": "64-bit integer represented as string",
@@ -11101,6 +11113,12 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "version": {
                           "pattern": "^\\d+$",
                           "description": "64-bit integer represented as string",
@@ -11255,6 +11273,12 @@
                         },
                         "notes": {
                           "maxLength": 1000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -11440,6 +11464,12 @@
                         },
                         "notes": {
                           "maxLength": 1000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },

@@ -624,6 +624,7 @@ model SupplementRecord {
   occurredAt     DateTime  @map("occurred_at") @db.Timestamptz(3)
   amount         String?   @db.VarChar(100)
   notes          String?   @db.VarChar(1000)
+  recordedByUserId String?  @map("recorded_by_user_id")
   version        Int       @default(1)
   deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)

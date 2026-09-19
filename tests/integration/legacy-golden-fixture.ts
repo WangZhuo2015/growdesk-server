@@ -116,7 +116,7 @@ function fixtures(passwordHash: string) {
   }];
   canonical.supplementRecord = [{
     id: supplementRecordId, ...common, supplementName: supplementProduct.name,
-    occurredAt: "2026-09-19T01:00:00.000Z", amount: "1.5 滴", notes: "test_supplement_record", version: 1,
+    occurredAt: "2026-09-19T01:00:00.000Z", amount: "1.5 滴", notes: "test_supplement_record", recordedByUserId: id(1), version: 1,
   }];
   const planData = {
     date,

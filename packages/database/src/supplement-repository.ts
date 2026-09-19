@@ -47,6 +47,7 @@ export interface SupplementRecordEntity {
   readonly occurredAt: Date;
   readonly amount: string | null;
   readonly notes: string | null;
+  readonly recordedByUserId: string | null;
   readonly version: number;
   readonly deletedAt: Date | null;
   readonly createdAt: Date;
@@ -61,6 +62,7 @@ function mapSupplementRow(row: {
   occurredAt: Date;
   amount: string | null;
   notes: string | null;
+  recordedByUserId: string | null;
   version: number;
   deletedAt: Date | null;
   createdAt: Date;
@@ -105,6 +107,7 @@ export class SupplementRepository {
             occurredAt: input.occurredAt,
             amount: input.amount ?? null,
             notes: input.notes ?? null,
+            recordedByUserId: principal.userId,
             version: meta.nextVersion,
           },
         });
