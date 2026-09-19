@@ -140,8 +140,14 @@ describe("GrowDesk Contracts Test Suite", () => {
 
   test("attachment content is documented as binary media while errors remain JSON", async () => {
     const generated = await generateCanonicalOpenApi();
-    const operation = generated.paths["/api/v1/attachments/{id}/content"].get;
-    const successContent = operation.responses["200"].content;
+    assert.ok(generated.paths);
+    const pathItem = generated.paths["/api/v1/attachments/{id}/content"] as {
+      get: { responses: Record<string, { content: Record<string, { schema: { $ref?: string } }> }> };
+    };
+    const operation = pathItem.get;
+    const success = operation.responses["200"];
+    assert.ok(success);
+    const successContent = success.content;
 
     assert.deepEqual(Object.keys(successContent), [
       "image/jpeg",
@@ -155,7 +161,9 @@ describe("GrowDesk Contracts Test Suite", () => {
       "application/pdf",
     ]);
     assert.equal(successContent["application/json"], undefined);
-    assert.equal(operation.responses["403"].content["application/json"].schema.$ref, "#/components/schemas/ApiErrorEnvelope");
+    const forbidden = operation.responses["403"]?.content["application/json"];
+    assert.ok(forbidden);
+    assert.equal(forbidden.schema.$ref, "#/components/schemas/ApiErrorEnvelope");
   });
 
   test("Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff", async () => {
