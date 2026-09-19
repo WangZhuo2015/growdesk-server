@@ -23,7 +23,8 @@ def main():
         assert (p.returncode==0)==success, p.stderr.replace(run['password'],'[redacted]')
         return p.stdout.strip()
     assert execute("SELECT current_user || '|' || current_setting('cluster_name')")==run['user']+'|'+run['token']
-    execute(Path('prisma/migrations/202609120001_identity/migration.sql').read_text())
+    if execute("SELECT to_regclass('public.users') IS NULL") == 't':
+        execute(Path('prisma/migrations/202609120001_identity/migration.sql').read_text())
     date='2026-09-12T00:00:00Z'
     def metadata():return dict(createdAt=date,updatedAt=date)
     tables={'User':[dict(id='test_user_'+str(i),username='test_user_'+str(i),passwordHash='$2b$10$'+'a'*53,displayName='test_user',**metadata()) for i in [1,2]],
