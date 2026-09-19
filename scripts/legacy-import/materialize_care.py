@@ -5,10 +5,12 @@ archive and renders one transaction which an import owner can pass to psql.
 The archive is still the source of truth for the raw payload; the target tables
 receive typed fields plus a small auditable metadata projection.
 
-FeedingRecord, SleepRecord, DiaperRecord, and FormulaProduct are handled here.
+FeedingRecord, SleepRecord, DiaperRecord, GrowthMeasurement, and FormulaProduct
+are handled here.
 Formula products are promoted before feeding rows in the same transaction so a
 feeding reference is never temporarily or silently detached. Other legacy
-record types fail closed instead of being silently dropped or guessed.
+record types remain archived and are not promoted by this bounded slice; its
+success is not an all-business migration completion signal.
 """
 
 from __future__ import annotations
@@ -27,7 +29,7 @@ from typing import Any, Iterable
 from zoneinfo import ZoneInfo
 
 
-CARE_TABLES = ("FeedingRecord", "SleepRecord", "DiaperRecord")
+CARE_TABLES = ("FeedingRecord", "SleepRecord", "DiaperRecord", "GrowthMeasurement")
 MAPPING_VERSION = "care-v1"
 FORMULA_MAPPING_VERSION = "formula-v1"
 SOURCE_SYSTEM_DEFAULT = "legacy_web"
@@ -36,7 +38,10 @@ ADVISORY_LOCK = 724019232
 FEEDING_TYPES = {
     "breast": "breast",
     "formula": "formula",
-    "bottle_breast": "bottle_breast_milk",
+    # The current GrowDesk API contract exposes this legacy mixed bottle kind
+    # as canonical `bottle`; `bottle_breast_milk` is no longer a readable API
+    # value and would be projected as formula by the Web adapter.
+    "bottle_breast": "bottle",
     "mixed": "mixed",
 }
 SLEEP_TYPES = {"day": "nap", "nap": "nap", "night": "night"}
@@ -86,6 +91,26 @@ def _import_formula_mapper():
 
 
 map_formula_product = _import_formula_mapper()
+
+
+def _import_growth_mapper():
+    """Load the pure growth mapper without making this directory a package."""
+
+    try:
+        from growth_mapper import map_growth_measurement  # type: ignore
+
+        return map_growth_measurement
+    except ModuleNotFoundError:
+        path = Path(__file__).with_name("growth_mapper.py")
+        spec = importlib.util.spec_from_file_location("legacy_growth_mapper", path)
+        if spec is None or spec.loader is None:
+            raise RuntimeError("Unable to load growth_mapper.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.map_growth_measurement
+
+
+map_growth_measurement = _import_growth_mapper()
 
 
 def _require_checksum(value: str) -> str:
@@ -256,6 +281,24 @@ def _target_snapshot(item: dict[str, Any]) -> dict[str, Any]:
                 "notes": item["notes"],
             }
         )
+    elif item["entity_type"] == "growth":
+        common = {
+            "id": item["id"],
+            "familyId": item["family_id"],
+            "babyId": item["baby_id"],
+            "measurementDate": item["measurement_date"],
+            "weightKg": item["weight_kg"],
+            "heightCm": item["height_cm"],
+            "headCircumferenceCm": item["head_circumference_cm"],
+            "attachmentId": None,
+            "notes": item["notes"],
+            "version": 1,
+            "deletedAt": None,
+            "createdAt": item["created_at"],
+            "updatedAt": item["updated_at"],
+            "legacyClientId": item["client_id"],
+            "legacyMetadata": item["metadata"],
+        }
     else:
         common.update(
             {
@@ -418,7 +461,7 @@ def _identity_context(
         if membership is None or membership.get("status", "active") != "active":
             raise ValueError(f"{table}/{row.get('id')}: recordedById is outside the baby family")
 
-    client_id = _optional_text(row.get("clientId"), f"{table}.clientId")
+    client_id = _optional_text(row.get("clientId"), f"{table}.clientId") or None
     return family_id, baby_id, actor_id, client_id
 
 
@@ -552,6 +595,12 @@ def _map_diaper(data: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
     return context
 
 
+def _map_growth(data: dict[str, Any], row: dict[str, Any], checksum: str) -> dict[str, Any]:
+    """Delegate GrowthMeasurement validation to the independent pure mapper."""
+
+    return map_growth_measurement(data, row, checksum)
+
+
 def prepare_records(data: dict[str, Any], checksum: str) -> list[dict[str, Any]]:
     """Validate and map all supported rows before any SQL is rendered."""
 
@@ -579,7 +628,10 @@ def prepare_records(data: dict[str, Any], checksum: str) -> list[dict[str, Any]]
         if not isinstance(rows, list):
             raise ValueError(f"{table} must be an array")
         for row in rows:
-            item = mappers[table](data, row)
+            if table == "GrowthMeasurement":
+                item = _map_growth(data, row, checksum)
+            else:
+                item = mappers[table](data, row)
             source_key = f"{checksum}/{table}/{item['id']}"
             if source_key in seen_source_keys:
                 raise ValueError(f"Duplicate source key {source_key}")
@@ -617,20 +669,33 @@ def _same(column: str, value: Any, alias: str = "t") -> str:
 def _replay_target_predicate(item: dict[str, Any], target_table: str) -> str:
     """Compare every value this slice wrote before treating replay as a no-op."""
 
-    common = [
-        _same("id", item["id"]),
-        _same("family_id", item["family_id"]),
-        _same("baby_id", item["baby_id"]),
-        _same("source", item["source"]),
-        _same("source_agent", item["source_agent"]),
-        _same("recorded_by_user_id", item["actor_id"]),
-        _same("version", 1),
-        "t.deleted_at IS NULL",
-        _same("created_at", item["created_at"]),
-        _same("updated_at", item["updated_at"]),
-        _same("legacy_client_id", item["client_id"]),
-        _same("legacy_metadata", _json(item["metadata"])),
-    ]
+    if item["entity_type"] == "growth":
+        common = [
+            _same("id", item["id"]),
+            _same("family_id", item["family_id"]),
+            _same("baby_id", item["baby_id"]),
+            _same("version", 1),
+            "t.deleted_at IS NULL",
+            _same("created_at", item["created_at"]),
+            _same("updated_at", item["updated_at"]),
+            _same("legacy_client_id", item["client_id"]),
+            _same("legacy_metadata", _json(item["metadata"])),
+        ]
+    else:
+        common = [
+            _same("id", item["id"]),
+            _same("family_id", item["family_id"]),
+            _same("baby_id", item["baby_id"]),
+            _same("source", item["source"]),
+            _same("source_agent", item["source_agent"]),
+            _same("recorded_by_user_id", item["actor_id"]),
+            _same("version", 1),
+            "t.deleted_at IS NULL",
+            _same("created_at", item["created_at"]),
+            _same("updated_at", item["updated_at"]),
+            _same("legacy_client_id", item["client_id"]),
+            _same("legacy_metadata", _json(item["metadata"])),
+        ]
     if item["entity_type"] == "feeding":
         specific = [
             _same("feeding_type", item["feeding_type"]),
@@ -649,6 +714,15 @@ def _replay_target_predicate(item: dict[str, Any], target_table: str) -> str:
             _same("started_at", item["started_at"]),
             _same("ended_at", item["ended_at"]),
             _same("night_waking_count", item["night_waking_count"]),
+            _same("notes", item["notes"]),
+        ]
+    elif item["entity_type"] == "growth":
+        specific = [
+            _same("measurement_date", item["measurement_date"]),
+            _same("weight_kg", item["weight_kg"]),
+            _same("height_cm", item["height_cm"]),
+            _same("head_circumference_cm", item["head_circumference_cm"]),
+            _same("attachment_id", None),
             _same("notes", item["notes"]),
         ]
     else:
@@ -793,6 +867,7 @@ def _record_sql(item: dict[str, Any], checksum: str, delimiter: str, source_syst
         "FeedingRecord": "feeding_records",
         "SleepRecord": "sleep_records",
         "DiaperRecord": "diaper_records",
+        "GrowthMeasurement": "growth_measurements",
     }[table]
     target_id = item["id"]
     timeline_id = _timeline_id(item)
@@ -801,6 +876,7 @@ def _record_sql(item: dict[str, Any], checksum: str, delimiter: str, source_syst
     receipt_metadata = _json(item["receipt_metadata"])
     receipt_metadata_sql = literal(receipt_metadata)
     raw_hash = item["source_hash"]
+    mapping_version = item.get("mapping_version", MAPPING_VERSION)
     actor = item["actor_id"]
     client = item["client_id"]
     family = item["family_id"]
@@ -878,6 +954,17 @@ def _record_sql(item: dict[str, Any], checksum: str, delimiter: str, source_syst
             "id,family_id,baby_id,sleep_type,started_at,ended_at,night_waking_count,notes,source,source_agent,"
             "recorded_by_user_id,version,deleted_at,created_at,updated_at,legacy_client_id,legacy_metadata"
         )
+    elif table == "GrowthMeasurement":
+        target_values = [
+            literal(target_id), literal(family), literal(baby), literal(item["measurement_date"]),
+            literal(item["weight_kg"]), literal(item["height_cm"]), literal(item["head_circumference_cm"]),
+            literal(None), literal(item["notes"]), "1", "NULL", literal(item["created_at"]),
+            literal(item["updated_at"]), literal(client), literal(metadata),
+        ]
+        columns = (
+            "id,family_id,baby_id,measurement_date,weight_kg,height_cm,head_circumference_cm,"
+            "attachment_id,notes,version,deleted_at,created_at,updated_at,legacy_client_id,legacy_metadata"
+        )
     else:
         target_values = [
             literal(target_id), literal(family), literal(baby), literal(item["diaper_type"]),
@@ -907,7 +994,7 @@ BEGIN
     IF NOT EXISTS (
       SELECT 1 FROM public.legacy_idempotency_mappings
       WHERE target_entity_type={literal(item['entity_type'])} AND source_key={literal(source_key)}
-        AND source_hash={literal(raw_hash)} AND mapping_version={literal(MAPPING_VERSION)}
+        AND source_hash={literal(raw_hash)} AND mapping_version={literal(mapping_version)}
         AND metadata={receipt_metadata_sql}
         AND EXISTS (SELECT 1 FROM public.{target_table} t WHERE {replay_target})
         AND EXISTS (SELECT 1 FROM public.timeline_entries e WHERE {replay_timeline})
@@ -931,7 +1018,7 @@ BEGIN
   VALUES
     ({literal(mapping_id)},{literal(item['entity_type'])},{literal(target_id)},{literal(source_key)},'mapped',
      {literal(source_system)},{literal(checksum)},{literal(table)},{literal(target_id)},
-     {literal(raw_hash)},{literal(MAPPING_VERSION)},{receipt_metadata_sql},{literal(item['created_at'])});
+     {literal(raw_hash)},{literal(mapping_version)},{receipt_metadata_sql},{literal(item['created_at'])});
 END;
 {delimiter};
 """
@@ -987,6 +1074,7 @@ SELECT json_build_object(
   'feeding', (SELECT count(*) FROM public.feeding_records WHERE legacy_metadata->>'sourceBatchId'={literal(checksum)}),
   'sleep', (SELECT count(*) FROM public.sleep_records WHERE legacy_metadata->>'sourceBatchId'={literal(checksum)}),
   'diaper', (SELECT count(*) FROM public.diaper_records WHERE legacy_metadata->>'sourceBatchId'={literal(checksum)}),
+  'growth', (SELECT count(*) FROM public.growth_measurements WHERE legacy_metadata->>'sourceBatchId'={literal(checksum)}),
   'receipts', (SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id={literal(checksum)})
 );
 """

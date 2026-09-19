@@ -80,13 +80,21 @@ def archive(prefix: str) -> dict:
                     "createdAt": other_stamp, "updatedAt": other_stamp,
                 },
             ],
-            "FeedingRecord": [{
-                "id": f"{prefix}_feeding", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_feed_client", "recordedById": f"{prefix}_user",
-                "source": "ui_manual", "sourceAgent": "legacy-agent", "timestamp": "2026-09-12T08:30:00",
-                "type": "formula", "amountMl": 90, "leftMinutes": None, "rightMinutes": None,
-                # SQLite BOOLEAN columns are exported by sqlite3 as INTEGER 0/1.
-                "spitUp": 0, "formulaProductId": f"{prefix}_formula", "notes": "test_feeding", "createdAt": stamp, "updatedAt": stamp,
-            }],
+            "FeedingRecord": [
+                {
+                    "id": f"{prefix}_feeding", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_feed_client", "recordedById": f"{prefix}_user",
+                    "source": "ui_manual", "sourceAgent": "legacy-agent", "timestamp": "2026-09-12T08:30:00",
+                    "type": "formula", "amountMl": 90, "leftMinutes": None, "rightMinutes": None,
+                    # SQLite BOOLEAN columns are exported by sqlite3 as INTEGER 0/1.
+                    "spitUp": 0, "formulaProductId": f"{prefix}_formula", "notes": "test_feeding", "createdAt": stamp, "updatedAt": stamp,
+                },
+                {
+                    "id": f"{prefix}_bottle_breast", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_bottle_breast_client", "recordedById": f"{prefix}_user",
+                    "source": "ui_manual", "sourceAgent": None, "timestamp": "2026-09-12T09:30:00",
+                    "type": "bottle_breast", "amountMl": 75, "leftMinutes": None, "rightMinutes": None,
+                    "spitUp": 1, "formulaProductId": None, "notes": "test_bottle_breast", "createdAt": stamp, "updatedAt": stamp,
+                },
+            ],
             "SleepRecord": [{
                 "id": f"{prefix}_sleep", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_sleep_client", "recordedById": f"{prefix}_user",
                 "source": "ui_manual", "sourceAgent": None, "startTime": "2026-09-12T10:00:00", "endTime": "2026-09-12T11:00:00",
@@ -96,6 +104,12 @@ def archive(prefix: str) -> dict:
                 "id": f"{prefix}_diaper", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_diaper_client", "recordedById": f"{prefix}_user",
                 "source": "ui_manual", "sourceAgent": None, "timestamp": "2026-09-12T12:00:00", "type": "both",
                 "poopColor": "yellow", "poopConsistency": "paste", "notes": "test_diaper", "createdAt": stamp, "updatedAt": stamp,
+            }],
+            "GrowthMeasurement": [{
+                "id": f"{prefix}_growth", "babyId": f"{prefix}_baby", "clientId": f"{prefix}_growth_client", "recordedById": f"{prefix}_user",
+                "source": "ui_manual", "sourceAgent": None, "date": "2026-09-12", "ageInMonths": 8,
+                "ageLabel": "8月18天", "weightKg": 7.25, "heightCm": 66.5, "headCircumferenceCm": 42.5,
+                "percentile": 75, "imageUrl": None, "notes": "test_growth", "createdAt": stamp, "updatedAt": stamp,
             }],
         },
     }
@@ -198,6 +212,7 @@ def main() -> None:
     bad["tables"]["FormulaProduct"] = []
     bad["tables"]["SleepRecord"] = []
     bad["tables"]["DiaperRecord"] = []
+    bad["tables"]["GrowthMeasurement"] = []
     valid_follow_up = copy.deepcopy(data["tables"]["FeedingRecord"][0])
     valid_follow_up.update({"id": f"{prefix}_follow_up", "clientId": f"{prefix}_follow_up_client"})
     invalid_cross_family = copy.deepcopy(valid_follow_up)
@@ -205,7 +220,8 @@ def main() -> None:
     bad["tables"]["FeedingRecord"] = [valid_follow_up, invalid_cross_family]
     bad_checksum = hashlib.sha256(json.dumps(bad, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
     bad_ids = [valid_follow_up["id"], invalid_cross_family["id"]]
-    all_care_ids = [*ids.values(), *bad_ids]
+    feeding_ids = [row["id"] for row in data["tables"]["FeedingRecord"]]
+    all_care_ids = [*feeding_ids, ids["SleepRecord"], ids["DiaperRecord"], ids["GrowthMeasurement"], *bad_ids]
     identity_ids = {
         "users": [row["id"] for row in data["tables"]["User"]],
         "families": [row["id"] for row in data["tables"]["Family"]],
@@ -214,10 +230,11 @@ def main() -> None:
     cleanup = f"""
 DELETE FROM public.timeline_entries WHERE entity_id IN ({','.join(sql_literal(value) for value in all_care_ids)});
 DELETE FROM public.legacy_idempotency_mappings WHERE source_batch_id IN ({sql_literal(checksum)},{sql_literal(bad_checksum)});
-DELETE FROM public.feeding_records WHERE id={sql_literal(ids['FeedingRecord'])};
+DELETE FROM public.feeding_records WHERE id IN ({','.join(sql_literal(value) for value in feeding_ids)});
 DELETE FROM public.feeding_records WHERE id IN ({','.join(sql_literal(value) for value in bad_ids)});
 DELETE FROM public.sleep_records WHERE id={sql_literal(ids['SleepRecord'])};
 DELETE FROM public.diaper_records WHERE id={sql_literal(ids['DiaperRecord'])};
+DELETE FROM public.growth_measurements WHERE id={sql_literal(ids['GrowthMeasurement'])};
 DELETE FROM public.formula_products WHERE id IN ({','.join(sql_literal(value) for value in formula_ids)});
 DELETE FROM legacy_import.import_rows WHERE batch_id IN ({sql_literal(checksum)},{sql_literal(bad_checksum)});
 DELETE FROM legacy_import.import_batches WHERE batch_id IN ({sql_literal(checksum)},{sql_literal(bad_checksum)});
@@ -232,21 +249,33 @@ DELETE FROM public.users WHERE id IN ({','.join(sql_literal(value) for value in 
         promotion_sql = materializer.render_materialization(data, checksum)
         execute(promotion_sql)
         execute(promotion_sql)
-        assert execute("SELECT count(*) FROM public.feeding_records WHERE id=" + sql_literal(ids["FeedingRecord"])) == "1"
+        assert execute("SELECT count(*) FROM public.feeding_records WHERE id IN (" + ",".join(sql_literal(value) for value in feeding_ids) + ")") == "2"
         assert execute("SELECT count(*) FROM public.sleep_records WHERE id=" + sql_literal(ids["SleepRecord"])) == "1"
         assert execute("SELECT count(*) FROM public.diaper_records WHERE id=" + sql_literal(ids["DiaperRecord"])) == "1"
+        assert execute("SELECT count(*) FROM public.growth_measurements WHERE id=" + sql_literal(ids["GrowthMeasurement"])) == "1"
         assert execute("SELECT count(*) FROM public.formula_products WHERE id IN (" + ",".join(sql_literal(value) for value in formula_ids) + ")") == "2"
-        assert execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum)) == "5"
+        # Two formula products plus two feeding, sleep, diaper, and growth rows.
+        assert execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum)) == "7"
         row = execute("SELECT family_id || '|' || baby_id || '|' || feeding_type || '|' || (occurred_at AT TIME ZONE 'UTC')::text || '|' || recorded_by_user_id || '|' || legacy_client_id || '|' || formula_product_id || '|' || (legacy_metadata->>'sourceId') FROM public.feeding_records WHERE id=" + sql_literal(ids["FeedingRecord"]))
         assert row.startswith(f"{prefix}_family|{prefix}_baby|formula|2026-09-12 00:30:00|{prefix}_user|{prefix}_feed_client|{formula_id}|{ids['FeedingRecord']}"), row
+        assert execute("SELECT feeding_type FROM public.feeding_records WHERE id=" + sql_literal(f"{prefix}_bottle_breast")) == "bottle"
         amount = execute("SELECT nutrients_json->'protein'->>'amount' FROM public.formula_products WHERE id=" + sql_literal(formula_id))
         assert Decimal(amount) == Decimal("0.12345678901234567890"), amount
         assert execute("SELECT jsonb_typeof(nutrients_json->'protein') FROM public.formula_products WHERE id=" + sql_literal(formula_id)) == "object"
+        growth = execute("SELECT measurement_date::text || '|' || weight_kg::text || '|' || height_cm::text || '|' || head_circumference_cm::text || '|' || (legacy_metadata->'legacyGrowth'->>'ageLabel') FROM public.growth_measurements WHERE id=" + sql_literal(ids["GrowthMeasurement"]))
+        assert growth == "2026-09-12|7.25|66.5|42.5|8月18天", growth
 
         execute("UPDATE public.formula_products SET notes='test_formula_tampered' WHERE id=" + sql_literal(formula_id) + ";")
         execute(promotion_sql, success=False)
         assert execute("SELECT notes FROM public.formula_products WHERE id=" + sql_literal(formula_id)) == "test_formula_tampered"
         execute("UPDATE public.formula_products SET notes='test_formula_notes' WHERE id=" + sql_literal(formula_id) + ";")
+
+        growth_id = ids["GrowthMeasurement"]
+        execute("UPDATE public.growth_measurements SET weight_kg=7.24 WHERE id=" + sql_literal(growth_id) + ";")
+        execute(promotion_sql, success=False)
+        assert execute("SELECT weight_kg::text FROM public.growth_measurements WHERE id=" + sql_literal(growth_id)) == "7.24"
+        execute("UPDATE public.growth_measurements SET weight_kg=7.25 WHERE id=" + sql_literal(growth_id) + ";")
+        execute(promotion_sql)
 
         formula_row = data["tables"]["FormulaProduct"][0]
         formula_hash = hashlib.sha256(json.dumps(formula_row, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
@@ -256,13 +285,21 @@ DELETE FROM public.users WHERE id IN ({','.join(sql_literal(value) for value in 
         execute("UPDATE legacy_import.import_rows SET payload_hash=" + sql_literal(formula_hash) + " WHERE batch_id=" + sql_literal(checksum) + " AND source_table='FormulaProduct' AND source_id=" + sql_literal(formula_id) + ";")
         execute(promotion_sql)
 
+        growth_row = data["tables"]["GrowthMeasurement"][0]
+        growth_hash = hashlib.sha256(json.dumps(growth_row, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+        execute("UPDATE legacy_import.import_rows SET payload_hash=" + sql_literal("0" * 64) + " WHERE batch_id=" + sql_literal(checksum) + " AND source_table='GrowthMeasurement' AND source_id=" + sql_literal(growth_id) + ";")
+        execute(promotion_sql, success=False)
+        assert execute("SELECT count(*) FROM public.growth_measurements WHERE id=" + sql_literal(growth_id)) == "1"
+        execute("UPDATE legacy_import.import_rows SET payload_hash=" + sql_literal(growth_hash) + " WHERE batch_id=" + sql_literal(checksum) + " AND source_table='GrowthMeasurement' AND source_id=" + sql_literal(growth_id) + ";")
+        execute(promotion_sql)
+
         execute(care_batch_sql(bad, bad_checksum))
         bad_sql = materializer.render_materialization(bad, bad_checksum)
         execute(bad_sql, success=False)
         assert execute("SELECT count(*) FROM public.feeding_records WHERE id=" + sql_literal(valid_follow_up["id"])) == "0"
         assert execute("SELECT count(*) FROM public.feeding_records WHERE id=" + sql_literal(ids["FeedingRecord"])) == "1"
-        assert execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum)) == "5"
-        print("Care materializer owned PG PASS: formula JSON precision, same-family reference, replay no-op, source/target tamper detection, cross-family rollback")
+        assert execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum)) == "7"
+        print("Care materializer owned PG PASS: formula/growth precision, metadata, replay no-op, source/target tamper detection, cross-family rollback")
     finally:
         execute(cleanup)
 

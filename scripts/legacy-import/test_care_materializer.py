@@ -91,6 +91,14 @@ def archive():
                     "poopColor": "yellow", "poopConsistency": "paste", "notes": "test_diaper", "createdAt": stamp, "updatedAt": stamp,
                 },
             ],
+            "GrowthMeasurement": [
+                {
+                    "id": "test_growth_1", "babyId": "test_baby_1", "clientId": "test_client_growth_1", "recordedById": "test_user_1",
+                    "source": "ui_manual", "sourceAgent": None, "date": "2026-09-12", "ageInMonths": 8,
+                    "ageLabel": "8月18天", "weightKg": 7.25, "heightCm": 66.5, "headCircumferenceCm": 42.5,
+                    "percentile": 75, "imageUrl": None, "notes": "test_growth", "createdAt": stamp, "updatedAt": stamp,
+                },
+            ],
         },
     }
 
@@ -187,16 +195,19 @@ def main():
     checksum = "c" * 64
     items = m.prepare_records(data, checksum)
     formula_items = m.prepare_formula_products(data, checksum)
-    assert [item["id"] for item in items] == ["test_feeding_1", "test_sleep_1", "test_diaper_1"]
+    assert [item["id"] for item in items] == ["test_feeding_1", "test_sleep_1", "test_diaper_1", "test_growth_1"]
     assert [item["id"] for item in formula_items] == ["test_formula_1"]
     assert formula_items[0]["brand"] == ""
     assert formula_items[0]["nutrients_json"].endswith("0.12345678901234567890,\"unit\":\"g\"}}")
-    assert items[0]["feeding_type"] == "bottle_breast_milk"
+    assert items[0]["feeding_type"] == "bottle"
     assert items[1]["sleep_type"] == "nap"
     assert items[0]["occurred_at"] == "2026-09-12T00:30:00.000Z"
     assert items[0]["actor_id"] == "test_user_1"
     assert items[0]["client_id"] == "test_client_feed_1"
     assert items[0]["metadata"]["sourceBatchId"] == checksum
+    assert items[3]["measurement_date"] == "2026-09-12"
+    assert items[3]["weight_kg"] == "7.25"
+    assert items[3]["metadata"]["legacyGrowth"]["percentile"] == 75
 
     sqlite_style = copy.deepcopy(data)
     sqlite_style["tables"]["FeedingRecord"][0]["spitUp"] = 0
@@ -223,7 +234,7 @@ def main():
     assert "INSERT INTO public.formula_products" in sql
     assert "::jsonb" in sql
     assert sql.index("INSERT INTO public.formula_products") < sql.index("INSERT INTO public.feeding_records")
-    assert sql.count("DO $care_") == 5  # one batch guard, one formula, three record promotions
+    assert sql.count("DO $care_") == 6  # one batch guard, one formula, four record promotions
 
     cross_family = copy.deepcopy(data)
     cross_family["tables"]["FeedingRecord"][0]["familyId"] = "test_family_other"
@@ -243,6 +254,11 @@ def main():
         assert "Duplicate clientId" in str(error)
     else:
         raise AssertionError("duplicate clientId was accepted")
+    empty_clients = copy.deepcopy(duplicate_client)
+    for row in empty_clients["tables"]["FeedingRecord"]:
+        row["clientId"] = ""
+    mapped_empty = m.prepare_records(empty_clients, checksum)
+    assert all(row["client_id"] is None for row in mapped_empty if row["table"] == "FeedingRecord")
     test_sqlite_snapshot_integer_boolean_round_trip()
     print("Care materializer pure tests PASS")
 

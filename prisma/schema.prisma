@@ -661,6 +661,8 @@ model GrowthMeasurement {
   headCircumferenceCm Decimal?  @map("head_circumference_cm") @db.Decimal(4, 1)
   attachmentId        String?   @map("attachment_id") @db.VarChar(255)
   notes               String?
+  legacyClientId      String?   @map("legacy_client_id")
+  legacyMetadata      Json?     @map("legacy_metadata") @db.JsonB
   version             Int       @default(1)
   deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)

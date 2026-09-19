@@ -1,12 +1,16 @@
 # Legacy care materializer — IMPLEMENTED_NOT_REVIEWED
 
 本轮只实现 identity-v1 私有档案到正式业务表的第一步：
-`FormulaProduct`、`FeedingRecord`、`SleepRecord`、`DiaperRecord`。脚本不连接数据库，由受控迁移身份将渲染出的单一事务 SQL 送入独立 PostgreSQL。
+`FormulaProduct`、`FeedingRecord`、`SleepRecord`、`DiaperRecord`，以及无图片的
+`GrowthMeasurement`。脚本不连接数据库，由受控迁移身份将渲染出的单一事务 SQL 送入独立 PostgreSQL。
+
+本脚本成功仅表示上述范围完成；其他业务表仍仅存在原始档案中，不代表已可从新 API 读取。旧生长记录的历史年龄、百分位、记录人和来源目前也仅保留在 metadata，尚未通过 DTO 恢复。上线门禁必须另外核对所有未提升表和附件，不能依据此脚本退出码切换生产。
 
 ## 接口和边界
 
 - `scripts/legacy-import/materialize_care.py`
   - `prepare_records(data, checksum)` 做完整预校验和 typed mapping。
+  - `growth_mapper.py` 严格保留 date/Decimal、actor/family/baby guard 和 age/percentile metadata；非空旧 image URL 明确进入附件前置阻塞。
   - `prepare_formula_products(data, checksum)` 复用 `formula_mapper.py` 的严格字段/精度校验；原始 `nutrientsJson` 作为 SQL 文本直接 `::jsonb`，不再 JSON 双重编码。
   - `render_materialization(data, checksum)` 返回单一事务 SQL；要求对应的 `legacy_import.import_batches` 已由 identity-v1 导入。
   - `--archive/--sha256/--output` 只写私有、不可覆盖的输出文件；CLI 只打印类型和数量，不打印源正文。
@@ -23,15 +27,20 @@
 - `legacy_idempotency_mappings` 的 source system/batch/table/id/hash、mapping version、metadata 字段；
 - 三个 care 表的 `legacy_client_id`、`legacy_metadata` 和按 baby 的非空 clientId 唯一索引。
 
+`prisma/migrations/202609190019_growth_promotion/migration.sql` 仅增加
+`growth_measurements.legacy_client_id`、`legacy_metadata` 和按 baby 的非空 clientId 唯一索引；
+没有修改已提交的 018 migration。
+
 `prisma/schema.prisma` 已同步上述字段。该 migration 是 additive；没有改动 `ios_backup.py` 或 `test_ios_backup.py`。
 
 ## 验证
 
 - `python3 scripts/legacy-import/test_care_materializer.py`：通过。覆盖 FormulaProduct 映射、空 brand、原始 nutrients JSON、类型/日期/actor/clientId/metadata 映射、cross-family 预拒绝、同 baby 重复 clientId、事务 SQL 不变量。
+- `python3 scripts/legacy-import/test_growth_mapper.py`：通过。覆盖 GrowthMeasurement 日期/Decimal 精度、非可见 age/percentile metadata、actor/family guard、图片拒绝和无测量值拒绝。
 - `python3 scripts/legacy-import/test_formula_mapper.py`：通过；保留已有 mapper 的四项精度/字段拒绝测试。
 - `python3 -m py_compile scripts/legacy-import/materialize_care.py scripts/legacy-import/test_care_materializer.py scripts/legacy-import/test_care_materializer_integration.py`：通过。
 - `npx prisma validate --schema prisma/schema.prisma`：通过。
-- 主 runner 的 round16 owned 结果已通过：`/tmp/growdesk-owned-care-round16.log` 第 78 行记录 `Care materializer owned PG PASS`，并完成主集成套件。该结果对应本文件此前版本。
+- 主 runner 的 round16 owned 结果已通过：`/tmp/growdesk-owned-care-round16.log` 第 78 行记录 `Care materializer owned PG PASS`，并完成主集成套件。该结果对应本文件此前版本；Growth 接入后的 owned 复测尚未执行。
 - 本轮新增 `scripts/legacy-import/test_care_materializer.py` 的临时 SQLite 回归：由 `snapshot.capture` 导出临时数据库，再将生成的 `legacy.json` 送入 `prepare_records`/`render_materialization`；验证 SQLite `BOOLEAN` 的整数 `0` 变为 canonical `false`。当前纯测试通过；由于随后加入了 SQLite 布尔兼容修复，owned `--legacy-care` 需要重新执行后才能更新为当前版本证据。
 - SQLite care 字段形态按旧 Prisma/migration 与临时导出核对：`spitUp` 是 SQLite INTEGER `0/1`；`nightWakingCount`、`leftMinutes`、`rightMinutes`、`durationMinutes` 是 INTEGER 或 NULL；amount 是 INTEGER/REAL 或 NULL；时间、type、notes、poop 字段是 TEXT 或 NULL。materializer 对整数计数保持严格非负整数校验，只有 `spitUp` 允许 JSON bool 或精确整数 `0/1`。
 - `scripts/test-integration.py --legacy-care` 已接入为显式 opt-in；默认总 runner 不执行该测试。
@@ -40,7 +49,7 @@
 
 - 这是实现者证据，状态仍为 `IMPLEMENTED_NOT_REVIEWED`；尚未声明生产迁移或上线。
 - round16 结果仅是此前版本的实现者证据，状态仍为 `IMPLEMENTED_NOT_REVIEWED`；本轮布尔修复必须由主 runner 复测后，才可作为当前版本证据，仍不声明 accepted 或生产 ready。
-- 真实 archive 中不属于本 slice 的记录类型、附件、FoodPlan、Supplement、Vaccine 等仍需各自 typed mapper、quarantine 和对账；本文件不把 raw archive 存在宣称为业务导入完成。
+- 真实 archive 中不属于本 slice 的记录类型、Growth 图片附件、FoodPlan、Supplement、Vaccine 等仍需各自 typed mapper、quarantine 和对账；本文件不把 raw archive 存在宣称为业务导入完成。
 
 ## Round 17b current implementation check
 
