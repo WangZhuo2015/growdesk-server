@@ -455,6 +455,12 @@
             "type": "string",
             "nullable": true
           },
+          "recordedByUserId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string",
+            "nullable": true
+          },
           "version": {
             "pattern": "^\\d+$",
             "description": "64-bit integer represented as string",
@@ -548,6 +554,12 @@
             "type": "string"
           },
           "sourceAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordedByUserId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
             "type": "string",
             "nullable": true
           },
@@ -647,6 +659,12 @@
             "type": "string"
           },
           "sourceAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "recordedByUserId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
             "type": "string",
             "nullable": true
           },
@@ -6543,6 +6561,12 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "recordedByUserId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string",
+                            "nullable": true
+                          },
                           "version": {
                             "pattern": "^\\d+$",
                             "description": "64-bit integer represented as string",
@@ -6826,6 +6850,12 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "version": {
                           "pattern": "^\\d+$",
                           "description": "64-bit integer represented as string",
@@ -7036,6 +7066,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -7319,6 +7355,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -7661,6 +7703,12 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "recordedByUserId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string",
+                            "nullable": true
+                          },
                           "version": {
                             "pattern": "^\\d+$",
                             "description": "64-bit integer represented as string",
@@ -7892,6 +7940,12 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "version": {
                           "pattern": "^\\d+$",
                           "description": "64-bit integer represented as string",
@@ -8075,6 +8129,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -8306,6 +8366,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -8621,6 +8687,12 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "recordedByUserId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string",
+                            "nullable": true
+                          },
                           "version": {
                             "pattern": "^\\d+$",
                             "description": "64-bit integer represented as string",
@@ -8858,6 +8930,12 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "version": {
                           "pattern": "^\\d+$",
                           "description": "64-bit integer represented as string",
@@ -9044,6 +9122,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
@@ -9282,6 +9366,12 @@
                           "type": "string"
                         },
                         "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordedByUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
                           "type": "string",
                           "nullable": true
                         },
