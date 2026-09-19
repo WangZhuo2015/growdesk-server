@@ -143,6 +143,7 @@ import {
 import {
   FormulaProductResponseSchema,
   FormulaProductListResponseSchema,
+  FormulaProductListQuerySchema,
   CreateFormulaProductRequestSchema,
   UpdateFormulaProductRequestSchema,
   FoodLibraryItemListResponseSchema,
@@ -1303,6 +1304,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["Nutrition"],
     implementationStatus: "PLANNED_SH04N",
     params: FamilyIdParam,
+    querystring: FormulaProductListQuerySchema,
     responses: { 200: FormulaProductListResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef },
   },
   {

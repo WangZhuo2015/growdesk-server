@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { randomUUID } from "node:crypto";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
 import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
@@ -186,10 +187,61 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
     assert.ok(listBody.data[0]);
     assert.equal(listBody.data[0].id, formulaProductId);
 
+    // Seed the persisted metadata through the real owned PostgreSQL row. The
+    // create command intentionally exposes only the editable catalog fields;
+    // this verifies the read projection used by the Web relation adapter.
+    await ctx.pool.query(
+      `UPDATE formula_products
+       SET stage = $2, scoop_weight_g = $3, water_per_scoop_ml = $4,
+           reconstitution_ratio = $5, serving_size_unit = $6,
+           nutrients_json = $7::jsonb, notes = $8, is_active = $9, is_default = $10
+       WHERE id = $1 AND family_id = $11`,
+      [
+        formulaProductId,
+        "1",
+        "4.3",
+        "30",
+        "0.1433",
+        "per_100g",
+        JSON.stringify({ energy: { amount: 68, unit: "kcal" }, protein: { amount: 1.4, unit: "g" } }),
+        "test_product_notes",
+        true,
+        true,
+        familyAId,
+      ],
+    );
+
+    const projected = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/products?includeArchived=true`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(projected.statusCode, 200);
+    const projectedBody = projected.json<{ data: Array<Record<string, unknown>> }>();
+    assert.equal(projectedBody.data.length, 1);
+    assert.deepEqual(projectedBody.data[0], {
+      id: formulaProductId,
+      familyId: familyAId,
+      brand: "Aptamil",
+      name: "Essensis Organic Stage 1",
+      stage: "1",
+      scoopGrams: "4.3",
+      waterMlPerScoop: "30",
+      reconstitutionRatio: "0.1433",
+      servingSizeUnit: "per_100g",
+      nutrientsJson: { energy: { amount: 68, unit: "kcal" }, protein: { amount: 1.4, unit: "g" } },
+      notes: "test_product_notes",
+      isActive: true,
+      isDefault: true,
+      isArchived: false,
+      createdAt: projectedBody.data[0]?.createdAt,
+      updatedAt: projectedBody.data[0]?.updatedAt,
+    });
+
     // User B from Family B cannot list Family A's products
     const crossRes = await app.inject({
       method: "GET",
-      url: `/api/v1/families/${familyAId}/nutrition/products`,
+      url: `/api/v1/families/${familyAId}/nutrition/products?includeArchived=true`,
       headers: { authorization: `Bearer ${tokenB}` },
     });
     assert.equal(crossRes.statusCode, 403);
@@ -234,6 +286,58 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
     assert.ok(timelineRows[0]);
     assert.equal(timelineRows[0].version, 1);
     assert.equal(timelineRows[0].deletedAt, null);
+  });
+
+  // FP-03: Archived products remain available for historical feeding relations
+  await t.test("FP-03: includeArchived preserves product metadata and feeding history", async () => {
+    const archiveRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/families/${familyAId}/nutrition/products/${formulaProductId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { isArchived: true },
+    });
+    assert.equal(archiveRes.statusCode, 200, archiveRes.payload);
+    const archiveBody = archiveRes.json<{ data: { id: string; isArchived: boolean; isDefault: boolean; nutrientsJson: unknown } }>();
+    assert.equal(archiveBody.data.id, formulaProductId);
+    assert.equal(archiveBody.data.isArchived, true);
+    assert.equal(archiveBody.data.isDefault, true);
+    assert.deepEqual(archiveBody.data.nutrientsJson, { energy: { amount: 68, unit: "kcal" }, protein: { amount: 1.4, unit: "g" } });
+
+    const activeOnly = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/products`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(activeOnly.statusCode, 200);
+    assert.equal(activeOnly.json<{ data: unknown[] }>().data.length, 0);
+
+    const archived = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/products?includeArchived=true`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(archived.statusCode, 200);
+    const archivedBody = archived.json<{ data: Array<{ id: string; isArchived: boolean; nutrientsJson: unknown }> }>();
+    assert.equal(archivedBody.data.length, 1);
+    assert.equal(archivedBody.data[0]?.id, formulaProductId);
+    assert.equal(archivedBody.data[0]?.isArchived, true);
+    assert.deepEqual(archivedBody.data[0]?.nutrientsJson, { energy: { amount: 68, unit: "kcal" }, protein: { amount: 1.4, unit: "g" } });
+
+    const historical = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/records/feeding`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(historical.statusCode, 200);
+    const historicalBody = historical.json<{ data: Array<{ id: string; formulaProductId: string | null }> }>();
+    assert.equal(historicalBody.data.find((item) => item.id === feedingRecordId)?.formulaProductId, formulaProductId);
+    const historicalRow = await ctx.prisma.feedingRecord.findUnique({
+      where: { id: feedingRecordId },
+      include: { formulaProduct: true },
+    });
+    assert.equal(historicalRow?.formulaProductId, formulaProductId);
+    assert.equal(historicalRow?.formulaProduct?.id, formulaProductId);
+    assert.equal(historicalRow?.formulaProduct?.isArchived, true);
   });
 
   // FEED-02: Idempotent replay returns cached result
@@ -468,4 +572,37 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
     });
     assert.ok(timelineRow?.deletedAt);
   });
+  await t.test("formula product keyset pages preserve 205 equal-time rows and reject foreign scope", async () => {
+    const ids = Array.from({ length: 205 }, () => randomUUID());
+    await ctx.prisma.formulaProduct.createMany({ data: ids.map((id, index) => ({
+      id, familyId: familyAId, brand: "test_pagination_brand", name: `test_pagination_${index}`,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"), isArchived: index % 2 === 0,
+    })) });
+    try {
+      const expected = await ctx.prisma.formulaProduct.findMany({ where: { familyId: familyAId, deletedAt: null }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], select: { id: true } });
+      const received: string[] = [];
+      let cursor: string | null = null;
+      let firstCursor: string | null = null;
+      do {
+        const query = new URLSearchParams({ limit: "200", includeArchived: "true" });
+        if (cursor) query.set("cursor", cursor);
+        const page = await app.inject({ method: "GET", url: `/api/v1/families/${familyAId}/nutrition/products?${query}`, headers: { authorization: `Bearer ${tokenA}` } });
+        assert.equal(page.statusCode, 200, page.body);
+        const body = page.json();
+        received.push(...body.data.map((row: { id: string }) => row.id));
+        cursor = body.page.nextCursor;
+        if (!firstCursor) firstCursor = cursor;
+        assert.ok(received.length <= expected.length, "cursor must advance without repeats");
+      } while (cursor);
+      assert.ok(firstCursor, "more than 200 rows must publish a continuation cursor");
+      assert.deepEqual(received, expected.map(row => row.id));
+      const foreign = await app.inject({ method: "GET", url: `/api/v1/families/${familyAId}/nutrition/products?includeArchived=true&cursor=${firstCursor}`, headers: { authorization: `Bearer ${tokenB}` } });
+      assert.equal(foreign.statusCode, 403);
+      const invalid = await app.inject({ method: "GET", url: `/api/v1/families/${familyAId}/nutrition/products?cursor=invalid`, headers: { authorization: `Bearer ${tokenA}` } });
+      assert.equal(invalid.statusCode, 400);
+    } finally {
+      await ctx.prisma.formulaProduct.deleteMany({ where: { familyId: familyAId, id: { in: ids } } });
+    }
+  });
+
 });

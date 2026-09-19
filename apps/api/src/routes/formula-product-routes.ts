@@ -4,7 +4,7 @@ import {
   ApiErrorEnvelopeSchema,
   FamilyIdParamSchema,
   FamilyAndProductParamSchema,
-  PaginationQuerySchema,
+  FormulaProductListQuerySchema,
   CreateFormulaProductRequestSchema,
   UpdateFormulaProductRequestSchema,
   FormulaProductResponseSchema,
@@ -12,7 +12,7 @@ import {
   DeleteRecordResponseSchema,
   type FamilyIdParam,
   type FamilyAndProductParam,
-  type PaginationQuery,
+  type FormulaProductListQuery,
   type CreateFormulaProductRequest,
   type UpdateFormulaProductRequest,
 } from "@growdesk/contracts";
@@ -26,13 +26,13 @@ export const formulaProductRoutes: FastifyPluginAsync<FormulaProductRoutesOption
   const service = new FormulaProductService(options.prisma);
 
   // 1. GET /api/v1/families/:familyId/nutrition/products
-  fastify.get<{ Params: FamilyIdParam; Querystring: PaginationQuery }>(
+  fastify.get<{ Params: FamilyIdParam; Querystring: FormulaProductListQuery }>(
     "/api/v1/families/:familyId/nutrition/products",
     {
       preHandler: [fastify.authenticate],
       schema: {
         params: FamilyIdParamSchema,
-        querystring: PaginationQuerySchema,
+        querystring: FormulaProductListQuerySchema,
         response: {
           200: FormulaProductListResponseSchema,
           401: ApiErrorEnvelopeSchema,
@@ -45,6 +45,8 @@ export const formulaProductRoutes: FastifyPluginAsync<FormulaProductRoutesOption
       const { familyId } = request.params;
       const result = await service.listFormulaProducts(principal, familyId, {
         limit: request.query?.limit,
+        includeArchived: request.query?.includeArchived,
+        cursor: request.query?.cursor,
       });
       reply.status(200).send(result);
     },

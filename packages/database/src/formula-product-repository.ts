@@ -197,11 +197,11 @@ export class ScopedFormulaProductRepository {
   async listByFamily(
     principal: UserPrincipal,
     familyId: string,
-    options: { limit?: number; includeArchived?: boolean } = {}
+    options: { limit?: number; includeArchived?: boolean; before?: { createdAt: Date; id: string }; lookahead?: boolean } = {}
   ): Promise<ReadonlyArray<FormulaProductEntity>> {
     this.checkFamilyAccess(principal, familyId, false);
 
-    const limit = Math.min(options.limit ?? 50, 200);
+    const limit = Math.min(options.limit ?? 50, 200) + (options.lookahead ? 1 : 0);
     const where: Prisma.FormulaProductWhereInput = {
       familyId,
       deletedAt: null,
@@ -210,9 +210,13 @@ export class ScopedFormulaProductRepository {
       where.isArchived = false;
     }
 
+    if (options.before) where.OR = [
+      { createdAt: { lt: options.before.createdAt } },
+      { createdAt: options.before.createdAt, id: { lt: options.before.id } },
+    ];
     const rows = await this.prisma.formulaProduct.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit,
     });
 

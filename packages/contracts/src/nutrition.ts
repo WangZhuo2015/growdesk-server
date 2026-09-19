@@ -20,6 +20,15 @@ export const FormulaProductSchema = Type.Object(
     stage: Nullable(Type.String({ maxLength: 50 })),
     scoopGrams: Nullable(DecimalString),
     waterMlPerScoop: Nullable(DecimalString),
+    // The Web compatibility layer needs the persisted nutrition/product
+    // metadata when resolving a feeding's formulaProduct relation. These are
+    // read-only projections of existing FormulaProduct columns.
+    reconstitutionRatio: Nullable(DecimalString),
+    servingSizeUnit: Type.String({ minLength: 1, maxLength: 50 }),
+    nutrientsJson: Nullable(Type.Unknown()),
+    notes: Nullable(Type.String({ maxLength: 1000 })),
+    isActive: Type.Boolean(),
+    isDefault: Type.Boolean(),
     isArchived: Type.Boolean(),
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -28,6 +37,17 @@ export const FormulaProductSchema = Type.Object(
 );
 
 export type FormulaProduct = Static<typeof FormulaProductSchema>;
+
+export const FormulaProductListQuerySchema = Type.Object(
+  {
+    cursor: Type.Optional(Type.String({ description: "Keyset cursor to fetch next page" })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200, default: 50, description: "Page size" })),
+    includeArchived: Type.Optional(Type.Boolean({ description: "Include archived products for historical relations" })),
+  },
+  { $id: "FormulaProductListQuery", additionalProperties: false },
+);
+
+export type FormulaProductListQuery = Static<typeof FormulaProductListQuerySchema>;
 
 export const CreateFormulaProductRequestSchema = Type.Object(
   {

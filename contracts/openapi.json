@@ -160,13 +160,21 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
           "userId",
           "familyId",
           "role",
+          "username",
           "displayName",
+          "relation",
           "joinedAt"
         ],
         "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
           "userId": {
             "format": "uuid",
             "description": "UUID v4 string",
@@ -190,10 +198,26 @@
                 "enum": [
                   "member"
                 ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "viewer"
+                ]
               }
             ]
           },
+          "username": {
+            "minLength": 3,
+            "maxLength": 50,
+            "type": "string"
+          },
           "displayName": {
+            "type": "string"
+          },
+          "relation": {
+            "minLength": 1,
+            "maxLength": 50,
             "type": "string"
           },
           "joinedAt": {
@@ -2223,6 +2247,12 @@
           "stage",
           "scoopGrams",
           "waterMlPerScoop",
+          "reconstitutionRatio",
+          "servingSizeUnit",
+          "nutrientsJson",
+          "notes",
+          "isActive",
+          "isDefault",
           "isArchived",
           "createdAt",
           "updatedAt"
@@ -2264,6 +2294,31 @@
             "description": "Arbitrary-precision decimal represented as string",
             "type": "string",
             "nullable": true
+          },
+          "reconstitutionRatio": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "description": "Arbitrary-precision decimal represented as string",
+            "type": "string",
+            "nullable": true
+          },
+          "servingSizeUnit": {
+            "minLength": 1,
+            "maxLength": 50,
+            "type": "string"
+          },
+          "nutrientsJson": {
+            "nullable": true
+          },
+          "notes": {
+            "maxLength": 1000,
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isDefault": {
+            "type": "boolean"
           },
           "isArchived": {
             "type": "boolean"
@@ -4907,6 +4962,12 @@
                               "enum": [
                                 "member"
                               ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "viewer"
+                              ]
                             }
                           ]
                         }
@@ -4988,13 +5049,21 @@
                         "additionalProperties": false,
                         "type": "object",
                         "required": [
+                          "id",
                           "userId",
                           "familyId",
                           "role",
+                          "username",
                           "displayName",
+                          "relation",
                           "joinedAt"
                         ],
                         "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
                           "userId": {
                             "format": "uuid",
                             "description": "UUID v4 string",
@@ -5018,10 +5087,26 @@
                                 "enum": [
                                   "member"
                                 ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "viewer"
+                                ]
                               }
                             ]
                           },
+                          "username": {
+                            "minLength": 3,
+                            "maxLength": 50,
+                            "type": "string"
+                          },
                           "displayName": {
+                            "type": "string"
+                          },
+                          "relation": {
+                            "minLength": 1,
+                            "maxLength": 50,
                             "type": "string"
                           },
                           "joinedAt": {
@@ -18582,6 +18667,36 @@
         "parameters": [
           {
             "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Keyset cursor to fetch next page"
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "Page size"
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeArchived",
+            "required": false,
+            "description": "Include archived products for historical relations"
+          },
+          {
+            "schema": {
               "format": "uuid",
               "type": "string"
             },
@@ -18618,6 +18733,12 @@
                           "stage",
                           "scoopGrams",
                           "waterMlPerScoop",
+                          "reconstitutionRatio",
+                          "servingSizeUnit",
+                          "nutrientsJson",
+                          "notes",
+                          "isActive",
+                          "isDefault",
                           "isArchived",
                           "createdAt",
                           "updatedAt"
@@ -18659,6 +18780,31 @@
                             "description": "Arbitrary-precision decimal represented as string",
                             "type": "string",
                             "nullable": true
+                          },
+                          "reconstitutionRatio": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "servingSizeUnit": {
+                            "minLength": 1,
+                            "maxLength": 50,
+                            "type": "string"
+                          },
+                          "nutrientsJson": {
+                            "nullable": true
+                          },
+                          "notes": {
+                            "maxLength": 1000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isActive": {
+                            "type": "boolean"
+                          },
+                          "isDefault": {
+                            "type": "boolean"
                           },
                           "isArchived": {
                             "type": "boolean"
@@ -18803,6 +18949,12 @@
                         "stage",
                         "scoopGrams",
                         "waterMlPerScoop",
+                        "reconstitutionRatio",
+                        "servingSizeUnit",
+                        "nutrientsJson",
+                        "notes",
+                        "isActive",
+                        "isDefault",
                         "isArchived",
                         "createdAt",
                         "updatedAt"
@@ -18844,6 +18996,31 @@
                           "description": "Arbitrary-precision decimal represented as string",
                           "type": "string",
                           "nullable": true
+                        },
+                        "reconstitutionRatio": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "servingSizeUnit": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "nutrientsJson": {
+                          "nullable": true
+                        },
+                        "notes": {
+                          "maxLength": 1000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
                         },
                         "isArchived": {
                           "type": "boolean"
@@ -18994,6 +19171,12 @@
                         "stage",
                         "scoopGrams",
                         "waterMlPerScoop",
+                        "reconstitutionRatio",
+                        "servingSizeUnit",
+                        "nutrientsJson",
+                        "notes",
+                        "isActive",
+                        "isDefault",
                         "isArchived",
                         "createdAt",
                         "updatedAt"
@@ -19035,6 +19218,31 @@
                           "description": "Arbitrary-precision decimal represented as string",
                           "type": "string",
                           "nullable": true
+                        },
+                        "reconstitutionRatio": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "servingSizeUnit": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "nutrientsJson": {
+                          "nullable": true
+                        },
+                        "notes": {
+                          "maxLength": 1000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
                         },
                         "isArchived": {
                           "type": "boolean"
