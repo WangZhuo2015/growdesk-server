@@ -303,6 +303,13 @@ model LegacyIdempotencyMapping {
   targetEntityId   String   @map("target_entity_id")
   sourceKey        String   @map("source_key")
   status           String   @default("mapped")
+  sourceSystem     String?  @map("source_system")
+  sourceBatchId    String?  @map("source_batch_id") @db.Char(64)
+  sourceTable      String?  @map("source_table")
+  sourceId         String?  @map("source_id")
+  sourceHash       String?  @map("source_hash") @db.Char(64)
+  mappingVersion   String?  @map("mapping_version")
+  metadata         Json?    @db.JsonB
   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([targetEntityType, sourceKey], name: "uq_legacy_idempotency_type_source")
@@ -453,6 +460,8 @@ model FeedingRecord {
   source           String    @default("manual")
   sourceAgent      String?   @map("source_agent")
   recordedByUserId String?   @map("recorded_by_user_id")
+  legacyClientId   String?   @map("legacy_client_id")
+  legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -506,6 +515,8 @@ model DiaperRecord {
   source           String    @default("manual")
   sourceAgent      String?   @map("source_agent")
   recordedByUserId String?   @map("recorded_by_user_id")
+  legacyClientId   String?   @map("legacy_client_id")
+  legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -531,6 +542,8 @@ model SleepRecord {
   source           String    @default("manual")
   sourceAgent      String?   @map("source_agent")
   recordedByUserId String?   @map("recorded_by_user_id")
+  legacyClientId   String?   @map("legacy_client_id")
+  legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
