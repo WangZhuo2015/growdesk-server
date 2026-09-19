@@ -5,7 +5,25 @@ import {
   RegisterPushDeviceRequest,
   NotificationItem,
 } from "@growdesk/contracts";
-import { RecordNotFoundError } from "@growdesk/database";
+import { BadRequestError, RecordNotFoundError } from "@growdesk/database";
+
+export function encodeNotificationCursor(createdAt: Date, id: string): string {
+  return Buffer.from(`${createdAt.toISOString()}|${id}`).toString("base64url");
+}
+
+export function decodeNotificationCursor(cursor: string): { createdAt: Date; id: string } | null {
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const separator = raw.indexOf("|");
+    if (separator <= 0 || separator === raw.length - 1 || raw.indexOf("|", separator + 1) !== -1) return null;
+    const createdAt = new Date(raw.slice(0, separator));
+    const id = raw.slice(separator + 1);
+    if (!Number.isFinite(createdAt.getTime()) || !/^[A-Za-z0-9_-]{1,128}$/.test(id)) return null;
+    return { createdAt, id };
+  } catch {
+    return null;
+  }
+}
 
 export class NotificationService {
   constructor(private readonly prisma: PrismaClient) {}
@@ -61,10 +79,22 @@ export class NotificationService {
     options: { limit?: number; cursor?: string } = {}
   ): Promise<{ data: NotificationItem[]; page: { nextCursor: string | null } }> {
     const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
+    const before = options.cursor ? decodeNotificationCursor(options.cursor) : null;
+    if (options.cursor && !before) {
+      throw new BadRequestError("Invalid notification cursor", "INVALID_NOTIFICATION_CURSOR");
+    }
 
     const rows = await this.prisma.notification.findMany({
       where: {
         userId: principal.userId,
+        ...(before
+          ? {
+              OR: [
+                { createdAt: { lt: before.createdAt } },
+                { createdAt: before.createdAt, id: { lt: before.id } },
+              ],
+            }
+          : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
@@ -76,7 +106,7 @@ export class NotificationService {
     let nextCursor: string | null = null;
     const lastRow = pageRows[pageRows.length - 1];
     if (hasMore && lastRow) {
-      nextCursor = Buffer.from(`${lastRow.createdAt.toISOString()}|${lastRow.id}`).toString("base64url");
+      nextCursor = encodeNotificationCursor(lastRow.createdAt, lastRow.id);
     }
 
     const data: NotificationItem[] = pageRows.map((r) => ({
