@@ -141,7 +141,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
       payload: {
         username: userA,
         password: "ValidPassword123!",
-        displayName: "Caregiver Att A",
+        displayName: "test_caregiver_att_a",
       },
     });
     assert.equal(regResA.statusCode, 201);
@@ -175,7 +175,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
       payload: {
         username: userB,
         password: "ValidPassword123!",
-        displayName: "Caregiver Att B",
+        displayName: "test_caregiver_att_b",
       },
     });
     assert.equal(regResB.statusCode, 201);
@@ -402,6 +402,8 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
       payload: { avatarUrl: null },
     });
     assert.equal(detachAvatar.statusCode, 200, detachAvatar.body);
+    assert.equal((await ctx.prisma.baby.findUniqueOrThrow({ where: { id: babyAId } })).avatarUrl, null,
+      "JSON null must detach the avatar without coercion to an empty string");
 
     const removed = await app.inject({
       method: "DELETE",
@@ -473,7 +475,7 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     const raceRow = await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: raceAttachmentId } });
     assert.ok(raceRow.deletedAt !== null);
     const babyAfterRace = await ctx.prisma.baby.findUniqueOrThrow({ where: { id: babyAId } });
-    assert.equal(babyAfterRace.avatarUrl, "", "failed binding preserves the earlier explicit detach value");
+    assert.equal(babyAfterRace.avatarUrl, null, "failed binding preserves the earlier explicit detach value");
   });
 
   await t.test("ATT-09: Delete failure remains retryable and success soft-deletes record", async () => {

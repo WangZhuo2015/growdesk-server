@@ -3,6 +3,7 @@ import { weatherRoutes } from "./routes/weather-routes.js";
 import { bookRoutes } from "./routes/book-routes.js";
 import { knowledgeRoutes } from "./routes/knowledge-routes.js";
 import Fastify from "fastify";
+import AjvCompiler from "@fastify/ajv-compiler";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import {
   ApiErrorEnvelopeSchema,
@@ -173,8 +174,34 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     ownsDatabaseContext = true;
   }
 
+  const defaultValidatorFactory = AjvCompiler();
+  const strictBodyValidatorFactory = AjvCompiler();
+  const buildValidator: AjvCompiler.BuildCompilerFromPool = (externalSchemas, serverOptions) => {
+    if (serverOptions?.mode === "JTD") throw new Error("API contracts require JSON Schema validation");
+    const defaultValidator = defaultValidatorFactory(externalSchemas, serverOptions);
+    const strictBodyValidator = strictBodyValidatorFactory(externalSchemas, {
+      ...serverOptions,
+      customOptions: {
+        ...serverOptions?.customOptions,
+        coerceTypes: false,
+      },
+    });
+
+    // The compiler package types this argument as AnySchema, although its
+    // runtime receives Fastify's route definition including httpPart.
+    const compile: ReturnType<typeof defaultValidatorFactory> = (routeOptions) =>
+      typeof routeOptions === "object" && routeOptions !== null && routeOptions.httpPart === "body"
+        ? strictBodyValidator(routeOptions)
+        : defaultValidator(routeOptions);
+    return compile;
+  };
   const app = Fastify({
     logger: options.logger ?? false,
+    schemaController: {
+      compilersFactory: {
+        buildValidator,
+      },
+    },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   // Register shared schemas
