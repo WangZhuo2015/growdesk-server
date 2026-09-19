@@ -1,7 +1,12 @@
 import { PrismaClient, Prisma } from "./generated/client.js";
 import { UserPrincipal } from "@growdesk/domain";
 import { executeFamilyUnitOfWork, CommandExecutionResult } from "./unit-of-work.js";
-import { FamilyAccessDeniedError, BabyAccessDeniedError, RecordNotFoundError } from "./errors.js";
+import {
+  FamilyAccessDeniedError,
+  BabyAccessDeniedError,
+  RecordNotFoundError,
+  ConcurrencyConflictError,
+} from "./errors.js";
 
 export interface CreateFoodInput {
   readonly commandId: string;
@@ -73,8 +78,11 @@ export interface FoodLibraryItemEntity {
 }
 
 export interface BabyFoodPlanEntity {
+  readonly id: string;
   readonly babyId: string;
   readonly planData: Record<string, unknown>;
+  readonly version: bigint;
+  readonly createdAt: Date;
   readonly updatedAt: Date;
 }
 
@@ -564,40 +572,101 @@ export class FoodLibraryRepository {
 export class FoodPlanRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  private mapPlanRow(row: {
+    id: string;
+    babyId: string;
+    planData: unknown;
+    version: bigint;
+    createdAt: Date;
+    updatedAt: Date;
+  }): BabyFoodPlanEntity {
+    return {
+      id: row.id,
+      babyId: row.babyId,
+      planData: row.planData as Record<string, unknown>,
+      version: row.version,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+
   async getPlan(familyId: string, babyId: string): Promise<BabyFoodPlanEntity | null> {
     const row = await this.prisma.babyFoodPlan.findUnique({
       where: { babyId },
     });
     if (!row || row.familyId !== familyId) return null;
-    return {
-      babyId: row.babyId,
-      planData: row.planData as Record<string, unknown>,
-      updatedAt: row.updatedAt,
-    };
+    return this.mapPlanRow(row);
   }
 
   async savePlan(
     familyId: string,
     babyId: string,
-    planData: Record<string, unknown>
+    planData: Record<string, unknown>,
+    baseVersion: bigint,
   ): Promise<BabyFoodPlanEntity> {
-    const row = await this.prisma.babyFoodPlan.upsert({
-      where: { babyId },
-      create: {
-        id: crypto.randomUUID(),
-        familyId,
-        babyId,
-        planData: planData as Prisma.InputJsonValue,
-      },
-      update: {
-        planData: planData as Prisma.InputJsonValue,
-        updatedAt: new Date(),
-      },
-    });
-    return {
-      babyId: row.babyId,
-      planData: row.planData as Record<string, unknown>,
-      updatedAt: row.updatedAt,
-    };
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.babyFoodPlan.findUnique({
+          where: { babyId },
+        });
+
+        if (!existing) {
+          if (baseVersion !== 0n) {
+            throw new ConcurrencyConflictError(
+              `Food plan does not exist; baseVersion ${baseVersion.toString()} is not the create version 0`,
+            );
+          }
+
+          const created = await tx.babyFoodPlan.create({
+            data: {
+              id: crypto.randomUUID(),
+              familyId,
+              babyId,
+              planData: planData as Prisma.InputJsonValue,
+              version: 1n,
+            },
+          });
+          return this.mapPlanRow(created);
+        }
+
+        if (existing.familyId !== familyId) {
+          throw new BabyAccessDeniedError(babyId);
+        }
+        if (existing.version !== baseVersion) {
+          throw new ConcurrencyConflictError(
+            `Food plan changed; baseVersion ${baseVersion.toString()} does not match current version ${existing.version.toString()}`,
+          );
+        }
+
+        // Keep the version predicate in the UPDATE as a second CAS fence. The
+        // conditional UPDATE takes the row lock and prevents a stale writer
+        // from replacing the shared JSON document after the initial read.
+        const updated = await tx.babyFoodPlan.updateMany({
+          where: { babyId, familyId, version: baseVersion },
+          data: {
+            planData: planData as Prisma.InputJsonValue,
+            version: { increment: 1n },
+            updatedAt: new Date(),
+          },
+        });
+        if (updated.count !== 1) {
+          throw new ConcurrencyConflictError("Food plan changed; reload before saving");
+        }
+
+        const saved = await tx.babyFoodPlan.findUnique({ where: { babyId } });
+        if (!saved || saved.familyId !== familyId) {
+          throw new ConcurrencyConflictError("Food plan disappeared while saving; reload before retrying");
+        }
+        return this.mapPlanRow(saved);
+      });
+    } catch (error) {
+      // Two first writers may both observe an empty plan. The unique baby_id
+      // constraint resolves that race; expose it as the same stale-write
+      // conflict instead of a raw database error.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConcurrencyConflictError("Food plan was created by another request; reload before saving");
+      }
+      throw error;
+    }
   }
 }

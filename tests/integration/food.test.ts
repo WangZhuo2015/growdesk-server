@@ -64,6 +64,7 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     "prisma/migrations/202609120004_care_diaper/migration.sql",
     "prisma/migrations/202609120005_care_sleep/migration.sql",
     "prisma/migrations/202609120006_care_food/migration.sql",
+    "prisma/migrations/202609190016_food_plan_version/migration.sql",
   ];
 
   for (const m of migrations) {
@@ -524,12 +525,45 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
 
   // FO-10: Baby Food Plan
   await t.test("FO-10: Baby Food Plan save and get with tenant isolation", async () => {
+    const emptyRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyBId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(emptyRes.statusCode, 200);
+    const emptyBody = emptyRes.json<{
+      data: { id: string | null; babyId: string; planData: Record<string, unknown>; createdAt: string | null; version: string };
+    }>();
+    assert.equal(emptyBody.data.id, null);
+    assert.equal(emptyBody.data.createdAt, null);
+    assert.equal(emptyBody.data.version, "0");
+
+    const [firstCreate, competingCreate] = await Promise.all([
+      app.inject({
+        method: "PUT",
+        url: `/api/v1/babies/${babyBId}/food-plan`,
+        headers: { authorization: `Bearer ${tokenB}` },
+        payload: { baseVersion: "0", planData: { week: "test_first_create" } },
+      }),
+      app.inject({
+        method: "PUT",
+        url: `/api/v1/babies/${babyBId}/food-plan`,
+        headers: { authorization: `Bearer ${tokenB}` },
+        payload: { baseVersion: "0", planData: { week: "test_competing_create" } },
+      }),
+    ]);
+    assert.deepEqual(
+      [firstCreate.statusCode, competingCreate.statusCode].sort((a, b) => a - b),
+      [200, 409],
+    );
+
     // Save food plan for Baby A
     const saveRes = await app.inject({
       method: "PUT",
       url: `/api/v1/babies/${babyAId}/food-plan`,
       headers: { authorization: `Bearer ${tokenA}` },
       payload: {
+        baseVersion: "0",
         planData: {
           week: "2026-W37",
           days: {
@@ -541,10 +575,22 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     });
     assert.equal(saveRes.statusCode, 200);
     const saveBody = saveRes.json<{
-      data: { babyId: string; planData: { week: string } };
+      data: { id: string; babyId: string; planData: { week: string }; createdAt: string; updatedAt: string; version: string };
     }>();
+    assert.match(saveBody.data.id, /^[0-9a-f-]{36}$/i);
     assert.equal(saveBody.data.babyId, babyAId);
     assert.equal(saveBody.data.planData.week, "2026-W37");
+    assert.match(saveBody.data.createdAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.match(saveBody.data.updatedAt, /^\d{4}-\d{2}-\d{2}T/);
+    assert.equal(saveBody.data.version, "1");
+
+    const missingPrecondition = await app.inject({
+      method: "PUT",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { planData: { week: "test_missing_base_version" } },
+    });
+    assert.equal(missingPrecondition.statusCode, 409, missingPrecondition.payload);
 
     // Get food plan for Baby A
     const getRes = await app.inject({
@@ -554,9 +600,12 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     });
     assert.equal(getRes.statusCode, 200);
     const getBody = getRes.json<{
-      data: { babyId: string; planData: { week: string } };
+      data: { id: string; babyId: string; planData: { week: string }; createdAt: string; version: string };
     }>();
+    assert.equal(getBody.data.id, saveBody.data.id);
     assert.equal(getBody.data.planData.week, "2026-W37");
+    assert.equal(getBody.data.createdAt, saveBody.data.createdAt);
+    assert.equal(getBody.data.version, "1");
 
     // User B cannot access Baby A's food plan
     const forbiddenRes = await app.inject({
@@ -565,5 +614,97 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
       headers: { authorization: `Bearer ${tokenB}` },
     });
     assert.equal(forbiddenRes.statusCode, 403);
+
+    const forbiddenWriteRes = await app.inject({
+      method: "PUT",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: { baseVersion: "0", planData: { week: "test_cross_family_write" } },
+    });
+    assert.equal(forbiddenWriteRes.statusCode, 403);
+  });
+
+  await t.test("FO-11: stale full-plan writes conflict and retry preserves both changes", async () => {
+    const initial = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(initial.statusCode, 200);
+    const initialBody = initial.json<{
+      data: { id: string; planData: Record<string, unknown>; version: string };
+    }>();
+    assert.equal(initialBody.data.version, "1");
+
+    const writerAPlan = {
+      ...initialBody.data.planData,
+      recipeDraft: "test_writer_a",
+    };
+    const writerBPlan = {
+      ...initialBody.data.planData,
+      supplementState: { defaultFormulaId: "test_formula_writer_b" },
+    };
+    const [writerA, writerB] = await Promise.all([
+      app.inject({
+        method: "PUT",
+        url: `/api/v1/babies/${babyAId}/food-plan`,
+        headers: { authorization: `Bearer ${tokenA}` },
+        payload: { baseVersion: initialBody.data.version, planData: writerAPlan },
+      }),
+      app.inject({
+        method: "PUT",
+        url: `/api/v1/babies/${babyAId}/food-plan`,
+        headers: { authorization: `Bearer ${tokenA}` },
+        payload: { baseVersion: initialBody.data.version, planData: writerBPlan },
+      }),
+    ]);
+    const statuses = [writerA.statusCode, writerB.statusCode].sort((a, b) => a - b);
+    assert.deepEqual(statuses, [200, 409]);
+
+    const winner = writerA.statusCode === 200 ? writerA : writerB;
+    const stale = writerA.statusCode === 409 ? writerA : writerB;
+    assert.equal(stale.statusCode, 409, stale.payload);
+    const winnerBody = winner.json<{
+      data: { id: string; babyId: string; planData: Record<string, unknown>; createdAt: string; version: string };
+    }>();
+    assert.equal(winnerBody.data.id, initialBody.data.id);
+    assert.equal(winnerBody.data.version, "2");
+    assert.match(winnerBody.data.createdAt, /^\d{4}-\d{2}-\d{2}T/);
+
+    const mergedPlan = {
+      ...winnerBody.data.planData,
+      recipeDraft: "test_writer_a",
+      supplementState: { defaultFormulaId: "test_formula_writer_b" },
+    };
+    const retry = await app.inject({
+      method: "PUT",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { baseVersion: winnerBody.data.version, planData: mergedPlan },
+    });
+    assert.equal(retry.statusCode, 200, retry.payload);
+    const retryBody = retry.json<{
+      data: { id: string; planData: Record<string, any>; createdAt: string; version: string };
+    }>();
+    assert.equal(retryBody.data.id, initialBody.data.id);
+    assert.equal(retryBody.data.version, "3");
+    assert.equal(retryBody.data.planData.recipeDraft, "test_writer_a");
+    assert.deepEqual(retryBody.data.planData.supplementState, { defaultFormulaId: "test_formula_writer_b" });
+    assert.equal(retryBody.data.createdAt, winnerBody.data.createdAt);
+
+    const final = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/food-plan`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(final.statusCode, 200);
+    const finalBody = final.json<{
+      data: { id: string; planData: Record<string, any>; createdAt: string; version: string };
+    }>();
+    assert.equal(finalBody.data.id, initialBody.data.id);
+    assert.equal(finalBody.data.version, "3");
+    assert.equal(finalBody.data.planData.recipeDraft, "test_writer_a");
+    assert.deepEqual(finalBody.data.planData.supplementState, { defaultFormulaId: "test_formula_writer_b" });
+    assert.equal(finalBody.data.createdAt, winnerBody.data.createdAt);
   });
 });

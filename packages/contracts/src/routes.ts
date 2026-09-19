@@ -1387,7 +1387,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH04FO",
     params: BabyIdParam,
     body: SaveFoodPlanRequestSchema,
-    responses: { 200: FoodPlanResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
+    responses: { 200: FoodPlanResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 18. Knowledge & Development (SH-08)

@@ -7,6 +7,7 @@ import {
   RecordNotFoundError,
   BabyAccessDeniedError,
   FamilyAccessDeniedError,
+  BadRequestError,
 } from "@growdesk/database";
 import type { UserPrincipal } from "@growdesk/domain";
 import type {
@@ -22,7 +23,21 @@ import type {
   FoodPlan,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
-import { BadRequestError } from "@growdesk/database";
+
+const MAX_FOOD_PLAN_VERSION = 9_223_372_036_854_775_807n;
+
+function parseFoodPlanVersion(value: string): bigint {
+  let version: bigint;
+  try {
+    version = BigInt(value);
+  } catch {
+    throw new BadRequestError("baseVersion must be a non-negative 64-bit integer", "INVALID_BASE_VERSION");
+  }
+  if (version < 0n || version > MAX_FOOD_PLAN_VERSION) {
+    throw new BadRequestError("baseVersion must be a non-negative 64-bit integer", "INVALID_BASE_VERSION");
+  }
+  return version;
+}
 
 export interface KeysetPaginationQuery {
   readonly cursor?: string;
@@ -380,23 +395,30 @@ export class FoodService {
     const plan = await this.planRepo.getPlan(familyId, babyId);
     if (!plan) {
       return {
+        id: null,
         babyId,
         planData: {},
+        createdAt: null,
         updatedAt: new Date().toISOString(),
+        version: "0",
       };
     }
 
     return {
+      id: plan.id,
       babyId: plan.babyId,
       planData: plan.planData,
+      createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
+      version: plan.version.toString(),
     };
   }
 
   async saveFoodPlan(
     principal: UserPrincipal,
     babyId: string,
-    planData: Record<string, unknown>
+    planData: Record<string, unknown>,
+    baseVersion: string,
   ): Promise<FoodPlan> {
     const familyId = await this.resolveBabyFamily(babyId);
     const hasBaby = principal.babyMemberships?.some(
@@ -404,11 +426,14 @@ export class FoodService {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const plan = await this.planRepo.savePlan(familyId, babyId, planData);
+    const plan = await this.planRepo.savePlan(familyId, babyId, planData, parseFoodPlanVersion(baseVersion));
     return {
+      id: plan.id,
       babyId: plan.babyId,
       planData: plan.planData,
+      createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
+      version: plan.version.toString(),
     };
   }
 }

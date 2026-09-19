@@ -605,6 +605,7 @@ model BabyFoodPlan {
   familyId  String   @map("family_id")
   babyId    String   @unique @map("baby_id")
   planData  Json     @map("plan_data") @db.JsonB
+  version   BigInt   @default(1)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)

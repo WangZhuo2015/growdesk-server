@@ -2436,11 +2436,20 @@
         "additionalProperties": false,
         "type": "object",
         "required": [
+          "id",
           "babyId",
           "planData",
-          "updatedAt"
+          "createdAt",
+          "updatedAt",
+          "version"
         ],
         "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string",
+            "nullable": true
+          },
           "babyId": {
             "format": "uuid",
             "description": "UUID v4 string",
@@ -2450,9 +2459,20 @@
             "type": "object",
             "additionalProperties": {}
           },
+          "createdAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string",
+            "nullable": true
+          },
           "updatedAt": {
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          },
+          "version": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
             "type": "string"
           }
         }
@@ -19830,11 +19850,20 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "id",
                         "babyId",
                         "planData",
-                        "updatedAt"
+                        "createdAt",
+                        "updatedAt",
+                        "version"
                       ],
                       "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "babyId": {
                           "format": "uuid",
                           "description": "UUID v4 string",
@@ -19844,9 +19873,20 @@
                           "type": "object",
                           "additionalProperties": {}
                         },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "updatedAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
                           "type": "string"
                         }
                       }
@@ -19892,12 +19932,18 @@
                 "additionalProperties": false,
                 "type": "object",
                 "required": [
-                  "planData"
+                  "planData",
+                  "baseVersion"
                 ],
                 "properties": {
                   "planData": {
                     "type": "object",
                     "additionalProperties": {}
+                  },
+                  "baseVersion": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
                   }
                 }
               }
@@ -19933,11 +19979,20 @@
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
+                        "id",
                         "babyId",
                         "planData",
-                        "updatedAt"
+                        "createdAt",
+                        "updatedAt",
+                        "version"
                       ],
                       "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "babyId": {
                           "format": "uuid",
                           "description": "UUID v4 string",
@@ -19947,9 +20002,20 @@
                           "type": "object",
                           "additionalProperties": {}
                         },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "updatedAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
                           "type": "string"
                         }
                       }
@@ -19980,6 +20046,16 @@
             }
           },
           "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

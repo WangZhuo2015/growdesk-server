@@ -4,6 +4,7 @@ import {
   DateTimeString,
   DecimalString,
   UuidString,
+  BigIntString,
   PaginatedEnvelope,
 } from "./common.js";
 
@@ -190,9 +191,12 @@ export type FoodGuidelinesResponse = Static<typeof FoodGuidelinesResponseSchema>
 
 export const FoodPlanSchema = Type.Object(
   {
+    id: Nullable(UuidString),
     babyId: UuidString,
     planData: Type.Record(Type.String(), Type.Unknown()),
+    createdAt: Nullable(DateTimeString),
     updatedAt: DateTimeString,
+    version: BigIntString,
   },
   { $id: "FoodPlan", additionalProperties: false }
 );
@@ -202,6 +206,7 @@ export type FoodPlan = Static<typeof FoodPlanSchema>;
 export const SaveFoodPlanRequestSchema = Type.Object(
   {
     planData: Type.Record(Type.String(), Type.Unknown()),
+    baseVersion: BigIntString,
   },
   { $id: "SaveFoodPlanRequest", additionalProperties: false }
 );

@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { PrismaClient } from "@growdesk/database";
+import { ConcurrencyConflictError } from "@growdesk/database";
 import {
   ApiErrorEnvelopeSchema,
   BabyIdParamSchema,
@@ -256,6 +257,13 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
     "/api/v1/babies/:babyId/food-plan",
     {
       preHandler: [fastify.authenticate],
+      // Keep the missing-precondition failure distinct from malformed plan
+      // data. Older clients must not silently overwrite the shared document.
+      preValidation: async (request) => {
+        if (typeof (request.body as Partial<SaveFoodPlanRequest> | undefined)?.baseVersion !== "string") {
+          throw new ConcurrencyConflictError("baseVersion is required; reload the food plan before saving");
+        }
+      },
       schema: {
         params: BabyIdParamSchema,
         body: SaveFoodPlanRequestSchema,
@@ -264,13 +272,14 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
           400: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
         },
       },
     },
     async (request, reply) => {
       const principal = request.principal!;
       const { babyId } = request.params;
-      const plan = await service.saveFoodPlan(principal, babyId, request.body.planData);
+      const plan = await service.saveFoodPlan(principal, babyId, request.body.planData, request.body.baseVersion);
       reply.status(200).send({ data: plan });
     },
   );
