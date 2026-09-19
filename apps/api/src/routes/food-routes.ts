@@ -13,6 +13,7 @@ import {
   FoodLibraryItemListResponseSchema,
   FoodLibraryItemSchema,
   CreateFoodLibraryItemRequestSchema,
+  FoodLibraryItemsQuerySchema,
   FoodGuidelinesResponseSchema,
   FoodPlanResponseSchema,
   SaveFoodPlanRequestSchema,
@@ -22,6 +23,7 @@ import {
   type CreateFoodRequest,
   type UpdateFoodRequest,
   type CreateFoodLibraryItemRequest,
+  type FoodLibraryItemsQuery,
   type SaveFoodPlanRequest,
 } from "@growdesk/contracts";
 import { FoodService } from "../services/food-service.js";
@@ -166,20 +168,23 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
   );
 
   // 6. GET /api/v1/food/items
-  fastify.get(
+  fastify.get<{ Querystring: FoodLibraryItemsQuery }>(
     "/api/v1/food/items",
     {
       preHandler: [fastify.authenticate],
       schema: {
+        querystring: FoodLibraryItemsQuerySchema,
         response: {
           200: FoodLibraryItemListResponseSchema,
           401: ApiErrorEnvelopeSchema,
+          400: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
         },
       },
     },
     async (request, reply) => {
       const principal = request.principal!;
-      const items = await service.listFoodLibraryItems(principal);
+      const items = await service.listFoodLibraryItems(principal, request.query);
       reply.status(200).send({ data: items });
     },
   );
@@ -195,6 +200,7 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
           201: FoodLibraryItemSchema,
           400: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
         },
       },
     },

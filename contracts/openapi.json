@@ -19205,6 +19205,18 @@
         "tags": [
           "Nutrition"
         ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "familyId",
+            "required": false,
+            "description": "UUID v4 string"
+          }
+        ],
         "x-implementation-status": "PLANNED_SH04FO",
         "responses": {
           "200": {
@@ -19295,7 +19307,27 @@
               }
             }
           },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -19327,6 +19359,14 @@
                   "recommendedAgeMonths"
                 ],
                 "properties": {
+                  "familyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "tried": {
+                    "type": "boolean"
+                  },
                   "name": {
                     "minLength": 1,
                     "maxLength": 100,

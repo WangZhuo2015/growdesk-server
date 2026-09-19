@@ -413,6 +413,97 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     assert.equal(listRes.statusCode, 200);
     const listBody = listRes.json<{ data: Array<{ id: string; name: string }> }>();
     assert.ok(listBody.data.some((i) => i.id === createdItem.id));
+
+    // Add User A to a second family. The omitted legacy scope must stop being
+    // ambiguous, while an explicit authorized family continues to work.
+    const inviteRes = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyBId}/invites`,
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: { expiresInDays: 7 },
+    });
+    assert.equal(inviteRes.statusCode, 201, `Create family B invite failed: ${inviteRes.payload}`);
+    const inviteCode = inviteRes.json<{ data: { inviteCode: string } }>().data.inviteCode;
+    const joinRes = await app.inject({
+      method: "POST",
+      url: "/api/v1/families/join",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { inviteCode },
+    });
+    assert.equal(joinRes.statusCode, 200, `Join family B failed: ${joinRes.payload}`);
+
+    const ambiguousList = await app.inject({
+      method: "GET",
+      url: "/api/v1/food/items",
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(ambiguousList.statusCode, 400);
+    assert.equal(ambiguousList.json<{ error: { code: string } }>().error.code, "FAMILY_SELECTION_REQUIRED");
+
+    const familyAList = await app.inject({
+      method: "GET",
+      url: `/api/v1/food/items?familyId=${familyAId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(familyAList.statusCode, 200);
+    assert.ok(familyAList.json<{ data: Array<{ id: string }> }>().data.some((i) => i.id === createdItem.id));
+
+    const familyBCreate = await app.inject({
+      method: "POST",
+      url: "/api/v1/food/items",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        familyId: familyBId,
+        tried: true,
+        name: "Family B custom food",
+        category: "fruit",
+        allergenRisk: "low",
+        recommendedAgeMonths: 8,
+      },
+    });
+    assert.equal(familyBCreate.statusCode, 201, `Create family B food failed: ${familyBCreate.payload}`);
+    const familyBItem = familyBCreate.json<{ id: string; familyStatus?: { tried: boolean } }>();
+    assert.equal(familyBItem.familyStatus?.tried, true);
+
+    const familyAAfterBCreate = await app.inject({
+      method: "GET",
+      url: `/api/v1/food/items?familyId=${familyAId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(familyAAfterBCreate.statusCode, 200);
+    assert.ok(!familyAAfterBCreate.json<{ data: Array<{ id: string }> }>().data.some((i) => i.id === familyBItem.id));
+
+    const familyBList = await app.inject({
+      method: "GET",
+      url: `/api/v1/food/items?familyId=${familyBId}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(familyBList.statusCode, 200);
+    const familyBItems = familyBList.json<{ data: Array<{ id: string; familyStatus?: { tried: boolean } }> }>().data;
+    assert.ok(familyBItems.some((i) => i.id === familyBItem.id));
+    assert.equal(familyBItems.find((i) => i.id === familyBItem.id)?.familyStatus?.tried, true);
+
+    // A principal from another tenant cannot use an explicit familyId to
+    // read or create in Family A.
+    const crossFamilyList = await app.inject({
+      method: "GET",
+      url: `/api/v1/food/items?familyId=${familyAId}`,
+      headers: { authorization: `Bearer ${tokenB}` },
+    });
+    assert.equal(crossFamilyList.statusCode, 403);
+    const crossFamilyCreate = await app.inject({
+      method: "POST",
+      url: "/api/v1/food/items",
+      headers: { authorization: `Bearer ${tokenB}` },
+      payload: {
+        familyId: familyAId,
+        name: "Cross family food",
+        category: "fruit",
+        allergenRisk: "low",
+        recommendedAgeMonths: 8,
+      },
+    });
+    assert.equal(crossFamilyCreate.statusCode, 403);
   });
 
   // FO-09: Food Guidelines

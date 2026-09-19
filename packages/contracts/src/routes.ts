@@ -147,6 +147,7 @@ import {
   UpdateFormulaProductRequestSchema,
   FoodLibraryItemListResponseSchema,
   CreateFoodLibraryItemRequestSchema,
+  FoodLibraryItemsQuerySchema,
   FoodGuidelinesResponseSchema,
   FoodPlanResponseSchema,
   SaveFoodPlanRequestSchema,
@@ -1343,7 +1344,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     summary: "List common weaning and baby foods with family tried-state",
     tags: ["Nutrition"],
     implementationStatus: "PLANNED_SH04FO",
-    responses: { 200: FoodLibraryItemListResponseSchema, 401: ApiErrorRef },
+    querystring: FoodLibraryItemsQuerySchema,
+    responses: { 200: FoodLibraryItemListResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
   },
   {
     method: "POST",

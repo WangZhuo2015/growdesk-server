@@ -17,10 +17,12 @@ import type {
   FoodReaction,
   FoodLibraryItem,
   CreateFoodLibraryItemRequest,
+  FoodLibraryItemsQuery,
   FoodGuidelineItem,
   FoodPlan,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
+import { BadRequestError } from "@growdesk/database";
 
 export interface KeysetPaginationQuery {
   readonly cursor?: string;
@@ -106,6 +108,24 @@ export class FoodService {
     this.repo = new ScopedFoodRepository(prisma);
     this.libraryRepo = new FoodLibraryRepository(prisma);
     this.planRepo = new FoodPlanRepository(prisma);
+  }
+
+  /**
+   * Resolve a family scope without ever selecting the first membership when
+   * the principal belongs to more than one family. The omitted form remains
+   * compatible with the legacy single-family Web client.
+   */
+  private resolveLibraryFamilyId(principal: UserPrincipal, requestedFamilyId?: string): string {
+    const activeFamilies = principal.familyMemberships.filter((membership) => membership.status === "active");
+    if (requestedFamilyId) {
+      if (!activeFamilies.some((membership) => membership.familyId === requestedFamilyId)) {
+        throw new FamilyAccessDeniedError(requestedFamilyId);
+      }
+      return requestedFamilyId;
+    }
+    if (activeFamilies.length === 1 && activeFamilies[0]) return activeFamilies[0].familyId;
+    if (activeFamilies.length === 0) throw new FamilyAccessDeniedError("none");
+    throw new BadRequestError("A familyId is required when the account has multiple active families", "FAMILY_SELECTION_REQUIRED");
   }
 
   private async resolveBabyFamily(babyId: string): Promise<string> {
@@ -320,10 +340,11 @@ export class FoodService {
 
   // Food Library
   async listFoodLibraryItems(
-    principal: UserPrincipal
+    principal: UserPrincipal,
+    query: FoodLibraryItemsQuery = {},
   ): Promise<FoodLibraryItem[]> {
-    const activeFamily = principal.familyMemberships.find((m) => m.status === "active");
-    const items = await this.libraryRepo.listItems(activeFamily?.familyId);
+    const familyId = this.resolveLibraryFamilyId(principal, query.familyId);
+    const items = await this.libraryRepo.listItems(principal, familyId);
     return items as FoodLibraryItem[];
   }
 
@@ -331,18 +352,14 @@ export class FoodService {
     principal: UserPrincipal,
     body: CreateFoodLibraryItemRequest
   ): Promise<FoodLibraryItem> {
-    const activeFamily = principal.familyMemberships.find(
-      (m) => m.status === "active" && ["owner", "admin", "caregiver", "member"].includes(m.role)
-    );
-    if (!activeFamily) {
-      throw new FamilyAccessDeniedError("none");
-    }
+    const familyId = this.resolveLibraryFamilyId(principal, body.familyId);
 
-    const item = await this.libraryRepo.createCustomItem(activeFamily.familyId, {
+    const item = await this.libraryRepo.createCustomItem(principal, familyId, {
       name: body.name,
       category: body.category,
       allergenRisk: body.allergenRisk,
       recommendedAgeMonths: body.recommendedAgeMonths,
+      tried: body.tried,
     });
 
     return item as FoodLibraryItem;

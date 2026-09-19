@@ -436,27 +436,33 @@ export type ScopedFoodRepository = FoodRepository;
 export class FoodLibraryRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async listItems(familyId?: string): Promise<FoodLibraryItemEntity[]> {
+  private checkFamilyAccess(principal: UserPrincipal, familyId: string, write = false): void {
+    const membership = principal.familyMemberships.find(
+      (candidate) => candidate.familyId === familyId && candidate.status === "active",
+    );
+    if (!membership || (write && membership.role === "viewer")) {
+      throw new FamilyAccessDeniedError(familyId);
+    }
+  }
+
+  async listItems(principal: UserPrincipal, familyId: string): Promise<FoodLibraryItemEntity[]> {
+    this.checkFamilyAccess(principal, familyId);
     const items = await this.prisma.foodLibraryItem.findMany({
-      where: familyId
-        ? {
-            OR: [
-              { isCustom: false },
-              { isCustom: true, familyId },
-            ],
-          }
-        : { isCustom: false },
+      where: {
+        OR: [
+          { isCustom: false },
+          { isCustom: true, familyId },
+        ],
+      },
       orderBy: [{ recommendedAgeMonths: "asc" }, { name: "asc" }],
     });
 
     const statuses: Map<string, { tried: boolean; reaction: string | null }> = new Map();
-    if (familyId) {
-      const statusRows = await this.prisma.familyFoodStatus.findMany({
-        where: { familyId },
-      });
-      for (const row of statusRows) {
-        statuses.set(row.foodItemId, { tried: row.tried, reaction: row.reaction });
-      }
+    const statusRows = await this.prisma.familyFoodStatus.findMany({
+      where: { familyId },
+    });
+    for (const row of statusRows) {
+      statuses.set(row.foodItemId, { tried: row.tried, reaction: row.reaction });
     }
 
     return items.map((item) => {
@@ -473,33 +479,57 @@ export class FoodLibraryRepository {
   }
 
   async createCustomItem(
+    principal: UserPrincipal,
     familyId: string,
     input: {
       name: string;
       category: string;
       allergenRisk: "low" | "medium" | "high";
       recommendedAgeMonths: number;
+      tried?: boolean;
     }
   ): Promise<FoodLibraryItemEntity> {
+    this.checkFamilyAccess(principal, familyId, true);
     const id = `custom_${crypto.randomUUID()}`;
-    const row = await this.prisma.foodLibraryItem.create({
-      data: {
-        id,
-        name: input.name,
-        category: input.category,
-        allergenRisk: input.allergenRisk,
-        recommendedAgeMonths: input.recommendedAgeMonths,
-        isCustom: true,
-        familyId,
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.foodLibraryItem.create({
+        data: {
+          id,
+          name: input.name,
+          category: input.category,
+          allergenRisk: input.allergenRisk,
+          recommendedAgeMonths: input.recommendedAgeMonths,
+          isCustom: true,
+          familyId,
+        },
+      });
+
+      const familyStatus = input.tried === undefined
+        ? undefined
+        : await tx.familyFoodStatus.create({
+            data: {
+              id: crypto.randomUUID(),
+              familyId,
+              foodItemId: row.id,
+              tried: input.tried,
+              reaction: null,
+            },
+          });
+      return { row, familyStatus };
     });
 
     return {
-      id: row.id,
-      name: row.name,
-      category: row.category,
-      allergenRisk: row.allergenRisk as "low" | "medium" | "high",
-      recommendedAgeMonths: row.recommendedAgeMonths,
+      id: result.row.id,
+      name: result.row.name,
+      category: result.row.category,
+      allergenRisk: result.row.allergenRisk as "low" | "medium" | "high",
+      recommendedAgeMonths: result.row.recommendedAgeMonths,
+      ...(result.familyStatus ? {
+        familyStatus: {
+          tried: result.familyStatus.tried,
+          reaction: result.familyStatus.reaction,
+        },
+      } : {}),
     };
   }
 

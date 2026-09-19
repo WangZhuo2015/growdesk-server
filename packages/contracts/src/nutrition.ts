@@ -83,6 +83,20 @@ export const FoodAllergenRiskSchema = Type.Union([
 
 export type FoodAllergenRisk = Static<typeof FoodAllergenRiskSchema>;
 
+/**
+ * Food-library requests are family scoped. The optional field keeps the
+ * single-family legacy client wire-compatible; the API resolves it only when
+ * the authenticated principal has exactly one active family.
+ */
+export const FoodLibraryItemsQuerySchema = Type.Object(
+  {
+    familyId: Type.Optional(UuidString),
+  },
+  { $id: "FoodLibraryItemsQuery", additionalProperties: false },
+);
+
+export type FoodLibraryItemsQuery = Static<typeof FoodLibraryItemsQuerySchema>;
+
 export const FoodLibraryItemSchema = Type.Object(
   {
     id: Type.String(),
@@ -107,6 +121,9 @@ export type FoodLibraryItem = Static<typeof FoodLibraryItemSchema>;
 
 export const CreateFoodLibraryItemRequestSchema = Type.Object(
   {
+    familyId: Type.Optional(UuidString),
+    /** Legacy create-as-tried flow; persisted as the family-scoped status row. */
+    tried: Type.Optional(Type.Boolean()),
     name: Type.String({ minLength: 1, maxLength: 100 }),
     category: Type.String({ minLength: 1, maxLength: 50 }),
     allergenRisk: FoodAllergenRiskSchema,
