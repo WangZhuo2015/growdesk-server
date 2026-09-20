@@ -35,6 +35,7 @@ model User {
   attachments             Attachment[]
   medicalReports          MedicalReport[]
   vaccineRecords          VaccineRecord[]
+  supplementRecords       SupplementRecord[] @relation("SupplementRecordRecordedBy")
   pushDevices             PushDevice[]
   notifications           Notification[]
   aiSessions              AiSession[]
@@ -71,11 +72,14 @@ model Family {
   foodStatuses    FamilyFoodStatus[]
   customFoodItems FoodLibraryItem[]
   babyFoodPlans   BabyFoodPlan[]
+  supplementProducts SupplementProduct[]
+  supplementSchedules SupplementSchedule[]
   supplementRecords SupplementRecord[]
   growthMeasurements GrowthMeasurement[]
   attachments        Attachment[]
   medicalReports     MedicalReport[]
   vaccineRecords     VaccineRecord[]
+  vaccineSelections  VaccineSelection[]
   dailySummaries     DailySummary[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
@@ -125,10 +129,12 @@ model Baby {
   sleepRecords    SleepRecord[]
   foodRecords     FoodRecord[]
   foodPlan        BabyFoodPlan?
+  supplementSchedules SupplementSchedule[]
   supplementRecords SupplementRecord[]
   growthMeasurements GrowthMeasurement[]
   medicalReports  MedicalReport[]
   vaccineRecords  VaccineRecord[]
+  vaccineSelections VaccineSelection[]
   aiSessions      AiSession[]
   aiRuns          AiRun[]
   dailySummaries  DailySummary[]
@@ -640,24 +646,89 @@ model BabyFoodPlan {
 }
 
 model SupplementRecord {
-  id             String    @id
-  familyId       String    @map("family_id")
-  babyId         String    @map("baby_id")
-  supplementName String    @map("supplement_name") @db.VarChar(100)
-  occurredAt     DateTime  @map("occurred_at") @db.Timestamptz(3)
-  amount         String?   @db.VarChar(100)
-  notes          String?   @db.VarChar(1000)
-  recordedByUserId String?  @map("recorded_by_user_id")
-  version        Int       @default(1)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
-  family         Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  baby           Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  id               String    @id
+  familyId         String    @map("family_id")
+  babyId           String    @map("baby_id")
+  supplementName   String    @map("supplement_name") @db.VarChar(100)
+  occurredAt       DateTime  @map("occurred_at") @db.Timestamptz(3)
+  amount           String?   @db.VarChar(100)
+  notes            String?   @db.VarChar(1000)
+  productId        String?   @map("product_id")
+  dose             Decimal?  @db.Decimal(12, 5)
+  unitName         String?   @map("unit_name") @db.VarChar(50)
+  // Existing canonical rows predate this column; `manual` matches the
+  // default used by the other care-record tables. Imported legacy rows set
+  // their explicit source in the promotion materializer.
+  source           String    @default("manual")
+  sourceAgent      String?   @map("source_agent")
+  legacyClientId   String?   @map("legacy_client_id")
+  legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
+  recordedByUserId String?   @map("recorded_by_user_id")
+  version          Int       @default(1)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family           Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby             Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  product          SupplementProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  recordedBy       User?     @relation("SupplementRecordRecordedBy", fields: [recordedByUserId], references: [id], onDelete: SetNull)
 
   @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_supplement_records_baby_timeline")
   @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_supplement_records_family_timeline")
   @@map("supplement_records")
+  @@schema("public")
+}
+
+model SupplementProduct {
+  id             String    @id
+  familyId       String    @map("family_id")
+  name           String    @db.VarChar(200)
+  brand          String?   @db.VarChar(100)
+  dosageForm     String?   @map("dosage_form") @db.VarChar(50)
+  unitName       String    @map("unit_name") @db.VarChar(50)
+  defaultDose    Decimal   @default(1) @map("default_dose") @db.Decimal(12, 5)
+  nutrientsJson  Json?     @map("nutrients_json") @db.JsonB
+  notes          String?
+  isActive       Boolean   @default(true) @map("is_active")
+  isArchived     Boolean   @default(false) @map("is_archived")
+  version        Int       @default(1)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  legacyMetadata Json?     @map("legacy_metadata") @db.JsonB
+  family         Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  schedules      SupplementSchedule[]
+  records        SupplementRecord[]
+
+  @@index([familyId, isArchived, deletedAt], name: "ix_supplement_products_family")
+  @@map("supplement_products")
+  @@schema("public")
+}
+
+model SupplementSchedule {
+  id             String    @id
+  familyId       String    @map("family_id")
+  babyId         String    @map("baby_id")
+  productId      String    @map("product_id")
+  frequency      String    @default("daily") @db.VarChar(32)
+  customDaysJson Json?     @map("custom_days_json") @db.JsonB
+  targetDose     Decimal   @default(1) @map("target_dose") @db.Decimal(12, 5)
+  reminderTime   String?   @map("reminder_time") @db.VarChar(5)
+  isActive       Boolean   @default(true) @map("is_active")
+  startDate      DateTime? @map("start_date") @db.Date
+  notes          String?
+  version        Int       @default(1)
+  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  legacyMetadata Json?     @map("legacy_metadata") @db.JsonB
+  family         Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby           Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  product        SupplementProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([babyId, isActive, deletedAt], name: "ix_supplement_schedules_baby")
+  @@index([familyId, deletedAt], name: "ix_supplement_schedules_family")
+  @@map("supplement_schedules")
   @@schema("public")
 }
 
@@ -777,10 +848,18 @@ model VaccineRecord {
   babyId           String    @map("baby_id")
   caregiverId      String    @map("caregiver_id")
   vaccineCode      String    @map("vaccine_code") @db.VarChar(100)
+  vaccineId        String?   @map("vaccine_id")
+  doseNumber       Int?      @map("dose_number")
+  legacyName       String?   @map("legacy_name") @db.VarChar(200)
+  legacyDose       String?   @map("legacy_dose") @db.VarChar(100)
   administeredDate DateTime  @map("administered_date") @db.Date
+  scheduledDate    DateTime? @map("scheduled_date") @db.Date
+  completedDate    DateTime? @map("completed_date") @db.Date
+  isCompleted      Boolean   @default(false) @map("is_completed")
   clinic           String?   @db.VarChar(200)
   batchNumber      String?   @map("batch_number") @db.VarChar(100)
   notes            String?   @db.VarChar(1000)
+  legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -789,10 +868,145 @@ model VaccineRecord {
   family    Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   baby      Baby   @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
   caregiver User   @relation(fields: [caregiverId], references: [id], onDelete: Cascade)
+  vaccine   Vaccine? @relation(fields: [vaccineId], references: [id], onDelete: SetNull)
 
   @@index([babyId, deletedAt, administeredDate(sort: Desc), id(sort: Desc)], name: "ix_vaccine_records_baby_timeline")
   @@index([familyId, deletedAt, administeredDate(sort: Desc)], name: "ix_vaccine_records_family_timeline")
   @@map("vaccine_records")
+  @@schema("public")
+}
+
+model Vaccine {
+  id                        String    @id
+  vaccineCode               String    @unique @map("vaccine_code") @db.VarChar(100)
+  name                      String    @db.VarChar(200)
+  shortName                 String?   @map("short_name") @db.VarChar(200)
+  englishName               String?   @map("english_name") @db.VarChar(200)
+  programType               String    @map("program_type") @db.VarChar(80)
+  legacyLabel               String?   @map("legacy_label") @db.VarChar(100)
+  sexRestriction            String    @default("all") @map("sex_restriction") @db.VarChar(20)
+  chinaNational             Boolean   @default(false) @map("china_national")
+  diseases                  Json?     @db.JsonB
+  targetPopulation          String?   @map("target_population")
+  policyEffectiveDate       String?   @map("policy_effective_date") @db.VarChar(10)
+  policyVersion             String?   @map("policy_version") @db.VarChar(100)
+  routineHealthyChildOption Boolean   @default(true) @map("routine_healthy_child_option")
+  manualReviewRequired      Boolean   @default(false) @map("manual_review_required")
+  marketStatus              String?   @map("market_status") @db.VarChar(50)
+  productBrandName          String?   @map("product_brand_name") @db.VarChar(200)
+  productManufacturer       String?   @map("product_manufacturer") @db.VarChar(200)
+  productApprovalNumber     String?   @map("product_approval_number") @db.VarChar(100)
+  jiangsuNotes              String?   @map("jiangsu_notes")
+  suzhouNotes               String?   @map("suzhou_notes")
+  catchUpSupported          Boolean   @default(false) @map("catch_up_supported")
+  catchUpRules              Json?     @map("catch_up_rules") @db.JsonB
+  simultaneousVaccination   String?   @map("simultaneous_vaccination")
+  substitutionRules         Json?     @map("substitution_rules") @db.JsonB
+  contraindications         Json?     @db.JsonB
+  precautions               Json?     @db.JsonB
+  specialPopulations        Json?     @map("special_populations") @db.JsonB
+  regionalOverrides         Json?     @map("regional_overrides") @db.JsonB
+  regimenOptions            Json?     @map("regimen_options") @db.JsonB
+  sourceRefsJson            Json?     @map("source_refs_json") @db.JsonB
+  legacyMetadata            Json?     @map("legacy_metadata") @db.JsonB
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  doses                     VaccineDose[]
+  scheduleEntries           VaccineScheduleEntry[]
+  records                   VaccineRecord[]
+  selections                VaccineSelection[]
+  strategyGroups            VaccineStrategyGroup[]
+
+  @@map("vaccines")
+  @@schema("public")
+}
+
+model VaccineDose {
+  id                              String    @id
+  vaccineId                       String    @map("vaccine_id")
+  doseNumber                      Int       @map("dose_number")
+  doseLabel                       String    @map("dose_label") @db.VarChar(100)
+  recommendedAgeMonths            Int?      @map("recommended_age_months")
+  minimumAgeDays                  Int?      @map("minimum_age_days")
+  maximumAgeDays                  Int?      @map("maximum_age_days")
+  recommendedAgeMaxMonths         Int?      @map("recommended_age_max_months")
+  minimumIntervalDaysFromPrevious Int?      @map("minimum_interval_days_from_previous")
+  maximumIntervalDaysFromPrevious Int?      @map("maximum_interval_days_from_previous")
+  route                           String?   @db.VarChar(50)
+  site                            String?   @db.VarChar(100)
+  doseVolumeMl                    Decimal?  @map("dose_volume_ml") @db.Decimal(12, 5)
+  notes                           String?
+  sourceRefsJson                  Json?     @map("source_refs_json") @db.JsonB
+  legacyMetadata                  Json?     @map("legacy_metadata") @db.JsonB
+  createdAt                       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vaccine                         Vaccine   @relation(fields: [vaccineId], references: [id], onDelete: Cascade)
+
+  @@unique([vaccineId, doseNumber], name: "uq_vaccine_doses_vaccine_dose")
+  @@map("vaccine_doses")
+  @@schema("public")
+}
+
+model VaccineScheduleEntry {
+  id             String    @id
+  vaccineId      String    @map("vaccine_id")
+  ageMonths      Int?      @map("age_months")
+  ageDays        Int?      @map("age_days")
+  ageLabel       String?   @map("age_label") @db.VarChar(100)
+  doseNumber     Int       @map("dose_number")
+  priority       String    @db.VarChar(30)
+  isOptional     Boolean   @default(false) @map("is_optional")
+  action         String?
+  selectionGroup String?   @map("selection_group") @db.VarChar(100)
+  notes          String?
+  sourceRefsJson Json?     @map("source_refs_json") @db.JsonB
+  legacyMetadata Json?     @map("legacy_metadata") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vaccine        Vaccine   @relation(fields: [vaccineId], references: [id], onDelete: Cascade)
+
+  @@index([vaccineId, ageMonths, doseNumber], name: "ix_vaccine_schedule_entries_age")
+  @@map("vaccine_schedule_entries")
+  @@schema("public")
+}
+
+model VaccineStrategyGroup {
+  id             String    @id
+  strategyId     String    @unique @map("strategy_id") @db.VarChar(100)
+  vaccineId      String?   @map("vaccine_id")
+  name           String    @db.VarChar(200)
+  scope          String?   @db.VarChar(100)
+  baseProgram    String?   @map("base_program") @db.VarChar(100)
+  optionsJson    Json?     @map("options_json") @db.JsonB
+  sourceRefsJson Json?     @map("source_refs_json") @db.JsonB
+  legacyMetadata Json?     @map("legacy_metadata") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  vaccine        Vaccine?  @relation(fields: [vaccineId], references: [id], onDelete: SetNull)
+
+  @@map("vaccine_strategy_groups")
+  @@schema("public")
+}
+
+model VaccineSelection {
+  id             String    @id
+  familyId       String    @map("family_id")
+  babyId         String    @map("baby_id")
+  vaccineId      String    @map("vaccine_id")
+  doseNumber     Int       @default(1) @map("dose_number")
+  selected       Boolean   @default(true)
+  completed      Boolean   @default(false)
+  version        Int       @default(1)
+  legacyMetadata Json?     @map("legacy_metadata") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  family         Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby           Baby      @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  vaccine        Vaccine   @relation(fields: [vaccineId], references: [id], onDelete: Cascade)
+
+  @@unique([babyId, vaccineId, doseNumber], name: "uq_vaccine_selections_baby_vaccine_dose")
+  @@index([familyId, babyId], name: "ix_vaccine_selections_scope")
+  @@map("vaccine_selections")
   @@schema("public")
 }
 
