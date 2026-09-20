@@ -21210,6 +21210,12 @@
                         "enum": [
                           "growth_photo"
                         ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "ai_input"
+                        ]
                       }
                     ]
                   },
