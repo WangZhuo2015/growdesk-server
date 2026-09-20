@@ -165,6 +165,7 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 command(['python3', 'scripts/legacy-import/test_care_materializer_integration.py'], env=env)
                 command(['python3', 'scripts/legacy-import/test_food_materializer_integration.py'], env=env)
                 command(['python3', 'scripts/legacy-import/test_medical_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_supplement_vaccine_materializer_integration.py'], env=env)
                 command(['python3', 'scripts/legacy-import/test_ai_history_materializer_integration.py'], env=env)
                 command(['node', '--import', 'tsx', '--test',
                          'tests/integration/legacy-attachment-reference-backfill.test.ts'], env=env)
