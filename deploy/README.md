@@ -29,6 +29,10 @@ Provide these values from the host environment or an untracked, permission-restr
 | `POSTGRES_SUPERUSER_PASSWORD` | yes | PostgreSQL bootstrap superuser `postgres`; never passed to the API |
 | `GROWDESK_DB_PASSWORD` | yes | The non-superuser `growdesk` application role and API `DATABASE_URL` |
 | `REDIS_PASSWORD` | yes | Redis `requirepass` and API `REDIS_URL` |
+| `MINIO_ROOT_USER` | yes | Private object-storage access key; never published as a host port |
+| `MINIO_ROOT_PASSWORD` | yes | Private object-storage secret key |
+| `S3_BUCKET` | yes | Private attachment bucket created by the one-shot initializer |
+| `S3_REGION` | optional | S3 signing region; defaults to `us-east-1` |
 | `GROWDESK_IMAGE_TAG` | release | API image tag; use the exact Git SHA |
 | `GROWDESK_HOST_PORT` | optional | Host API port; defaults to `3180` and remains bound to loopback |
 | `GROWDESK_POSTGRES_IMAGE` | optional | PG18 tag or recorded digest |
@@ -48,12 +52,13 @@ Do not commit a `.env` file or put real credentials in this README, the image, a
 
 The inline `growdesk-postgres-init` Compose config is executed by the official PostgreSQL entrypoint only when the named volume is empty. It creates or updates the login role `growdesk`, revokes public database/schema access, and grants the app role the minimum bootstrap access. Existing data volumes are never reinitialized by changing environment variables. Password rotation therefore requires an explicitly reviewed SQL operation against the current cluster and an aligned API restart; changing `GROWDESK_DB_PASSWORD` alone cannot change an already-created role.
 
-The two named volumes are independent:
+The three named volumes are independent:
 
 - `growdesk-postgres-data` → `/var/lib/postgresql`
 - `growdesk-redis-data` → `/data`
+- `growdesk-storage-data` → `/data`
 
-The API shares two internal networks with the dependencies: `growdesk-db` contains API and PostgreSQL, and `growdesk-redis` contains API and Redis. Neither dependency is attached to a host-published network.
+The API shares three internal networks with the dependencies: `growdesk-db` contains API and PostgreSQL, `growdesk-redis` contains API and Redis, and `growdesk-storage` contains API and private object storage. None of the dependencies is attached to a host-published network.
 
 ## Health and start order
 
@@ -74,7 +79,7 @@ For a release, the wrapper should set `GROWDESK_IMAGE_TAG` to the checked-out Gi
 
 ```sh
 docker compose -f deploy/compose.yaml build api
-docker compose -f deploy/compose.yaml up -d --wait --wait-timeout 180 postgres redis api
+docker compose -f deploy/compose.yaml up -d --wait --wait-timeout 180 postgres redis storage storage-init api
 docker compose -f deploy/compose.yaml ps
 ```
 
