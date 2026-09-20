@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { referenceData } from "../../apps/api/src/knowledge/legacy-reference-data.js";
+import { vaccineEngineRules } from "../../apps/api/src/knowledge/vaccine-engine-rules.js";
 
 const LEGACY_REFERENCE_GOLDEN = {
   sourceCommit: "0b3e87c202b7420cb2ad2e1ee5d24cab3ceea156",
@@ -11,6 +12,7 @@ const LEGACY_REFERENCE_GOLDEN = {
   guidelines: { count: 4, hash: "14826d0dc44ad4fc8d52b70fd6cc90b233a42e0a1647169b7cf423cbf0ce6cb5" },
   sources: { count: 59, hash: "ca66b11a6768037a06a3c3e9327802584553093e8cc5f94b37011e498c3cc2cd" },
   releaseMetadataHash: "4562b1b408a09ecb262522777fd20826c1b81a71bba7aaa09f9b549a48a6275f",
+  vaccineEngineRules: { count: 8, hash: "c85fac1f63c5a34aa812fa22d37f3987d5244aedfee234b0aea2425149524c27" },
 } as const;
 
 function canonical(value: unknown): string {
@@ -71,4 +73,9 @@ test("legacy release metadata and source references retain their golden hashes",
   assert.equal(new Set(sources.map((source) => source.id)).size, sources.length, "source reference IDs must remain unique");
   assert.equal(sha256(sources), LEGACY_REFERENCE_GOLDEN.sources.hash);
   assert.equal(sha256(releaseMetadata), LEGACY_REFERENCE_GOLDEN.releaseMetadataHash);
+});
+
+test("legacy vaccine engine rules retain their golden hash", () => {
+  assert.equal(vaccineEngineRules.length, LEGACY_REFERENCE_GOLDEN.vaccineEngineRules.count);
+  assert.equal(sha256(vaccineEngineRules), LEGACY_REFERENCE_GOLDEN.vaccineEngineRules.hash);
 });

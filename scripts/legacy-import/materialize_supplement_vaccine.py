@@ -726,9 +726,14 @@ def _vaccine_records(data: dict[str, Any], by_id: dict[str, dict[str, Any]], by_
             "notes": _optional_text(row.get("notes"), "notes", max_length=1000), "legacy_metadata": metadata,
             "version": 1, "deleted_at": None, "created_at": created, "updated_at": updated,
         }
+        # A scheduled-only row is a pending plan item.  Its required
+        # administered_date ordering value must not create a historical
+        # timeline event or imply that the dose was administered.
+        timeline_summary = f"疫苗: {name} ({dose_text})" if columns["is_completed"] else None
+        timeline_details = {"name": name, "dose": dose_text, "isCompleted": True} if columns["is_completed"] else None
         output.append(_item(data, "VaccineRecord", row, "vaccine_record", "vaccine_records", columns,
                             family_id=family_id, baby_id=baby_id, occurred_at=administered,
-                            timeline_summary=f"疫苗: {name} ({dose_text})", timeline_details={"name": name, "dose": dose_text, "isCompleted": columns["is_completed"]}))
+                            timeline_summary=timeline_summary, timeline_details=timeline_details))
     return output
 
 
@@ -854,13 +859,17 @@ def _render_item(item: dict[str, Any], data: dict[str, Any], checksum: str, sour
     else:
         target_predicate = target_predicate or "TRUE"
         replay_timeline = f"NOT EXISTS (SELECT 1 FROM public.timeline_entries e WHERE e.\"entity_id\"={literal(item['target_id'])})"
+    if timeline is not None:
+        timeline_check = f"EXISTS (SELECT 1 FROM public.timeline_entries e WHERE {replay_timeline})"
+    else:
+        timeline_check = f"NOT EXISTS (SELECT 1 FROM public.timeline_entries e WHERE e.\"entity_id\"={literal(item['target_id'])})"
     mapping_check = (
         f"IF NOT EXISTS (SELECT 1 FROM public.legacy_idempotency_mappings m "
         f"WHERE m.target_entity_type={literal(item['kind'])} AND m.source_key={literal(source_key)} "
         f"AND m.target_entity_id={literal(item['target_id'])} AND m.source_hash={literal(item['source_hash'])} "
         f"AND m.mapping_version={literal(MAPPING_VERSION)} AND m.metadata={receipt_sql} "
         f"AND EXISTS (SELECT 1 FROM public.{item['target_table']} t WHERE {target_predicate}) "
-        f"AND EXISTS (SELECT 1 FROM public.timeline_entries e WHERE {replay_timeline})) THEN "
+        f"AND {timeline_check}) THEN "
         f"RAISE EXCEPTION 'Legacy supplement/vaccine receipt conflict or missing target: %', {literal(source_key)}; END IF;"
     )
     mapping_insert = (

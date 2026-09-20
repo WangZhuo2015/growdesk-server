@@ -153,7 +153,16 @@ export const VaccineRecordSchema = Type.Object(
     babyId: UuidString,
     familyId: UuidString,
     vaccineCode: Type.String(),
+    // Promoted legacy vaccine graph IDs are source-stable strings (for
+    // example `vac_hepb`), not necessarily UUIDs.
+    vaccineId: Nullable(Type.String({ minLength: 1, maxLength: 128 })),
+    doseNumber: Nullable(Type.Integer({ minimum: 1, maximum: 12 })),
+    legacyName: Nullable(Type.String({ maxLength: 200 })),
+    legacyDose: Nullable(Type.String({ maxLength: 100 })),
     administeredDate: DateString,
+    scheduledDate: Nullable(DateString),
+    completedDate: Nullable(DateString),
+    isCompleted: Type.Boolean(),
     clinic: Nullable(Type.String()),
     batchNumber: Nullable(Type.String()),
     notes: Nullable(Type.String({ maxLength: 1000 })),
@@ -169,7 +178,14 @@ export type VaccineRecord = Static<typeof VaccineRecordSchema>;
 export const CreateVaccineRecordRequestSchema = Type.Object(
   {
     vaccineCode: Type.String(),
+    vaccineId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
+    doseNumber: Type.Optional(Type.Integer({ minimum: 1, maximum: 12 })),
+    legacyName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    legacyDose: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     administeredDate: DateString,
+    scheduledDate: Type.Optional(Nullable(DateString)),
+    completedDate: Type.Optional(Nullable(DateString)),
+    isCompleted: Type.Optional(Type.Boolean()),
     clinic: Type.Optional(Nullable(Type.String())),
     batchNumber: Type.Optional(Nullable(Type.String())),
     notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
@@ -196,3 +212,97 @@ export const VaccineListResponseSchema = Type.Object(
 );
 
 export type VaccineListResponse = Static<typeof VaccineListResponseSchema>;
+
+export const VaccineSelectionSchema = Type.Object(
+  {
+    id: UuidString,
+    familyId: UuidString,
+    babyId: UuidString,
+    vaccineId: Type.String({ minLength: 1, maxLength: 128 }),
+    doseNumber: Type.Integer({ minimum: 1, maximum: 12 }),
+    selected: Type.Boolean(),
+    completed: Type.Boolean(),
+    version: Type.Integer({ minimum: 1 }),
+    createdAt: DateTimeString,
+    updatedAt: DateTimeString,
+  },
+  { $id: "VaccineSelection", additionalProperties: false },
+);
+
+export type VaccineSelection = Static<typeof VaccineSelectionSchema>;
+
+export const VaccineSelectionListResponseSchema = Type.Object(
+  { data: Type.Array(VaccineSelectionSchema) },
+  { $id: "VaccineSelectionListResponse", additionalProperties: false },
+);
+
+export type VaccineSelectionListResponse = Static<typeof VaccineSelectionListResponseSchema>;
+
+export const UpsertVaccineSelectionRequestSchema = Type.Object(
+  {
+    // The legacy Web key is vaccineCode (for example `vac_hepb`), while the
+    // normalized graph uses the UUID primary key. The service resolves both
+    // forms and always returns the normalized UUID in VaccineSelection.
+    vaccineId: Type.String({ minLength: 1, maxLength: 128 }),
+    doseNumber: Type.Integer({ minimum: 1, maximum: 12 }),
+    selected: Type.Optional(Type.Boolean()),
+    completed: Type.Optional(Type.Boolean()),
+    baseVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+  },
+  { $id: "UpsertVaccineSelectionRequest", additionalProperties: false },
+);
+
+export type UpsertVaccineSelectionRequest = Static<typeof UpsertVaccineSelectionRequestSchema>;
+
+export const VaccineCatalogItemSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1, maxLength: 128 }),
+    vaccineCode: Type.String(),
+    name: Type.String(),
+    shortName: Nullable(Type.String()),
+    englishName: Nullable(Type.String()),
+    programType: Type.String(),
+    legacyLabel: Nullable(Type.String()),
+    sexRestriction: Type.String(),
+    chinaNational: Type.Boolean(),
+    diseases: Nullable(Type.Unknown()),
+    targetPopulation: Nullable(Type.String()),
+    policyEffectiveDate: Nullable(DateString),
+    policyVersion: Nullable(Type.String()),
+    routineHealthyChildOption: Type.Boolean(),
+    manualReviewRequired: Type.Boolean(),
+    marketStatus: Nullable(Type.String()),
+    productBrandName: Nullable(Type.String()),
+    productManufacturer: Nullable(Type.String()),
+    productApprovalNumber: Nullable(Type.String()),
+    jiangsuNotes: Nullable(Type.String()),
+    suzhouNotes: Nullable(Type.String()),
+    catchUpSupported: Type.Boolean(),
+    catchUpRules: Nullable(Type.Unknown()),
+    simultaneousVaccination: Nullable(Type.String()),
+    substitutionRules: Nullable(Type.Unknown()),
+    contraindications: Nullable(Type.Unknown()),
+    precautions: Nullable(Type.Unknown()),
+    specialPopulations: Nullable(Type.Unknown()),
+    regionalOverrides: Nullable(Type.Unknown()),
+    regimenOptions: Nullable(Type.Unknown()),
+    sourceRefsJson: Nullable(Type.Unknown()),
+    doses: Type.Array(Type.Unknown()),
+  },
+  { $id: "VaccineCatalogItem", additionalProperties: false },
+);
+
+export const VaccineCatalogResponseSchema = Type.Object(
+  {
+    national: Type.Array(Type.Ref(VaccineCatalogItemSchema)),
+    nonProgram: Type.Array(Type.Ref(VaccineCatalogItemSchema)),
+    provincial: Type.Array(Type.Ref(VaccineCatalogItemSchema)),
+    strategyGroups: Type.Array(Type.Unknown()),
+    schedule: Type.Array(Type.Unknown()),
+    engineRules: Type.Array(Type.Unknown()),
+    dataRelease: Nullable(Type.Unknown()),
+  },
+  { $id: "VaccineCatalogResponse", additionalProperties: false },
+);
+
+export type VaccineCatalogResponse = Static<typeof VaccineCatalogResponseSchema>;

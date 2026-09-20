@@ -93,6 +93,154 @@ export const FormulaProductListResponseSchema = PaginatedEnvelope(FormulaProduct
 export type FormulaProductListResponse = Static<typeof FormulaProductListResponseSchema>;
 
 // ==========================================
+// 1b. Supplement products and schedules
+// ==========================================
+
+/**
+ * The old Web stores these records in BabyFoodPlan.planData.  They are now
+ * first-class family/baby scoped rows so a migrated tenant remains visible to
+ * every client and does not depend on a JSON compatibility projection.
+ */
+export const SupplementProductSchema = Type.Object(
+  {
+    // Legacy promotion preserves source-stable IDs (for example
+    // `test_sv_product_d3`) rather than rewriting every Web reference.
+    id: Type.String({ minLength: 1, maxLength: 128 }),
+    familyId: UuidString,
+    name: Type.String({ minLength: 1, maxLength: 200 }),
+    brand: Nullable(Type.String({ maxLength: 100 })),
+    dosageForm: Nullable(Type.String({ maxLength: 50 })),
+    unitName: Type.String({ minLength: 1, maxLength: 50 }),
+    defaultDose: DecimalString,
+    nutrientsJson: Nullable(Type.Unknown()),
+    notes: Nullable(Type.String()),
+    isActive: Type.Boolean(),
+    isArchived: Type.Boolean(),
+    version: Type.Integer({ minimum: 1 }),
+    createdAt: DateTimeString,
+    updatedAt: DateTimeString,
+  },
+  { $id: "SupplementProduct", additionalProperties: false },
+);
+
+export type SupplementProduct = Static<typeof SupplementProductSchema>;
+
+export const SupplementProductListQuerySchema = Type.Object(
+  {
+    cursor: Type.Optional(Type.String()),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200, default: 50 })),
+    includeArchived: Type.Optional(Type.Boolean()),
+  },
+  { $id: "SupplementProductListQuery", additionalProperties: false },
+);
+
+export type SupplementProductListQuery = Static<typeof SupplementProductListQuerySchema>;
+
+export const CreateSupplementProductRequestSchema = Type.Object(
+  {
+    name: Type.String({ minLength: 1, maxLength: 200 }),
+    brand: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    dosageForm: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
+    unitName: Type.String({ minLength: 1, maxLength: 50 }),
+    defaultDose: Type.Optional(DecimalString),
+    nutrientsJson: Type.Optional(Nullable(Type.Unknown())),
+    notes: Type.Optional(Nullable(Type.String())),
+  },
+  { $id: "CreateSupplementProductRequest", additionalProperties: false },
+);
+
+export type CreateSupplementProductRequest = Static<typeof CreateSupplementProductRequestSchema>;
+
+export const UpdateSupplementProductRequestSchema = Type.Object(
+  {
+    name: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    brand: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    dosageForm: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
+    unitName: Type.Optional(Type.String({ minLength: 1, maxLength: 50 })),
+    defaultDose: Type.Optional(DecimalString),
+    nutrientsJson: Type.Optional(Nullable(Type.Unknown())),
+    notes: Type.Optional(Nullable(Type.String())),
+    isActive: Type.Optional(Type.Boolean()),
+    isArchived: Type.Optional(Type.Boolean()),
+    baseVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+  },
+  { $id: "UpdateSupplementProductRequest", additionalProperties: false },
+);
+
+export type UpdateSupplementProductRequest = Static<typeof UpdateSupplementProductRequestSchema>;
+
+export const SupplementProductResponseSchema = Type.Object(
+  { data: SupplementProductSchema },
+  { $id: "SupplementProductResponse", additionalProperties: false },
+);
+
+export const SupplementProductListResponseSchema = PaginatedEnvelope(SupplementProductSchema, {
+  $id: "SupplementProductListResponse",
+});
+
+export type SupplementProductListResponse = Static<typeof SupplementProductListResponseSchema>;
+
+export const SupplementScheduleSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1, maxLength: 128 }),
+    familyId: UuidString,
+    babyId: UuidString,
+    productId: Type.String({ minLength: 1, maxLength: 128 }),
+    product: SupplementProductSchema,
+    frequency: Type.String({ minLength: 1, maxLength: 32 }),
+    customDays: Nullable(Type.Unknown()),
+    targetDose: DecimalString,
+    reminderTime: Nullable(Type.String({ pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" })),
+    isActive: Type.Boolean(),
+    startDate: Nullable(Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" })),
+    notes: Nullable(Type.String()),
+    version: Type.Integer({ minimum: 1 }),
+    isCompletedToday: Type.Boolean(),
+    createdAt: DateTimeString,
+    updatedAt: DateTimeString,
+  },
+  { $id: "SupplementSchedule", additionalProperties: false },
+);
+
+export type SupplementSchedule = Static<typeof SupplementScheduleSchema>;
+
+export const SupplementScheduleResponseSchema = Type.Object(
+  { data: SupplementScheduleSchema },
+  { $id: "SupplementScheduleResponse", additionalProperties: false },
+);
+
+export const SupplementScheduleListQuerySchema = Type.Object(
+  { date: Type.Optional(Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" })) },
+  { $id: "SupplementScheduleListQuery", additionalProperties: false },
+);
+
+export type SupplementScheduleListQuery = Static<typeof SupplementScheduleListQuerySchema>;
+
+export const CreateSupplementScheduleRequestSchema = Type.Object(
+  {
+    id: Type.Optional(Type.String({ minLength: 1, maxLength: 128 })),
+    productId: Type.String({ minLength: 1, maxLength: 128 }),
+    frequency: Type.Optional(Type.String({ minLength: 1, maxLength: 32 })),
+    customDays: Type.Optional(Nullable(Type.Unknown())),
+    targetDose: Type.Optional(DecimalString),
+    reminderTime: Type.Optional(Nullable(Type.String({ pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d$" }))),
+    isActive: Type.Optional(Type.Boolean()),
+    startDate: Type.Optional(Nullable(Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }))),
+    notes: Type.Optional(Nullable(Type.String())),
+    baseVersion: Type.Optional(Type.Integer({ minimum: 1 })),
+  },
+  { $id: "CreateSupplementScheduleRequest", additionalProperties: false },
+);
+
+export type CreateSupplementScheduleRequest = Static<typeof CreateSupplementScheduleRequestSchema>;
+
+export const SupplementScheduleListResponseSchema = PaginatedEnvelope(SupplementScheduleSchema, {
+  $id: "SupplementScheduleListResponse",
+});
+
+export type SupplementScheduleListResponse = Static<typeof SupplementScheduleListResponseSchema>;
+
+// ==========================================
 // 2. Food Library & Guidelines
 // ==========================================
 

@@ -10,8 +10,11 @@ export interface CreateSupplementInput {
   readonly familyId: string;
   readonly babyId: string;
   readonly supplementName: string;
+  readonly productId?: string | null;
   readonly occurredAt: Date;
   readonly amount?: string | null;
+  readonly dose?: Prisma.Decimal | string | null;
+  readonly unitName?: string | null;
   readonly notes?: string | null;
   readonly source?: string;
   readonly sourceAgent?: string | null;
@@ -25,8 +28,11 @@ export interface UpdateSupplementInput {
   readonly babyId: string;
   readonly baseVersion: number;
   readonly supplementName?: string;
+  readonly productId?: string | null;
   readonly occurredAt?: Date;
   readonly amount?: string | null;
+  readonly dose?: Prisma.Decimal | string | null;
+  readonly unitName?: string | null;
   readonly notes?: string | null;
 }
 
@@ -44,8 +50,11 @@ export interface SupplementRecordEntity {
   readonly familyId: string;
   readonly babyId: string;
   readonly supplementName: string;
+  readonly productId: string | null;
   readonly occurredAt: Date;
   readonly amount: string | null;
+  readonly dose: Prisma.Decimal | null;
+  readonly unitName: string | null;
   readonly notes: string | null;
   readonly recordedByUserId: string | null;
   readonly version: number;
@@ -59,8 +68,11 @@ function mapSupplementRow(row: {
   familyId: string;
   babyId: string;
   supplementName: string;
+  productId: string | null;
   occurredAt: Date;
   amount: string | null;
+  dose: Prisma.Decimal | null;
+  unitName: string | null;
   notes: string | null;
   recordedByUserId: string | null;
   version: number;
@@ -104,8 +116,11 @@ export class SupplementRepository {
             familyId: input.familyId,
             babyId: input.babyId,
             supplementName: input.supplementName,
+            productId: input.productId ?? null,
             occurredAt: input.occurredAt,
             amount: input.amount ?? null,
+            dose: input.dose ?? null,
+            unitName: input.unitName ?? null,
             notes: input.notes ?? null,
             recordedByUserId: principal.userId,
             version: meta.nextVersion,
@@ -118,8 +133,11 @@ export class SupplementRepository {
           payload: {
             id: entity.id,
             supplementName: entity.supplementName,
+            productId: entity.productId,
             occurredAt: entity.occurredAt.toISOString(),
             amount: entity.amount,
+            dose: entity.dose?.toString() ?? null,
+            unitName: entity.unitName,
             version: entity.version,
           },
           summary: `Supplement: ${entity.supplementName}`,
@@ -167,11 +185,20 @@ export class SupplementRepository {
         if (input.supplementName !== undefined) {
           data.supplementName = input.supplementName;
         }
+        if (input.productId !== undefined) {
+          data.productId = input.productId;
+        }
         if (input.occurredAt !== undefined) {
           data.occurredAt = input.occurredAt;
         }
         if (input.amount !== undefined) {
           data.amount = input.amount;
+        }
+        if (input.dose !== undefined) {
+          data.dose = input.dose;
+        }
+        if (input.unitName !== undefined) {
+          data.unitName = input.unitName;
         }
         if (input.notes !== undefined) {
           data.notes = input.notes;
@@ -188,8 +215,11 @@ export class SupplementRepository {
           payload: {
             id: entity.id,
             supplementName: entity.supplementName,
+            productId: entity.productId,
             occurredAt: entity.occurredAt.toISOString(),
             amount: entity.amount,
+            dose: entity.dose?.toString() ?? null,
+            unitName: entity.unitName,
             version: entity.version,
           },
           summary: `Updated supplement: ${entity.supplementName}`,

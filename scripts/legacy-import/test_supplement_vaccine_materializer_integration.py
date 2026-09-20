@@ -173,6 +173,8 @@ def main() -> None:
         execute(materializer.render_materialization(scheduled, scheduled_batch))
         scheduled_record_id = prefix + "scheduled_test_sv_vaccine_record"
         assert execute(f"SELECT administered_date::text || '|' || COALESCE(completed_date::text, '') || '|' || is_completed::text FROM public.vaccine_records WHERE id={_sql(scheduled_record_id)}") == "2026-09-11||false"
+        assert execute(f"SELECT count(*) FROM public.timeline_entries WHERE entity_id={_sql(scheduled_record_id)}") == "0"
+        execute(materializer.render_materialization(scheduled, scheduled_batch))
 
         # Existing canonical rows predate the source column. An insert that
         # omits it must use the neutral care-record default, not legacy_web.

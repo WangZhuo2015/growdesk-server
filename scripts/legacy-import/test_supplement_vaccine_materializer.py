@@ -204,6 +204,16 @@ class SupplementVaccineMaterializerTests(unittest.TestCase):
         self.assertEqual(vaccine["columns"]["administered_date"], "2026-09-11")
         self.assertIsNone(vaccine["columns"]["completed_date"])
         self.assertFalse(vaccine["columns"]["is_completed"])
+        self.assertIsNone(vaccine["timeline_summary"])
+        rendered = M.render_materialization(data, checksum(data))
+        # Only the supplement and completed vaccine produce historical
+        # timeline entries.  The pending row must remain visible through the
+        # record graph without becoming a completed event.
+        self.assertEqual(rendered.count("INSERT INTO public.timeline_entries"), 1)
+        self.assertIn(
+            'AND NOT EXISTS (SELECT 1 FROM public.timeline_entries e WHERE e."entity_id"',
+            rendered,
+        )
 
         contradictory = copy.deepcopy(data)
         contradictory["tables"]["VaccineRecord"][0]["isCompleted"] = True

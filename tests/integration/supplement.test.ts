@@ -107,6 +107,21 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     await ctx.pool.query(actorSql);
   }
 
+  // The normalized product/schedule graph is additive to the original care
+  // tables. Apply the prerequisite medical/vaccine tables and promotion slice
+  // in this owned PostgreSQL run so the endpoint checks exercise real FKs and
+  // transaction behavior rather than an in-memory substitute.
+  const medicalVaccineSql = fs.readFileSync("prisma/migrations/202609120010_attachments_medical_vaccines/migration.sql", "utf8");
+  const { rows: vaccineRows } = await ctx.pool.query("SELECT to_regclass('public.vaccine_records') as exists");
+  if (!vaccineRows[0]?.exists) {
+    await ctx.pool.query(medicalVaccineSql);
+  }
+  const promotionSql = fs.readFileSync("prisma/migrations/202609190021_supplement_vaccine_promotion/migration.sql", "utf8");
+  const { rows: promotionRows } = await ctx.pool.query("SELECT to_regclass('public.supplement_products') as exists");
+  if (!promotionRows[0]?.exists) {
+    await ctx.pool.query(promotionSql);
+  }
+
   // Identities
   const userAName = `test_supp_a_${Date.now()}`;
   const userBName = `test_supp_b_${Date.now()}`;
@@ -467,5 +482,105 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     );
     assert.strictEqual(tlRows.length, 1);
     assert.notStrictEqual(tlRows[0].deleted_at, null);
+  });
+
+  await t.test("SU-08: Normalized supplement catalog, schedules, completion projection and CAS", async () => {
+    const productResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        name: "test normalized vitamin",
+        brand: "test brand",
+        dosageForm: "drops",
+        unitName: "滴",
+        defaultDose: "1.5",
+        nutrientsJson: { vitaminD: { amount: 400, unit: "IU" } },
+      },
+    });
+    assert.equal(productResponse.statusCode, 201, productResponse.body);
+    const product = productResponse.json<{ data: { id: string; familyId: string; version: number } }>().data;
+    assert.equal(product.familyId, familyAId);
+    assert.equal(product.version, 1);
+
+    const secondProductResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { name: "test normalized vitamin 2", unitName: "滴", defaultDose: "1" },
+    });
+    assert.equal(secondProductResponse.statusCode, 201, secondProductResponse.body);
+
+    const firstPageResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products?limit=1`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(firstPageResponse.statusCode, 200, firstPageResponse.body);
+    const firstPage = firstPageResponse.json<{ data: Array<{ id: string }>; page: { nextCursor: string | null } }>();
+    assert.equal(firstPage.data.length, 1);
+    assert.ok(firstPage.page.nextCursor);
+
+    const secondPageResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products?limit=1&cursor=${encodeURIComponent(firstPage.page.nextCursor!)}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(secondPageResponse.statusCode, 200, secondPageResponse.body);
+    const secondPage = secondPageResponse.json<{ data: Array<{ id: string }>; page: { nextCursor: string | null } }>();
+    assert.equal(secondPage.data.length, 1);
+    assert.notEqual(secondPage.data[0]?.id, firstPage.data[0]?.id);
+
+    const staleProductResponse = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products/${product.id}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { baseVersion: 99, notes: "test stale product" },
+    });
+    assert.equal(staleProductResponse.statusCode, 409, staleProductResponse.body);
+    assert.equal(staleProductResponse.json().error.code, "CONCURRENCY_CONFLICT");
+
+    const scheduleResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { productId: product.id, frequency: "daily", targetDose: "1.5", startDate: "2026-09-19" },
+    });
+    assert.equal(scheduleResponse.statusCode, 201, scheduleResponse.body);
+    const schedule = scheduleResponse.json<{ data: { id: string; version: number; isCompletedToday: boolean } }>().data;
+    assert.equal(schedule.version, 1);
+    assert.equal(schedule.isCompletedToday, false);
+
+    const staleScheduleResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { id: schedule.id, productId: product.id, baseVersion: 99, targetDose: "2" },
+    });
+    assert.equal(staleScheduleResponse.statusCode, 409, staleScheduleResponse.body);
+    assert.equal(staleScheduleResponse.json().error.code, "CONCURRENCY_CONFLICT");
+
+    const recordResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      headers: { authorization: `Bearer ${tokenA}`, "idempotency-key": "test_normalized_schedule_record" },
+      payload: {
+        supplementName: "test normalized vitamin",
+        productId: product.id,
+        occurredAt: "2026-09-19T09:30:00.000Z",
+        dose: "1.5",
+        unitName: "滴",
+      },
+    });
+    assert.equal(recordResponse.statusCode, 201, recordResponse.body);
+
+    const completedScheduleResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules?date=2026-09-19`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(completedScheduleResponse.statusCode, 200, completedScheduleResponse.body);
+    const completedSchedule = completedScheduleResponse.json<{ data: Array<{ id: string; isCompletedToday: boolean }> }>();
+    assert.equal(completedSchedule.data.find((row) => row.id === schedule.id)?.isCompletedToday, true);
   });
 });
