@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { referenceData } from "../../apps/api/src/knowledge/legacy-reference-data.js";
 import { vaccineEngineRules } from "../../apps/api/src/knowledge/vaccine-engine-rules.js";
+import { books } from "../../apps/api/src/knowledge/books-data.js";
 
 const LEGACY_REFERENCE_GOLDEN = {
   sourceCommit: "0b3e87c202b7420cb2ad2e1ee5d24cab3ceea156",
@@ -13,6 +14,7 @@ const LEGACY_REFERENCE_GOLDEN = {
   sources: { count: 59, hash: "ca66b11a6768037a06a3c3e9327802584553093e8cc5f94b37011e498c3cc2cd" },
   releaseMetadataHash: "4562b1b408a09ecb262522777fd20826c1b81a71bba7aaa09f9b549a48a6275f",
   vaccineEngineRules: { count: 8, hash: "c85fac1f63c5a34aa812fa22d37f3987d5244aedfee234b0aea2425149524c27" },
+  books: { count: 5, hash: "fb6fa9b5585d638de64a309148cfeefc3c719f4b664506cb3443409590c4521d" },
 } as const;
 
 function canonical(value: unknown): string {
@@ -78,4 +80,9 @@ test("legacy release metadata and source references retain their golden hashes",
 test("legacy vaccine engine rules retain their golden hash", () => {
   assert.equal(vaccineEngineRules.length, LEGACY_REFERENCE_GOLDEN.vaccineEngineRules.count);
   assert.equal(sha256(vaccineEngineRules), LEGACY_REFERENCE_GOLDEN.vaccineEngineRules.hash);
+});
+
+test("legacy books retain their golden hash", () => {
+  assert.equal(books.length, LEGACY_REFERENCE_GOLDEN.books.count);
+  assert.equal(sha256(books), LEGACY_REFERENCE_GOLDEN.books.hash);
 });
