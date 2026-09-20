@@ -24,6 +24,7 @@ RUN npm run backend:build
 # The final image contains only runtime dependencies. Build tooling stays in
 # this stage and is never copied into the runtime image.
 RUN npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+RUN node --input-type=module -e "await import('fastify-plugin')"
 
 FROM ${NODE_IMAGE} AS runtime
 
