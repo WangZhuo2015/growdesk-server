@@ -26,6 +26,11 @@ import uuid
 from typing import Any, Iterable, Mapping, Sequence
 from urllib.parse import unquote, urlsplit
 
+try:
+    from embedded_attachment_audit import audit_embedded_references
+except ModuleNotFoundError:  # pragma: no cover - package-style test imports
+    from .embedded_attachment_audit import audit_embedded_references  # type: ignore
+
 
 MAPPING_VERSION = "attachment-promotion-v1"
 REPORT_VERSION = 1
@@ -882,6 +887,63 @@ def plan_attachment_promotion(
     for entry in file_entries:
         if isinstance(entry.get("path"), str):
             path_entries.setdefault(entry["path"], []).append(entry)
+    # Explicit source columns are not the complete attachment inventory.  A
+    # legacy JSON/text field may carry an image/audio path without a dedicated
+    # column.  Keep the audit in the promotion receipt and turn every such
+    # reference into a hard quarantine until a reviewed canonical mapping is
+    # available.  Resolution against files.json is reported separately so a
+    # missing or duplicate path cannot hide behind the generic unmapped code.
+    embedded_audit = audit_embedded_references(snapshot)
+    for reference in embedded_audit["references"]:
+        source_path = reference.get("normalizedPath")
+        if not isinstance(source_path, str):
+            reference["fileResolution"] = "not_a_local_path"
+            continue
+        matches = path_entries.get(source_path, [])
+        if not matches:
+            reference["fileResolution"] = "missing"
+        elif len(matches) > 1:
+            reference["fileResolution"] = "ambiguous"
+        elif not matches[0].get("valid"):
+            reference["fileResolution"] = "invalid"
+        else:
+            reference["fileResolution"] = "present"
+    report["embeddedReferenceAudit"] = embedded_audit
+    for item in embedded_audit["quarantine"]:
+        source_path = item.get("sourcePath")
+        matching_reference = next(
+            (
+                reference
+                for reference in embedded_audit["references"]
+                if reference.get("sourceTable") == item.get("sourceTable")
+                and reference.get("sourceId") == item.get("sourceId")
+                and reference.get("sourceField") == item.get("sourceField")
+                and reference.get("normalizedPath") == source_path
+                and item.get("code") == reference.get("code")
+            ),
+            None,
+        )
+        resolution = matching_reference.get("fileResolution") if matching_reference is not None else None
+        code = str(item.get("code", "EMBEDDED_REFERENCE_UNMAPPED"))
+        if resolution == "missing":
+            code = "EMBEDDED_FILE_MISSING"
+        elif resolution == "ambiguous":
+            code = "EMBEDDED_FILE_AMBIGUOUS"
+        elif resolution == "invalid":
+            code = "EMBEDDED_FILE_INVALID"
+        _add_quarantine(
+            report,
+            code=code,
+            message=str(item.get("message", "embedded attachment reference is unresolved")),
+            source_table=item.get("sourceTable") if isinstance(item.get("sourceTable"), str) else None,
+            source_id=item.get("sourceId") if isinstance(item.get("sourceId"), str) else None,
+            source_field=item.get("sourceField") if isinstance(item.get("sourceField"), str) else None,
+            source_path=source_path if isinstance(source_path, str) else None,
+        )
+        if isinstance(item.get("jsonPointers"), list):
+            report["quarantine"][-1]["jsonPointers"] = item["jsonPointers"]
+        if resolution is not None:
+            report["quarantine"][-1]["fileResolution"] = resolution
     # Do not let a valid duplicate shadow an invalid duplicate, or vice versa.
     file_by_path = {
         path: entries[0]

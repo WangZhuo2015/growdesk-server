@@ -38,3 +38,13 @@ machine-readable quarantine on any owner/path/object/DB conflict and exposes
 `reconcile()` for a verified object left by a rolled-back database transaction.
 It does not backfill business references; the S3 PUT and PostgreSQL commit are
 still separate systems and require the explicit receipt/reconcile boundary.
+
+`embedded_attachment_audit.py` is run as part of that read-only planner. It
+scans `RecordSnapshot.payloadJson`, `AiJob.resultJson`, and `AiArchive.content`
+recursively for local attachment paths and media-key values, records JSON
+pointers with path deduplication, and never copies embedded content into a
+report. Every discovered reference is a hard quarantine until a reviewed
+canonical mapping exists; missing or duplicate `files.json` paths are reported
+as `EMBEDDED_FILE_MISSING`/`EMBEDDED_FILE_AMBIGUOUS`. It can also be inspected
+alone with `python3 embedded_attachment_audit.py --archive <snapshot> --output
+<new-report> --allow-quarantine`.
