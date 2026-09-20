@@ -114,9 +114,22 @@ function fixtures(passwordHash: string) {
     source: "ui_manual", sourceAgent: null, date, time: "09:00", dose: 1.5, unitName: "滴",
     notes: "test_supplement_record", createdAt: stamp,
   }];
+  canonical.supplementProduct = [{
+    id: supplementId, familyId: id(2), name: supplementProduct.name, brand: supplementProduct.brand,
+    dosageForm: supplementProduct.dosageForm, unitName: supplementProduct.unitName,
+    defaultDose: String(supplementProduct.defaultDose), nutrientsJson: supplementNutrients,
+    notes: supplementProduct.notes, isActive: true, isArchived: false, version: 1, ...times,
+  }];
+  canonical.supplementSchedule = [{
+    id: scheduleId, ...common, productId: supplementId, frequency: "daily",
+    customDaysJson: [1, 3, 5], targetDose: "1.5", reminderTime: "09:00",
+    isActive: true, startDate: date, notes: "test_schedule", version: 1,
+  }];
   canonical.supplementRecord = [{
     id: supplementRecordId, ...common, supplementName: supplementProduct.name,
-    occurredAt: "2026-09-19T01:00:00.000Z", amount: "1.5 滴", notes: "test_supplement_record", recordedByUserId: id(1), version: 1,
+    occurredAt: "2026-09-19T01:00:00.000Z", amount: "1.5 滴", productId: supplementId,
+    dose: "1.5", unitName: "滴", source: "ui_manual", sourceAgent: null,
+    notes: "test_supplement_record", recordedByUserId: id(1), version: 1,
   }];
   const planData = {
     date,
@@ -151,7 +164,9 @@ function fixtures(passwordHash: string) {
   }];
   canonical.vaccineRecord = [{
     id: vaccineRecordId, familyId: id(2), babyId: id(4), caregiverId: id(1), vaccineCode: "vac_hepb",
-    administeredDate: date, clinic: "test_clinic", batchNumber: "test_batch", notes: "第1剂", version: 1, ...times,
+    doseNumber: 1, legacyName: "vac_hepb", legacyDose: "第1剂",
+    administeredDate: date, scheduledDate: date, completedDate: date, isCompleted: true,
+    clinic: "test_clinic", batchNumber: "test_batch", notes: "第1剂", version: 1, ...times,
   }];
   entry(503, "supplement", supplementRecordId, "2026-09-19T01:00:00.000Z", "补剂: test_golden_vitamin_d");
   canonical.timelineEntry = timeline;
@@ -228,7 +243,7 @@ export async function runLegacyGolden(options: Options) {
   const python = `import sqlite3,json,sys,pathlib\nroot=pathlib.Path(sys.argv[1]); target=pathlib.Path(sys.argv[2]); f=json.loads(pathlib.Path(sys.argv[3]).read_text())\nassert target.name=='dev_test.db' and not target.exists()\nc=sqlite3.connect(target)\nfor p in sorted((root/'prisma/migrations').glob('*/migration.sql')): c.executescript(p.read_text())\nfor table,rows in f['legacy'].items():\n for row in rows:\n  for k in ('createdAt','updatedAt'):\n   if k in row: row[k]=row[k].replace('Z','+00:00')\n  keys=list(row); c.execute('INSERT INTO "'+table+'" ('+','.join('"'+k+'"' for k in keys)+') VALUES ('+','.join('?' for k in keys)+')',list(row.values()))\nc.commit();c.close()\n`;
   const seeded = spawnSync("python3", ["-c", python, legacyRoot, sqlite, fixtureFile], { encoding: "utf8" });
   assert.equal(seeded.status, 0, seeded.stderr);
-  const dateFields = new Set(["createdAt", "updatedAt", "birthDate", "occurredAt", "startedAt", "endedAt", "measurementDate", "reportDate", "administeredDate"]);
+  const dateFields = new Set(["createdAt", "updatedAt", "birthDate", "occurredAt", "startedAt", "endedAt", "measurementDate", "reportDate", "administeredDate", "scheduledDate", "completedDate", "startDate"]);
   const prisma = database.prisma as any;
   let child: ChildProcess | undefined;
   try {
@@ -255,6 +270,119 @@ export async function runLegacyGolden(options: Options) {
     const referenceScript = fileURLToPath(new URL("./legacy-golden-reference-fixture.py", import.meta.url));
     const stabilize = spawnSync("python3", [referenceScript, sqlite, fixtureFile], { encoding: "utf8" });
     assert.equal(stabilize.status, 0, stabilize.stderr);
+
+    // The frozen Web seeds its versioned vaccine catalogue into SQLite. Mirror
+    // those exact reference rows into the normalized PostgreSQL graph so the
+    // comparison represents the same logical database on both backends. This
+    // intentionally reads only the owned dev_test.db created above.
+    const referenceDumpScript = `import json,sqlite3,sys\ncon=sqlite3.connect(sys.argv[1]);con.row_factory=sqlite3.Row\ntables=['Vaccine','VaccineDose','VaccineScheduleEntry','VaccineStrategyGroup']\nprint(json.dumps({t:[dict(r) for r in con.execute('SELECT * FROM "'+t+'"')] for t in tables},ensure_ascii=False));con.close()\n`;
+    const dumped = spawnSync("python3", ["-c", referenceDumpScript, sqlite], { encoding: "utf8" });
+    assert.equal(dumped.status, 0, dumped.stderr);
+    const referenceRows = JSON.parse(dumped.stdout) as Record<string, Row[]>;
+    const parseJson = (value: unknown) => {
+      if (typeof value !== "string") return value ?? null;
+      return JSON.parse(value);
+    };
+    const vaccineIds = new Map<string, string>();
+    for (const row of referenceRows.Vaccine ?? []) {
+      vaccineIds.set(String(row.vaccineId), String(row.id));
+      await prisma.vaccine.create({ data: {
+        id: row.id,
+        vaccineCode: row.vaccineId,
+        name: row.name,
+        shortName: row.shortName,
+        englishName: row.englishName,
+        programType: row.programType,
+        legacyLabel: row.legacyLabel,
+        sexRestriction: row.sexRestriction,
+        chinaNational: Boolean(row.chinaNational),
+        diseases: parseJson(row.diseases),
+        targetPopulation: row.targetPopulation,
+        policyEffectiveDate: row.policyEffectiveDate,
+        policyVersion: row.policyVersion,
+        routineHealthyChildOption: Boolean(row.routineHealthyChildOption),
+        manualReviewRequired: Boolean(row.manualReviewRequired),
+        marketStatus: row.marketStatus,
+        productBrandName: row.productBrandName,
+        productManufacturer: row.productManufacturer,
+        productApprovalNumber: row.productApprovalNumber,
+        jiangsuNotes: row.jiangsuNotes,
+        suzhouNotes: row.suzhouNotes,
+        catchUpSupported: Boolean(row.catchUpSupported),
+        catchUpRules: parseJson(row.catchUpRules),
+        simultaneousVaccination: row.simultaneousVaccination,
+        substitutionRules: parseJson(row.substitutionRules),
+        contraindications: parseJson(row.contraindications),
+        precautions: parseJson(row.precautions),
+        specialPopulations: parseJson(row.specialPopulations),
+        regionalOverrides: parseJson(row.regionalOverrides),
+        regimenOptions: parseJson(row.regimenOptions),
+        sourceRefsJson: parseJson(row.sourceRefsJson),
+      } });
+    }
+    for (const row of referenceRows.VaccineDose ?? []) {
+      await prisma.vaccineDose.create({ data: {
+        id: row.id,
+        vaccineId: row.vaccineId,
+        doseNumber: row.doseNumber,
+        doseLabel: row.doseLabel,
+        recommendedAgeMonths: row.recommendedAgeMonths,
+        minimumAgeDays: row.minimumAgeDays,
+        maximumAgeDays: row.maximumAgeDays,
+        recommendedAgeMaxMonths: row.recommendedAgeMaxMonths,
+        minimumIntervalDaysFromPrevious: row.minimumIntervalDaysFromPrevious,
+        maximumIntervalDaysFromPrevious: row.maximumIntervalDaysFromPrevious,
+        route: row.route,
+        site: row.site,
+        doseVolumeMl: row.doseVolumeMl,
+        notes: row.notes,
+        sourceRefsJson: parseJson(row.sourceRefsJson),
+      } });
+    }
+    for (const row of referenceRows.VaccineScheduleEntry ?? []) {
+      const vaccineId = vaccineIds.get(String(row.vaccineId));
+      assert.ok(vaccineId, `Unknown legacy vaccine code in schedule: ${row.vaccineId}`);
+      await prisma.vaccineScheduleEntry.create({ data: {
+        id: row.id,
+        vaccineId,
+        ageMonths: row.ageMonths,
+        ageDays: row.ageDays,
+        ageLabel: row.ageLabel,
+        doseNumber: row.doseNumber,
+        priority: row.priority,
+        isOptional: Boolean(row.isOptional),
+        action: row.action,
+        selectionGroup: row.selectionGroup,
+        notes: row.notes,
+        sourceRefsJson: parseJson(row.sourceRefsJson),
+      } });
+    }
+    for (const row of referenceRows.VaccineStrategyGroup ?? []) {
+      await prisma.vaccineStrategyGroup.create({ data: {
+        id: row.id,
+        strategyId: row.strategyId,
+        name: row.name,
+        scope: row.scope,
+        baseProgram: row.baseProgram,
+        optionsJson: parseJson(row.optionsJson),
+        sourceRefsJson: parseJson(row.sourceRefsJson),
+      } });
+    }
+    const hepatitisBId = vaccineIds.get("vac_hepb");
+    assert.ok(hepatitisBId, "Frozen vaccine reference is missing vac_hepb");
+    await prisma.vaccineRecord.update({ where: { id: id(505) }, data: { vaccineId: hepatitisBId } });
+    await prisma.vaccineSelection.create({ data: {
+      id: id(506),
+      familyId: id(2),
+      babyId: id(4),
+      vaccineId: hepatitisBId,
+      doseNumber: 1,
+      selected: true,
+      completed: true,
+      version: 1,
+      createdAt: new Date(stamp),
+      updatedAt: new Date(stamp),
+    } });
     const log = fs.openSync(path.join(root, "legacy-next.log"), "w", 0o600);
     child = spawn(process.execPath, [...goldenClockArgs(root), path.join(legacyRoot, ".next/standalone/server.js")], { cwd: root, env, stdio: ["ignore", log, log] });
     fs.closeSync(log);
