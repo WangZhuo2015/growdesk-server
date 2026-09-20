@@ -568,6 +568,11 @@ model FoodRecord {
   portionDescription String?   @map("portion_description") @db.VarChar(255)
   reaction           String?   @db.VarChar(32)
   notes              String?   @db.VarChar(1000)
+  source             String    @default("manual")
+  sourceAgent        String?   @map("source_agent")
+  recordedByUserId   String?   @map("recorded_by_user_id")
+  legacyClientId     String?   @map("legacy_client_id")
+  legacyMetadata     Json?     @map("legacy_metadata") @db.JsonB
   version            Int       @default(1)
   deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(3)
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -589,6 +594,7 @@ model FoodLibraryItem {
   recommendedAgeMonths Int       @map("recommended_age_months")
   isCustom             Boolean   @default(false) @map("is_custom")
   familyId             String?   @map("family_id")
+  legacyMetadata       Json?     @map("legacy_metadata") @db.JsonB
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   family               Family?   @relation(fields: [familyId], references: [id], onDelete: Cascade)
@@ -604,6 +610,10 @@ model FamilyFoodStatus {
   foodItemId String   @map("food_item_id") @db.VarChar(64)
   tried      Boolean  @default(false)
   reaction   String?  @db.VarChar(32)
+  legacyStatus         String?  @map("legacy_status") @db.VarChar(16)
+  legacyAcceptance     Int?     @map("legacy_acceptance")
+  legacyFirstAddedDate String?  @map("legacy_first_added_date") @db.VarChar(10)
+  legacyMetadata       Json?    @map("legacy_metadata") @db.JsonB
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
   family     Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
