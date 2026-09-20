@@ -191,10 +191,12 @@ def read_private_env(path: str | os.PathLike[str]) -> dict[str, str]:
 def validate_attachment_config(values: Mapping[str, str]) -> None:
     """Fail before any attachment phase if the private store is not configured."""
 
-    required = ("S3_BUCKET", "S3_REGION", "S3_ENDPOINT", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+    required = ("S3_BUCKET", "S3_REGION", "S3_ENDPOINT", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD")
     missing = [name for name in required if not values.get(name)]
     if missing:
         raise CutoverError("attachment storage configuration is incomplete")
+    if values.get("S3_ENDPOINT") != "http://storage:9000":
+        raise CutoverError("attachment storage endpoint must use the private GrowDesk service")
     password = values.get("POSTGRES_SUPERUSER_PASSWORD")
     if not password or re.fullmatch(r"[0-9a-f]{64}", password) is None:
         raise CutoverError("target database superuser configuration is incomplete")
@@ -361,7 +363,8 @@ class CutoverRunner:
 
     def _run_attachment_container(self, args: Sequence[str], env_file: Path) -> str:
         return self.executor.run([
-            self.executor.docker, "run", "--rm", "--network", "growdesk-db",
+            self.executor.docker, "run", "--rm",
+            "--network", "growdesk-db", "--network", "growdesk-storage",
             "--env-file", str(env_file),
             "-v", f"{self.snapshot['root']}:/migration/input:ro",
             "-v", f"{self.receipt_dir}:/migration/work:rw",
@@ -382,8 +385,10 @@ class CutoverRunner:
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as stream:
                 stream.write(_write_private_env)
-                for key in ("S3_BUCKET", "S3_REGION", "S3_ENDPOINT", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+                for key in ("S3_BUCKET", "S3_REGION", "S3_ENDPOINT"):
                     stream.write(f"{key}={self.runtime_env[key]}\n")
+                stream.write(f"AWS_ACCESS_KEY_ID={self.runtime_env['MINIO_ROOT_USER']}\n")
+                stream.write(f"AWS_SECRET_ACCESS_KEY={self.runtime_env['MINIO_ROOT_PASSWORD']}\n")
         finally:
             env_path.chmod(0o600)
 

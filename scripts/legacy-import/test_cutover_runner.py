@@ -78,6 +78,18 @@ class CutoverRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(cutover.CutoverError, "attachment storage"):
             cutover.validate_attachment_config({"POSTGRES_SUPERUSER_PASSWORD": "test"})
 
+    def test_attachment_configuration_rejects_non_private_endpoint(self) -> None:
+        values = {
+            "POSTGRES_SUPERUSER_PASSWORD": "a" * 64,
+            "S3_BUCKET": "test-bucket",
+            "S3_REGION": "us-east-1",
+            "S3_ENDPOINT": "https://external.invalid",
+            "MINIO_ROOT_USER": "test",
+            "MINIO_ROOT_PASSWORD": "test",
+        }
+        with self.assertRaisesRegex(cutover.CutoverError, "private GrowDesk"):
+            cutover.validate_attachment_config(values)
+
     def test_phase_order_keeps_attachment_before_binary_archive_mapping(self) -> None:
         self.assertLess(cutover.PHASES.index("record_snapshot"), cutover.PHASES.index("attachment_promotion"))
         self.assertLess(cutover.PHASES.index("attachment_promotion"), cutover.PHASES.index("ai_archive"))
@@ -102,6 +114,9 @@ class CutoverRunnerTests(unittest.TestCase):
         self.assertEqual(command[command.index("--entrypoint") + 1], "node")
         self.assertEqual(command[-3:], ["--import", "tsx", "worker.ts"])
         self.assertEqual(command.count("node"), 1)
+        self.assertEqual(command.count("--network"), 2)
+        self.assertIn("growdesk-db", command)
+        self.assertIn("growdesk-storage", command)
 
     def test_phase_failure_is_recorded_and_raised(self) -> None:
         root, manifest, _ = self.snapshot()
