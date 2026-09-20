@@ -2,9 +2,9 @@
 
 任务：将冻结 identity-v1 archive 中的 SupplementProduct、SupplementSchedule、SupplementRecord、Vaccine、VaccineDose、VaccineScheduleEntry、VaccineStrategyGroup、VaccineSelection、VaccineRecord 以类型化方式 promotion 到 PostgreSQL canonical tables。
 
-状态：IMPLEMENTED_NOT_REVIEWED
+状态：REVIEWED_LOCALLY_NOT_DEPLOYED；在线 BFF/API 适配仍为切换阻断项。
 
-基线 HEAD / 完成定位：基线为当前工作树 `619f1cb`；本报告对应工作树 diff，未提交。
+完成定位：schema/migration、materializer 与共享回归入口已拆分为小提交；尚未执行真实冻结 archive 或部署。
 
 ## 结论
 
@@ -42,6 +42,7 @@
    - 修改 target notes 后 replay 被拒绝。
    - 第二个 source row 的 `payload_hash` 被篡改时，整批 2-row promotion 失败，前一行没有残留 target 或 receipt。
    - 临时 PostgreSQL、Redis 和测试数据由 owned runner 清理。
+4. `MINIO_BIN=/private/tmp/growdesk-minio-tools-20260919 python3 scripts/test-integration.py --legacy-care --s3` — PASS，包含全量 migration、补剂/疫苗与 AI promotion、完整 API、Redis、MinIO、附件 promotion/reference 回归。
 
 验证期间没有使用真实生产数据；本地 runner 的 Fastify warning 属于已有未补齐 route schema 警告，与本切片 SQL 测试无关。
 

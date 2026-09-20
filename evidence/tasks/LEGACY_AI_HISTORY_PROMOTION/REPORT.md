@@ -1,10 +1,10 @@
-# Legacy AI history promotion — IMPLEMENTED_NOT_REVIEWED
+# Legacy AI history promotion — REVIEWED_LOCALLY_NOT_DEPLOYED
 
 任务：在不调用 provider、不暴露原始 provider payload 的前提下，把 legacy AI 私有会话、消息和历史异步任务接入现有 GrowDesk canonical run 模型。
 
-状态：IMPLEMENTED_NOT_REVIEWED
+状态：REVIEWED_LOCALLY_NOT_DEPLOYED
 
-基线：当前工作树 `codex/web-parity-20260919`；本切片未提交，等待独立 review。
+基线：当前工作树 `codex/web-parity-20260919`；materializer 与在线 scope 修复已拆分提交并完成独立 review。
 
 ## 范围与映射
 
@@ -42,6 +42,7 @@
 | `python3 -m py_compile scripts/legacy-import/materialize_ai_history.py scripts/legacy-import/test_ai_history_materializer.py scripts/legacy-import/test_ai_history_materializer_integration.py` | 退出码 0 |
 | `python3 scripts/legacy-import/test_ai_history_materializer.py` | `AI history materializer pure tests PASS (9)` |
 | `python3 scripts/legacy-import/test_ai_history_materializer_integration.py`，由一次性隔离 PostgreSQL 18 / `test_growdesk_integration` / `test_runner` manifest 驱动 | `AI history materializer owned PostgreSQL integration PASS` |
+| `MINIO_BIN=/private/tmp/growdesk-minio-tools-20260919 python3 scripts/test-integration.py --legacy-care --s3` | PASS，包含全量 migration、AI history promotion、API、Redis、MinIO 与附件回归 |
 
 owned PG 集成覆盖：目标 snapshot exact-match、重复执行、receipt 冲突拒绝、provider/tools hash-only、`processing` 不创建 outbox、source row hash mismatch，以及已执行一条目标语句后第二条失败时的整批回滚。独立 review 重新在一次性 owned PostgreSQL 18（`test_growdesk_integration` / `test_runner`）上完成了同一 focused integration，仍为 PASS。
 
