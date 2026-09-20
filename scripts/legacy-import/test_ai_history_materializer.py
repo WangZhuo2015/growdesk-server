@@ -85,6 +85,23 @@ def checksum(data: dict) -> str:
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
 
 
+def attachment_report(data: dict, batch: str, message_id: str, path: str, attachment_id: str = "11111111-1111-4111-8111-111111111111") -> dict:
+    row = next(item for item in data["tables"]["AiChatMessage"] if item["id"] == message_id)
+    return {
+        "mappingVersion": "attachment-promotion-v1",
+        "receipts": [{
+            "sourceBatchId": batch,
+            "sourceTable": "AiChatMessage",
+            "sourceId": message_id,
+            "sourceField": "image",
+            "sourcePath": path,
+            "sourceHash": m._canonical_hash(row),
+            "targetAttachmentId": attachment_id,
+            "attachment": {"id": attachment_id, "purpose": "ai_input"},
+        }],
+    }
+
+
 def test_valid_items_are_dependency_ordered_and_hash_receipted():
     data = archive()
     items = m.prepare_materialization(data, checksum(data))
@@ -143,9 +160,24 @@ def test_image_message_fails_closed_before_sql_render():
     try:
         m.render_materialization(data, checksum(data))
     except ValueError as error:
-        assert "attachment promotion" in str(error)
+        assert "local captured attachment path" in str(error)
     else:
         raise AssertionError("image message must not be copied as an online URL")
+
+
+def test_image_message_uses_verified_private_attachment_path():
+    data = archive()
+    data["tables"]["AiChatMessage"][0]["image"] = "/uploads/ai/test.png"
+    batch = checksum(data)
+    report = attachment_report(data, batch, "test_ai_message_user", "public/uploads/ai/test.png")
+    items = m.prepare_materialization(data, batch, report)
+    message = next(item for item in items if item["target_id"] == "test_ai_message_user")
+    assert message["columns"]["image"] == "/api/attachments/11111111-1111-4111-8111-111111111111"
+    sql = m.render_materialization(data, batch, report)
+    assert "purpose='ai_input'" in sql
+    assert "status='ready'" in sql
+    assert "public/uploads/ai/test.png" not in sql
+    assert not any(item["sourceTable"] == "AiChatMessage.image" for item in m.quarantine_report(data, batch, report)["quarantine"])
 
 
 def test_cross_family_job_fails_closed():
@@ -208,6 +240,7 @@ def main() -> None:
         test_processing_job_is_terminal_failed_and_never_outboxed,
         test_quarantine_report_is_machine_readable_without_payloads,
         test_image_message_fails_closed_before_sql_render,
+        test_image_message_uses_verified_private_attachment_path,
         test_cross_family_job_fails_closed,
         test_claimed_flag_does_not_coerce_arbitrary_strings,
         test_target_conflict_sql_has_a_real_raise_branch,

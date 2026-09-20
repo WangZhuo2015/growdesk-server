@@ -34,13 +34,12 @@ PHASES = (
     "food",
     "medical",
     "supplement_vaccine",
+    # AI message images must be private, verified attachments before their
+    # canonical message rows can expose protected API paths.
+    "attachment_promotion",
     "ai_history",
     "voice",
     "record_snapshot",
-    # The private object store must be populated before binary AiArchive rows
-    # can be promoted.  The report still presents the archive phase after the
-    # promotion phase and calls out this dependency explicitly.
-    "attachment_promotion",
     "ai_archive",
     "attachment_reference_backfill",
     "target_verification",
@@ -354,6 +353,8 @@ class CutoverRunner:
         ]
         if "--quarantine-output" in extra:
             args.extend(["--quarantine-output", str(self.receipt_dir / f"{phase}-quarantine.json")])
+        if phase == "ai_history":
+            args.extend(["--attachment-report", str(self.receipt_dir / "attachment-promotion.json")])
         if phase == "ai_archive":
             args.extend(["--attachment-report", str(self.receipt_dir / "attachment-promotion.json"), "--quarantine-output", str(self.receipt_dir / "ai_archive-quarantine.json")])
         self.executor.run(args)
@@ -404,14 +405,17 @@ class CutoverRunner:
             self.phase("identity", lambda: {"databaseSummary": self._psql(identity_sql)})
             identity_sql.unlink(missing_ok=True)
 
-            for phase in ("care", "food", "medical", "supplement_vaccine", "ai_history", "voice", "record_snapshot"):
+            for phase in ("care", "food", "medical", "supplement_vaccine"):
                 script, extra = MATERIALIZERS[phase]
                 self.phase(phase, lambda phase=phase, script=script, extra=extra: self.run_materializer(phase, script, extra))
 
-            # Planner output is a prerequisite for both the object-store write
-            # and the AiArchive renderer.  A quarantine is a hard stop.
+            # Planner output is a prerequisite for AI message and AiArchive
+            # protected references. A quarantine is a hard stop.
             plan_path = self.receipt_dir / "attachment-promotion.json"
             self.phase("attachment_promotion", lambda: self._attachment_promotion(env_path, plan_path))
+            for phase in ("ai_history", "voice", "record_snapshot"):
+                script, extra = MATERIALIZERS[phase]
+                self.phase(phase, lambda phase=phase, script=script, extra=extra: self.run_materializer(phase, script, extra))
             self.phase("ai_archive", lambda: self.run_materializer("ai_archive", "materialize_ai_archive.py"))
             self.phase("attachment_reference_backfill", lambda: self._attachment_reference_backfill(env_path, plan_path))
             verification = self.phase("target_verification", self._verification)

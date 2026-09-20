@@ -25,11 +25,13 @@ import importlib.util
 import json
 import re
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 
 MAPPING_VERSION = "ai-history-v1"
+ATTACHMENT_MAPPING_VERSION = "attachment-promotion-v1"
 SOURCE_SYSTEM_DEFAULT = "legacy_web"
 ADVISORY_LOCK = 724019238
 MAPPED_TABLES = ("AiChatSession", "AiChatMessage", "AiJob")
@@ -316,7 +318,51 @@ def _session_item(data: dict[str, Any], row: dict[str, Any], *, source_key: str 
     )
 
 
-def _message_item(data: dict[str, Any], row: dict[str, Any], session_ids: set[str]) -> dict[str, Any]:
+def _normalized_attachment_path(value: str, label: str) -> str:
+    raw = value.strip()
+    parts = urlsplit(raw)
+    if not raw or parts.scheme or parts.netloc or parts.query or parts.fragment or "%" in raw or "\\" in raw:
+        raise ValueError(f"{label} must be a local captured attachment path")
+    normalized = raw.lstrip("/")
+    if normalized.startswith("uploads/"):
+        normalized = "public/" + normalized
+    segments = normalized.split("/")
+    if any(segment in {"", ".", ".."} for segment in segments):
+        raise ValueError(f"{label} contains an unsafe path segment")
+    if not normalized.startswith(("public/uploads/", "data/archive/")):
+        raise ValueError(f"{label} is outside captured attachment roots")
+    return normalized
+
+
+def _attachment_index(report: Mapping[str, Any] | None, checksum: str) -> dict[tuple[str, str, str, str], Mapping[str, Any]]:
+    if report is None:
+        return {}
+    if report.get("mappingVersion") != ATTACHMENT_MAPPING_VERSION or not isinstance(report.get("receipts"), list):
+        raise ValueError("Attachment report has an unsupported mapping version")
+    result: dict[tuple[str, str, str, str], Mapping[str, Any]] = {}
+    for index, raw in enumerate(report["receipts"]):
+        if not isinstance(raw, Mapping):
+            raise ValueError(f"Attachment report receipt {index} must be an object")
+        if _text(raw.get("sourceBatchId"), f"attachment receipt {index}.sourceBatchId") != checksum:
+            continue
+        table = _text(raw.get("sourceTable"), f"attachment receipt {index}.sourceTable")
+        source_id = _text(raw.get("sourceId"), f"attachment receipt {index}.sourceId")
+        field = _text(raw.get("sourceField"), f"attachment receipt {index}.sourceField")
+        path = _text(raw.get("sourcePath"), f"attachment receipt {index}.sourcePath")
+        assert table is not None and source_id is not None and field is not None and path is not None
+        key = table, source_id, field, path
+        if key in result:
+            raise ValueError(f"Duplicate attachment receipt for {'/'.join(key)}")
+        result[key] = raw
+    return result
+
+
+def _message_item(
+    data: dict[str, Any],
+    row: dict[str, Any],
+    session_ids: set[str],
+    attachments: Mapping[tuple[str, str, str, str], Mapping[str, Any]],
+) -> dict[str, Any]:
     row_id = _text(row.get("id"), "AiChatMessage.id")
     session_id = _text(row.get("sessionId"), f"AiChatMessage/{row_id}.sessionId")
     role = _text(row.get("role"), f"AiChatMessage/{row_id}.role")
@@ -327,10 +373,21 @@ def _message_item(data: dict[str, Any], row: dict[str, Any], session_ids: set[st
     if role not in ALLOWED_ROLES:
         raise ValueError(f"AiChatMessage/{row_id}: unsupported role {role}")
     image = _optional_text(row.get("image"), f"AiChatMessage/{row_id}.image")
+    attachment_id: str | None = None
     if image:
-        # A legacy URL/path needs the attachment inventory and ACL promotion;
-        # copying it into the online DTO would create a public-link bypass.
-        raise ValueError(f"AiChatMessage/{row_id}: image reference requires attachment promotion")
+        normalized = _normalized_attachment_path(image, f"AiChatMessage/{row_id}.image")
+        receipt = attachments.get(("AiChatMessage", row_id, "image", normalized))
+        if receipt is None:
+            raise ValueError(f"AiChatMessage/{row_id}: image attachment was not promoted")
+        source_hash = _canonical_hash(row)
+        if receipt.get("sourceHash") != source_hash:
+            raise ValueError(f"AiChatMessage/{row_id}: image attachment source hash mismatch")
+        attachment = receipt.get("attachment")
+        if not isinstance(attachment, Mapping) or attachment.get("purpose") != "ai_input":
+            raise ValueError(f"AiChatMessage/{row_id}: image attachment purpose mismatch")
+        attachment_id = _text(receipt.get("targetAttachmentId"), f"AiChatMessage/{row_id} attachment id")
+        if attachment.get("id") != attachment_id:
+            raise ValueError(f"AiChatMessage/{row_id}: image attachment ID mismatch")
     created, _updated = _created_updated(data, row, "AiChatMessage", row_id)
     tools_json = _trace_ref(row.get("toolsJson"))
     redactions = ["toolsJson"] if row.get("toolsJson") is not None else []
@@ -339,11 +396,11 @@ def _message_item(data: dict[str, Any], row: dict[str, Any], session_ids: set[st
         "session_id": session_id,
         "role": role,
         "content": content,
-        "image": None,
+        "image": f"/api/attachments/{attachment_id}" if attachment_id else None,
         "tools_json": tools_json,
         "created_at": created,
     }
-    return _item(
+    item = _item(
         source_table="AiChatMessage",
         source_id=row_id,
         source_hash=_canonical_hash(row),
@@ -354,6 +411,9 @@ def _message_item(data: dict[str, Any], row: dict[str, Any], session_ids: set[st
         columns=columns,
         redactions=redactions,
     )
+    if attachment_id:
+        item["attachment_id"] = attachment_id
+    return item
 
 
 def _job_items(data: dict[str, Any], rows: list[dict[str, Any]], source_session_ids: set[str]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -521,7 +581,11 @@ def _job_items(data: dict[str, Any], rows: list[dict[str, Any]], source_session_
     return sessions, entities
 
 
-def prepare_materialization(data: dict[str, Any], checksum: str) -> list[dict[str, Any]]:
+def prepare_materialization(
+    data: dict[str, Any],
+    checksum: str,
+    attachment_report: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     _require_checksum(checksum)
     if data.get("formatVersion") != 1 or data.get("timeZone") != "Asia/Shanghai":
         raise ValueError("Unsupported archive format or timezone")
@@ -533,20 +597,21 @@ def prepare_materialization(data: dict[str, Any], checksum: str) -> list[dict[st
     sessions = _rows(data, "AiChatSession")
     messages = _rows(data, "AiChatMessage")
     jobs = _rows(data, "AiJob")
+    attachments = _attachment_index(attachment_report, checksum)
     source_session_ids = {str(row["id"]) for row in sessions}
     items: list[dict[str, Any]] = []
     session_items = [_session_item(data, row) for row in sessions]
     synthetic_sessions, job_items = _job_items(data, jobs, source_session_ids)
     items.extend(synthetic_sessions)
     items.extend(session_items)
-    items.extend(_message_item(data, row, source_session_ids | {item["target_id"] for item in synthetic_sessions}) for row in messages)
+    items.extend(_message_item(data, row, source_session_ids | {item["target_id"] for item in synthetic_sessions}, attachments) for row in messages)
     items.extend(job_items)
     # The order is also the dependency order: sessions -> messages/tasks -> runs -> events.
     order = {"ai_session": 10, "ai_message": 20, "task_execution": 30, "ai_run": 40, "ai_run_event": 50}
     return sorted(items, key=lambda item: (order[item["target_entity_type"]], item["target_id"]))
 
 
-def quarantine_report(data: dict[str, Any], checksum: str) -> dict[str, Any]:
+def quarantine_report(data: dict[str, Any], checksum: str, attachment_report: Mapping[str, Any] | None = None) -> dict[str, Any]:
     _require_checksum(checksum)
     entries: list[dict[str, Any]] = []
     for table, code in QUARANTINED_TABLES.items():
@@ -570,11 +635,18 @@ def quarantine_report(data: dict[str, Any], checksum: str) -> dict[str, Any]:
             "code": "AI_JOB_IMAGE_ATTACHMENT_REQUIRED",
             "status": "quarantined",
         })
-    image_rows = sum(1 for row in _rows(data, "AiChatMessage") if row.get("image") not in (None, ""))
-    if image_rows:
+    attachment_index = _attachment_index(attachment_report, checksum)
+    unresolved_images = 0
+    for row in _rows(data, "AiChatMessage"):
+        image = row.get("image")
+        if isinstance(image, str) and image:
+            path = _normalized_attachment_path(image, f"AiChatMessage/{row.get('id')}.image")
+            if ("AiChatMessage", str(row.get("id")), "image", path) not in attachment_index:
+                unresolved_images += 1
+    if unresolved_images:
         entries.append({
             "sourceTable": "AiChatMessage.image",
-            "count": image_rows,
+            "count": unresolved_images,
             "code": "AI_MESSAGE_IMAGE_ATTACHMENT_REQUIRED",
             "status": "quarantined",
         })
@@ -684,12 +756,23 @@ $ai_receipt$;
 """
 
 
-def render_materialization(data: dict[str, Any], checksum: str) -> str:
+def render_materialization(data: dict[str, Any], checksum: str, attachment_report: Mapping[str, Any] | None = None) -> str:
     checksum = _require_checksum(checksum)
-    items = prepare_materialization(data, checksum)
+    items = prepare_materialization(data, checksum, attachment_report)
     source_system = data.get("sourceId") or SOURCE_SYSTEM_DEFAULT
     body: list[str] = []
     for item in items:
+        if item.get("attachment_id"):
+            body.append(f"""
+DO $ai_attachment$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.attachments
+    WHERE id={_sql(item['attachment_id'])} AND purpose='ai_input' AND status='ready' AND deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'AI message attachment is not ready: %', {_sql(item['attachment_id'])};
+  END IF;
+END;
+$ai_attachment$;
+""")
         body.append(f"""
 DO $ai_source$
 BEGIN
@@ -731,11 +814,18 @@ def main() -> int:
     parser.add_argument("--sha256", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--quarantine-output")
+    parser.add_argument("--attachment-report")
     args = parser.parse_args()
     data, checksum = load_archive(args.archive)
     if checksum != args.sha256:
         raise ValueError("Archive checksum mismatch")
-    sql = render_materialization(data, checksum)
+    attachment_report: Mapping[str, Any] | None = None
+    if args.attachment_report:
+        raw = json.loads(Path(args.attachment_report).read_text(encoding="utf-8"))
+        if not isinstance(raw, Mapping):
+            raise ValueError("Attachment report must be an object")
+        attachment_report = raw
+    sql = render_materialization(data, checksum, attachment_report)
     output = Path(args.output)
     fd = output.open("x", encoding="utf-8")
     try:
@@ -746,10 +836,10 @@ def main() -> int:
         quarantine_path = Path(args.quarantine_output)
         qfd = quarantine_path.open("x", encoding="utf-8")
         try:
-            qfd.write(json.dumps(quarantine_report(data, checksum), ensure_ascii=False, indent=2) + "\n")
+            qfd.write(json.dumps(quarantine_report(data, checksum, attachment_report), ensure_ascii=False, indent=2) + "\n")
         finally:
             qfd.close()
-    print(json.dumps({"status": "prepared", "mapped": len(prepare_materialization(data, checksum)), "quarantine": len(quarantine_report(data, checksum)["quarantine"])}, ensure_ascii=False))
+    print(json.dumps({"status": "prepared", "mapped": len(prepare_materialization(data, checksum, attachment_report)), "quarantine": len(quarantine_report(data, checksum, attachment_report)["quarantine"])}, ensure_ascii=False))
     return 0
 
 

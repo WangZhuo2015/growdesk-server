@@ -91,7 +91,7 @@ class CutoverRunnerTests(unittest.TestCase):
             cutover.validate_attachment_config(values)
 
     def test_phase_order_keeps_attachment_before_binary_archive_mapping(self) -> None:
-        self.assertLess(cutover.PHASES.index("record_snapshot"), cutover.PHASES.index("attachment_promotion"))
+        self.assertLess(cutover.PHASES.index("attachment_promotion"), cutover.PHASES.index("ai_history"))
         self.assertLess(cutover.PHASES.index("attachment_promotion"), cutover.PHASES.index("ai_archive"))
         self.assertLess(cutover.PHASES.index("ai_archive"), cutover.PHASES.index("attachment_reference_backfill"))
         self.assertEqual(cutover.PHASES[-1], "target_verification")
