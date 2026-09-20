@@ -355,7 +355,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   t.after(() => new Promise<void>((resolve, reject) => virtualAi.close(error => error ? reject(error) : resolve())));
   const virtualAiUrl = `http://127.0.0.1:${(virtualAi.address() as AddressInfo).port}/v1`;
 
-  const startWeb = async () => {
+  const startWeb = async (useGoldenClock = Boolean(process.env.GROWDESK_LEGACY_WEB_ROOT)) => {
     if (webProcess && webProcess.exitCode === null) return;
     webLogFd = fs.openSync(webLogPath, "a", 0o600);
     const environment: NodeJS.ProcessEnv = {
@@ -379,7 +379,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     // them set would make the Web load .env.test and deliberately relax CSRF.
     delete environment.NODE_TEST_CONTEXT;
     delete environment.npm_lifecycle_event;
-    const clockArgs = process.env.GROWDESK_LEGACY_WEB_ROOT ? goldenClockArgs(run.directory) : [];
+    const clockArgs = useGoldenClock ? goldenClockArgs(run.directory) : [];
     webProcess = spawn(process.execPath, [...clockArgs, standalone], {
       cwd: runtimeDir,
       env: environment,
@@ -390,6 +390,20 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
 
   const runFixedUiHook = async () => {
     if (process.env.GROWDESK_WEB_UI !== "1") return;
+    // Golden HTTP comparison fixes the server clock so legacy and canonical
+    // projections see the same instant. The browser acceptance creates
+    // records for its real local day, so keeping that fixed clock would hide
+    // successful writes from every date-filtered page. Restart only the owned
+    // Web child with the real clock after the golden assertions are complete.
+    if (process.env.GROWDESK_LEGACY_WEB_ROOT) {
+      await stopProcess(webProcess);
+      webProcess = null;
+      if (webLogFd !== null) {
+        fs.closeSync(webLogFd);
+        webLogFd = null;
+      }
+      await startWeb(false);
+    }
     const script = path.join(webRoot, "scripts", "review", "ui-parity-acceptance.mjs");
     assert.ok(fs.statSync(script).isFile(), "fixed Web UI parity hook is missing");
     const hookLogPath = path.join(run.directory, "ui-parity.log");
