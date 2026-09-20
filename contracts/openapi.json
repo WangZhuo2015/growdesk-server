@@ -846,8 +846,11 @@
           "babyId",
           "familyId",
           "supplementName",
+          "productId",
           "occurredAt",
           "amount",
+          "dose",
+          "unitName",
           "notes",
           "version",
           "createdAt",
@@ -874,12 +877,29 @@
             "maxLength": 100,
             "type": "string"
           },
+          "productId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string",
+            "nullable": true
+          },
           "occurredAt": {
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
             "type": "string"
           },
           "amount": {
+            "type": "string",
+            "nullable": true
+          },
+          "dose": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "description": "Arbitrary-precision decimal represented as string",
+            "type": "string",
+            "nullable": true
+          },
+          "unitName": {
+            "maxLength": 50,
             "type": "string",
             "nullable": true
           },
@@ -1490,7 +1510,14 @@
           "babyId",
           "familyId",
           "vaccineCode",
+          "vaccineId",
+          "doseNumber",
+          "legacyName",
+          "legacyDose",
           "administeredDate",
+          "scheduledDate",
+          "completedDate",
+          "isCompleted",
           "clinic",
           "batchNumber",
           "notes",
@@ -1517,11 +1544,50 @@
           "vaccineCode": {
             "type": "string"
           },
+          "vaccineId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string",
+            "nullable": true
+          },
+          "doseNumber": {
+            "minimum": 1,
+            "maximum": 12,
+            "type": "integer",
+            "nullable": true
+          },
+          "legacyName": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "legacyDose": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
           "administeredDate": {
             "format": "date",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "description": "YYYY-MM-DD calendar date",
             "type": "string"
+          },
+          "scheduledDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "completedDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "isCompleted": {
+            "type": "boolean"
           },
           "clinic": {
             "type": "string",
@@ -1547,6 +1613,599 @@
             "type": "string"
           },
           "updatedAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          }
+        }
+      },
+      "VaccineCatalogItem": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "vaccineCode",
+          "name",
+          "shortName",
+          "englishName",
+          "programType",
+          "legacyLabel",
+          "sexRestriction",
+          "chinaNational",
+          "diseases",
+          "targetPopulation",
+          "policyEffectiveDate",
+          "policyVersion",
+          "routineHealthyChildOption",
+          "manualReviewRequired",
+          "marketStatus",
+          "productBrandName",
+          "productManufacturer",
+          "productApprovalNumber",
+          "jiangsuNotes",
+          "suzhouNotes",
+          "catchUpSupported",
+          "catchUpRules",
+          "simultaneousVaccination",
+          "substitutionRules",
+          "contraindications",
+          "precautions",
+          "specialPopulations",
+          "regionalOverrides",
+          "regimenOptions",
+          "sourceRefsJson",
+          "doses"
+        ],
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "vaccineCode": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string",
+            "nullable": true
+          },
+          "englishName": {
+            "type": "string",
+            "nullable": true
+          },
+          "programType": {
+            "type": "string"
+          },
+          "legacyLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "sexRestriction": {
+            "type": "string"
+          },
+          "chinaNational": {
+            "type": "boolean"
+          },
+          "diseases": {
+            "nullable": true
+          },
+          "targetPopulation": {
+            "type": "string",
+            "nullable": true
+          },
+          "policyEffectiveDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "policyVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "routineHealthyChildOption": {
+            "type": "boolean"
+          },
+          "manualReviewRequired": {
+            "type": "boolean"
+          },
+          "marketStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "productBrandName": {
+            "type": "string",
+            "nullable": true
+          },
+          "productManufacturer": {
+            "type": "string",
+            "nullable": true
+          },
+          "productApprovalNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "jiangsuNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "suzhouNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "catchUpSupported": {
+            "type": "boolean"
+          },
+          "catchUpRules": {
+            "nullable": true
+          },
+          "simultaneousVaccination": {
+            "type": "string",
+            "nullable": true
+          },
+          "substitutionRules": {
+            "nullable": true
+          },
+          "contraindications": {
+            "nullable": true
+          },
+          "precautions": {
+            "nullable": true
+          },
+          "specialPopulations": {
+            "nullable": true
+          },
+          "regionalOverrides": {
+            "nullable": true
+          },
+          "regimenOptions": {
+            "nullable": true
+          },
+          "sourceRefsJson": {
+            "nullable": true
+          },
+          "doses": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "VaccineCatalogResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "national",
+          "nonProgram",
+          "provincial",
+          "strategyGroups",
+          "schedule",
+          "engineRules",
+          "dataRelease"
+        ],
+        "properties": {
+          "national": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaccineCatalogItem"
+            }
+          },
+          "nonProgram": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaccineCatalogItem"
+            }
+          },
+          "provincial": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VaccineCatalogItem"
+            }
+          },
+          "strategyGroups": {
+            "type": "array",
+            "items": {}
+          },
+          "schedule": {
+            "type": "array",
+            "items": {}
+          },
+          "engineRules": {
+            "type": "array",
+            "items": {}
+          },
+          "dataRelease": {
+            "nullable": true
+          }
+        }
+      },
+      "VoiceLogBaby": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "nickname",
+          "gender"
+        ],
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          }
+        }
+      },
+      "VoiceLog": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "familyId",
+          "babyId",
+          "prompt",
+          "reply",
+          "isAsync",
+          "isFastPath",
+          "acknowledged",
+          "createdAt",
+          "baby"
+        ],
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "familyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "babyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "isAsync": {
+            "type": "boolean"
+          },
+          "isFastPath": {
+            "type": "boolean"
+          },
+          "acknowledged": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          },
+          "baby": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "nickname",
+              "gender"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "nickname": {
+                "type": "string"
+              },
+              "gender": {
+                "type": "string"
+              }
+            },
+            "nullable": true
+          }
+        }
+      },
+      "CreateVoiceLogRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "babyId",
+          "prompt",
+          "reply"
+        ],
+        "properties": {
+          "babyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "prompt": {
+            "minLength": 1,
+            "maxLength": 4000,
+            "type": "string"
+          },
+          "reply": {
+            "minLength": 1,
+            "maxLength": 100000,
+            "type": "string"
+          },
+          "isAsync": {
+            "type": "boolean"
+          },
+          "isFastPath": {
+            "type": "boolean"
+          },
+          "acknowledged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "VoiceLogResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VoiceLog"
+          }
+        }
+      },
+      "VoiceLogListResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data",
+          "page"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VoiceLog"
+            }
+          },
+          "page": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "nextCursor"
+            ],
+            "properties": {
+              "nextCursor": {
+                "description": "Keyset opaque pagination cursor",
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "VoiceLogUnreadResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/VoiceLog",
+            "nullable": true
+          }
+        }
+      },
+      "VoiceLogQueryResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/VoiceLogListResponse"
+          },
+          {
+            "$ref": "#/components/schemas/VoiceLogUnreadResponse"
+          }
+        ]
+      },
+      "VoiceLogListQuery": {
+        "additionalProperties": false,
+        "type": "object",
+        "properties": {
+          "limit": {
+            "minimum": 1,
+            "maximum": 50,
+            "type": "integer"
+          },
+          "unreadAsync": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AcknowledgeVoiceLogRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "acknowledged"
+        ],
+        "properties": {
+          "acknowledged": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RecordSnapshot": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "familyId",
+          "babyId",
+          "userId",
+          "source",
+          "sourceAgent",
+          "action",
+          "entityType",
+          "entityId",
+          "payload",
+          "payloadHash",
+          "restored",
+          "restoredAt",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "maxLength": 200,
+            "type": "string"
+          },
+          "familyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "babyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string",
+            "nullable": true
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceAgent": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
+            "type": "string"
+          },
+          "entityType": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "feeding"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "sleep"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "diaper"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "food"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "growth"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "medical_report"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "vaccine"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "food_plan"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "supplement"
+                ]
+              }
+            ]
+          },
+          "entityId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "payload": {},
+          "payloadHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "sourceSystem": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceBatchId": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+            "nullable": true
+          },
+          "sourceTable": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceId": {
+            "type": "string",
+            "nullable": true
+          },
+          "sourceHash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string",
+            "nullable": true
+          },
+          "mappingVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "restored": {
+            "type": "boolean"
+          },
+          "restoredAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
             "type": "string"
@@ -10927,8 +11586,11 @@
                           "babyId",
                           "familyId",
                           "supplementName",
+                          "productId",
                           "occurredAt",
                           "amount",
+                          "dose",
+                          "unitName",
                           "notes",
                           "version",
                           "createdAt",
@@ -10955,12 +11617,29 @@
                             "maxLength": 100,
                             "type": "string"
                           },
+                          "productId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string",
+                            "nullable": true
+                          },
                           "occurredAt": {
                             "format": "date-time",
                             "description": "RFC3339 UTC timestamp",
                             "type": "string"
                           },
                           "amount": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "dose": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unitName": {
+                            "maxLength": 50,
                             "type": "string",
                             "nullable": true
                           },
@@ -11057,12 +11736,29 @@
                     "maxLength": 100,
                     "type": "string"
                   },
+                  "productId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string",
+                    "nullable": true
+                  },
                   "occurredAt": {
                     "format": "date-time",
                     "description": "RFC3339 UTC timestamp",
                     "type": "string"
                   },
                   "amount": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dose": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "unitName": {
+                    "maxLength": 50,
                     "type": "string",
                     "nullable": true
                   },
@@ -11109,8 +11805,11 @@
                         "babyId",
                         "familyId",
                         "supplementName",
+                        "productId",
                         "occurredAt",
                         "amount",
+                        "dose",
+                        "unitName",
                         "notes",
                         "version",
                         "createdAt",
@@ -11137,12 +11836,29 @@
                           "maxLength": 100,
                           "type": "string"
                         },
+                        "productId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string",
+                          "nullable": true
+                        },
                         "occurredAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
                         },
                         "amount": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitName": {
+                          "maxLength": 50,
                           "type": "string",
                           "nullable": true
                         },
@@ -11272,8 +11988,11 @@
                         "babyId",
                         "familyId",
                         "supplementName",
+                        "productId",
                         "occurredAt",
                         "amount",
+                        "dose",
+                        "unitName",
                         "notes",
                         "version",
                         "createdAt",
@@ -11300,12 +12019,29 @@
                           "maxLength": 100,
                           "type": "string"
                         },
+                        "productId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string",
+                          "nullable": true
+                        },
                         "occurredAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
                         },
                         "amount": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitName": {
+                          "maxLength": 50,
                           "type": "string",
                           "nullable": true
                         },
@@ -11401,12 +12137,29 @@
                     "maxLength": 100,
                     "type": "string"
                   },
+                  "productId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string",
+                    "nullable": true
+                  },
                   "occurredAt": {
                     "format": "date-time",
                     "description": "RFC3339 UTC timestamp",
                     "type": "string"
                   },
                   "amount": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dose": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "unitName": {
+                    "maxLength": 50,
                     "type": "string",
                     "nullable": true
                   },
@@ -11463,8 +12216,11 @@
                         "babyId",
                         "familyId",
                         "supplementName",
+                        "productId",
                         "occurredAt",
                         "amount",
+                        "dose",
+                        "unitName",
                         "notes",
                         "version",
                         "createdAt",
@@ -11491,12 +12247,29 @@
                           "maxLength": 100,
                           "type": "string"
                         },
+                        "productId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string",
+                          "nullable": true
+                        },
                         "occurredAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
                           "type": "string"
                         },
                         "amount": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitName": {
+                          "maxLength": 50,
                           "type": "string",
                           "nullable": true
                         },
@@ -15045,7 +15818,14 @@
                           "babyId",
                           "familyId",
                           "vaccineCode",
+                          "vaccineId",
+                          "doseNumber",
+                          "legacyName",
+                          "legacyDose",
                           "administeredDate",
+                          "scheduledDate",
+                          "completedDate",
+                          "isCompleted",
                           "clinic",
                           "batchNumber",
                           "notes",
@@ -15072,11 +15852,50 @@
                           "vaccineCode": {
                             "type": "string"
                           },
+                          "vaccineId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "doseNumber": {
+                            "minimum": 1,
+                            "maximum": 12,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "legacyName": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "legacyDose": {
+                            "maxLength": 100,
+                            "type": "string",
+                            "nullable": true
+                          },
                           "administeredDate": {
                             "format": "date",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                             "description": "YYYY-MM-DD calendar date",
                             "type": "string"
+                          },
+                          "scheduledDate": {
+                            "format": "date",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "description": "YYYY-MM-DD calendar date",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "completedDate": {
+                            "format": "date",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "description": "YYYY-MM-DD calendar date",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isCompleted": {
+                            "type": "boolean"
                           },
                           "clinic": {
                             "type": "string",
@@ -15157,11 +15976,49 @@
                   "vaccineCode": {
                     "type": "string"
                   },
+                  "vaccineId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "doseNumber": {
+                    "minimum": 1,
+                    "maximum": 12,
+                    "type": "integer"
+                  },
+                  "legacyName": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "legacyDose": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
                   "administeredDate": {
                     "format": "date",
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                     "description": "YYYY-MM-DD calendar date",
                     "type": "string"
+                  },
+                  "scheduledDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "completedDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isCompleted": {
+                    "type": "boolean"
                   },
                   "clinic": {
                     "type": "string",
@@ -15214,7 +16071,14 @@
                         "babyId",
                         "familyId",
                         "vaccineCode",
+                        "vaccineId",
+                        "doseNumber",
+                        "legacyName",
+                        "legacyDose",
                         "administeredDate",
+                        "scheduledDate",
+                        "completedDate",
+                        "isCompleted",
                         "clinic",
                         "batchNumber",
                         "notes",
@@ -15241,11 +16105,50 @@
                         "vaccineCode": {
                           "type": "string"
                         },
+                        "vaccineId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "doseNumber": {
+                          "minimum": 1,
+                          "maximum": 12,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyName": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyDose": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
                         "administeredDate": {
                           "format": "date",
                           "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                           "description": "YYYY-MM-DD calendar date",
                           "type": "string"
+                        },
+                        "scheduledDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "completedDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isCompleted": {
+                          "type": "boolean"
                         },
                         "clinic": {
                           "type": "string",
@@ -15404,6 +16307,386 @@
             }
           },
           "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vaccines/catalog": {
+      "get": {
+        "operationId": "getVaccineCatalog",
+        "summary": "Get normalized vaccine knowledge graph",
+        "tags": [
+          "Medical"
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "national",
+                    "nonProgram",
+                    "provincial",
+                    "strategyGroups",
+                    "schedule",
+                    "engineRules",
+                    "dataRelease"
+                  ],
+                  "properties": {
+                    "national": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VaccineCatalogItem"
+                      }
+                    },
+                    "nonProgram": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VaccineCatalogItem"
+                      }
+                    },
+                    "provincial": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/VaccineCatalogItem"
+                      }
+                    },
+                    "strategyGroups": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "schedule": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "engineRules": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "dataRelease": {
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/vaccines/selections": {
+      "get": {
+        "operationId": "listVaccineSelections",
+        "summary": "List selected vaccine doses for baby",
+        "tags": [
+          "Medical"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "familyId",
+                          "babyId",
+                          "vaccineId",
+                          "doseNumber",
+                          "selected",
+                          "completed",
+                          "version",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "babyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "vaccineId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "doseNumber": {
+                            "minimum": 1,
+                            "maximum": 12,
+                            "type": "integer"
+                          },
+                          "selected": {
+                            "type": "boolean"
+                          },
+                          "completed": {
+                            "type": "boolean"
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "upsertVaccineSelection",
+        "summary": "Select or complete a vaccine dose",
+        "tags": [
+          "Medical"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "vaccineId",
+                  "doseNumber"
+                ],
+                "properties": {
+                  "vaccineId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "doseNumber": {
+                    "minimum": 1,
+                    "maximum": 12,
+                    "type": "integer"
+                  },
+                  "selected": {
+                    "type": "boolean"
+                  },
+                  "completed": {
+                    "type": "boolean"
+                  },
+                  "baseVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "babyId",
+                        "vaccineId",
+                        "doseNumber",
+                        "selected",
+                        "completed",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "vaccineId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "doseNumber": {
+                          "minimum": 1,
+                          "maximum": 12,
+                          "type": "integer"
+                        },
+                        "selected": {
+                          "type": "boolean"
+                        },
+                        "completed": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -16973,6 +18256,331 @@
         }
       }
     },
+    "/api/v1/voice/logs": {
+      "get": {
+        "operationId": "listVoiceLogs",
+        "summary": "List durable voice result history for the authenticated user",
+        "tags": [
+          "AI"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "unreadAsync",
+            "required": false
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH07",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/VoiceLogListResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/VoiceLogUnreadResponse"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createVoiceLog",
+        "summary": "Persist a voice result after server-side processing",
+        "tags": [
+          "AI"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "babyId",
+                  "prompt",
+                  "reply"
+                ],
+                "properties": {
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "prompt": {
+                    "minLength": 1,
+                    "maxLength": 4000,
+                    "type": "string"
+                  },
+                  "reply": {
+                    "minLength": 1,
+                    "maxLength": 100000,
+                    "type": "string"
+                  },
+                  "isAsync": {
+                    "type": "boolean"
+                  },
+                  "isFastPath": {
+                    "type": "boolean"
+                  },
+                  "acknowledged": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "PLANNED_SH07",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceLog"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/voice/logs/{id}": {
+      "get": {
+        "operationId": "getVoiceLog",
+        "summary": "Fetch one durable voice result visible to the authenticated user",
+        "tags": [
+          "AI"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH07",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/VoiceLog"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "acknowledgeVoiceLog",
+        "summary": "Acknowledge or unacknowledge one voice result",
+        "tags": [
+          "AI"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "acknowledged"
+                ],
+                "properties": {
+                  "acknowledged": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH07",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/babies/{babyId}/daily-summaries/runs": {
       "post": {
         "operationId": "createDailySummaryRun",
@@ -17222,6 +18830,1319 @@
             }
           },
           "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/record-snapshots": {
+      "get": {
+        "operationId": "listRecordSnapshots",
+        "summary": "List scoped durable undo snapshots for a baby",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "feeding"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "sleep"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "diaper"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "food"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "growth"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "medical_report"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "vaccine"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "food_plan"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "supplement"
+                  ]
+                }
+              ]
+            },
+            "in": "query",
+            "name": "entityType",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 500,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "familyId",
+                          "babyId",
+                          "userId",
+                          "source",
+                          "sourceAgent",
+                          "action",
+                          "entityType",
+                          "entityId",
+                          "payload",
+                          "payloadHash",
+                          "restored",
+                          "restoredAt",
+                          "createdAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "minLength": 1,
+                            "maxLength": 200,
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "babyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "userId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "source": {
+                            "type": "string"
+                          },
+                          "sourceAgent": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "entityType": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "feeding"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "sleep"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "diaper"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "food"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "growth"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "medical_report"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "vaccine"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "food_plan"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "supplement"
+                                ]
+                              }
+                            ]
+                          },
+                          "entityId": {
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "payload": {},
+                          "payloadHash": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string"
+                          },
+                          "sourceSystem": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceBatchId": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceTable": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceHash": {
+                            "pattern": "^[0-9a-f]{64}$",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "mappingVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "restored": {
+                            "type": "boolean"
+                          },
+                          "restoredAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "nextCursor": {
+                          "description": "Keyset opaque pagination cursor",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/record-snapshots/{snapshotId}": {
+      "get": {
+        "operationId": "getRecordSnapshot",
+        "summary": "Get one scoped durable undo snapshot",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "snapshotId",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "babyId",
+                        "userId",
+                        "source",
+                        "sourceAgent",
+                        "action",
+                        "entityType",
+                        "entityId",
+                        "payload",
+                        "payloadHash",
+                        "restored",
+                        "restoredAt",
+                        "createdAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "sourceAgent": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "entityType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "feeding"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "sleep"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "diaper"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "medical_report"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "vaccine"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food_plan"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "supplement"
+                              ]
+                            }
+                          ]
+                        },
+                        "entityId": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "payload": {},
+                        "payloadHash": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string"
+                        },
+                        "sourceSystem": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceBatchId": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceTable": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceId": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceHash": {
+                          "pattern": "^[0-9a-f]{64}$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "mappingVersion": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "restored": {
+                          "type": "boolean"
+                        },
+                        "restoredAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/record-snapshots/{entityType}/{entityId}": {
+      "delete": {
+        "operationId": "deleteRecordWithSnapshot",
+        "summary": "Capture an immutable row snapshot and soft-delete the row atomically",
+        "tags": [
+          "Records"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "baseVersion": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "feeding"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "sleep"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "diaper"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "food"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "growth"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "medical_report"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "vaccine"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "food_plan"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "supplement"
+                  ]
+                }
+              ]
+            },
+            "in": "path",
+            "name": "entityType",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "entityId",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success",
+                        "id",
+                        "deleted",
+                        "snapshotId",
+                        "entityType",
+                        "version"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "deleted": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "snapshotId": {
+                          "type": "string"
+                        },
+                        "entityType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "feeding"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "sleep"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "diaper"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "medical_report"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "vaccine"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food_plan"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "supplement"
+                              ]
+                            }
+                          ]
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/record-snapshots/restore": {
+      "post": {
+        "operationId": "restoreLatestRecordSnapshot",
+        "summary": "Restore the latest un-restored scoped delete snapshot",
+        "tags": [
+          "Records"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "snapshotId": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "entityType": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "feeding"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "sleep"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "diaper"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "food"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "growth"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "medical_report"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "vaccine"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "food_plan"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "supplement"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success",
+                        "snapshotId",
+                        "restoredId",
+                        "entityType"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "snapshotId": {
+                          "type": "string"
+                        },
+                        "restoredId": {
+                          "type": "string"
+                        },
+                        "entityType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "feeding"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "sleep"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "diaper"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "medical_report"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "vaccine"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food_plan"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "supplement"
+                              ]
+                            }
+                          ]
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/record-snapshots/{snapshotId}/restore": {
+      "post": {
+        "operationId": "restoreRecordSnapshot",
+        "summary": "Restore one scoped durable delete snapshot",
+        "tags": [
+          "Records"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "snapshotId",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success",
+                        "snapshotId",
+                        "restoredId",
+                        "entityType"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        },
+                        "snapshotId": {
+                          "type": "string"
+                        },
+                        "restoredId": {
+                          "type": "string"
+                        },
+                        "entityType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "feeding"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "sleep"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "diaper"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "medical_report"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "vaccine"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "food_plan"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "supplement"
+                              ]
+                            }
+                          ]
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -19780,6 +22701,1621 @@
             },
             "in": "path",
             "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "deleted"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "deleted": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/nutrition/supplement-products": {
+      "get": {
+        "operationId": "listSupplementProducts",
+        "summary": "List family supplement products",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "includeArchived",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "familyId",
+                          "name",
+                          "brand",
+                          "dosageForm",
+                          "unitName",
+                          "defaultDose",
+                          "nutrientsJson",
+                          "notes",
+                          "isActive",
+                          "isArchived",
+                          "version",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "name": {
+                            "minLength": 1,
+                            "maxLength": 200,
+                            "type": "string"
+                          },
+                          "brand": {
+                            "maxLength": 100,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "dosageForm": {
+                            "maxLength": 50,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unitName": {
+                            "minLength": 1,
+                            "maxLength": 50,
+                            "type": "string"
+                          },
+                          "defaultDose": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string"
+                          },
+                          "nutrientsJson": {
+                            "nullable": true
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isActive": {
+                            "type": "boolean"
+                          },
+                          "isArchived": {
+                            "type": "boolean"
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "nextCursor": {
+                          "description": "Keyset opaque pagination cursor",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createSupplementProduct",
+        "summary": "Add a supplement product to a family",
+        "tags": [
+          "Nutrition"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "name",
+                  "unitName"
+                ],
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "brand": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dosageForm": {
+                    "maxLength": 50,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "unitName": {
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "defaultDose": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string"
+                  },
+                  "nutrientsJson": {
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "name",
+                        "brand",
+                        "dosageForm",
+                        "unitName",
+                        "defaultDose",
+                        "nutrientsJson",
+                        "notes",
+                        "isActive",
+                        "isArchived",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "brand": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dosageForm": {
+                          "maxLength": 50,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitName": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "defaultDose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string"
+                        },
+                        "nutrientsJson": {
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "isArchived": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/nutrition/supplement-products/{id}": {
+      "patch": {
+        "operationId": "updateSupplementProduct",
+        "summary": "Update a supplement product",
+        "tags": [
+          "Nutrition"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "brand": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "dosageForm": {
+                    "maxLength": 50,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "unitName": {
+                    "minLength": 1,
+                    "maxLength": 50,
+                    "type": "string"
+                  },
+                  "defaultDose": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string"
+                  },
+                  "nutrientsJson": {
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "isArchived": {
+                    "type": "boolean"
+                  },
+                  "baseVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "name",
+                        "brand",
+                        "dosageForm",
+                        "unitName",
+                        "defaultDose",
+                        "nutrientsJson",
+                        "notes",
+                        "isActive",
+                        "isArchived",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "name": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "brand": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "dosageForm": {
+                          "maxLength": 50,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "unitName": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "defaultDose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string"
+                        },
+                        "nutrientsJson": {
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "isArchived": {
+                          "type": "boolean"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSupplementProduct",
+        "summary": "Archive a supplement product",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "deleted"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "deleted": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/nutrition/supplement-schedules": {
+      "get": {
+        "operationId": "listSupplementSchedules",
+        "summary": "List supplement schedules for a baby",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "date",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "familyId",
+                          "babyId",
+                          "productId",
+                          "product",
+                          "frequency",
+                          "customDays",
+                          "targetDose",
+                          "reminderTime",
+                          "isActive",
+                          "startDate",
+                          "notes",
+                          "version",
+                          "isCompletedToday",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "babyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "productId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "product": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "familyId",
+                              "name",
+                              "brand",
+                              "dosageForm",
+                              "unitName",
+                              "defaultDose",
+                              "nutrientsJson",
+                              "notes",
+                              "isActive",
+                              "isArchived",
+                              "version",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "properties": {
+                              "id": {
+                                "minLength": 1,
+                                "maxLength": 128,
+                                "type": "string"
+                              },
+                              "familyId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "brand": {
+                                "maxLength": 100,
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "dosageForm": {
+                                "maxLength": 50,
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "unitName": {
+                                "minLength": 1,
+                                "maxLength": 50,
+                                "type": "string"
+                              },
+                              "defaultDose": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "nutrientsJson": {
+                                "nullable": true
+                              },
+                              "notes": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "isActive": {
+                                "type": "boolean"
+                              },
+                              "isArchived": {
+                                "type": "boolean"
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "type": "integer"
+                              },
+                              "createdAt": {
+                                "format": "date-time",
+                                "description": "RFC3339 UTC timestamp",
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "format": "date-time",
+                                "description": "RFC3339 UTC timestamp",
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "frequency": {
+                            "minLength": 1,
+                            "maxLength": 32,
+                            "type": "string"
+                          },
+                          "customDays": {
+                            "nullable": true
+                          },
+                          "targetDose": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string"
+                          },
+                          "reminderTime": {
+                            "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isActive": {
+                            "type": "boolean"
+                          },
+                          "startDate": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "notes": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "type": "integer"
+                          },
+                          "isCompletedToday": {
+                            "type": "boolean"
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "nextCursor": {
+                          "description": "Keyset opaque pagination cursor",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "upsertSupplementSchedule",
+        "summary": "Create or update a supplement schedule",
+        "tags": [
+          "Nutrition"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "productId"
+                ],
+                "properties": {
+                  "id": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "productId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "type": "string"
+                  },
+                  "customDays": {
+                    "nullable": true
+                  },
+                  "targetDose": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string"
+                  },
+                  "reminderTime": {
+                    "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  },
+                  "startDate": {
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "baseVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04N",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "babyId",
+                        "productId",
+                        "product",
+                        "frequency",
+                        "customDays",
+                        "targetDose",
+                        "reminderTime",
+                        "isActive",
+                        "startDate",
+                        "notes",
+                        "version",
+                        "isCompletedToday",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "productId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "product": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "familyId",
+                            "name",
+                            "brand",
+                            "dosageForm",
+                            "unitName",
+                            "defaultDose",
+                            "nutrientsJson",
+                            "notes",
+                            "isActive",
+                            "isArchived",
+                            "version",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "id": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "familyId": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "brand": {
+                              "maxLength": 100,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "dosageForm": {
+                              "maxLength": 50,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "unitName": {
+                              "minLength": 1,
+                              "maxLength": 50,
+                              "type": "string"
+                            },
+                            "defaultDose": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "nutrientsJson": {
+                              "nullable": true
+                            },
+                            "notes": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "isActive": {
+                              "type": "boolean"
+                            },
+                            "isArchived": {
+                              "type": "boolean"
+                            },
+                            "version": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "frequency": {
+                          "minLength": 1,
+                          "maxLength": 32,
+                          "type": "string"
+                        },
+                        "customDays": {
+                          "nullable": true
+                        },
+                        "targetDose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string"
+                        },
+                        "reminderTime": {
+                          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "startDate": {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "isCompletedToday": {
+                          "type": "boolean"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "babyId",
+                        "productId",
+                        "product",
+                        "frequency",
+                        "customDays",
+                        "targetDose",
+                        "reminderTime",
+                        "isActive",
+                        "startDate",
+                        "notes",
+                        "version",
+                        "isCompletedToday",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "productId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "product": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "familyId",
+                            "name",
+                            "brand",
+                            "dosageForm",
+                            "unitName",
+                            "defaultDose",
+                            "nutrientsJson",
+                            "notes",
+                            "isActive",
+                            "isArchived",
+                            "version",
+                            "createdAt",
+                            "updatedAt"
+                          ],
+                          "properties": {
+                            "id": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            },
+                            "familyId": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
+                            },
+                            "name": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "brand": {
+                              "maxLength": 100,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "dosageForm": {
+                              "maxLength": 50,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "unitName": {
+                              "minLength": 1,
+                              "maxLength": 50,
+                              "type": "string"
+                            },
+                            "defaultDose": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "nutrientsJson": {
+                              "nullable": true
+                            },
+                            "notes": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "isActive": {
+                              "type": "boolean"
+                            },
+                            "isArchived": {
+                              "type": "boolean"
+                            },
+                            "version": {
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "createdAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "frequency": {
+                          "minLength": 1,
+                          "maxLength": 32,
+                          "type": "string"
+                        },
+                        "customDays": {
+                          "nullable": true
+                        },
+                        "targetDose": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string"
+                        },
+                        "reminderTime": {
+                          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isActive": {
+                          "type": "boolean"
+                        },
+                        "startDate": {
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "notes": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "isCompletedToday": {
+                          "type": "boolean"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/nutrition/supplement-schedules/{id}": {
+      "delete": {
+        "operationId": "deleteSupplementSchedule",
+        "summary": "Archive a supplement schedule",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
             "required": true,
             "description": "UUID v4 string"
           },

@@ -81,6 +81,8 @@ import {
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
   CreateVaccineRecordRequestSchema,
+  VaccineCatalogItemSchema,
+  VaccineCatalogResponseSchema,
   RegisterPushDeviceRequestSchema,
   NotificationItemSchema,
   NotificationListResponseSchema,
@@ -94,6 +96,15 @@ import {
   AiRunConfirmResponseSchema,
   AiRunRetryResponseSchema,
   VoiceRunResponseSchema,
+  VoiceLogBabySchema,
+  VoiceLogSchema,
+  CreateVoiceLogRequestSchema,
+  VoiceLogResponseSchema,
+  VoiceLogListResponseSchema,
+  VoiceLogUnreadResponseSchema,
+  VoiceLogQueryResponseSchema,
+  VoiceLogListQuerySchema,
+  AcknowledgeVoiceLogRequestSchema,
   DailySummaryRunResponseSchema,
   DailySummaryItemSchema,
   DailySummaryListResponseSchema,
@@ -107,6 +118,7 @@ import {
   CreateSyncSnapshotResponseSchema,
   SyncSnapshotSchema,
   SyncSnapshotResponseSchema,
+  RecordSnapshotSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -129,13 +141,16 @@ import { diaperRoutes } from "./routes/diaper-routes.js";
 import { sleepRoutes } from "./routes/sleep-routes.js";
 import { foodRoutes } from "./routes/food-routes.js";
 import { supplementRoutes } from "./routes/supplement-routes.js";
+import { supplementCatalogRoutes } from "./routes/supplement-catalog-routes.js";
 import { growthRoutes } from "./routes/growth-routes.js";
 import { timelineRoutes } from "./routes/timeline-routes.js";
 import { attachmentRoutes } from "./routes/attachment-routes.js";
 import { medicalRoutes } from "./routes/medical-routes.js";
 import { notificationRoutes } from "./routes/notification-routes.js";
 import { aiRoutes } from "./routes/ai-routes.js";
+import { voiceLogRoutes } from "./routes/voice-log-routes.js";
 import { syncRoutes } from "./routes/sync-routes.js";
+import { recordSnapshotRoutes } from "./routes/record-snapshot-routes.js";
 import { AttachmentService } from "./services/attachment-service.js";
 import { MedicalService } from "./services/medical-service.js";
 import { VaccineService } from "./services/vaccine-service.js";
@@ -280,6 +295,8 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(VaccineRecordResponseSchema);
   app.addSchema(VaccineListResponseSchema);
   app.addSchema(CreateVaccineRecordRequestSchema);
+  app.addSchema(VaccineCatalogItemSchema);
+  app.addSchema(VaccineCatalogResponseSchema);
   app.addSchema(RegisterPushDeviceRequestSchema);
   app.addSchema(NotificationItemSchema);
   app.addSchema(NotificationListResponseSchema);
@@ -293,6 +310,15 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(AiRunConfirmResponseSchema);
   app.addSchema(AiRunRetryResponseSchema);
   app.addSchema(VoiceRunResponseSchema);
+  app.addSchema(VoiceLogBabySchema);
+  app.addSchema(VoiceLogSchema);
+  app.addSchema(CreateVoiceLogRequestSchema);
+  app.addSchema(VoiceLogResponseSchema);
+  app.addSchema(VoiceLogListResponseSchema);
+  app.addSchema(VoiceLogUnreadResponseSchema);
+  app.addSchema(VoiceLogQueryResponseSchema);
+  app.addSchema(VoiceLogListQuerySchema);
+  app.addSchema(AcknowledgeVoiceLogRequestSchema);
   app.addSchema(DailySummaryRunResponseSchema);
   app.addSchema(DailySummaryItemSchema);
   app.addSchema(DailySummaryListResponseSchema);
@@ -306,6 +332,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(CreateSyncSnapshotResponseSchema);
   app.addSchema(SyncSnapshotSchema);
   app.addSchema(SyncSnapshotResponseSchema);
+  app.addSchema(RecordSnapshotSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -430,6 +457,10 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       prisma: databaseContext.prisma,
     });
 
+    app.register(supplementCatalogRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
     app.register(growthRoutes, {
       prisma: databaseContext.prisma,
     });
@@ -474,12 +505,20 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       aiService,
     });
 
+    app.register(voiceLogRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
     // The Web plugin uses its own inline contracts. Do not register every
     // exported schema: nested/aliased $ids can break the existing validators.
     app.register(webAiRoutes, { pool: databaseContext.pool });
 
     app.register(syncRoutes, {
       syncService,
+    });
+
+    app.register(recordSnapshotRoutes, {
+      prisma: databaseContext.prisma,
     });
   }
 

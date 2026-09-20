@@ -46,7 +46,7 @@ def validate_web_root(value):
     return root
 
 
-def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s3=False):
+def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s3=False, record_snapshot_only=False):
     if (web_ui or legacy_web_root is not None) and web_root is None:
         raise RuntimeError('--web-ui/--legacy-web-root require --web-root')
     pgdir = '/opt/homebrew/opt/postgresql@18/bin'
@@ -158,6 +158,11 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                          '-U', identity['user'], '-d', identity['database'],
                          '-v', 'ON_ERROR_STOP=1', '-f', str(migration)],
                         env=migration_env, stdout=subprocess.DEVNULL)
+            if record_snapshot_only:
+                command(['node', '--import', 'tsx', '--test', 'tests/integration/record-snapshots.test.ts'], env=env)
+                command(['python3', 'scripts/legacy-import/test_record_snapshot_materializer_integration.py'], env=env)
+                print('RecordSnapshot focused owned PostgreSQL checks passed.', flush=True)
+                return
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
             if legacy_care:
                 # Opt-in only: this suite uses the same owned manifest and
@@ -167,9 +172,12 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 command(['python3', 'scripts/legacy-import/test_medical_materializer_integration.py'], env=env)
                 command(['python3', 'scripts/legacy-import/test_supplement_vaccine_materializer_integration.py'], env=env)
                 command(['python3', 'scripts/legacy-import/test_ai_history_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_ai_archive_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_voice_log_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_record_snapshot_materializer_integration.py'], env=env)
                 command(['node', '--import', 'tsx', '--test',
                          'tests/integration/legacy-attachment-reference-backfill.test.ts'], env=env)
-            command(['node', '--import', 'tsx', '--test', 'tests/integration/foundation-migration.test.ts', 'tests/integration/unit-of-work.test.ts', 'tests/integration/auth.test.ts', 'tests/integration/auth-refresh.test.ts', 'tests/integration/family-baby.test.ts', 'tests/integration/auth-recovery.test.ts', 'tests/integration/feeding.test.ts', 'tests/integration/diaper.test.ts', 'tests/integration/sleep.test.ts', 'tests/integration/food.test.ts', 'tests/integration/supplement.test.ts', 'tests/integration/growth.test.ts', 'tests/integration/timeline.test.ts', 'tests/integration/bff-session.test.ts', 'tests/integration/attachments.test.ts', 'tests/integration/growth-attachments.test.ts', 'tests/integration/replay-permission-and-legacy.test.ts', 'tests/integration/medical-vaccines.test.ts', 'tests/integration/tasks.test.ts', 'tests/integration/ai-runs.test.ts', 'tests/integration/sync.test.ts', 'tests/integration/notifications.test.ts'], env=env)
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/foundation-migration.test.ts', 'tests/integration/unit-of-work.test.ts', 'tests/integration/auth.test.ts', 'tests/integration/auth-refresh.test.ts', 'tests/integration/family-baby.test.ts', 'tests/integration/auth-recovery.test.ts', 'tests/integration/feeding.test.ts', 'tests/integration/diaper.test.ts', 'tests/integration/sleep.test.ts', 'tests/integration/food.test.ts', 'tests/integration/supplement.test.ts', 'tests/integration/growth.test.ts', 'tests/integration/timeline.test.ts', 'tests/integration/bff-session.test.ts', 'tests/integration/attachments.test.ts', 'tests/integration/growth-attachments.test.ts', 'tests/integration/replay-permission-and-legacy.test.ts', 'tests/integration/medical-vaccines.test.ts', 'tests/integration/tasks.test.ts', 'tests/integration/ai-runs.test.ts', 'tests/integration/sync.test.ts', 'tests/integration/notifications.test.ts', 'tests/integration/voice-logs.test.ts', 'tests/integration/record-snapshots.test.ts'], env=env)
             command(['node', '--import', 'tsx', '--test', 'tests/integration/web-feeding-regression.test.ts', 'tests/integration/care-isolation-regression.test.ts'], env=env)
             # Run the durable Web conversation regression after schema setup,
             # in the same exclusively owned database. Failures remain fatal.
@@ -212,6 +220,8 @@ if __name__ == '__main__':
                         help='absolute built legacy Web root for the optional same-seed golden fixture')
     parser.add_argument('--legacy-care', action='store_true',
                         help='run the opt-in legacy identity-v1 care materializer checks in the owned PG')
+    parser.add_argument('--record-snapshot-only', action='store_true',
+                        help='run only the focused durable RecordSnapshot API and ETL checks in the owned PG')
     parser.add_argument('--s3', action='store_true',
                         help='start an owned loopback MinIO child and run real object-storage HTTP checks; MINIO_BIN selects its binary directory')
     args = parser.parse_args()  # Reject unknown suites before creating any resources.
@@ -221,7 +231,7 @@ if __name__ == '__main__':
         raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM, interrupted)
     try:
-        main(web_root, args.web_ui, legacy_web_root, args.legacy_care, args.s3)
+        main(web_root, args.web_ui, legacy_web_root, args.legacy_care, args.s3, args.record_snapshot_only)
     except (Exception, KeyboardInterrupt) as error:
         # Driver/subprocess exceptions may contain credentials; log only a class name.
         print(f'Isolated verification failed ({type(error).__name__}); owned resources cleaned.', flush=True)
