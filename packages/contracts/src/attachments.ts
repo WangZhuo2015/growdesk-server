@@ -6,6 +6,7 @@ export const AttachmentPurposeSchema = Type.Union([
   Type.Literal("medical_report"),
   Type.Literal("voice_note"),
   Type.Literal("growth_photo"),
+  Type.Literal("ai_input"),
 ]);
 
 export type AttachmentPurpose = Static<typeof AttachmentPurposeSchema>;

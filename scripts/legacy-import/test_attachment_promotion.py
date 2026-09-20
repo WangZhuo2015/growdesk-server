@@ -47,6 +47,18 @@ class AttachmentPromotionTests(unittest.TestCase):
                 "title": "test report",
                 "imageUrl": "/uploads/medical/test-report.pdf",
             }],
+            "AiChatSession": [{
+                "id": "test_ai_session",
+                "userId": "test_attachment_user",
+                "babyId": "test_attachment_baby",
+            }],
+            "AiChatMessage": [{
+                "id": "test_ai_message",
+                "sessionId": "test_ai_session",
+                "role": "user",
+                "content": "test image",
+                "image": "/uploads/ai/test-input.png",
+            }],
             "AiJob": [{
                 "id": "test_voice_job",
                 "userId": "test_attachment_user",
@@ -65,6 +77,7 @@ class AttachmentPromotionTests(unittest.TestCase):
         files = {
             "public/uploads/growth/test-growth.jpg": b"\xff\xd8\xfftest-growth",
             "public/uploads/medical/test-report.pdf": b"%PDF-1.4 test-report",
+            "public/uploads/ai/test-input.png": b"\x89PNG\r\n\x1a\n" + b"test-ai-input",
             "data/archive/test-voice.m4a": b"\x00\x00\x00\x18ftypM4A \x00\x00\x00\x00M4A ",
         }
         if mutate_files:
@@ -115,7 +128,7 @@ class AttachmentPromotionTests(unittest.TestCase):
 
         self.assertEqual(first["status"], "planned")
         self.assertEqual(first["mappingVersion"], MAPPING_VERSION)
-        self.assertEqual(first["counts"]["mapped"], 3)
+        self.assertEqual(first["counts"]["mapped"], 4)
         self.assertEqual(first["counts"]["quarantined"], 0)
         self.assertEqual(first["storage"], {"database": "not_written", "objectStore": "not_written"})
         self.assertEqual(first["receipts"], second["receipts"])
@@ -127,6 +140,11 @@ class AttachmentPromotionTests(unittest.TestCase):
         self.assertEqual(growth["attachment"]["mimeType"], "image/jpeg")
         self.assertTrue(growth["targetObjectKey"].startswith("families/test_attachment_family/attachments/"))
         self.assertEqual(by_source[("AiArchive", "filePath")]["attachment"]["purpose"], "voice_note")
+        ai_input = by_source[("AiChatMessage", "image")]
+        self.assertEqual(ai_input["attachment"]["purpose"], "ai_input")
+        self.assertEqual(ai_input["attachment"]["familyId"], "test_attachment_family")
+        self.assertEqual(ai_input["attachment"]["babyId"], "test_attachment_baby")
+        self.assertEqual(ai_input["attachment"]["uploaderId"], "test_attachment_user")
 
     def test_missing_uploader_is_quarantined_and_never_planned(self) -> None:
         root = self._archive()

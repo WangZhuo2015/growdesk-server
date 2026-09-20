@@ -33,7 +33,7 @@ MAX_SOURCE_FILE_BYTES = 256 * 1024 * 1024
 MAX_IMAGE_OR_DOCUMENT_BYTES = 20 * 1024 * 1024
 MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
-ALLOWED_PURPOSES = {"avatar", "medical_report", "voice_note", "growth_photo"}
+ALLOWED_PURPOSES = {"avatar", "medical_report", "voice_note", "growth_photo", "ai_input"}
 ALLOWED_MIME_TYPES = {
     "image/jpeg",
     "image/png",
@@ -370,6 +370,8 @@ def _purpose_for_source(
         return "growth_photo"
     if table == "MedicalReport" and field == "imageUrl":
         return "medical_report"
+    if table == "AiChatMessage" and field == "image":
+        return "ai_input"
     if table == "AiJob" and field in {"imageUrl", "inputArchiveId"}:
         job_type = str(row.get("type", "")).lower()
         if "growth" in job_type:
@@ -555,6 +557,12 @@ def _collect_candidates(
         if isinstance(archive_id, str) and archive_id:
             jobs_by_archive.setdefault(archive_id, []).append(job)
 
+    sessions_by_id = {
+        row["id"]: row
+        for row in _table_rows(snapshot, "AiChatSession")
+        if isinstance(row.get("id"), str) and row.get("id")
+    }
+
     candidates: list[dict[str, Any]] = []
     candidate_keys: set[tuple[str, str, str, str]] = set()
 
@@ -578,6 +586,7 @@ def _collect_candidates(
         "Baby": ("avatarUrl",),
         "GrowthMeasurement": ("imageUrl",),
         "MedicalReport": ("imageUrl",),
+        "AiChatMessage": ("image",),
         "AiJob": ("imageUrl",),
         "AiArchive": ("filePath",),
     }
@@ -590,7 +599,13 @@ def _collect_candidates(
             for field in fields:
                 raw_path = row.get(field)
                 if raw_path not in (None, ""):
-                    linked = jobs_by_archive.get(source_id, ()) if table == "AiArchive" else ()
+                    if table == "AiArchive":
+                        linked = jobs_by_archive.get(source_id, ())
+                    elif table == "AiChatMessage":
+                        session_id = row.get("sessionId")
+                        linked = (sessions_by_id[session_id],) if session_id in sessions_by_id else ()
+                    else:
+                        linked = ()
                     add(_candidate(table, source_id, field, raw_path, row, linked_rows=linked, import_row=import_row))
 
     # A richer manifest can carry typed source references directly.  This is

@@ -26,7 +26,7 @@ export const ATTACHMENT_PROMOTION_ENTITY_TYPE = "attachment";
 export const MAX_PROMOTED_FILE_BYTES = 256 * 1024 * 1024;
 const READY_EXPIRY = new Date("9999-12-31T23:59:59.999Z");
 const SHA256 = /^[0-9a-f]{64}$/;
-const ALLOWED_PURPOSES = new Set(["avatar", "medical_report", "voice_note", "growth_photo"]);
+const ALLOWED_PURPOSES = new Set(["avatar", "medical_report", "voice_note", "growth_photo", "ai_input"]);
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
