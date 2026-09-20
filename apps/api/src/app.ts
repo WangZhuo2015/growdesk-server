@@ -142,6 +142,7 @@ import { sleepRoutes } from "./routes/sleep-routes.js";
 import { foodRoutes } from "./routes/food-routes.js";
 import { supplementRoutes } from "./routes/supplement-routes.js";
 import { supplementCatalogRoutes } from "./routes/supplement-catalog-routes.js";
+import { mcpRoutes } from "./routes/mcp-routes.js";
 import { growthRoutes } from "./routes/growth-routes.js";
 import { timelineRoutes } from "./routes/timeline-routes.js";
 import { attachmentRoutes } from "./routes/attachment-routes.js";
@@ -168,6 +169,9 @@ export interface ApiAppOptions {
   readonly databaseContext?: DatabaseContext;
   readonly replayStore?: ReplayStore;
   readonly jwtSecret?: string;
+  /** Exact OAuth/MCP resource audience, normally `<publicBaseUrl>/mcp`. */
+  readonly mcpResourceAudience?: string;
+  readonly mcpIssuer?: string;
   readonly storageDriver?: StorageDriver;
 }
 
@@ -459,6 +463,13 @@ export function buildApiApp(options: ApiAppOptions = {}) {
 
     app.register(supplementCatalogRoutes, {
       prisma: databaseContext.prisma,
+    });
+
+    app.register(mcpRoutes, {
+      prisma: databaseContext.prisma,
+      jwtSecret: options.jwtSecret,
+      resourceAudience: options.mcpResourceAudience ?? process.env.MCP_RESOURCE_AUDIENCE ?? "http://127.0.0.1:3080/mcp",
+      issuer: options.mcpIssuer ?? process.env.MCP_ISSUER,
     });
 
     app.register(growthRoutes, {

@@ -6,6 +6,7 @@ import {
   BadRequestError,
   ConcurrencyConflictError,
   FamilyAccessDeniedError,
+  IdempotencyKeyReusedError,
   RecordNotFoundError,
 } from "@growdesk/database";
 import type {
@@ -15,8 +16,30 @@ import type {
   SupplementSchedule,
   UpdateSupplementProductRequest,
 } from "@growdesk/contracts";
+import {
+  normalizeSupplementNutrients,
+  requireSupplementDose,
+  requireSupplementName,
+  requireSupplementText,
+  type NormalizedSupplementNutrients,
+} from "./supplement-nutrients.js";
 
 type DateLike = Date | null;
+
+export interface McpSupplementProductInput {
+  readonly name: string;
+  readonly brand?: string | null;
+  readonly dosageForm?: string | null;
+  readonly unitName?: string | null;
+  readonly defaultDose?: string | number;
+  readonly nutrients?: unknown;
+  readonly notes?: string | null;
+}
+
+export interface McpSupplementProductResult {
+  readonly replayed: boolean;
+  readonly product: SupplementProduct;
+}
 
 function dateOnly(value: DateLike): string | null {
   return value ? value.toISOString().slice(0, 10) : null;
@@ -28,6 +51,19 @@ function decimal(value: Prisma.Decimal | string | number | null | undefined, fal
 
 function jsonValue(value: Prisma.JsonValue | null): unknown {
   return value === null ? null : value;
+}
+
+function canonicalJson(value: unknown): string {
+  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  return `{${Object.entries(value as Record<string, unknown>)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([key, item]) => `${JSON.stringify(key)}:${canonicalJson(item)}`)
+    .join(",")}}`;
+}
+
+function requestHash(value: unknown): string {
+  return crypto.createHash("sha256").update(canonicalJson(value)).digest("hex");
 }
 
 function productDto(row: {
@@ -152,6 +188,153 @@ export class SupplementCatalogService {
     await tx.familySyncState.update({
       where: { familyId },
       data: { cursor: { increment: 1 } },
+    });
+  }
+
+  private async assertCurrentFamilyWrite(tx: Prisma.TransactionClient, principal: UserPrincipal, familyId: string): Promise<void> {
+    const family = await tx.family.findUnique({ where: { id: familyId }, select: { deletedAt: true } });
+    const member = await tx.familyMember.findUnique({
+      where: { uq_family_members_family_user: { familyId, userId: principal.userId } },
+      select: { role: true, status: true, deletedAt: true },
+    });
+    if (!family || family.deletedAt !== null || !member || member.deletedAt !== null || member.status !== "active" || member.role === "viewer") {
+      throw new FamilyAccessDeniedError(familyId);
+    }
+  }
+
+  private async assertCurrentBabyWrite(
+    tx: Prisma.TransactionClient,
+    principal: UserPrincipal,
+    familyId: string,
+    babyId: string,
+  ): Promise<void> {
+    const baby = await tx.baby.findUnique({
+      where: { uq_babies_family_id_id: { familyId, id: babyId } },
+      select: { deletedAt: true },
+    });
+    const member = await tx.babyMember.findUnique({
+      where: { uq_baby_members_user_baby: { userId: principal.userId, babyId } },
+      select: { familyId: true, role: true, status: true, deletedAt: true },
+    });
+    if (!baby || baby.deletedAt !== null || !member || member.familyId !== familyId || member.deletedAt !== null || member.status !== "active" || member.role === "viewer") {
+      throw new BabyAccessDeniedError(babyId, "BABY_WRITE_DENIED");
+    }
+  }
+
+  /**
+   * Compatibility write used by the migrated MCP tool. The product is a
+   * family resource, while babyId is an authorization anchor from the MCP
+   * grant. Both scopes are re-read inside the same transaction.
+   */
+  async createOrUpdateProductFromMcp(
+    principal: UserPrincipal,
+    familyId: string,
+    babyId: string,
+    input: McpSupplementProductInput,
+    commandId: string,
+  ): Promise<McpSupplementProductResult> {
+    this.assertFamilyAccess(principal, familyId, true);
+    if (!commandId || commandId.length > 128) {
+      throw new BadRequestError("MCP idempotency key is invalid", "INVALID_IDEMPOTENCY_KEY");
+    }
+
+    const name = requireSupplementName(input.name);
+    const brand = requireSupplementText(input.brand ?? name, "brand", 100) ?? name;
+    const dosageForm = requireSupplementText(input.dosageForm ?? "drops", "dosageForm", 50) ?? "drops";
+    const unitName = requireSupplementText(input.unitName ?? "滴", "unitName", 50) ?? "滴";
+    const defaultDose = requireSupplementDose(input.defaultDose);
+    const notes = requireSupplementText(input.notes, "notes", 10_000);
+    const nutrients: NormalizedSupplementNutrients = normalizeSupplementNutrients(input.nutrients);
+    const body = { name, brand, dosageForm, unitName, defaultDose, nutrients, notes };
+    const hash = requestHash({ operation: "create_supplement_product", familyId, babyId, body });
+
+    return await this.prisma.$transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      await this.assertCurrentFamilyWrite(tx, principal, familyId);
+      await this.assertCurrentBabyWrite(tx, principal, familyId, babyId);
+
+      const existingReceipt = await tx.idempotencyReceipt.findUnique({
+        where: { pk_idempotency_receipts: { actorId: principal.userId, scopeId: familyId, commandId } },
+      });
+      if (existingReceipt) {
+        if (existingReceipt.requestHash.trim() !== hash) throw new IdempotencyKeyReusedError(commandId);
+        const cached = existingReceipt.responseBody;
+        if (!cached || typeof cached !== "object" || Array.isArray(cached)) {
+          throw new BadRequestError("MCP idempotency receipt is invalid", "INVALID_IDEMPOTENCY_RECEIPT");
+        }
+        return { replayed: true, product: cached as unknown as SupplementProduct };
+      }
+
+      const existing = await tx.supplementProduct.findFirst({
+        where: { familyId, name, deletedAt: null },
+        orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      });
+      const now = new Date();
+      const nutrientsJson = nutrients as unknown as Prisma.InputJsonValue;
+      const row = existing
+        ? await tx.supplementProduct.update({
+            where: { id: existing.id },
+            data: {
+              brand,
+              dosageForm,
+              unitName,
+              defaultDose: new Prisma.Decimal(defaultDose),
+              nutrientsJson,
+              notes,
+              isActive: true,
+              isArchived: false,
+              version: { increment: 1 },
+              updatedAt: now,
+            },
+          })
+        : await tx.supplementProduct.create({
+            data: {
+              id: crypto.randomUUID(),
+              familyId,
+              name,
+              brand,
+              dosageForm,
+              unitName,
+              defaultDose: new Prisma.Decimal(defaultDose),
+              nutrientsJson,
+              notes,
+              isActive: true,
+              isArchived: false,
+              version: 1,
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+      const product = productDto(row);
+      const state = await tx.familySyncState.findUnique({ where: { familyId }, select: { cursor: true } });
+      const cursor = (state?.cursor ?? 0n) + 1n;
+      await tx.familySyncState.update({ where: { familyId }, data: { cursor, updatedAt: now } });
+      await tx.familyChange.create({
+        data: {
+          familyId,
+          cursor,
+          entityType: "supplement_product",
+          entityId: product.id,
+          version: product.version,
+          op: "upsert",
+          payload: product as unknown as Prisma.InputJsonValue,
+          schemaVersion: 1,
+          createdAt: now,
+        },
+      });
+      await tx.idempotencyReceipt.create({
+        data: {
+          actorId: principal.userId,
+          scopeId: familyId,
+          commandId,
+          requestHash: hash,
+          resultCode: 200,
+          resultSummary: { familyCursor: cursor.toString(), version: product.version },
+          responseBody: product as unknown as Prisma.InputJsonValue,
+          completedAt: now,
+        },
+      });
+      return { replayed: false, product };
     });
   }
 

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { SignJWT } from "jose";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
 import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
@@ -126,6 +127,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
   const userAName = `test_supp_a_${Date.now()}`;
   const userBName = `test_supp_b_${Date.now()}`;
   let tokenA = "";
+  let sessionIdA = "";
   let userAId = "";
   let familyAId = "";
   let babyAId = "";
@@ -148,8 +150,9 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
       },
     });
     assert.strictEqual(regResA.statusCode, 201);
-    const registration = regResA.json<{ data: { accessToken: string; user: { id: string } } }>().data;
+    const registration = regResA.json<{ data: { accessToken: string; sessionId: string; user: { id: string } } }>().data;
     tokenA = registration.accessToken;
+    sessionIdA = registration.sessionId;
     userAId = registration.user.id;
 
     const famResA = await app.inject({
@@ -582,5 +585,114 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.equal(completedScheduleResponse.statusCode, 200, completedScheduleResponse.body);
     const completedSchedule = completedScheduleResponse.json<{ data: Array<{ id: string; isCompletedToday: boolean }> }>();
     assert.equal(completedSchedule.data.find((row) => row.id === schedule.id)?.isCompletedToday, true);
+  });
+
+  await t.test("SU-09: MCP supplement product tool enforces audience, scope, baby binding and idempotency", async () => {
+    const audience = "https://test.growdesk.invalid/mcp";
+    const signMcpToken = async (scope: string, babyId = babyAId) => new SignJWT({
+      sub: userAId,
+      sid: sessionIdA,
+      scope,
+      baby_id: babyId,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setAudience(audience)
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(new TextEncoder().encode(jwtSecret));
+
+    const mcpToken = await signMcpToken("baby:read baby:write");
+    const listResponse = await app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers: { authorization: `Bearer ${mcpToken}` },
+      payload: { jsonrpc: "2.0", id: "test-mcp-list", method: "tools/list" },
+    });
+    assert.equal(listResponse.statusCode, 401, "the app test harness must use the configured MCP audience");
+
+    const configuredApp = buildApiApp({ databaseContext: ctx, jwtSecret, mcpResourceAudience: audience });
+    try {
+      const appTokenResponse = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${tokenA}` },
+        payload: { jsonrpc: "2.0", id: "test-mcp-app-token", method: "tools/list" },
+      });
+      assert.equal(appTokenResponse.statusCode, 401);
+
+      const list = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: { jsonrpc: "2.0", id: "test-mcp-list-2", method: "tools/list" },
+      });
+      assert.equal(list.statusCode, 200, list.body);
+      assert.equal(list.json().result.tools[0].name, "create_supplement_product");
+
+      const createPayload = {
+        jsonrpc: "2.0",
+        id: "test-mcp-create-1",
+        method: "tools/call",
+        params: {
+          name: "create_supplement_product",
+          arguments: {
+            name: "test_mcp_dha",
+            brand: "test_mcp_brand",
+            dosageForm: "capsule",
+            unitName: "粒",
+            defaultDose: 1,
+            nutrients: { vitaminD: 400, dha: { amount: 100.126, unit: "mg" }, invalid: -1 },
+            notes: "test_mcp_notes",
+            idempotencyKey: "test_mcp_supplement_1",
+          },
+        },
+      };
+      const created = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: createPayload,
+      });
+      assert.equal(created.statusCode, 200, created.body);
+      const createdText = created.json().result.content[0].text;
+      const createdData = JSON.parse(createdText);
+      assert.equal(createdData.success, true);
+      assert.equal(createdData.replayed, false);
+      assert.equal(createdData.product.nutrients.vitamin_d.amount, 400);
+      assert.equal(createdData.product.nutrients.dha.amount, 100.13);
+
+      const replay = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: createPayload,
+      });
+      assert.equal(replay.statusCode, 200, replay.body);
+      const replayData = JSON.parse(replay.json().result.content[0].text);
+      assert.equal(replayData.replayed, true);
+      assert.equal(replayData.product.id, createdData.product.id);
+
+      const missingScopeToken = await signMcpToken("baby:read");
+      const forbidden = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${missingScopeToken}` },
+        payload: createPayload,
+      });
+      assert.equal(forbidden.statusCode, 200);
+      assert.equal(forbidden.json().error.code, -32003);
+
+      const wrongBaby = await signMcpToken("baby:write", babyBId);
+      const wrongBabyCall = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${wrongBaby}` },
+        payload: createPayload,
+      });
+      assert.equal(wrongBabyCall.statusCode, 200);
+      assert.equal(wrongBabyCall.json().error.code, -32003);
+    } finally {
+      await configuredApp.close();
+    }
   });
 });
