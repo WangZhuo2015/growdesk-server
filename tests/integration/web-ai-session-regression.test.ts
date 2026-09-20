@@ -126,6 +126,41 @@ test("durable Web AI: Fastify injection with owned PostgreSQL", async t => {
     const count = await database.pool.query<{ count: string }>("SELECT count(*) AS count FROM ai_messages WHERE id=$1 AND session_id=$2", [payload.id, sessionId]);
     assert.equal(count.rows[0]!.count, "1");
   });
+  await t.test("protected AI images require a ready attachment in the exact conversation scope", async () => {
+    const ownAttachmentId = randomUUID();
+    const foreignAttachmentId = randomUUID();
+    for (const [attachmentId, tenant] of [[ownAttachmentId, a], [foreignAttachmentId, b]] as const) {
+      await database.prisma.attachment.create({
+        data: {
+          id: attachmentId,
+          familyId: tenant.familyId,
+          babyId: tenant.babyId,
+          uploaderId: tenant.userId,
+          purpose: "ai_input",
+          mimeType: "image/png",
+          byteSize: 4,
+          sha256: "d".repeat(64),
+          objectKey: `families/${tenant.familyId}/attachments/ai_input/legacy/${attachmentId}.png`,
+          status: "ready",
+          expiresAt: new Date("9999-12-31T23:59:59.999Z"),
+        },
+      });
+    }
+    const valid = await app.inject({
+      method: "POST",
+      url: `${endpoint}/${sessionId}/messages`,
+      headers: a.headers,
+      payload: { id: randomUUID(), role: "user", content: "test protected image", image: `/api/attachments/${ownAttachmentId}` },
+    });
+    assert.equal(valid.statusCode, 201, valid.payload);
+    const foreign = await app.inject({
+      method: "POST",
+      url: `${endpoint}/${sessionId}/messages`,
+      headers: a.headers,
+      payload: { id: randomUUID(), role: "user", content: "test foreign image", image: `/api/attachments/${foreignAttachmentId}` },
+    });
+    assert.equal(foreign.statusCode, 409, foreign.payload);
+  });
   await t.test("invalid input does not modify stored history", async () => {
     const before = await new WebAiSessionService(database.pool).get(a.userId, sessionId);
     const invalid = await app.inject({ method: "POST", url: `${endpoint}/${sessionId}/messages`, headers: a.headers, payload: { id: "not-a-uuid", role: "user", content: "test_invalid" } });

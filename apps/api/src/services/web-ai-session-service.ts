@@ -15,6 +15,7 @@ const visibleBaby = `(s.baby_id IS NULL OR EXISTS (
     AND fm.status = 'active' AND fm.deleted_at IS NULL AND b.deleted_at IS NULL
 ))`;
 const messageDto = (row: MessageRow): WebAiMessage => ({ id: row.id, sessionId: row.session_id, role: row.role, content: row.content, image: row.image, toolsJson: row.tools_json, createdAt: row.created_at.toISOString() });
+const protectedAttachmentPath = /^\/api\/attachments\/([a-f0-9-]{36})$/i;
 const sessionDto = (row: SessionRow, messages: WebAiMessage[] = [], count = messages.length, last: WebAiMessage | null = messages.at(-1) ?? null): WebAiSession => ({
   id: row.id, userId: row.user_id, babyId: row.baby_id, title: row.title, contextType: row.context_type,
   createdAt: row.created_at.toISOString(), updatedAt: row.updated_at.toISOString(), messages, messageCount: count, lastMessage: last,
@@ -101,7 +102,7 @@ export class WebAiSessionService {
 
   async append(userId: string, id: string, body: WebAiMessageInput): Promise<WebAiMessage> {
     return this.transaction(async client => {
-      await this.session(client, userId, id, true);
+      const session = await this.session(client, userId, id, true);
       const existing = await client.query<MessageRow>("SELECT * FROM ai_messages WHERE id = $1", [body.id]);
       const row = existing.rows[0];
       if (row) {
@@ -112,6 +113,20 @@ export class WebAiSessionService {
         COALESCE(sum(octet_length(content) + COALESCE(octet_length(image),0) + COALESCE(octet_length(tools_json),0)),0) AS bytes FROM ai_messages WHERE session_id = $1`, [id]);
       const addedBytes = Buffer.byteLength(body.content) + Buffer.byteLength(body.image ?? "") + Buffer.byteLength(body.toolsJson ?? "");
       if (Number(size.rows[0]!.count) >= 5000 || Number(size.rows[0]!.bytes) + addedBytes > 16_000_000) throw new WebAiStateError(413, "CONVERSATION_TOO_LARGE", "Create a new conversation; existing history is preserved");
+      const protectedMatch = body.image?.match(protectedAttachmentPath);
+      if (protectedMatch) {
+        // The SHARE lock serializes with AttachmentService.deleteAttachment's
+        // FOR UPDATE lock, so an appended protected path cannot race a delete.
+        const attachment = await client.query(`SELECT a.id FROM attachments a
+          JOIN family_members fm ON fm.family_id = a.family_id AND fm.user_id = $2
+          LEFT JOIN baby_members bm ON bm.family_id = a.family_id AND bm.baby_id = a.baby_id AND bm.user_id = $2
+          WHERE a.id = $1 AND a.purpose = 'ai_input' AND a.status = 'ready' AND a.deleted_at IS NULL
+            AND fm.status = 'active' AND fm.deleted_at IS NULL
+            AND (a.baby_id IS NULL OR (bm.status = 'active' AND bm.deleted_at IS NULL))
+            AND a.baby_id IS NOT DISTINCT FROM $3::text
+          FOR SHARE OF a`, [protectedMatch[1], userId, session.baby_id]);
+        if (!attachment.rowCount) throw new WebAiStateError(409, "AI_IMAGE_ATTACHMENT_INVALID", "AI image attachment is unavailable or outside the conversation scope");
+      }
       // Parent lock plus strictly increasing timestamps preserve append order even within the same millisecond.
       const result = await client.query<MessageRow>(`INSERT INTO ai_messages (id, session_id, role, content, image, tools_json, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, GREATEST(clock_timestamp(), COALESCE((SELECT max(created_at) + interval '1 millisecond' FROM ai_messages WHERE session_id = $2), clock_timestamp()))) RETURNING *`,
