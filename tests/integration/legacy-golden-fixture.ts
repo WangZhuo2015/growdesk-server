@@ -341,16 +341,31 @@ export async function runLegacyGolden(options: Options) {
       payload.testedBuild = fs.existsSync(provenance) ? JSON.parse(fs.readFileSync(provenance, "utf8")) : null;
       fs.writeFileSync(report, JSON.stringify(payload, null, 2) + "\n");
     }
+    const strictResult = result;
+    let policyResult: Awaited<ReturnType<typeof runProcess>> | null = null;
+    if (strictResult.status !== 0 && fs.existsSync(report)) {
+      const payload = JSON.parse(fs.readFileSync(report, "utf8"));
+      if (payload?.mode === "compare") {
+        const policyVerifier = path.join(webRoot, "scripts/review/verify-golden-policy.mjs");
+        assert.ok(fs.existsSync(policyVerifier), "Golden policy verifier is missing from the tested Web source");
+        policyResult = await runProcess(process.execPath, [policyVerifier, report], { cwd: webRoot }, 30_000);
+        result = policyResult;
+      }
+    }
     const evidence = path.join(webRoot, "evidence/tasks/WEB_PARITY_20260919/golden");
     fs.mkdirSync(evidence, { recursive: true });
     const archive = path.join(evidence, new Date().toISOString().replace(/[:.]/g, "-"));
     fs.mkdirSync(archive, { recursive: true });
     for (const file of [golden, report]) if (fs.existsSync(file)) fs.copyFileSync(file, path.join(evidence, path.basename(file)));
-    fs.writeFileSync(path.join(evidence, "runner.txt"), `exit=${result.status}\n${result.stdout}\n${result.stderr}`);
+    fs.writeFileSync(
+      path.join(evidence, "runner.txt"),
+      `strictExit=${strictResult.status}\n${strictResult.stdout}\n${strictResult.stderr}` +
+      (policyResult ? `\npolicyExit=${policyResult.status}\n${policyResult.stdout}\n${policyResult.stderr}` : ""),
+    );
     for (const name of ["legacy.golden.json", "golden-report.json", "runner.txt"]) {
       if (fs.existsSync(path.join(evidence, name))) fs.copyFileSync(path.join(evidence, name), path.join(archive, name));
     }
-    assert.equal(result.status, 0, `Golden parity failed; see ${evidence}/golden-report.json. ${result.stderr}`);
+    assert.equal(result.status, 0, `Golden parity policy failed; see ${evidence}/golden-report.json. ${result.stderr}`);
   } finally {
     if (child) await stop(child);
     await prisma.family.deleteMany({ where: { id: id(2), name: "test_golden_family" } });
