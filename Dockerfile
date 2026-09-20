@@ -15,8 +15,10 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json tsconfig.backend.json ./
 COPY apps ./apps
 COPY packages ./packages
+COPY prisma ./prisma
 
 RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN npx prisma generate --schema=prisma/schema.prisma
 RUN npm run backend:build
 
 # The final image contains only runtime dependencies. Build tooling stays in
