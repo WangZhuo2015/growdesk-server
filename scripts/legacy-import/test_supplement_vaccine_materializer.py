@@ -173,7 +173,7 @@ class SupplementVaccineMaterializerTests(unittest.TestCase):
 
         unsupported_rule = copy.deepcopy(data)
         unsupported_rule["tables"]["ScheduleEngineRule"] = [{"id": "test_sv_schedule_rule"}]
-        with self.assertRaisesRegex(ValueError, "canonical vaccine-rule"):
+        with self.assertRaisesRegex(ValueError, "pinned canonical vaccine rules"):
             M.prepare_materialization(unsupported_rule, checksum(unsupported_rule))
 
     def test_malformed_numeric_json_and_tampered_source_never_render(self) -> None:

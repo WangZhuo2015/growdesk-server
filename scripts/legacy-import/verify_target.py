@@ -37,13 +37,14 @@ STATIC_REFERENCE_GOLDEN = {
     "FeedingGuideline": (4, "8743460ff5284d8c74ed8b2a84fad37f37c327dbff33fc22a3b921d4e5b15ad8"),
     "MilestoneSourceRef": (0, "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"),
     "SourceRef": (59, "888e67a80d714fbec090b69ad9486a3c3e22401f18e1bac9d28c55a8953be4cf"),
+    "ScheduleEngineRule": (8, "554317540fd69c7c735053ae156e131cae6d21979295df9d254ea4821a888bd3"),
 }
 PROMOTED_TABLES = {
     "FormulaProduct", "FeedingRecord", "SleepRecord", "DiaperRecord", "GrowthMeasurement",
     "FoodItem", "FoodLogRecord", "FamilyFoodStatus", "MedicalReport",
     "SupplementProduct", "SupplementSchedule", "SupplementRecord", "Vaccine", "VaccineDose",
     "VaccineScheduleEntry", "VaccineStrategyGroup", "VaccineSelection", "VaccineRecord",
-    "VaccineSourceRef", "ScheduleEngineRule", "AiChatSession", "AiChatMessage", "AiJob",
+    "VaccineSourceRef", "AiChatSession", "AiChatMessage", "AiJob",
     "AgentVoiceLog", "RecordSnapshot", "AiArchive",
 }
 

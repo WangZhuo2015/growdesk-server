@@ -33,6 +33,7 @@ from zoneinfo import ZoneInfo
 MAPPING_VERSION = "supplement-vaccine-v1"
 SOURCE_SYSTEM_DEFAULT = "legacy_web"
 ADVISORY_LOCK = 724019236
+SCHEDULE_ENGINE_RULE_GOLDEN = (8, "554317540fd69c7c735053ae156e131cae6d21979295df9d254ea4821a888bd3")
 SOURCE_TABLES = (
     "SupplementProduct",
     "SupplementSchedule",
@@ -47,9 +48,8 @@ SOURCE_TABLES = (
     # currently zero and the canonical SourceRef promotion is a separate
     # slice.  Count it and fail closed if that ever changes.
     "VaccineSourceRef",
-    # ScheduleEngineRule is part of the legacy vaccine graph, but its
-    # canonical reference-table promotion is a separate slice. Count it and
-    # fail closed until that slice is present; never silently drop rules.
+    # ScheduleEngineRule is served from pinned versioned knowledge. Its exact
+    # source hash is checked before transactional rows are rendered.
     "ScheduleEngineRule",
 )
 IMPORTED_SUPPLEMENT_SOURCE_DEFAULT = "ui_manual"
@@ -746,11 +746,15 @@ def prepare_materialization(data: dict[str, Any], checksum: str) -> list[dict[st
     _identity(data)
     unsupported_tables = {
         "VaccineSourceRef": "VaccineSourceRef rows require the canonical source-reference promotion slice",
-        "ScheduleEngineRule": "ScheduleEngineRule rows require the canonical vaccine-rule promotion slice",
     }
     for table, message in unsupported_tables.items():
         if _rows(data, table):
             raise ValueError(message)
+    schedule_rules = _rows(data, "ScheduleEngineRule")
+    if schedule_rules:
+        digest = hashlib.sha256(_json(schedule_rules).encode("utf-8")).hexdigest()
+        if (len(schedule_rules), digest) != SCHEDULE_ENGINE_RULE_GOLDEN:
+            raise ValueError("ScheduleEngineRule rows differ from the pinned canonical vaccine rules")
     products = {item["target_id"]: item for item in _supplement_products(data)}
     by_id, by_code = _vaccine_maps(data)
     items = []
