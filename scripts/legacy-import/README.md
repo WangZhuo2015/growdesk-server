@@ -22,3 +22,12 @@ users. A local backup does not establish cloud authorization or enable sync.
 
 All test input is synthetic, uses test_ names, and runs on disposable local
 PostgreSQL managed by scripts/test-integration.py. No test reads the live DB.
+
+`attachment_promotion.py` is the read-only attachment promotion boundary. It
+reads `legacy.json`, `files.json`, `manifest.json`, and optional exported
+`import_rows.json`, then writes a new 0600 JSON receipt containing deterministic
+Attachment IDs/object keys and explicit quarantine entries for missing files,
+ownership conflicts, path traversal, size/hash/MIME mismatches, and orphan
+files. It never writes PostgreSQL or S3/MinIO and its `storage` fields remain
+`not_written`; a later worker must copy and verify the object before inserting
+an Attachment row and transitioning it to `ready`.
