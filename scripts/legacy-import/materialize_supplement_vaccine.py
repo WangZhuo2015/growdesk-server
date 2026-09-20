@@ -52,6 +52,18 @@ SOURCE_TABLES = (
     # source hash is checked before transactional rows are rendered.
     "ScheduleEngineRule",
 )
+# A sanitized reference archive is allowed to carry only these source rows.
+# Identity and tenant-owned rows must remain empty so the archive cannot be
+# mistaken for a partial user-data import.
+STATIC_REFERENCE_TABLES = frozenset({
+    "Vaccine",
+    "VaccineDose",
+    "VaccineScheduleEntry",
+    "VaccineStrategyGroup",
+    "ScheduleEngineRule",
+})
+ARCHIVE_MAPPING_VERSION = "identity-v1"
+STATIC_ARCHIVE_MODE = "static_vaccine_reference_only"
 IMPORTED_SUPPLEMENT_SOURCE_DEFAULT = "ui_manual"
 KIND_ORDER = {
     "vaccine": 10,
@@ -253,6 +265,42 @@ def _rows(data: dict[str, Any], table: str) -> list[dict[str, Any]]:
         seen.add(row_id)
         output.append(row)
     return output
+
+
+def _static_reference_archive(data: dict[str, Any]) -> bool:
+    """Return whether *data* is the deliberately narrow static-only mode.
+
+    The regular promotion path is tied to an existing identity-v1 batch.  A
+    sanitized reference archive has no identity or tenant rows, so it can be
+    safely registered by this materializer even when the target already has
+    users, families, or prior import batches.  Every non-empty source table is
+    checked here, including tables unknown to this slice, before any SQL is
+    rendered.
+    """
+
+    tables = data.get("tables")
+    if not isinstance(tables, dict):
+        raise ValueError("Archive tables must be an object")
+    non_empty: list[str] = []
+    for table in tables:
+        if not isinstance(table, str) or not table:
+            raise ValueError("Archive table names must be non-empty strings")
+        rows = _rows(data, table)
+        if rows:
+            non_empty.append(table)
+    # A full identity-v1 archive continues through the existing path.  It is
+    # the all-static shape that opts into registration against a non-empty
+    # target; mixed/non-static input therefore never receives this path.
+    if not non_empty or any(table not in STATIC_REFERENCE_TABLES for table in non_empty):
+        return False
+    for table in non_empty:
+        for row in _rows(data, table):
+            for field in ("userId", "familyId", "babyId"):
+                if row.get(field) not in (None, ""):
+                    raise ValueError(
+                        f"{table}/{row['id']}: static reference row cannot carry {field}"
+                    )
+    return True
 
 
 def _identity(data: dict[str, Any]) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[str, dict[str, Any]], dict[tuple[str, str], dict[str, Any]], set[tuple[str, str, str]]]:
@@ -900,8 +948,140 @@ def _render_item(item: dict[str, Any], data: dict[str, Any], checksum: str, sour
     """
 
 
+def _static_archive_registration(
+    data: dict[str, Any],
+    checksum: str,
+) -> tuple[str, int]:
+    """Render the in-transaction raw archive registration for static mode."""
+
+    archive_tables = data.get("tables")
+    if not isinstance(archive_tables, dict):
+        raise ValueError("Archive tables must be an object")
+    tables = {str(table): _rows(data, str(table)) for table in archive_tables}
+    archive_counts = {table: len(rows) for table, rows in tables.items()}
+    total_rows = sum(archive_counts.values())
+    source_system = data.get("sourceId") or SOURCE_SYSTEM_DEFAULT
+    if not isinstance(source_system, str) or not source_system:
+        raise ValueError("Archive sourceId must be a non-empty string")
+    timezone_name = data.get("timeZone")
+    if not isinstance(timezone_name, str) or not timezone_name:
+        raise ValueError("Archive timeZone is required")
+    captured_at = _instant(data.get("capturedAt"), "capturedAt", timezone_name)
+    metadata = {
+        "archiveMode": STATIC_ARCHIVE_MODE,
+        "historyState": "preserved_not_business_tables",
+        "timeZone": timezone_name,
+        "excluded": data.get("excluded", {}),
+    }
+    table_counts_sql = f"{literal(_json(archive_counts))}::jsonb"
+    metadata_sql = f"{literal(_json(metadata))}::jsonb"
+
+    row_inserts: list[str] = []
+    row_guards: list[str] = []
+    table_guards: list[str] = []
+    for table in sorted(STATIC_REFERENCE_TABLES):
+        rows = tables.get(table, [])
+        count = len(rows)
+        table_guards.append(
+            f"IF (SELECT count(*) FROM legacy_import.import_rows WHERE batch_id={literal(checksum)} "
+            f"AND source_table={literal(table)}) <> {count} THEN "
+            f"RAISE EXCEPTION 'Static vaccine reference source count mismatch for {table}'; END IF;"
+        )
+        if rows:
+            source_ids = ",".join(literal(row["id"]) for row in rows)
+            table_guards.append(
+                f"IF EXISTS (SELECT 1 FROM legacy_import.import_rows WHERE batch_id={literal(checksum)} "
+                f"AND source_table={literal(table)} AND source_id NOT IN ({source_ids})) THEN "
+                f"RAISE EXCEPTION 'Static vaccine reference source ID mismatch for {table}'; END IF;"
+            )
+        for row in rows:
+            payload = _json(row)
+            payload_hash = _canonical_hash(row)
+            source_key = f"{checksum}:{table}:{row['id']}"
+            row_inserts.append(
+                "INSERT INTO legacy_import.import_rows "
+                "(batch_id,source_table,source_id,user_id,family_id,baby_id,payload,payload_hash,captured_at) VALUES ("
+                + ",".join(
+                    [
+                        literal(checksum), literal(table), literal(row["id"]),
+                        literal(None), literal(None), literal(None),
+                        f"{literal(payload)}::jsonb", literal(payload_hash), literal(captured_at),
+                    ]
+                )
+                + ");"
+            )
+            row_guards.append(
+                f"IF NOT EXISTS (SELECT 1 FROM legacy_import.import_rows WHERE batch_id={literal(checksum)} "
+                f"AND source_table={literal(table)} AND source_id={literal(row['id'])} "
+                f"AND payload_hash={literal(payload_hash)}) THEN "
+                f"RAISE EXCEPTION 'Static vaccine reference source hash mismatch: %', {literal(source_key)}; END IF;"
+            )
+
+    # A prior batch with this checksum is replayable only when it was created
+    # by this static-only path.  The metadata mode check prevents an unrelated
+    # identity batch from being treated as a safe reference archive.
+    registration = f"""
+  IF EXISTS (SELECT 1 FROM legacy_import.import_batches WHERE batch_id={literal(checksum)}) THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM legacy_import.import_batches
+      WHERE batch_id={literal(checksum)} AND checksum={literal(checksum)}
+        AND mapping_version={literal(ARCHIVE_MAPPING_VERSION)} AND row_count={total_rows}
+        AND table_counts={table_counts_sql} AND metadata={metadata_sql}
+    ) THEN
+      RAISE EXCEPTION 'Static vaccine reference batch metadata mismatch: %', {literal(checksum)};
+    END IF;
+  ELSE
+    INSERT INTO legacy_import.import_batches
+      (batch_id,source_system,source_snapshot,checksum,mapping_version,row_count,table_counts,metadata)
+    VALUES
+      ({literal(checksum)},{literal(source_system)},{literal(data.get('sourceSha256'))},
+       {literal(checksum)},{literal(ARCHIVE_MAPPING_VERSION)},{total_rows},{table_counts_sql},{metadata_sql});
+    {''.join(row_inserts)}
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM legacy_import.import_rows
+    WHERE batch_id={literal(checksum)} AND source_table NOT IN ({','.join(literal(table) for table in STATIC_REFERENCE_TABLES)})
+  ) THEN
+    RAISE EXCEPTION 'Static vaccine reference batch contains non-static source rows: %', {literal(checksum)};
+  END IF;
+  {''.join(table_guards)}
+  {''.join(row_guards)}
+"""
+    return registration, total_rows
+
+
 def render_materialization(data: dict[str, Any], checksum: str) -> str:
     _require_checksum(checksum)
+    if _static_reference_archive(data):
+        items = prepare_materialization(data, checksum)
+        delimiter = f"$legacy_sv_static_{checksum}$"
+        registration, total_rows = _static_archive_registration(data, checksum)
+        source_system = data.get("sourceId") or SOURCE_SYSTEM_DEFAULT
+        body = "\n".join(_render_item(item, data, checksum, source_system) for item in items)
+        if delimiter in body or delimiter in registration:
+            raise ValueError("SQL dollar-quote delimiter collision")
+        expected_counts = {table: len(_rows(data, table)) for table in SOURCE_TABLES}
+        return f"""BEGIN;
+SET LOCAL standard_conforming_strings=on;
+SET LOCAL lock_timeout='5s';
+SET LOCAL statement_timeout='120s';
+SELECT pg_advisory_xact_lock({ADVISORY_LOCK});
+DO {delimiter}
+BEGIN
+  {registration}
+  {body}
+END;
+{delimiter};
+COMMIT;
+SELECT json_build_object(
+  'mappingVersion',{literal(MAPPING_VERSION)},
+  'archiveMode',{literal(STATIC_ARCHIVE_MODE)},
+  'sourceCounts',{literal(_json(expected_counts))}::jsonb,
+  'archivedRows',{total_rows},
+  'targetCount',(SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id={literal(checksum)} AND mapping_version={literal(MAPPING_VERSION)}),
+  'vaccineRecords',(SELECT count(*) FROM public.vaccine_records WHERE id IN (SELECT target_entity_id FROM public.legacy_idempotency_mappings WHERE source_batch_id={literal(checksum)} AND target_entity_type='vaccine_record'))
+);
+"""
     items = prepare_materialization(data, checksum)
     tables = {table: _rows(data, table) for table in SOURCE_TABLES}
     expected_counts = {table: len(rows) for table, rows in tables.items()}
@@ -936,7 +1116,7 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM legacy_import.import_batches b
     WHERE b.batch_id={literal(checksum)} AND b.checksum={literal(checksum)}
-      AND b.mapping_version='identity-v1' AND b.row_count={total_rows}
+      AND b.mapping_version={literal(ARCHIVE_MAPPING_VERSION)} AND b.row_count={total_rows}
       AND b.table_counts={literal(_json(archive_counts))}::jsonb
   ) THEN
     RAISE EXCEPTION 'Legacy supplement/vaccine identity batch mismatch: %', {literal(checksum)};

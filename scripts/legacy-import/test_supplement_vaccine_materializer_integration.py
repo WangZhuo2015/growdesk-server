@@ -138,6 +138,18 @@ def main() -> None:
     data = pure.archive()
     data = rename_archive(data, prefix)
     batch_id = checksum(data)
+    existing = rename_archive(pure.archive(), prefix + "existing_")
+    for table in list(existing["tables"]):
+        if table not in {"User", "Family", "FamilyMember", "Baby"}:
+            existing["tables"][table] = []
+    existing_batch = checksum(existing)
+    static = rename_archive(pure.static_archive(), prefix + "static_")
+    static_batch = checksum(static)
+    conflict = rename_archive(pure.static_archive(), prefix + "conflict_")
+    # Reuse an already materialized static ID to force a target conflict only
+    # after the new batch/raw rows have been registered in the same transaction.
+    conflict["tables"]["Vaccine"][0]["id"] = static["tables"]["Vaccine"][0]["id"]
+    conflict_batch = checksum(conflict)
     scheduled = rename_archive(pure.archive(), prefix + "scheduled_")
     scheduled["tables"]["VaccineRecord"][0]["completedDate"] = None
     scheduled["tables"]["VaccineRecord"][0]["isCompleted"] = False
@@ -148,8 +160,11 @@ def main() -> None:
     second["clientId"] = prefix + "atomic_client_2"
     atomic["tables"]["SupplementRecord"].append(second)
     atomic_batch = checksum(atomic)
-    cleanup_batches = [batch_id, scheduled_batch, atomic_batch]
+    cleanup_batches = [batch_id, existing_batch, static_batch, conflict_batch, scheduled_batch, atomic_batch]
     try:
+        # The static path must tolerate a pre-populated identity database and
+        # an unrelated prior raw archive batch. Both are test-only fixtures.
+        execute("BEGIN;\n" + seed_sql(existing, existing_batch) + "\nCOMMIT;")
         execute("BEGIN;\n" + seed_sql(data, batch_id) + "\nCOMMIT;")
         output = execute(materializer.render_materialization(data, batch_id))
         receipt = json.loads(output.splitlines()[-1])
@@ -192,13 +207,32 @@ def main() -> None:
         execute(materializer.render_materialization(data, batch_id), success=False)
         execute(f"UPDATE public.supplement_records SET notes='test record' WHERE id={_sql(prefix + 'test_sv_record_d3')}")
 
+        execute(materializer.render_materialization(static, static_batch))
+        assert execute(f"SELECT count(*) FROM public.users WHERE id LIKE {_sql(prefix + 'existing_%')}") == "3"
+        assert execute(f"SELECT count(*) FROM legacy_import.import_batches WHERE batch_id={_sql(existing_batch)}") == "1"
+        assert execute(f"SELECT count(*) FROM legacy_import.import_rows WHERE batch_id={_sql(static_batch)}") == "4"
+        assert execute(f"SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id={_sql(static_batch)}") == "4"
+        assert execute(f"SELECT count(*) FROM public.vaccines WHERE id={_sql(prefix + 'static_test_sv_vaccine_hepb')}") == "1"
+        assert execute(f"SELECT count(*) FROM public.vaccine_doses WHERE id={_sql(prefix + 'static_test_sv_dose_hepb_1')}") == "1"
+        assert execute(f"SELECT count(*) FROM public.vaccine_schedule_entries WHERE id={_sql(prefix + 'static_test_sv_entry_hepb_1')}") == "1"
+        assert execute(f"SELECT count(*) FROM public.vaccine_strategy_groups WHERE id={_sql(prefix + 'static_test_sv_strategy_group')}") == "1"
+        # Replay validates the registered raw rows and target receipts without
+        # touching the pre-existing identity or unrelated batch.
+        execute(materializer.render_materialization(static, static_batch))
+        assert execute(f"SELECT count(*) FROM legacy_import.import_rows WHERE batch_id={_sql(static_batch)}") == "4"
+
+        execute(materializer.render_materialization(conflict, conflict_batch), success=False)
+        assert execute(f"SELECT count(*) FROM legacy_import.import_batches WHERE batch_id={_sql(conflict_batch)}") == "0"
+        assert execute(f"SELECT count(*) FROM legacy_import.import_rows WHERE batch_id={_sql(conflict_batch)}") == "0"
+        assert execute(f"SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id={_sql(conflict_batch)}") == "0"
+
         # A later bad source row is rejected before any row from that batch is
         # committed; this proves the all-or-nothing transaction boundary.
         execute("BEGIN;\n" + seed_sql(atomic, atomic_batch, tamper_source_id=prefix + "atomic_record_2") + "\nCOMMIT;")
         execute(materializer.render_materialization(atomic, atomic_batch), success=False)
         assert execute(f"SELECT count(*) FROM public.supplement_records WHERE id LIKE {_sql(prefix + 'atomic%')}") == "0"
         assert execute(f"SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id={_sql(atomic_batch)}") == "0"
-        print("Owned PostgreSQL supplement/vaccine materializer PASS: full graph, source/target hashes, scope, replay, tamper rejection, and atomic rollback")
+        print("Owned PostgreSQL supplement/vaccine materializer PASS: full graph, static-only registration on non-empty identity, source/target hashes, replay, tamper rejection, and atomic rollback")
     finally:
         batch_literals = ",".join(_sql(value) for value in cleanup_batches)
         like = _sql(prefix + "%")

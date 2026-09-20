@@ -105,6 +105,15 @@ def checksum(data: dict) -> str:
     return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
 
 
+def static_archive() -> dict:
+    data = copy.deepcopy(archive())
+    for table in list(data["tables"]):
+        if table not in M.STATIC_REFERENCE_TABLES:
+            data["tables"][table] = []
+    data["sourceId"] = "test_sv_static_reference_archive"
+    return data
+
+
 class SupplementVaccineMaterializerTests(unittest.TestCase):
     def test_maps_full_graph_with_exact_target_snapshots(self) -> None:
         data = archive()
@@ -143,6 +152,47 @@ class SupplementVaccineMaterializerTests(unittest.TestCase):
             "source ID mismatch",
         ):
             self.assertIn(required, first)
+
+    def test_static_reference_archive_registers_raw_rows_without_identity_batch(self) -> None:
+        data = static_archive()
+        digest = checksum(data)
+        rendered = M.render_materialization(data, digest)
+        self.assertIn("static_vaccine_reference_only", rendered)
+        self.assertIn("INSERT INTO legacy_import.import_batches", rendered)
+        self.assertIn("INSERT INTO legacy_import.import_rows", rendered)
+        self.assertIn("metadata='", rendered)
+        self.assertIn("mapping_version='identity-v1'", rendered)
+        self.assertNotIn("INSERT INTO public.users", rendered)
+        self.assertNotIn("INSERT INTO public.families", rendered)
+        self.assertNotIn("INSERT INTO public.supplement_products", rendered)
+        self.assertNotIn("INSERT INTO public.vaccine_selections", rendered)
+        self.assertNotIn("INSERT INTO public.vaccine_records", rendered)
+        self.assertNotIn("INSERT INTO public.timeline_entries", rendered)
+
+        items = M.prepare_materialization(data, digest)
+        self.assertEqual(
+            [item["kind"] for item in items],
+            ["vaccine", "vaccine_dose", "vaccine_schedule_entry", "vaccine_strategy_group"],
+        )
+
+    def test_static_reference_archive_rejects_any_non_static_source_rows(self) -> None:
+        source = archive()
+        for table in ("User", "Family", "FamilyMember", "Baby", "SupplementProduct", "SupplementSchedule", "SupplementRecord", "VaccineSelection", "VaccineRecord"):
+            data = static_archive()
+            data["tables"][table] = copy.deepcopy(source["tables"][table])
+            with self.subTest(table=table):
+                self.assertFalse(M._static_reference_archive(data))
+
+        unknown = static_archive()
+        unknown["tables"]["UnexpectedTenantTable"] = [{"id": "test_sv_forbidden_unknown"}]
+        self.assertFalse(M._static_reference_archive(unknown))
+        self.assertNotIn("static_vaccine_reference_only", M.render_materialization(unknown, checksum(unknown)))
+
+    def test_static_reference_rows_cannot_carry_tenant_scope(self) -> None:
+        data = static_archive()
+        data["tables"]["Vaccine"][0]["familyId"] = "test_sv_forbidden_family"
+        with self.assertRaisesRegex(ValueError, "cannot carry familyId"):
+            M.render_materialization(data, checksum(data))
 
     def test_cross_tenant_actor_and_reference_are_rejected(self) -> None:
         data = archive()
