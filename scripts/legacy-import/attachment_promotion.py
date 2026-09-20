@@ -352,7 +352,13 @@ def _row_value(row: Mapping[str, Any], entry: Mapping[str, Any] | None, *names: 
     return values
 
 
-def _purpose_for_source(table: str, field: str, row: Mapping[str, Any], entry: Mapping[str, Any] | None) -> str:
+def _purpose_for_source(
+    table: str,
+    field: str,
+    row: Mapping[str, Any],
+    entry: Mapping[str, Any] | None,
+    linked_rows: Sequence[Mapping[str, Any]] = (),
+) -> str:
     explicit = _pick_consistent(_row_value(row, entry, "purpose", "attachmentPurpose"), "purpose")
     if explicit is not None:
         if not isinstance(explicit, str) or explicit not in ALLOWED_PURPOSES:
@@ -376,10 +382,17 @@ def _purpose_for_source(table: str, field: str, row: Mapping[str, Any], entry: M
         kind = str(row.get("kind", "")).lower()
         if kind == "input_audio":
             return "voice_note"
+        linked_purposes = {
+            _purpose_for_source("AiJob", "imageUrl", linked, None)
+            for linked in linked_rows
+            if isinstance(linked, Mapping)
+        }
+        if len(linked_purposes) == 1:
+            return linked_purposes.pop()
     raise _MappingError("MISSING_PURPOSE", "attachment purpose cannot be derived safely")
 
 
-def _identity_context(snapshot: Mapping[str, Any]) -> tuple[set[str], set[str], dict[str, str], set[tuple[str, str]]]:
+def _identity_context(snapshot: Mapping[str, Any]) -> tuple[set[str], set[str], dict[str, str], set[tuple[str, str]], dict[str, set[str]]]:
     families = set()
     for row in _table_rows(snapshot, "Family"):
         family_id = row.get("id")
@@ -395,11 +408,14 @@ def _identity_context(snapshot: Mapping[str, Any]) -> tuple[set[str], set[str], 
         babies[baby_id] = family_id
     users = {row.get("id") for row in _table_rows(snapshot, "User") if isinstance(row.get("id"), str) and row.get("id")}
     memberships: set[tuple[str, str]] = set()
+    family_admins: dict[str, set[str]] = {}
     for row in _table_rows(snapshot, "FamilyMember"):
         family_id, user_id = row.get("familyId"), row.get("userId")
         if isinstance(family_id, str) and isinstance(user_id, str) and row.get("status", "active") == "active":
             memberships.add((family_id, user_id))
-    return families, users, babies, memberships
+            if row.get("role") in {"owner", "admin"}:
+                family_admins.setdefault(family_id, set()).add(user_id)
+    return families, users, babies, memberships, family_admins
 
 
 def _load_import_rows(root: Path) -> list[Mapping[str, Any]]:
@@ -647,6 +663,7 @@ def _map_candidate(
     users: set[str],
     babies: Mapping[str, str],
     memberships: set[tuple[str, str]],
+    family_admins: Mapping[str, set[str]],
     source_system: str,
     source_batch_id: str,
 ) -> dict[str, Any]:
@@ -681,6 +698,15 @@ def _map_candidate(
     if declared_source_hash is not None and _valid_hash(declared_source_hash, "sourceHash") != source_hash:
         raise _MappingError("SOURCE_ROW_HASH_MISMATCH", "source metadata hash does not match source row")
 
+    uploader_id = _pick_consistent(
+        _linked_value(candidate, "uploaderId", "uploader_id", "recordedById", "recorded_by_user_id", "userId", "user_id", "ownerUserId", "createdById", "actorId"),
+        "uploaderId",
+    )
+    if uploader_id is not None:
+        uploader_id = _non_empty_string(uploader_id, "uploaderId")
+        if uploader_id not in users:
+            raise _MappingError("UNKNOWN_UPLOADER", "uploader is absent from the immutable identity snapshot")
+
     baby_id = _pick_consistent(_linked_value(candidate, "babyId", "baby_id"), "babyId")
     family_id = _pick_consistent(_linked_value(candidate, "familyId", "family_id"), "familyId")
     if baby_id is not None:
@@ -691,6 +717,10 @@ def _map_candidate(
         if family_id not in (None, derived_family):
             raise _MappingError("CROSS_FAMILY_REFERENCE", "baby and family metadata disagree")
         family_id = derived_family
+    if family_id is None and uploader_id is not None:
+        uploader_families = sorted(family for family, user in memberships if user == uploader_id)
+        if len(uploader_families) == 1:
+            family_id = uploader_families[0]
     if family_id is None:
         raise _MappingError("MISSING_FAMILY", "attachment has no unambiguous family owner")
     family_id = _non_empty_string(family_id, "familyId")
@@ -699,17 +729,16 @@ def _map_candidate(
     if baby_id is not None and babies.get(baby_id) != family_id:
         raise _MappingError("CROSS_FAMILY_REFERENCE", "baby does not belong to attachment family")
 
-    uploader_id = _pick_consistent(
-        _linked_value(candidate, "uploaderId", "uploader_id", "recordedById", "recorded_by_user_id", "userId", "user_id", "ownerUserId", "createdById", "actorId"),
-        "uploaderId",
-    )
+    if uploader_id is None and table == "Baby" and field == "avatarUrl":
+        administrators = sorted(family_admins.get(family_id, set()))
+        if len(administrators) == 1:
+            uploader_id = administrators[0]
     if uploader_id is None:
         raise _MappingError("MISSING_UPLOADER", "historical source does not identify an attachment uploader")
-    uploader_id = _non_empty_string(uploader_id, "uploaderId")
     if uploader_id not in users or (family_id, uploader_id) not in memberships:
         raise _MappingError("UPLOADER_OUTSIDE_FAMILY", "uploader is not an active member of attachment family")
 
-    purpose = _purpose_for_source(table, field, row, manifest)
+    purpose = _purpose_for_source(table, field, row, manifest, candidate.get("linkedRows", ()))
     declared_size = _pick_consistent(_linked_value(candidate, "byteSize", "byte_size", "size"), "byteSize")
     if declared_size is not None:
         if isinstance(declared_size, bool) or not isinstance(declared_size, int) or declared_size <= 0:
@@ -845,7 +874,7 @@ def plan_attachment_promotion(
         if len(entries) == 1
     }
     selected_import_rows = list(import_rows) if import_rows is not None else archive_import_rows
-    families, users, babies, memberships = _identity_context(snapshot)
+    families, users, babies, memberships, family_admins = _identity_context(snapshot)
     candidates = _collect_candidates(snapshot, file_entries, selected_import_rows, report)
     declared_file_count = manifest.get("attachmentFiles")
     if declared_file_count is not None:
@@ -874,6 +903,7 @@ def plan_attachment_promotion(
                 users=users,
                 babies=babies,
                 memberships=memberships,
+                family_admins=family_admins,
                 source_system=str(snapshot["sourceId"]),
                 source_batch_id=str(report["sourceBatchId"]),
             )

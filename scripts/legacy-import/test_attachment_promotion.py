@@ -143,6 +143,44 @@ class AttachmentPromotionTests(unittest.TestCase):
         self.assertNotIn("test_growth_attachment_row", {r["sourceId"] for r in report["receipts"]})
         self.assertIn("MISSING_UPLOADER", {q["code"] for q in report["quarantine"]})
 
+    def test_linked_ai_user_with_one_family_proves_attachment_scope(self) -> None:
+        root = self._archive()
+        snapshot = json.loads((root / "legacy.json").read_text())
+        snapshot["tables"]["AiJob"][0]["babyId"] = None
+        payload = _canonical(snapshot)
+        (root / "legacy.json").write_bytes(payload)
+        manifest = json.loads((root / "manifest.json").read_text())
+        manifest["archiveSha256"] = hashlib.sha256(payload).hexdigest()
+        (root / "manifest.json").write_text(json.dumps(manifest))
+
+        report = plan_attachment_promotion(root)
+        voice = next(item for item in report["receipts"] if item["sourceId"] == "test_voice_archive")
+        self.assertEqual(voice["attachment"]["familyId"], "test_attachment_family")
+        self.assertEqual(voice["attachment"]["uploaderId"], "test_attachment_user")
+
+    def test_baby_avatar_uses_unique_family_administrator_as_historical_uploader(self) -> None:
+        root = self._archive()
+        avatar_path = "public/uploads/avatars/test-avatar.png"
+        avatar = b"\x89PNG\r\n\x1a\n" + b"test-avatar"
+        destination = root / "files" / avatar_path
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(avatar)
+        files = json.loads((root / "files.json").read_text())
+        files.append({"path": avatar_path, "size": len(avatar), "sha256": hashlib.sha256(avatar).hexdigest()})
+        (root / "files.json").write_text(json.dumps(files))
+        snapshot = json.loads((root / "legacy.json").read_text())
+        snapshot["tables"]["Baby"][0]["avatarUrl"] = "/uploads/avatars/test-avatar.png"
+        payload = _canonical(snapshot)
+        (root / "legacy.json").write_bytes(payload)
+        manifest = json.loads((root / "manifest.json").read_text())
+        manifest["archiveSha256"] = hashlib.sha256(payload).hexdigest()
+        (root / "manifest.json").write_text(json.dumps(manifest))
+
+        report = plan_attachment_promotion(root)
+        receipt = next(item for item in report["receipts"] if item["sourceTable"] == "Baby")
+        self.assertEqual(receipt["attachment"]["uploaderId"], "test_attachment_user")
+        self.assertEqual(receipt["attachment"]["purpose"], "avatar")
+
     def test_missing_file_and_hash_mismatch_fail_closed(self) -> None:
         root = self._archive()
         original = (root / "files" / "public/uploads/medical/test-report.pdf").read_bytes()
