@@ -49,26 +49,27 @@ function receipt(options: {
   };
 }
 
-test("pure reference planner maps only canonical Baby/Growth/Medical fields", () => {
+test("pure reference planner maps canonical business and AI message fields", () => {
   const report: PlannedAttachmentReport = {
     mappingVersion: ATTACHMENT_PROMOTION_MAPPING_VERSION,
     receipts: [
       receipt({ table: "Baby", id: "test_reference_baby", field: "avatarUrl", path: "public/uploads/avatar/test.png", purpose: "avatar", babyId: null, attachmentId: "test_reference_avatar" }),
       receipt({ table: "GrowthMeasurement", id: "test_reference_growth", field: "imageUrl", path: "public/uploads/growth/test.png", purpose: "growth_photo", babyId: "test_reference_baby", attachmentId: "test_reference_growth_attachment" }),
       receipt({ table: "MedicalReport", id: "test_reference_medical", field: "imageUrl", path: "public/uploads/medical/test.png", purpose: "medical_report", babyId: "test_reference_baby", attachmentId: "test_reference_medical_attachment" }),
+      receipt({ table: "AiChatMessage", id: "test_reference_ai_message", field: "image", path: "public/uploads/ai/test.png", purpose: "ai_input", babyId: "test_reference_baby", attachmentId: "test_reference_ai_attachment" }),
     ],
   };
 
   const plan = planAttachmentReferenceBackfill(report);
   assert.equal(plan.status, "planned");
   assert.equal(plan.mappingVersion, ATTACHMENT_REFERENCE_BACKFILL_MAPPING_VERSION);
-  assert.deepEqual(plan.references.map((item) => item.kind), ["baby_avatar", "growth_photo", "medical_report"]);
+  assert.deepEqual(plan.references.map((item) => item.kind), ["baby_avatar", "growth_photo", "medical_report", "ai_message_image"]);
   assert.equal(plan.references[0]?.targetBabyId, "test_reference_baby");
   assert.equal(plan.references[1]?.sourceKey, `${batch}/GrowthMeasurement/test_reference_growth/imageUrl/public/uploads/growth/test.png`);
   assert.deepEqual(plan.quarantine, []);
 });
 
-test("AI and voice references are reported without guessing a canonical field", () => {
+test("unsupported AI job and voice references are reported without guessing a canonical field", () => {
   const report: PlannedAttachmentReport = {
     mappingVersion: ATTACHMENT_PROMOTION_MAPPING_VERSION,
     receipts: [

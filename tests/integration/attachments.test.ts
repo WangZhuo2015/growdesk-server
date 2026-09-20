@@ -478,7 +478,51 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(babyAfterRace.avatarUrl, null, "failed binding preserves the earlier explicit detach value");
   });
 
-  await t.test("ATT-09: Delete failure remains retryable and success soft-deletes record", async () => {
+  await t.test("ATT-09: AI message image references block deletion until the message is removed", async () => {
+    const imagePayload = Buffer.from("\x89PNG\r\n\x1a\nprivate ai input image");
+    const imageSha256 = crypto.createHash("sha256").update(imagePayload).digest("hex");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/v1/attachments",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        purpose: "ai_input",
+        mimeType: "image/png",
+        byteSize: imagePayload.byteLength,
+        sha256: imageSha256,
+        ownerScope: { familyId: familyAId, babyId: babyAId },
+      },
+    });
+    assert.equal(created.statusCode, 201, created.body);
+    const aiAttachmentId = created.json<{ data: { id: string } }>().data.id;
+    const attachment = await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: aiAttachmentId } });
+    mockStorage.simulateUpload(attachment.objectKey, imagePayload, "image/png");
+    const completed = await app.inject({
+      method: "POST",
+      url: `/api/v1/attachments/${aiAttachmentId}/complete`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { sha256: imageSha256, byteSize: imagePayload.byteLength },
+    });
+    assert.equal(completed.statusCode, 200, completed.body);
+
+    const owner = await ctx.prisma.user.findUniqueOrThrow({ where: { username: userA } });
+    const sessionId = `test_ai_attachment_session_${stamp}`;
+    const messageId = `test_ai_attachment_message_${stamp}`;
+    await ctx.prisma.aiSession.create({ data: { id: sessionId, userId: owner.id, babyId: babyAId, title: "test attachment reference" } });
+    await ctx.prisma.aiChatMessage.create({ data: { id: messageId, sessionId, role: "user", content: "test image", image: `/api/attachments/${aiAttachmentId}` } });
+
+    const deleteAttemptsBeforeReference = mockStorage.deleteAttempts;
+    const blocked = await app.inject({ method: "DELETE", url: `/api/v1/attachments/${aiAttachmentId}`, headers: { authorization: `Bearer ${tokenA}` } });
+    assert.equal(blocked.statusCode, 409, blocked.body);
+    assert.equal(mockStorage.deleteAttempts, deleteAttemptsBeforeReference);
+
+    await ctx.prisma.aiChatMessage.delete({ where: { id: messageId } });
+    await ctx.prisma.aiSession.delete({ where: { id: sessionId } });
+    const removed = await app.inject({ method: "DELETE", url: `/api/v1/attachments/${aiAttachmentId}`, headers: { authorization: `Bearer ${tokenA}` } });
+    assert.equal(removed.statusCode, 200, removed.body);
+  });
+
+  await t.test("ATT-10: Delete failure remains retryable and success soft-deletes record", async () => {
     const deleteAttemptsBeforeFailure = mockStorage.deleteAttempts;
     mockStorage.failNextDelete = true;
     const failed = await app.inject({

@@ -23,8 +23,8 @@ export const ATTACHMENT_REFERENCE_ENTITY_TYPE = "attachment_reference";
 const SHA256 = /^[0-9a-f]{64}$/;
 const PRIVATE_AVATAR_PATH = /^\/api\/attachments\/[a-f0-9-]{36}$/i;
 
-type SupportedReferenceKind = "baby_avatar" | "growth_photo" | "medical_report";
-type SupportedSourceTable = "Baby" | "GrowthMeasurement" | "MedicalReport";
+type SupportedReferenceKind = "baby_avatar" | "growth_photo" | "medical_report" | "ai_message_image";
+type SupportedSourceTable = "Baby" | "GrowthMeasurement" | "MedicalReport" | "AiChatMessage";
 
 interface ReferenceRule {
   readonly table: SupportedSourceTable;
@@ -37,6 +37,7 @@ const REFERENCE_RULES: readonly ReferenceRule[] = [
   { table: "Baby", field: "avatarUrl", kind: "baby_avatar", purpose: "avatar" },
   { table: "GrowthMeasurement", field: "imageUrl", kind: "growth_photo", purpose: "growth_photo" },
   { table: "MedicalReport", field: "imageUrl", kind: "medical_report", purpose: "medical_report" },
+  { table: "AiChatMessage", field: "image", kind: "ai_message_image", purpose: "ai_input" },
 ];
 
 export interface PlannedBusinessAttachmentReference {
@@ -78,7 +79,7 @@ export type ReferenceBackfillReceiptStatus = "committed" | "replayed" | "reconci
 
 export interface ReferenceBackfillReceipt {
   readonly sourceKey: string;
-  readonly targetEntityType: "baby" | "growth" | "medical";
+  readonly targetEntityType: "baby" | "growth" | "medical" | "ai_message";
   readonly targetEntityId: string;
   readonly targetAttachmentId: string;
   readonly status: ReferenceBackfillReceiptStatus;
@@ -198,7 +199,7 @@ function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference {
   if (attachment.status !== "pending" && attachment.status !== "ready") {
     throw new ReferenceBackfillFailure("INVALID_STATUS", "attachment receipt is not pending/ready");
   }
-  if (attachment.purpose !== "avatar" && attachment.purpose !== "growth_photo" && attachment.purpose !== "medical_report" && attachment.purpose !== "voice_note") {
+  if (attachment.purpose !== "avatar" && attachment.purpose !== "growth_photo" && attachment.purpose !== "medical_report" && attachment.purpose !== "voice_note" && attachment.purpose !== "ai_input") {
     throw new ReferenceBackfillFailure("INVALID_PURPOSE", "attachment purpose is not supported");
   }
   const rule = ruleFor(sourceTable, sourceField);
@@ -307,9 +308,10 @@ function jsonField(payload: Prisma.JsonValue, field: string): unknown {
   return payload[field];
 }
 
-function expectedBusinessMappingType(kind: SupportedReferenceKind): "growth" | "medical" {
+function expectedBusinessMappingType(kind: SupportedReferenceKind): "growth" | "medical" | "ai_message" {
   if (kind === "growth_photo") return "growth";
   if (kind === "medical_report") return "medical";
+  if (kind === "ai_message_image") return "ai_message";
   throw new ReferenceBackfillFailure("INTERNAL_REFERENCE_ERROR", "baby avatars do not have a business idempotency mapping");
 }
 
@@ -320,9 +322,9 @@ function referenceMappingId(sourceKey: string): string {
 function metadataFor(reference: PlannedBusinessAttachmentReference, targetEntityId: string): Prisma.InputJsonValue {
   return {
     kind: reference.kind,
-    targetEntityType: reference.kind === "baby_avatar" ? "baby" : reference.kind === "growth_photo" ? "growth" : "medical",
+    targetEntityType: reference.kind === "baby_avatar" ? "baby" : reference.kind === "growth_photo" ? "growth" : reference.kind === "medical_report" ? "medical" : "ai_message",
     targetEntityId,
-    targetField: reference.kind === "baby_avatar" ? "avatarUrl" : reference.kind === "growth_photo" ? "attachmentId" : "attachments",
+    targetField: reference.kind === "baby_avatar" ? "avatarUrl" : reference.kind === "growth_photo" ? "attachmentId" : reference.kind === "medical_report" ? "attachments" : "image",
     attachmentId: reference.targetAttachmentId,
     sourceBatchId: reference.sourceBatchId,
     sourceTable: reference.sourceTable,
@@ -442,6 +444,16 @@ async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAtt
     if (!target) throw new ReferenceBackfillFailure("BUSINESS_TARGET_MISSING", "growth target from legacy receipt is missing", { sourceKey });
     return { targetEntityId: target.id, familyId: target.familyId, babyId: target.babyId };
   }
+  if (targetEntityType === "ai_message") {
+    await tx.$queryRaw`SELECT id FROM public.ai_messages WHERE id = ${mapping.targetEntityId} FOR UPDATE`;
+    const target = await tx.aiChatMessage.findUnique({
+      where: { id: mapping.targetEntityId },
+      select: { id: true, session: { select: { baby: { select: { id: true, familyId: true, deletedAt: true } } } } },
+    });
+    if (!target) throw new ReferenceBackfillFailure("BUSINESS_TARGET_MISSING", "AI message target from legacy receipt is missing", { sourceKey });
+    if (!target.session.baby || target.session.baby.deletedAt !== null) throw new ReferenceBackfillFailure("BUSINESS_TARGET_SCOPE_MISMATCH", "AI message session has no active baby scope", { sourceKey });
+    return { targetEntityId: target.id, familyId: target.session.baby.familyId, babyId: target.session.baby.id };
+  }
   await tx.$queryRaw`SELECT id FROM public.medical_reports WHERE id = ${mapping.targetEntityId} FOR UPDATE`;
   const target = await tx.medicalReport.findUnique({ where: { id: mapping.targetEntityId }, select: { id: true, familyId: true, babyId: true } });
   if (!target) throw new ReferenceBackfillFailure("BUSINESS_TARGET_MISSING", "medical target from legacy receipt is missing", { sourceKey });
@@ -475,7 +487,7 @@ async function applyReference(tx: Tx, reference: PlannedBusinessAttachmentRefere
   if (!attachment || attachment.familyId !== target.familyId || (reference.kind !== "baby_avatar" && attachment.babyId !== target.babyId)) {
     throw new ReferenceBackfillFailure("REFERENCE_SCOPE_MISMATCH", "attachment and business target do not share a family/baby scope", { sourceKey: reference.sourceKey });
   }
-  const targetEntityType = reference.kind === "baby_avatar" ? "baby" : reference.kind === "growth_photo" ? "growth" : "medical";
+  const targetEntityType = reference.kind === "baby_avatar" ? "baby" : reference.kind === "growth_photo" ? "growth" : reference.kind === "medical_report" ? "medical" : "ai_message";
   const metadata = metadataFor(reference, target.targetEntityId);
   const existingReference = await tx.legacyIdempotencyMapping.findUnique({
     where: { uq_legacy_idempotency_type_source: { targetEntityType: ATTACHMENT_REFERENCE_ENTITY_TYPE, sourceKey: businessSourceKey(reference) } },
@@ -506,6 +518,17 @@ async function applyReference(tx: Tx, reference: PlannedBusinessAttachmentRefere
     });
     if (!existingLink) {
       await tx.medicalReportAttachment.create({ data: { id: referenceMappingId(reference.sourceKey), reportId: target.targetEntityId, attachmentId: reference.targetAttachmentId } });
+      if (existingReference) status = "reconciled";
+    }
+  } else if (reference.kind === "ai_message_image") {
+    const message = await tx.aiChatMessage.findUnique({ where: { id: target.targetEntityId }, select: { image: true } });
+    const expectedImage = privateAvatarPath(reference.targetAttachmentId);
+    if (!message) throw new ReferenceBackfillFailure("BUSINESS_TARGET_MISSING", "AI message target disappeared while applying the reference", { sourceKey: reference.sourceKey });
+    if (message.image !== null && message.image !== expectedImage) {
+      throw new ReferenceBackfillFailure("BUSINESS_REFERENCE_CONFLICT", "AI message already references another image", { sourceKey: reference.sourceKey });
+    }
+    if (message.image === null) {
+      await tx.aiChatMessage.update({ where: { id: target.targetEntityId }, data: { image: expectedImage } });
       if (existingReference) status = "reconciled";
     }
   } else {
