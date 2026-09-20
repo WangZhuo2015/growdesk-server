@@ -522,7 +522,64 @@ test("SH-06: S3 Attachments Pipeline suite", async (t) => {
     assert.equal(removed.statusCode, 200, removed.body);
   });
 
-  await t.test("ATT-10: Delete failure remains retryable and success soft-deletes record", async () => {
+  await t.test("ATT-10: AI archive references block deletion before object storage is touched", async () => {
+    const archivePayload = Buffer.from("private archived voice bytes");
+    const archiveSha256 = crypto.createHash("sha256").update(archivePayload).digest("hex");
+    const created = await app.inject({
+      method: "POST",
+      url: "/api/v1/attachments",
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        purpose: "voice_note",
+        mimeType: "audio/m4a",
+        byteSize: archivePayload.byteLength,
+        sha256: archiveSha256,
+        ownerScope: { familyId: familyAId, babyId: babyAId },
+      },
+    });
+    assert.equal(created.statusCode, 201, created.body);
+    const archiveAttachmentId = created.json<{ data: { id: string } }>().data.id;
+    const attachment = await ctx.prisma.attachment.findUniqueOrThrow({ where: { id: archiveAttachmentId } });
+    mockStorage.simulateUpload(attachment.objectKey, archivePayload, "audio/m4a");
+    const completed = await app.inject({
+      method: "POST",
+      url: `/api/v1/attachments/${archiveAttachmentId}/complete`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { sha256: archiveSha256, byteSize: archivePayload.byteLength },
+    });
+    assert.equal(completed.statusCode, 200, completed.body);
+
+    const owner = await ctx.prisma.user.findUniqueOrThrow({ where: { username: userA } });
+    const archiveId = `test_attachment_archive_${stamp}`;
+    await ctx.prisma.aiArchiveEntry.create({
+      data: {
+        id: archiveId,
+        sourceBatchId: "a".repeat(64),
+        sourceSystem: "test_attachment_source",
+        sourceId: archiveId,
+        sourceHash: "b".repeat(64),
+        kind: "input_audio",
+        filePath: "data/archive/test.m4a",
+        contentHash: archiveSha256,
+        byteSize: archivePayload.byteLength,
+        userId: owner.id,
+        familyId: familyAId,
+        babyId: babyAId,
+        attachmentId: archiveAttachmentId,
+        status: "mapped",
+        createdAt: new Date(),
+      },
+    });
+    const deleteAttemptsBeforeReference = mockStorage.deleteAttempts;
+    const blocked = await app.inject({ method: "DELETE", url: `/api/v1/attachments/${archiveAttachmentId}`, headers: { authorization: `Bearer ${tokenA}` } });
+    assert.equal(blocked.statusCode, 409, blocked.body);
+    assert.equal(mockStorage.deleteAttempts, deleteAttemptsBeforeReference);
+    await ctx.prisma.aiArchiveEntry.delete({ where: { id: archiveId } });
+    const removed = await app.inject({ method: "DELETE", url: `/api/v1/attachments/${archiveAttachmentId}`, headers: { authorization: `Bearer ${tokenA}` } });
+    assert.equal(removed.statusCode, 200, removed.body);
+  });
+
+  await t.test("ATT-11: Delete failure remains retryable and success soft-deletes record", async () => {
     const deleteAttemptsBeforeFailure = mockStorage.deleteAttempts;
     mockStorage.failNextDelete = true;
     const failed = await app.inject({

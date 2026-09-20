@@ -288,7 +288,10 @@ export class AttachmentService {
       const aiMessageReferences = await tx.aiChatMessage.count({
         where: { image: `/api/attachments/${attachmentId}` },
       });
-      if (medicalReferences > 0 || avatarReferences > 0 || growthReferences > 0 || aiMessageReferences > 0) {
+      const aiArchiveReferences = await tx.aiArchiveEntry.count({
+        where: { attachmentId },
+      });
+      if (medicalReferences > 0 || avatarReferences > 0 || growthReferences > 0 || aiMessageReferences > 0 || aiArchiveReferences > 0) {
         throw new AttachmentInUseError();
       }
 
