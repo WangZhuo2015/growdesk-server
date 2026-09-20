@@ -7,6 +7,7 @@ export * from "./records.js";
 export * from "./growth.js";
 export * from "./medical.js";
 export * from "./ai.js";
+export * from "./voice-logs.js";
 export * from "./sync.js";
 export * from "./attachments.js";
 export * from "./devices.js";
