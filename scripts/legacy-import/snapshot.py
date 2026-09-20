@@ -70,6 +70,9 @@ def capture(source, destination, source_id):
                 for file in sorted(folder.rglob('*')):
                     if file.is_symlink(): raise ValueError('Attachment symlink rejected')
                     if not file.is_file(): continue
+                    # Repository placeholders are not user attachments and
+                    # must not become zero-byte quarantine entries.
+                    if file.name == '.gitkeep': continue
                     if not stat.S_ISREG(file.stat().st_mode) or file.stat().st_size > 256*1024*1024:
                         raise ValueError('Unsupported attachment file')
                     rel=file.relative_to(base)
