@@ -40,6 +40,9 @@ model User {
   notifications           Notification[]
   aiSessions              AiSession[]
   aiRuns                  AiRun[]
+  aiArchiveEntries        AiArchiveEntry[]
+  agentVoiceLogs          AgentVoiceLog[]
+  recordSnapshots         RecordSnapshot[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
   @@map("users")
@@ -81,6 +84,9 @@ model Family {
   vaccineRecords     VaccineRecord[]
   vaccineSelections  VaccineSelection[]
   dailySummaries     DailySummary[]
+  aiArchiveEntries   AiArchiveEntry[]
+  agentVoiceLogs     AgentVoiceLog[]
+  recordSnapshots    RecordSnapshot[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -137,7 +143,10 @@ model Baby {
   vaccineSelections VaccineSelection[]
   aiSessions      AiSession[]
   aiRuns          AiRun[]
+  aiArchiveEntries AiArchiveEntry[]
   dailySummaries  DailySummary[]
+  agentVoiceLogs   AgentVoiceLog[]
+  recordSnapshots  RecordSnapshot[]
 
   // The composite key is the family boundary used by every baby-owned table.
   @@unique([familyId, id], name: "uq_babies_family_id_id")
@@ -447,6 +456,42 @@ model TimelineEntry {
   @@index([babyId, deletedAt, occurredAt(sort: Desc), id(sort: Desc)], name: "ix_timeline_entries_baby_timeline")
   @@index([familyId, deletedAt, occurredAt(sort: Desc)], name: "ix_timeline_entries_family_timeline")
   @@map("timeline_entries")
+  @@schema("public")
+}
+
+// Durable pre-delete snapshots used by MCP/Web undo. The payload is an
+// immutable copy of the canonical row; restore either clears a tombstone or
+// recreates the exact BabyFoodPlan row when its unique slot is still empty.
+model RecordSnapshot {
+  id             String    @id
+  familyId       String    @map("family_id")
+  babyId         String    @map("baby_id")
+  userId         String?   @map("user_id")
+  source         String    @default("mcp") @db.VarChar(32)
+  sourceAgent    String?   @map("source_agent") @db.VarChar(200)
+  action         String    @db.VarChar(32)
+  entityType     String    @map("entity_type") @db.VarChar(50)
+  entityId       String    @map("entity_id")
+  payload        Json      @map("payload_json") @db.JsonB
+  payloadHash    String    @map("payload_hash") @db.Char(64)
+  sourceSystem   String?   @map("source_system") @db.VarChar(100)
+  sourceBatchId  String?   @map("source_batch_id") @db.Char(64)
+  sourceTable    String?   @map("source_table") @db.VarChar(100)
+  sourceId       String?   @map("source_id")
+  sourceHash     String?   @map("source_hash") @db.Char(64)
+  mappingVersion String?   @map("mapping_version") @db.VarChar(100)
+  restored       Boolean   @default(false)
+  restoredAt     DateTime? @map("restored_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby   Baby   @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([familyId, babyId, createdAt(sort: Desc), id(sort: Desc)], name: "ix_record_snapshots_baby_created")
+  @@index([familyId, babyId, entityType, restored, createdAt(sort: Desc)], name: "ix_record_snapshots_restore_lookup")
+  @@index([sourceBatchId, sourceTable, sourceId], name: "ix_record_snapshots_source")
+  @@map("record_snapshots")
   @@schema("public")
 }
 
@@ -777,6 +822,7 @@ model Attachment {
   uploader User   @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
 
   medicalReports MedicalReportAttachment[]
+  aiArchiveEntries AiArchiveEntry[]
 
   @@index([familyId, status], name: "ix_attachments_family_status")
   @@index([babyId, status], name: "ix_attachments_baby_status")
@@ -1118,6 +1164,72 @@ model AiRunEvent {
   @@unique([runId, sequence], name: "uq_ai_run_events_seq")
   @@index([runId, sequence(sort: Asc)], name: "ix_ai_run_events_run")
   @@map("ai_run_events")
+  @@schema("public")
+}
+
+// Immutable legacy AI audit content.  The source payload and hashes are
+// retained for reconciliation, while owner scope and private attachment
+// references are explicit.  Rows without a proven owner or private object
+// stay quarantined and are never exposed by an online DTO.
+model AiArchiveEntry {
+  id             String    @id
+  sourceBatchId  String    @map("source_batch_id") @db.Char(64)
+  sourceSystem   String    @map("source_system") @db.VarChar(100)
+  sourceTable    String    @default("AiArchive") @map("source_table") @db.VarChar(100)
+  sourceId       String    @map("source_id")
+  sourceHash     String    @map("source_hash") @db.Char(64)
+  kind           String    @db.VarChar(32)
+  filePath       String?   @map("file_path")
+  content        String?
+  contentHash    String    @map("content_hash") @db.Char(64)
+  byteSize       Int?      @map("byte_size")
+  userId         String?   @map("user_id")
+  familyId       String?   @map("family_id")
+  babyId         String?   @map("baby_id")
+  attachmentId   String?   @map("attachment_id")
+  status         String    @default("quarantined") @db.VarChar(20)
+  quarantineCode String?   @map("quarantine_code") @db.VarChar(100)
+  metadata       Json?     @db.JsonB
+  createdAt      DateTime  @map("created_at") @db.Timestamptz(3)
+
+  // Mapped archive rows are immutable evidence. Owner/family/attachment
+  // deletion must first run an explicit quarantine workflow; silent SET NULL
+  // would leave a row marked mapped without an ACL.
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  family     Family?     @relation(fields: [familyId], references: [id], onDelete: Restrict)
+  baby       Baby?       @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Restrict)
+  attachment Attachment? @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceBatchId, sourceTable, sourceId], name: "uq_ai_archive_entries_source")
+  @@index([familyId, babyId, createdAt(sort: Desc), id(sort: Desc)], name: "ix_ai_archive_entries_scope_created")
+  @@index([kind, createdAt(sort: Desc), id(sort: Desc)], name: "ix_ai_archive_entries_kind_created")
+  @@index([attachmentId], name: "ix_ai_archive_entries_attachment")
+  @@index([status, createdAt(sort: Desc)], name: "ix_ai_archive_entries_status_created")
+  @@map("ai_archive_entries")
+  @@schema("public")
+}
+
+// Durable voice result history.  The family and baby foreign keys make the
+// authorization scope explicit instead of deriving it from client input.
+model AgentVoiceLog {
+  id           String   @id
+  userId       String   @map("user_id")
+  familyId     String   @map("family_id")
+  babyId       String   @map("baby_id")
+  prompt       String
+  reply        String
+  isAsync      Boolean  @default(false) @map("is_async")
+  isFastPath   Boolean  @default(false) @map("is_fast_path")
+  acknowledged Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  baby   Baby   @relation(fields: [familyId, babyId], references: [familyId, id], onDelete: Cascade)
+
+  @@index([userId, acknowledged, createdAt(sort: Desc), id(sort: Desc)], name: "ix_agent_voice_logs_user_ack_created")
+  @@index([babyId, createdAt(sort: Desc), id(sort: Desc)], name: "ix_agent_voice_logs_baby_created")
+  @@map("agent_voice_logs")
   @@schema("public")
 }
 
