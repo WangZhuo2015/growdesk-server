@@ -25,6 +25,11 @@
 真实 S3 attachment PUT/complete/delete。测试只创建 `test_public_api_*` 数据，最后删除
 4 个测试家庭和 2 个测试用户，cleanup 状态为 passed。
 
+Web BFF 另做真实 register → login → session cookie → `/api/auth/me` smoke，状态分别为
+201/200/200；随后从 preview PostgreSQL 确认该用户确由新后端持久化并精确清理。首次
+smoke 因测试脚本误设 cookie 名留下的 1 个专属前缀账号，也在重跑前清理；最终
+`cleanup=true`，实际 cookie 名仅作为名称验证，未输出 cookie 值。
+
 最终只读复核：
 
 ```text
