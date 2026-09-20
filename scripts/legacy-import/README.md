@@ -29,5 +29,12 @@ reads `legacy.json`, `files.json`, `manifest.json`, and optional exported
 Attachment IDs/object keys and explicit quarantine entries for missing files,
 ownership conflicts, path traversal, size/hash/MIME mismatches, and orphan
 files. It never writes PostgreSQL or S3/MinIO and its `storage` fields remain
-`not_written`; a later worker must copy and verify the object before inserting
-an Attachment row and transitioning it to `ready`.
+`not_written`. `attachment-promotion-runtime.ts` is the separately invoked
+owned-storage worker: it rechecks the immutable archive file with a streaming
+SHA-256/size guard, copies to the private S3/MinIO bucket, verifies MIME/size/
+hash with HEAD plus streaming GET, and commits an idempotent Attachment row plus
+`LegacyIdempotencyMapping` in PostgreSQL before returning `ready`. It emits
+machine-readable quarantine on any owner/path/object/DB conflict and exposes
+`reconcile()` for a verified object left by a rolled-back database transaction.
+It does not backfill business references; the S3 PUT and PostgreSQL commit are
+still separate systems and require the explicit receipt/reconcile boundary.

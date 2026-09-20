@@ -2,7 +2,7 @@
 
 日期：2026-09-19
 
-本切片只实现隔离历史归档的只读附件映射规划器：
+本报告先记录隔离历史归档的只读附件映射规划器（第一阶段）：
 `[scripts/legacy-import/attachment_promotion.py](../../../scripts/legacy-import/attachment_promotion.py)`。
 它读取 `legacy.json`、`files.json`、`manifest.json` 和可选的隔离
 `import_rows.json`（也可由调用方传入导出的 import rows），生成确定性的
@@ -39,9 +39,43 @@ git diff --check                                                                
 独立复核补充：拒绝仅凭允许的文件扩展名推断 MIME，并在解析前拒绝符号链接形式的
 archive root；相应回归测试已包含在上述 9/23 项结果中。
 
-后续独立切片仍需在 owned PG/MinIO 中完成：验证 `legacy_import.import_batches` /
-`import_rows` 和当前 canonical identity 的一致性；在受控对象存储中复制后重新流式
-核对 size/hash/MIME；在同一个可重试、幂等的数据库事务里写 Attachment 与 promotion
-receipt，并在对象核验成功后将 status 置为 `ready`；最后以同一事务更新 Growth、Medical、
-Baby avatar、AI/语音引用并做逐文件对账。对象存储复制与 PostgreSQL 提交本身不是单一
-原子操作，必须另有可恢复的 outbox/reconcile/quarantine 处理。
+第一阶段之后仍需验证 `legacy_import.import_batches` / `import_rows` 和当前 canonical
+identity 的一致性；最后以独立事务更新 Growth、Medical、Baby avatar、AI/语音引用并做
+逐文件对账。对象存储复制与 PostgreSQL 提交本身不是单一原子操作，必须有可恢复的
+outbox/reconcile/quarantine 处理。
+
+## Promotion runtime slice — 2026-09-19
+
+本轮补齐上述边界中的最小 promotion/reconcile worker：
+`[scripts/legacy-import/attachment-promotion-runtime.ts](../../../scripts/legacy-import/attachment-promotion-runtime.ts)`。
+它只接受 planner receipt 和隔离归档根目录，先重验 archive-relative path、regular
+non-symlink file、size/SHA-256 和 owner family/baby/uploader，再用流式读取复制到指定
+私有 S3/MinIO bucket，并通过 HEAD + 流式 GET 重验对象的 MIME、size、SHA-256。对象已经
+存在且完全一致时不重复写；不一致对象不会被覆盖，结果进入 machine-readable quarantine。
+
+`Attachment` 与 `LegacyIdempotencyMapping(targetEntityType=attachment)` 在同一个
+PostgreSQL transaction 中写入。source key、target Attachment ID 和 object key 都来自
+planner 的稳定字段；事务内使用 PostgreSQL advisory xact lock 串行同源重试，重复执行会
+返回 `replayed`，对象残留但数据库事务回滚后 `reconcile()` 会补齐 `ready` row 和 mapping。
+任何 ownership、path、missing、hash/size/MIME、mapping conflict 或 DB 错误都 fail closed，
+不会创建 Growth/Medical/Baby/AI 引用。测试注入的 commit failure 只用于证明事务回滚和
+残留对象可恢复；生产调用不传 hooks。
+
+owned PG18 + MinIO 验证：
+
+```text
+npm run backend:typecheck                                                                  # passed
+npm run backend:build                                                                      # passed
+npx eslint scripts/legacy-import/attachment-promotion-runtime.ts tests/integration/legacy-attachment-promotion.test.ts # passed
+MINIO_BIN=/opt/homebrew/bin python3 scripts/test-integration.py --s3                       # passed; 2 S3 suites, full owned suite 215 tests
+git diff --check                                                                            # passed
+```
+
+新增集成用例覆盖：同一 receipt 重跑幂等、错误 MIME/对象 hash quarantine、DB transaction
+failure 后 object residue reconcile、baby/family 跨租户拒绝且不复制对象；所有用户、家庭、
+宝宝、bucket 和归档均为 runner 创建的 `test_`/临时资源。runtime 仍是
+`IMPLEMENTED_NOT_REVIEWED`，没有生产 DB/secret/归档访问，也没有 deploy wrapper 变更。
+
+剩余边界：S3 PUT 与 PostgreSQL commit 不是跨系统原子操作；本切片以 receipt/quarantine
+和显式 reconcile 提供恢复路径，尚未接任务队列/outbox、批量对账、源 `import_rows` DB
+校验，亦未回填任何业务引用或处理人工 quarantine 决策。
