@@ -114,7 +114,7 @@ test("owned PG backfills private avatar, growth, medical and AI message referenc
   const avatarAttachmentId = crypto.randomUUID();
   const growthAttachmentId = `test_reference_backfill_growth_attachment_${suffix}`;
   const medicalAttachmentId = `test_reference_backfill_medical_attachment_${suffix}`;
-  const aiAttachmentId = `test_reference_backfill_ai_attachment_${suffix}`;
+  const aiAttachmentId = crypto.randomUUID();
   const otherAttachmentId = `test_reference_backfill_other_attachment_${suffix}`;
   const growthPath = "public/uploads/growth/test-growth.png";
   const medicalPath = "public/uploads/medical/test-medical.png";
@@ -283,7 +283,7 @@ test("owned PG backfills private avatar, growth, medical and AI message referenc
   const plan = planAttachmentReferenceBackfill(report);
   assert.equal(plan.status, "planned");
   const first = await backfillAttachmentReferences(database.prisma, plan);
-  assert.equal(first.status, "completed");
+  assert.equal(first.status, "completed", JSON.stringify(first));
   assert.deepEqual(first.receipts.map((item) => item.status), ["committed", "committed", "committed", "committed"]);
   assert.equal((await database.prisma.growthMeasurement.findUniqueOrThrow({ where: { id: growthId } })).attachmentId, growthAttachmentId);
   assert.equal(await database.prisma.medicalReportAttachment.count({ where: { reportId: medicalId, attachmentId: medicalAttachmentId } }), 1);
