@@ -22,7 +22,7 @@ Validation completed locally without Docker, PostgreSQL, SQLite production
 files, or credentials:
 
 ```text
-python3 scripts/legacy-import/test_cutover_runner.py       # 7 passed
+python3 scripts/legacy-import/test_cutover_runner.py       # 8 passed
 python3 scripts/legacy-import/test_verify_target.py        # 2 passed
 python3 -m py_compile deploy/import-legacy-target.py scripts/legacy-import/cutover_runner.py scripts/legacy-import/verify_target.py
 npx tsc -p tsconfig.backend.json --noEmit
