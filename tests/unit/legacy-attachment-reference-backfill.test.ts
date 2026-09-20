@@ -69,7 +69,7 @@ test("pure reference planner maps canonical business and AI message fields", () 
   assert.deepEqual(plan.quarantine, []);
 });
 
-test("unsupported AI job and voice references are reported without guessing a canonical field", () => {
+test("AI archive receipts are internally consumed while unsupported AI job references remain quarantined", () => {
   const report: PlannedAttachmentReport = {
     mappingVersion: ATTACHMENT_PROMOTION_MAPPING_VERSION,
     receipts: [
@@ -81,7 +81,7 @@ test("unsupported AI job and voice references are reported without guessing a ca
   const plan = planAttachmentReferenceBackfill(report);
   assert.equal(plan.status, "quarantined");
   assert.deepEqual(plan.references, []);
-  assert.deepEqual(plan.quarantine.map((item) => item.code), ["UNSUPPORTED_REFERENCE", "UNSUPPORTED_REFERENCE"]);
+  assert.deepEqual(plan.quarantine.map((item) => item.code), ["UNSUPPORTED_REFERENCE"]);
 });
 
 test("planner fails closed on duplicate, public URL, and purpose mismatch", () => {

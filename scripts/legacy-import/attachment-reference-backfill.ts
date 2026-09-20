@@ -183,7 +183,7 @@ function quarantineFromReceipt(error: unknown, receipt: unknown): ReferenceBackf
   return { code: failure.code, message: failure.message, ...details, ...failure.details };
 }
 
-function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference {
+function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference | null {
   if (!isRecord(raw)) throw new ReferenceBackfillFailure("INVALID_RECEIPT", "attachment receipt must be an object");
   const sourceSystem = nonEmpty(raw.sourceSystem, "sourceSystem");
   const sourceBatchId = hash(raw.sourceBatchId, "sourceBatchId");
@@ -202,6 +202,12 @@ function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference {
   if (attachment.purpose !== "avatar" && attachment.purpose !== "growth_photo" && attachment.purpose !== "medical_report" && attachment.purpose !== "voice_note" && attachment.purpose !== "ai_input") {
     throw new ReferenceBackfillFailure("INVALID_PURPOSE", "attachment purpose is not supported");
   }
+  if (raw.targetSha256 !== attachment.sha256 || raw.targetByteSize !== attachment.byteSize || raw.targetObjectKey !== attachment.objectKey) {
+    throw new ReferenceBackfillFailure("TARGET_METADATA_MISMATCH", "attachment receipt metadata does not match its target");
+  }
+  // AiArchive materialization consumes this receipt directly into
+  // ai_archive_entries.attachment_id. It is not a second business reference.
+  if (sourceTable === "AiArchive" && sourceField === "filePath") return null;
   const rule = ruleFor(sourceTable, sourceField);
   if (!rule) {
     throw new ReferenceBackfillFailure(
@@ -212,11 +218,8 @@ function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference {
   if (attachment.purpose !== rule.purpose) {
     throw new ReferenceBackfillFailure("PURPOSE_MISMATCH", "attachment purpose does not match the legacy reference field");
   }
-  if (raw.targetSha256 !== attachment.sha256 || raw.targetByteSize !== attachment.byteSize || raw.targetObjectKey !== attachment.objectKey) {
-    throw new ReferenceBackfillFailure("TARGET_METADATA_MISMATCH", "attachment receipt metadata does not match its target");
-  }
   const babyId = attachment.babyId === null ? null : nonEmpty(attachment.babyId, "attachment.babyId");
-  if (rule.kind !== "baby_avatar" && babyId === null) {
+  if (rule.kind !== "baby_avatar" && rule.kind !== "ai_message_image" && babyId === null) {
     throw new ReferenceBackfillFailure("MISSING_BABY_SCOPE", "growth and medical attachments must carry a baby scope");
   }
   const candidate = {
@@ -258,6 +261,7 @@ export function planAttachmentReferenceBackfill(report: PlannedAttachmentReport)
   for (const receipt of report.receipts) {
     try {
       const reference = validateReceipt(receipt);
+      if (reference === null) continue;
       if (seen.has(reference.sourceKey)) throw new ReferenceBackfillFailure("DUPLICATE_SOURCE_REFERENCE", "source reference appears more than once");
       seen.add(reference.sourceKey);
       references.push(reference);
@@ -427,15 +431,18 @@ async function verifyAttachmentProof(tx: Tx, reference: PlannedBusinessAttachmen
   }
 }
 
-async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAttachmentReference): Promise<{ targetEntityId: string; familyId: string; babyId: string }> {
+async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAttachmentReference): Promise<{ targetEntityId: string; familyId: string; babyId: string | null }> {
   const targetEntityType = expectedBusinessMappingType(reference.kind);
-  const sourceKey = `${reference.sourceBatchId}/${reference.sourceTable}/${reference.sourceId}`;
+  const sourceKey = reference.kind === "ai_message_image"
+    ? `AiChatMessage:${reference.sourceId}`
+    : `${reference.sourceBatchId}/${reference.sourceTable}/${reference.sourceId}`;
   const mapping = await tx.legacyIdempotencyMapping.findUnique({
     where: { uq_legacy_idempotency_type_source: { targetEntityType, sourceKey } },
-    select: { targetEntityId: true, status: true, sourceSystem: true, sourceBatchId: true, sourceTable: true, sourceId: true, sourceHash: true },
+    select: { targetEntityId: true, status: true, sourceSystem: true, sourceBatchId: true, sourceTable: true, sourceId: true, sourceHash: true, mappingVersion: true },
   });
   if (!mapping || mapping.status !== "mapped" || mapping.sourceSystem !== reference.sourceSystem || mapping.sourceBatchId !== reference.sourceBatchId ||
-      mapping.sourceTable !== reference.sourceTable || mapping.sourceId !== reference.sourceId || mapping.sourceHash !== reference.sourceHash) {
+      mapping.sourceTable !== reference.sourceTable || mapping.sourceId !== reference.sourceId || mapping.sourceHash !== reference.sourceHash ||
+      (reference.kind === "ai_message_image" && mapping.mappingVersion !== "ai-history-v1")) {
     throw new ReferenceBackfillFailure("BUSINESS_RECEIPT_MISMATCH", "canonical business target is missing an exact legacy materialization receipt", { sourceKey });
   }
   if (targetEntityType === "growth") {
@@ -448,11 +455,24 @@ async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAtt
     await tx.$queryRaw`SELECT id FROM public.ai_messages WHERE id = ${mapping.targetEntityId} FOR UPDATE`;
     const target = await tx.aiChatMessage.findUnique({
       where: { id: mapping.targetEntityId },
-      select: { id: true, session: { select: { baby: { select: { id: true, familyId: true, deletedAt: true } } } } },
+      select: {
+        id: true,
+        session: {
+          select: {
+            baby: { select: { id: true, familyId: true, deletedAt: true } },
+            user: { select: { familyMemberships: { where: { status: "active", deletedAt: null }, select: { familyId: true } } } },
+          },
+        },
+      },
     });
     if (!target) throw new ReferenceBackfillFailure("BUSINESS_TARGET_MISSING", "AI message target from legacy receipt is missing", { sourceKey });
-    if (!target.session.baby || target.session.baby.deletedAt !== null) throw new ReferenceBackfillFailure("BUSINESS_TARGET_SCOPE_MISMATCH", "AI message session has no active baby scope", { sourceKey });
-    return { targetEntityId: target.id, familyId: target.session.baby.familyId, babyId: target.session.baby.id };
+    if (target.session.baby && target.session.baby.deletedAt === null) {
+      return { targetEntityId: target.id, familyId: target.session.baby.familyId, babyId: target.session.baby.id };
+    }
+    const familyIds = [...new Set(target.session.user.familyMemberships.map((membership) => membership.familyId))];
+    const familyId = familyIds[0];
+    if (familyIds.length !== 1 || !familyId) throw new ReferenceBackfillFailure("BUSINESS_TARGET_SCOPE_AMBIGUOUS", "AI message without a baby does not have one unambiguous active family", { sourceKey });
+    return { targetEntityId: target.id, familyId, babyId: null };
   }
   await tx.$queryRaw`SELECT id FROM public.medical_reports WHERE id = ${mapping.targetEntityId} FOR UPDATE`;
   const target = await tx.medicalReport.findUnique({ where: { id: mapping.targetEntityId }, select: { id: true, familyId: true, babyId: true } });
@@ -460,7 +480,7 @@ async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAtt
   return { targetEntityId: target.id, familyId: target.familyId, babyId: target.babyId };
 }
 
-async function verifyBabyTarget(tx: Tx, reference: PlannedBusinessAttachmentReference, payload: Prisma.JsonValue): Promise<{ targetEntityId: string; familyId: string; babyId: string }> {
+async function verifyBabyTarget(tx: Tx, reference: PlannedBusinessAttachmentReference, payload: Prisma.JsonValue): Promise<{ targetEntityId: string; familyId: string; babyId: string | null }> {
   if (reference.sourceTable !== "Baby" || reference.sourceId !== reference.targetBabyId) {
     throw new ReferenceBackfillFailure("BABY_TARGET_MISMATCH", "avatar source ID is not the canonical Baby ID", { sourceKey: reference.sourceKey });
   }

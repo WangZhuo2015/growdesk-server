@@ -91,7 +91,7 @@ function reportReceipt(options: {
   };
 }
 
-test("owned PG backfills private avatar, growth and medical references atomically and idempotently", async (t) => {
+test("owned PG backfills private avatar, growth, medical and AI message references atomically and idempotently", async (t) => {
   const run = readRun();
   const databaseUrl = requireTestDatabaseUrl(
     `postgresql://${run.user}:${run.password}@127.0.0.1:${run.pgPort}/${run.database}?sslmode=disable`,
@@ -109,29 +109,37 @@ test("owned PG backfills private avatar, growth and medical references atomicall
   const growthId = `test_reference_backfill_growth_${suffix}`;
   const foreignGrowthId = `test_reference_backfill_foreign_growth_${suffix}`;
   const medicalId = `test_reference_backfill_medical_${suffix}`;
+  const aiSessionId = `test_reference_backfill_ai_session_${suffix}`;
+  const aiMessageId = `test_reference_backfill_ai_message_${suffix}`;
   const avatarAttachmentId = crypto.randomUUID();
   const growthAttachmentId = `test_reference_backfill_growth_attachment_${suffix}`;
   const medicalAttachmentId = `test_reference_backfill_medical_attachment_${suffix}`;
+  const aiAttachmentId = `test_reference_backfill_ai_attachment_${suffix}`;
   const otherAttachmentId = `test_reference_backfill_other_attachment_${suffix}`;
   const growthPath = "public/uploads/growth/test-growth.png";
   const medicalPath = "public/uploads/medical/test-medical.png";
   const avatarPath = "public/uploads/avatar/test-avatar.png";
+  const aiPath = "public/uploads/ai/test-input.png";
   const babyPayload = { id: babyId, familyId, nickname: "test_reference_backfill_baby", avatarUrl: "/uploads/avatar/test-avatar.png" };
   const growthPayload = { id: growthId, babyId, date: "2026-09-18", imageUrl: "/uploads/growth/test-growth.png" };
   const medicalPayload = { id: medicalId, babyId, date: "2026-09-18", title: "test_reference_backfill_medical", imageUrl: "/uploads/medical/test-medical.png" };
+  const aiPayload = { id: aiMessageId, sessionId: aiSessionId, role: "user", content: "test image", image: "/uploads/ai/test-input.png" };
   const rows = [
     { table: "Baby", id: babyId, path: avatarPath, payload: babyPayload, familyId, babyId: null },
     { table: "GrowthMeasurement", id: growthId, path: growthPath, payload: growthPayload, familyId, babyId },
     { table: "MedicalReport", id: medicalId, path: medicalPath, payload: medicalPayload, familyId, babyId },
+    { table: "AiChatMessage", id: aiMessageId, path: aiPath, payload: aiPayload, familyId, babyId },
   ] as const;
   const sourceHashes = new Map(rows.map((row) => [`${row.table}/${row.id}`, sha256(row.payload)]));
-  const allAttachmentIds = [avatarAttachmentId, growthAttachmentId, medicalAttachmentId, otherAttachmentId];
+  const allAttachmentIds = [avatarAttachmentId, growthAttachmentId, medicalAttachmentId, aiAttachmentId, otherAttachmentId];
 
   t.after(async () => {
     await database.prisma.legacyIdempotencyMapping.deleteMany({ where: { sourceBatchId: batchId } });
     await database.prisma.medicalReportAttachment.deleteMany({ where: { reportId: medicalId } });
     await database.prisma.growthMeasurement.deleteMany({ where: { id: growthId } });
     await database.prisma.medicalReport.deleteMany({ where: { id: medicalId } });
+    await database.prisma.aiChatMessage.deleteMany({ where: { id: aiMessageId } });
+    await database.prisma.aiSession.deleteMany({ where: { id: aiSessionId } });
     await database.prisma.attachment.deleteMany({ where: { id: { in: allAttachmentIds } } });
     await database.prisma.legacyImportRow.deleteMany({ where: { batchId } });
     await database.prisma.legacyImportBatch.deleteMany({ where: { id: batchId } });
@@ -160,7 +168,7 @@ test("owned PG backfills private avatar, growth and medical references atomicall
       checksum: batchId,
       mappingVersion: "identity-v1",
       rowCount: rows.length,
-      tableCounts: { Baby: 1, GrowthMeasurement: 1, MedicalReport: 1 },
+      tableCounts: { Baby: 1, GrowthMeasurement: 1, MedicalReport: 1, AiChatMessage: 1 },
     },
   });
   for (const row of rows) {
@@ -182,6 +190,8 @@ test("owned PG backfills private avatar, growth and medical references atomicall
   await database.prisma.medicalReport.create({
     data: { id: medicalId, familyId, babyId, caregiverId: userId, reportDate: new Date("2026-09-18"), title: "test_reference_backfill_medical", hospital: null, department: null, diagnosis: null, notes: null, items: [] },
   });
+  await database.prisma.aiSession.create({ data: { id: aiSessionId, userId, babyId, title: "test reference AI" } });
+  await database.prisma.aiChatMessage.create({ data: { id: aiMessageId, sessionId: aiSessionId, role: "user", content: "test image", image: null } });
   for (const [type, id, table, sourceId] of [
     ["growth", `test_reference_backfill_growth_mapping_${suffix}`, "GrowthMeasurement", growthId],
     ["medical", `test_reference_backfill_medical_mapping_${suffix}`, "MedicalReport", medicalId],
@@ -202,11 +212,27 @@ test("owned PG backfills private avatar, growth and medical references atomicall
       },
     });
   }
+  await database.prisma.legacyIdempotencyMapping.create({
+    data: {
+      id: `test_reference_backfill_ai_mapping_${suffix}`,
+      targetEntityType: "ai_message",
+      targetEntityId: aiMessageId,
+      sourceKey: `AiChatMessage:${aiMessageId}`,
+      status: "mapped",
+      sourceSystem,
+      sourceBatchId: batchId,
+      sourceTable: "AiChatMessage",
+      sourceId: aiMessageId,
+      sourceHash: sourceHashes.get(`AiChatMessage/${aiMessageId}`)!,
+      mappingVersion: "ai-history-v1",
+    },
+  });
 
   const receipts = [
     reportReceipt({ sourceSystem, sourceBatchId: batchId, sourceTable: "Baby", sourceId: babyId, sourceField: "avatarUrl", sourcePath: avatarPath, sourceHash: sourceHashes.get(`Baby/${babyId}`)!, targetAttachmentId: avatarAttachmentId, familyId, babyId: null, purpose: "avatar", uploaderId: userId }),
     reportReceipt({ sourceSystem, sourceBatchId: batchId, sourceTable: "GrowthMeasurement", sourceId: growthId, sourceField: "imageUrl", sourcePath: growthPath, sourceHash: sourceHashes.get(`GrowthMeasurement/${growthId}`)!, targetAttachmentId: growthAttachmentId, familyId, babyId, purpose: "growth_photo", uploaderId: userId }),
     reportReceipt({ sourceSystem, sourceBatchId: batchId, sourceTable: "MedicalReport", sourceId: medicalId, sourceField: "imageUrl", sourcePath: medicalPath, sourceHash: sourceHashes.get(`MedicalReport/${medicalId}`)!, targetAttachmentId: medicalAttachmentId, familyId, babyId, purpose: "medical_report", uploaderId: userId }),
+    reportReceipt({ sourceSystem, sourceBatchId: batchId, sourceTable: "AiChatMessage", sourceId: aiMessageId, sourceField: "image", sourcePath: aiPath, sourceHash: sourceHashes.get(`AiChatMessage/${aiMessageId}`)!, targetAttachmentId: aiAttachmentId, familyId, babyId, purpose: "ai_input", uploaderId: userId }),
   ];
   for (const receipt of receipts) {
     await database.prisma.attachment.create({
@@ -258,7 +284,7 @@ test("owned PG backfills private avatar, growth and medical references atomicall
   assert.equal(plan.status, "planned");
   const first = await backfillAttachmentReferences(database.prisma, plan);
   assert.equal(first.status, "completed");
-  assert.deepEqual(first.receipts.map((item) => item.status), ["committed", "committed", "committed"]);
+  assert.deepEqual(first.receipts.map((item) => item.status), ["committed", "committed", "committed", "committed"]);
   assert.equal((await database.prisma.growthMeasurement.findUniqueOrThrow({ where: { id: growthId } })).attachmentId, growthAttachmentId);
   assert.equal(await database.prisma.medicalReportAttachment.count({ where: { reportId: medicalId, attachmentId: medicalAttachmentId } }), 1);
   const mappedBaby = await database.prisma.baby.findUniqueOrThrow({ where: { id: babyId } });
@@ -266,11 +292,12 @@ test("owned PG backfills private avatar, growth and medical references atomicall
   assert.equal((mappedBaby.avatarMetadata as { state?: string }).state, "private_attachment_mapped");
   assert.equal("legacyUrl" in (mappedBaby.avatarMetadata as object), false);
   assert.equal((await database.prisma.attachment.findUniqueOrThrow({ where: { id: avatarAttachmentId } })).babyId, babyId);
-  assert.equal(await database.prisma.legacyIdempotencyMapping.count({ where: { targetEntityType: "attachment_reference", sourceBatchId: batchId } }), 3);
+  assert.equal((await database.prisma.aiChatMessage.findUniqueOrThrow({ where: { id: aiMessageId } })).image, `/api/attachments/${aiAttachmentId}`);
+  assert.equal(await database.prisma.legacyIdempotencyMapping.count({ where: { targetEntityType: "attachment_reference", sourceBatchId: batchId } }), 4);
 
   const replay = await backfillAttachmentReferences(database.prisma, plan);
   assert.equal(replay.status, "completed");
-  assert.deepEqual(replay.receipts.map((item) => item.status), ["replayed", "replayed", "replayed"]);
+  assert.deepEqual(replay.receipts.map((item) => item.status), ["replayed", "replayed", "replayed", "replayed"]);
   assert.equal(await database.prisma.medicalReportAttachment.count({ where: { reportId: medicalId, attachmentId: medicalAttachmentId } }), 1);
 
   await database.prisma.baby.update({ where: { id: babyId }, data: { avatarUrl: "https://legacy.test/public-avatar.png" } });
