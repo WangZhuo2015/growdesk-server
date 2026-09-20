@@ -163,13 +163,16 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 # Opt-in only: this suite uses the same owned manifest and
                 # creates/cleans a unique test_ tenant inside the running DB.
                 command(['python3', 'scripts/legacy-import/test_care_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_food_materializer_integration.py'], env=env)
+                command(['python3', 'scripts/legacy-import/test_medical_materializer_integration.py'], env=env)
             command(['node', '--import', 'tsx', '--test', 'tests/integration/foundation-migration.test.ts', 'tests/integration/unit-of-work.test.ts', 'tests/integration/auth.test.ts', 'tests/integration/auth-refresh.test.ts', 'tests/integration/family-baby.test.ts', 'tests/integration/auth-recovery.test.ts', 'tests/integration/feeding.test.ts', 'tests/integration/diaper.test.ts', 'tests/integration/sleep.test.ts', 'tests/integration/food.test.ts', 'tests/integration/supplement.test.ts', 'tests/integration/growth.test.ts', 'tests/integration/timeline.test.ts', 'tests/integration/bff-session.test.ts', 'tests/integration/attachments.test.ts', 'tests/integration/growth-attachments.test.ts', 'tests/integration/replay-permission-and-legacy.test.ts', 'tests/integration/medical-vaccines.test.ts', 'tests/integration/tasks.test.ts', 'tests/integration/ai-runs.test.ts', 'tests/integration/sync.test.ts', 'tests/integration/notifications.test.ts'], env=env)
             command(['node', '--import', 'tsx', '--test', 'tests/integration/web-feeding-regression.test.ts', 'tests/integration/care-isolation-regression.test.ts'], env=env)
             # Run the durable Web conversation regression after schema setup,
             # in the same exclusively owned database. Failures remain fatal.
             command(['node', '--import', 'tsx', '--test', 'tests/integration/web-ai-session-regression.test.ts'], env=env)
             if s3:
-                command(['node', '--import', 'tsx', '--test', 'tests/integration/owned-object-storage.test.ts'], env=env)
+                command(['node', '--import', 'tsx', '--test', 'tests/integration/owned-object-storage.test.ts',
+                         'tests/integration/legacy-attachment-promotion.test.ts'], env=env)
             if web_root is not None:
                 # This suite starts both listeners itself. Keep the existing
                 # process-injection suites as the default and give the real
