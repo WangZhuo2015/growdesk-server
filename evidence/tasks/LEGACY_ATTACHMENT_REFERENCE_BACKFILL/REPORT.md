@@ -1,6 +1,6 @@
 # Legacy attachment reference backfill
 
-Status: `IMPLEMENTED_NOT_REVIEWED`
+Status: `REVIEWED_LOCALLY_NOT_DEPLOYED`
 
 This slice adds a separate business-reference boundary after the existing
 attachment promotion runtime. It links only canonical references that are
@@ -44,10 +44,11 @@ production credentials or connect to a production service.
 - `npx eslint scripts/legacy-import/attachment-reference-backfill.ts tests/unit/legacy-attachment-reference-backfill.test.ts tests/integration/legacy-attachment-reference-backfill.test.ts` — passed.
 - `node --import tsx --test tests/unit/legacy-attachment-reference-backfill.test.ts` — 3 passed.
 - `node --import tsx --test tests/integration/legacy-attachment-reference-backfill.test.ts` in the one-off owned PostgreSQL 18 harness — 1 passed.
+- `MINIO_BIN=/private/tmp/growdesk-minio-tools-20260919 python3 scripts/test-integration.py --legacy-care --s3` — passed after independent review, including the complete migration chain, all API integration suites, Redis, MinIO, attachment promotion, and this reference backfill regression.
 
 The owned PostgreSQL test proves first-run writes for Baby/Growth/Medical,
 private avatar URL output without `legacyUrl`, ready-state enforcement,
 cross-family rejection, public URL conflict rejection, idempotent replay, and
 whole-batch rollback when a later reference crosses tenant scope.
 
-Independent review and deployment remain outstanding.
+Preview/production migration execution and deployment remain outstanding.
