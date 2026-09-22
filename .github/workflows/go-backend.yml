@@ -1,10 +1,10 @@
 name: Go backend
 on:
   push:
-    branches: [codex/go-backend-parity-20260922]
+    branches: [main, codex/web-parity-20260919, codex/go-backend-parity-20260922]
   pull_request:
     branches: [main, codex/web-parity-20260919]
-    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-backend.yml']
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-backend.yml', 'docs/GO*', 'evidence/tasks/GO*/**']
 permissions:
   contents: read
 concurrency:
@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-go@v6
         with:
@@ -31,7 +32,7 @@ jobs:
           git diff --exit-code -- go.mod go.sum
       - name: Build and race-test the native implementation
         run: |
-          python3 -m py_compile scripts/go-companion-integration.py
+          python3 -m py_compile scripts/go-*.py
           go vet ./...
           go test -race -count=1 ./...
           mkdir -p dist-go
@@ -39,17 +40,19 @@ jobs:
           dist-go/growdesk-api --version
           dist-go/growdesk-api --contract-inventory > dist-go/operations.json
           git rev-parse HEAD > dist-go/source-sha.txt
-          (cd dist-go && sha256sum growdesk-api operations.json > SHA256SUMS)
+          (cd dist-go && sha256sum growdesk-api operations.json source-sha.txt > SHA256SUMS)
       - uses: actions/upload-artifact@v4
         with:
-          name: native-go-${{ github.sha }}
+          name: native-go-${{ github.event.pull_request.head.sha || github.sha }}
           path: dist-go/
+          if-no-files-found: error
   native-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: actions/setup-go@v6
         with:
@@ -66,20 +69,24 @@ jobs:
         run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --report dist-go/native-domain.json
       - name: Native companion persistence, restart and authorization
         run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --report dist-go/native-companion.json
+      - name: Native BFF lifecycle, races and rollback
+        run: python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --report dist-go/native-session-review.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: native-domain-${{ github.sha }}
+          name: native-domain-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             dist-go/native-domain.json
             dist-go/native-companion.json
-          if-no-files-found: ignore
+            dist-go/native-session-review.json
+          if-no-files-found: warn
   native-reference-parity:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
       - name: Keep the reference implementation and schema immutable
@@ -104,11 +111,14 @@ jobs:
         run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --reference --report dist-go/http-parity.json
       - name: Compare companion HTTP and cross-runtime committed state
         run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
+      - name: Verify real reference BFF handoff and lifecycle boundaries
+        run: python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --reference --report dist-go/session-reference.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: http-parity-${{ github.sha }}
+          name: http-parity-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             dist-go/http-parity.json
             dist-go/companion-parity.json
-          if-no-files-found: ignore
+            dist-go/session-reference.json
+          if-no-files-found: warn
