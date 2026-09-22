@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -21,6 +22,18 @@ var wireFormats = []openapi3.SchemaValidationOption{
 		_, err := asTime(value)
 		return err
 	})),
+}
+
+// JSON.stringify emits 0 for a numeric -0. Without this normalization, an
+// otherwise identical retry with 0 produces a different Go receipt hash.
+// Decimal strings remain strings: "0.0" must not be conflated with numeric 0.
+func normalizedJSONZero(value any) any {
+	if number, ok := value.(json.Number); ok {
+		if numeric, err := number.Float64(); err == nil && numeric == 0 {
+			return json.Number("0")
+		}
+	}
+	return value
 }
 
 // Match the reference Ajv removeAdditional/useDefaults behavior for explicit
@@ -57,6 +70,8 @@ func normalizeBody(schema *openapi3.Schema, value any) error {
 				exists = true
 			}
 			if exists {
+				item = normalizedJSONZero(item)
+				object[key] = item
 				if err := normalizeBody(ref.Value, item); err != nil {
 					return err
 				}
@@ -64,7 +79,9 @@ func normalizeBody(schema *openapi3.Schema, value any) error {
 		}
 	}
 	if list, ok := value.([]any); ok && schema.Items != nil {
-		for _, item := range list {
+		for i, item := range list {
+			item = normalizedJSONZero(item)
+			list[i] = item
 			if err := normalizeBody(schema.Items.Value, item); err != nil {
 				return err
 			}
