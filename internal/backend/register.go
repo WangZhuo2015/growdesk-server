@@ -7,4 +7,8 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerFamilies()
 	s.registerBabies()
 	s.registerCare()
+	s.registerNotifications()
+	s.registerVoiceLogs()
+	s.registerWebAISessions()
+	s.registerFormulaProducts()
 }
