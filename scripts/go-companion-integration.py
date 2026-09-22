@@ -8,7 +8,6 @@ provider. Existing owned-environment guards and SQL migrations are reused.
 from __future__ import annotations
 
 import argparse
-import base64
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import importlib.util
@@ -17,7 +16,6 @@ from pathlib import Path
 import re
 import signal
 import subprocess
-import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('go_domain_harness', ROOT / 'scripts/go-domain-integration.py')
@@ -33,9 +31,8 @@ def fixed(number):
 
 
 class CompanionScenario(DOMAIN.Scenario):
-    def __init__(self, owned, base, native):
+    def __init__(self, owned, base):
         super().__init__(owned, base)
-        self.native = native
         self.durable_checks = []
 
     def normalize(self, value, key=''):
@@ -71,25 +68,20 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('POST', '/api/v1/families/join', 200, {'inviteCode': invite['inviteCode']}, viewer)
         self.call('POST', f'/api/v1/babies/{bid}/members', 201, {'userId': vid, 'role': 'viewer'}, owner)
         self.call('PATCH', f'/api/v1/families/{fid}/members/{vid}', 200, {'role': 'viewer'}, owner)
-
         self.notifications(uid, owner, oid, outsider)
         voice_id = self.voice_logs(bid, uid, owner, outsider, viewer)
         formula_id = self.formulas(fid, owner, outsider, viewer)
         session_id = self.sessions(fid, bid, uid, owner, outsider, viewer)
 
-        # Existing bearer credentials and all durable companion state must work
-        # in a newly started process; there is no in-memory success authority.
-        previous = self.base
+        # Terminate the owned process, then use the new endpoint for all further
+        # checks. Existing bearer credentials and state must survive that restart.
         self.base = restart_base()
         self.call('GET', f'/api/v1/voice/logs/{voice_id}', 200, token=owner, observe='voice survives process restart')
         self.call('GET', f'/api/v1/web/ai/sessions/{session_id}', 200, token=owner, observe='conversation survives process restart')
         self.call('GET', f'/api/v1/families/{fid}/nutrition/products?includeArchived=true', 200, token=owner,
                   observe='formula survives process restart')
-        self.base = previous
         self.durable_checks.append('fresh process reads committed state with existing credentials')
 
-        # Revoke explicit baby access while retaining old bearer tokens. Private
-        # user conversations remain available; baby-scoped history must disappear.
         self.call('DELETE', f'/api/v1/babies/{bid}/members/{vid}', 200, token=owner)
         self.call('GET', '/api/v1/voice/logs', 200, token=viewer, observe='voice hidden after caregiver revocation')
         self.call('GET', '/api/v1/web/ai/sessions', 200, token=viewer, observe='conversation hidden after caregiver revocation')
@@ -135,7 +127,7 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('DELETE', path, 200, token=owner, observe='repeat unregister push device')
         assert self.owned.sql(f"SELECT count(*) FROM push_devices WHERE user_id='{oid}' AND installation_id='{fixed(20)}';") == '1'
         self.durable_checks.append('device upsert/delete isolated by user and notification first read preserved')
-        print('PASS native companion notifications and push device persistence', flush=True)
+        print('PASS companion notifications and push device persistence', flush=True)
 
     def voice_logs(self, bid, uid, owner, outsider, viewer):
         path = '/api/v1/voice/logs'
@@ -158,7 +150,6 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('PATCH', path + '/' + async_id, 200, {'acknowledged': False}, owner, observe='unacknowledge voice')
         self.owned.sql(f"UPDATE agent_voice_logs SET created_at=NOW()-INTERVAL '25 hours' WHERE id='{async_id}';")
         assert self.call('GET', path + '?unreadAsync=true', 200, token=owner, observe='expired unread window')['data'] is None
-        # Stable fixtures establish array order without normalizing it away.
         self.owned.sql(f"UPDATE agent_voice_logs SET created_at='2026-08-02T00:00:00Z' WHERE id='{identity}';")
         self.call('GET', path + '?limit=1', 200, token=owner, observe='voice bounded page')
         self.call('GET', path + '?limit=51', 400, token=owner, observe='voice limit validation')
@@ -168,7 +159,7 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('POST', path, 403, body, outsider, observe='unrelated voice create denied')
         assert self.owned.sql(f"SELECT count(*) FROM agent_voice_logs WHERE user_id='{uid}';") == '2'
         self.durable_checks.append('voice unread window, ownership and acknowledgement persisted')
-        print('PASS native companion voice history', flush=True)
+        print('PASS companion voice history', flush=True)
         return identity
 
     def formulas(self, fid, owner, outsider, viewer):
@@ -209,7 +200,7 @@ class CompanionScenario(DOMAIN.Scenario):
                        f"reconstitution_ratio=13.00000 WHERE id='{identity}';")
         self.call('GET', path + '?includeArchived=true', 200, token=owner, observe='read historical formula metadata')
         self.durable_checks.append('formula decimal/null, archive, soft-delete and reference version semantics')
-        print('PASS native companion formula catalog', flush=True)
+        print('PASS companion formula catalog', flush=True)
         return identity
 
     def sessions(self, fid, bid, uid, owner, outsider, viewer):
@@ -264,8 +255,6 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('GET', path + '?limit=101', 400, token=owner, observe='conversation limit validation')
         self.call('PATCH', item, 200, {'title': '  test_renamed  '}, owner, observe='rename metadata does not return history')
         assert self.call('GET', item, 200, token=owner)['data']['messageCount'] == 2
-
-        # Protected image references require a ready ai_input in the same scope.
         image_body = {'id': fixed(42), 'role': 'user', 'content': 'test_image', 'image': '/api/attachments/' + fixed(60)}
         self.call('POST', path + '/' + scoped_id + '/messages', 409, image_body, owner, observe='missing protected AI image denied')
         self.owned.sql(f"INSERT INTO attachments(id,family_id,baby_id,uploader_id,purpose,mime_type,byte_size,sha256,object_key,status,expires_at) "
@@ -274,7 +263,6 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('POST', item + '/messages', 409, image_body, owner, observe='protected image wrong conversation scope denied')
         self.call('POST', path + '/' + scoped_id + '/messages', 201, image_body, owner, observe='authorized protected image reference')
 
-        # An injected failure after message INSERT must roll it back with the parent update.
         self.owned.sql(f"CREATE FUNCTION test_companion_fail_parent() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN "
                        f"IF NEW.id='{identity}' THEN RAISE EXCEPTION 'test_companion_rollback'; END IF; RETURN NEW; END $$;"
                        "CREATE TRIGGER test_companion_parent BEFORE UPDATE ON ai_sessions FOR EACH ROW EXECUTE FUNCTION test_companion_fail_parent();")
@@ -285,7 +273,6 @@ class CompanionScenario(DOMAIN.Scenario):
         self.alias(rollback_body['id'], 'message_atomic')
         self.call('POST', item + '/messages', 201, rollback_body, owner, observe='append after rollback recovers cleanly')
 
-        # An active task blocks deletion; no worker/provider is started.
         self.owned.sql(f"INSERT INTO task_executions(id,kind,owner_scope,status,updated_at) VALUES "
                        f"('{fixed(70)}','ai_chat_run','test_companion','queued',NOW());"
                        f"INSERT INTO ai_runs(id,session_id,user_id,baby_id) VALUES('{fixed(70)}','{scoped_id}','{uid}','{bid}');")
@@ -294,7 +281,6 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('DELETE', path + '/' + scoped_id, 200, token=owner, observe='inactive conversation deletion')
         assert self.owned.sql(f"SELECT count(*) FROM ai_messages WHERE session_id='{scoped_id}';") == '0'
         self.call('GET', path + '/' + scoped_id, 404, token=owner, observe='deleted conversation hidden')
-
         large = self.call('POST', path, 201, {'title': 'test_history_limits'}, owner)['data']['id']
         self.owned.sql(f"INSERT INTO ai_messages(id,session_id,role,content) SELECT md5('test_companion_limit_'||n::text)::uuid::text,"
                        f"'{large}','user','test' FROM generate_series(1,5000) n;")
@@ -306,7 +292,7 @@ class CompanionScenario(DOMAIN.Scenario):
         self.call('DELETE', path + '/' + large, 200, token=owner)
         self.durable_checks.extend(['concurrent message replay creates one row', 'parent update failure rolls back message insert',
                                     'history limit preserves stored messages', 'active task blocks conversation deletion'])
-        print('PASS native companion transactional AI conversation history', flush=True)
+        print('PASS companion transactional AI conversation history', flush=True)
         return identity
 
     def interoperate(self, native_base, result):
@@ -337,24 +323,14 @@ def execute(binary, reference):
     try:
         owned.start()
         start = (lambda: DOMAIN.serve_reference(owned)) if reference else (lambda: owned.serve(binary))
-        scenario = CompanionScenario(owned, start(), not reference)
+        scenario = CompanionScenario(owned, start())
         def restart():
             proc = owned.processes[-1]
             proc.terminate()
             proc.wait(timeout=10)
             return start()
-        # Restart replaces the process/base URL; subsequent calls use the new one.
-        def restarted():
-            base = restart()
-            scenario.base = base
-            return base
-        result = scenario.run(restarted)
-        # run() restores its original URL after restart observations. That process
-        # no longer exists, so point subsequent interoperability checks at the live one.
-        # The closure tracks only owned processes, never an external service.
+        result = scenario.run(restart)
         if reference:
-            live_base = DOMAIN.serve_reference(owned)
-            scenario.base = live_base
             scenario.interoperate(owned.serve(binary), result)
         return {'calls': scenario.calls, 'observations': scenario.observations, 'durableChecks': scenario.durable_checks}
     finally:
