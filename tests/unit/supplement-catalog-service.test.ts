@@ -7,7 +7,6 @@ import { SupplementCatalogService } from "../../apps/api/src/services/supplement
 
 const FAMILY = "test_supplement_catalog_family";
 const USER = "test_supplement_catalog_user";
-
 const principal = {
   userId: USER,
   familyMemberships: [{ familyId: FAMILY, status: "active", role: "admin" }],
@@ -16,40 +15,34 @@ const principal = {
 
 function product(id: string, createdAt: string) {
   const stamp = new Date(createdAt);
-  return {
-    id,
-    familyId: FAMILY,
-    name: id,
-    brand: "test brand",
-    dosageForm: "drops",
-    unitName: "滴",
-    defaultDose: "1.5",
-    nutrientsJson: { vitaminD: { amount: 400, unit: "IU" } },
-    notes: null,
-    isActive: true,
-    isArchived: false,
-    version: 1,
-    createdAt: stamp,
-    updatedAt: stamp,
-  };
+  return { id, familyId: FAMILY, name: id, brand: "test brand", dosageForm: "drops", unitName: "滴",
+    defaultDose: "1.5", nutrientsJson: { vitaminD: { amount: 400, unit: "IU" } }, notes: null,
+    isActive: true, isArchived: false, version: 1, createdAt: stamp, updatedAt: stamp };
+}
+interface CursorPredicate {
+  createdAt?: Date | { lt?: Date };
+  id?: { lt?: string };
+}
+interface ProductQuery {
+  where: { OR?: CursorPredicate[] };
+  take?: number;
 }
 
 function harness() {
-  const rows = [
-    product("test_sv_product_z", "2026-09-03T00:00:00.000Z"),
+  const rows = [product("test_sv_product_z", "2026-09-03T00:00:00.000Z"),
     product("test_sv_product_a", "2026-09-02T00:00:00.000Z"),
-    product("test_sv_product_old", "2026-09-01T00:00:00.000Z"),
-  ];
-  const queries: Array<Record<string, any>> = [];
+    product("test_sv_product_old", "2026-09-01T00:00:00.000Z")];
+  const queries: ProductQuery[] = [];
   const prisma = {
     supplementProduct: {
-      findMany: async (query: Record<string, any>) => {
+      findMany: async (query: ProductQuery) => {
         queries.push(query);
-        const predicates = query.where.OR as Array<Record<string, any>> | undefined;
-        const beforeDate = predicates?.find((item) => item.createdAt?.lt)?.createdAt?.lt as Date | undefined;
-        const beforeId = predicates?.find((item) => item.id?.lt)?.id?.lt as string | undefined;
+        const predicates = query.where.OR;
+        const beforeDate = predicates?.map(item => item.createdAt instanceof Date ? undefined : item.createdAt?.lt)
+          .find(value => value !== undefined);
+        const beforeId = predicates?.find(item => item.id?.lt)?.id?.lt;
         return rows
-          .filter((row) => !beforeDate || row.createdAt < beforeDate || (row.createdAt.getTime() === beforeDate.getTime() && (!beforeId || row.id < beforeId)))
+          .filter(row => !beforeDate || row.createdAt < beforeDate || (row.createdAt.getTime() === beforeDate.getTime() && (!beforeId || row.id < beforeId)))
           .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime() || right.id.localeCompare(left.id))
           .slice(0, query.take);
       },
@@ -61,11 +54,10 @@ function harness() {
 test("supplement product keyset cursor accepts promoted source-stable IDs", async () => {
   const h = harness();
   const first = await h.service.listProducts(principal, FAMILY, { limit: 1 });
-  assert.deepEqual(first.data.map((row) => row.id), ["test_sv_product_z"]);
+  assert.deepEqual(first.data.map(row => row.id), ["test_sv_product_z"]);
   assert.ok(first.page.nextCursor);
-
   const second = await h.service.listProducts(principal, FAMILY, { limit: 1, cursor: first.page.nextCursor! });
-  assert.deepEqual(second.data.map((row) => row.id), ["test_sv_product_a"]);
+  assert.deepEqual(second.data.map(row => row.id), ["test_sv_product_a"]);
   assert.deepEqual(h.queries[1]?.where.OR, [
     { createdAt: { lt: new Date("2026-09-03T00:00:00.000Z") } },
     { createdAt: new Date("2026-09-03T00:00:00.000Z"), id: { lt: "test_sv_product_z" } },
