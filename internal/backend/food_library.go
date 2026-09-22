@@ -2,7 +2,10 @@ package backend
 
 import (
 	"context"
+	"errors"
 	"net/http"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // These DTOs deliberately exclude persistence-only fields. A missing status is
@@ -83,38 +86,34 @@ func (s *Server) listFoodLibraryItems(ctx context.Context, r *Request) (Result, 
 	if err != nil {
 		return Result{}, err
 	}
-	// Scope the status JOIN independently of catalog visibility. Public catalog
-	// entries never acquire another family's tried/reaction data. Recheck current
-	// membership in the data query rather than trusting a token-time snapshot.
-	rows, err := s.DB.Query(ctx, `SELECT i.id,i.name,i.category,i.allergen_risk,i.recommended_age_months,
-		fs.id IS NOT NULL,COALESCE(fs.tried,false),fs.reaction
+	// The outer membership row distinguishes revoked access from an empty
+	// catalog. Authorization and data use the same PostgreSQL statement snapshot.
+	// The status JOIN is scoped independently of public/custom item visibility.
+	var raw []byte
+	err = s.DB.QueryRow(ctx, `SELECT COALESCE((
+		SELECT jsonb_agg(jsonb_build_object(
+			'id',i.id,'name',i.name,'category',i.category,'allergenRisk',i.allergen_risk,
+			'recommendedAgeMonths',i.recommended_age_months)
+			|| CASE WHEN fs.id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object(
+				'familyStatus',jsonb_build_object('tried',fs.tried,'reaction',fs.reaction)) END
+			ORDER BY i.recommended_age_months ASC,i.name ASC)
 		FROM food_library_items i
 		LEFT JOIN family_food_statuses fs ON fs.food_item_id=i.id AND fs.family_id=$1
-		WHERE (i.is_custom=false OR (i.is_custom=true AND i.family_id=$1))
-		AND EXISTS (SELECT 1 FROM family_members fm
-			JOIN families f ON f.id=fm.family_id AND f.deleted_at IS NULL
-			JOIN users u ON u.id=fm.user_id AND u.deleted_at IS NULL
-			WHERE fm.family_id=$1 AND fm.user_id=$2 AND fm.status='active' AND fm.deleted_at IS NULL)
-		ORDER BY i.recommended_age_months ASC,i.name ASC`, familyID, r.Principal.UserID)
+		WHERE i.is_custom=false OR (i.is_custom=true AND i.family_id=$1)
+	), '[]'::jsonb)
+	FROM family_members fm
+	JOIN families f ON f.id=fm.family_id AND f.deleted_at IS NULL
+	JOIN users u ON u.id=fm.user_id AND u.deleted_at IS NULL
+	WHERE fm.family_id=$1 AND fm.user_id=$2 AND fm.status='active' AND fm.deleted_at IS NULL`,
+		familyID, r.Principal.UserID).Scan(&raw)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Result{}, apiError(403, "FAMILY_ACCESS_DENIED", "Access denied to family: "+familyID)
+	}
 	if err != nil {
 		return Result{}, err
 	}
-	defer rows.Close()
 	items := make([]foodLibraryItem, 0)
-	for rows.Next() {
-		var item foodLibraryItem
-		var present bool
-		var status foodLibraryStatus
-		if err := rows.Scan(&item.ID, &item.Name, &item.Category, &item.AllergenRisk,
-			&item.RecommendedAgeMonths, &present, &status.Tried, &status.Reaction); err != nil {
-			return Result{}, err
-		}
-		if present {
-			item.FamilyStatus = &status
-		}
-		items = append(items, item)
-	}
-	if err := rows.Err(); err != nil {
+	if err := decodeJSON(raw, &items); err != nil {
 		return Result{}, err
 	}
 	return ok(items)
@@ -163,8 +162,9 @@ func (s *Server) createFoodLibraryItem(ctx context.Context, r *Request) (Result,
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}
-	// Unlike list and most other API operations, the frozen POST contract has no
-	// data envelope. This operation also has no idempotency receipt protocol.
+	// The real frozen Fastify route returns this DTO without a data envelope.
+	// Its generated OpenAPI disagrees; see the explicit drift regression and
+	// real-HTTP differential suite. This operation has no idempotency protocol.
 	return Result{Status: http.StatusCreated, Body: item}, nil
 }
 
