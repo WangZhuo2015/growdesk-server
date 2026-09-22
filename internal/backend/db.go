@@ -192,6 +192,10 @@ func asTime(v any) (time.Time, error) {
 		return t, nil
 	}
 	s := text(v)
+	// RFC3339 permits lowercase t/z, also accepted by the reference validator.
+	if len(s) >= 20 {
+		s = strings.ReplaceAll(strings.ReplaceAll(s, "t", "T"), "z", "Z")
+	}
 	t, e := time.Parse(time.RFC3339Nano, s)
 	if e == nil {
 		return t, nil
