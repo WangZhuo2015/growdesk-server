@@ -33,6 +33,7 @@ def load(name: str):
 
 identity = load("import_sql")
 materializer = load("materialize_care")
+canonical = load("canonical_verification")
 
 
 def archive(prefix: str) -> dict:
@@ -197,7 +198,7 @@ def main() -> None:
             raise AssertionError(result.stderr.replace(run["password"], "[redacted]"))
         return result.stdout.strip()
 
-    execute("SELECT current_user || '|' || current_setting('cluster_name')")
+    assert execute("SELECT current_user || '|' || current_setting('cluster_name')") == run["user"] + "|" + run["token"]
     prefix = "test_care_materializer_" + uuid.uuid4().hex[:10]
     data = archive(prefix)
     checksum = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
@@ -249,6 +250,16 @@ DELETE FROM public.users WHERE id IN ({','.join(sql_literal(value) for value in 
         promotion_sql = materializer.render_materialization(data, checksum)
         execute(promotion_sql)
         execute(promotion_sql)
+        def verify_runtime():
+            return canonical.verify_canonical(data, checksum, lambda sql: json.loads(execute(sql)))
+        assert verify_runtime()["passed"] is True
+        source_feeding = ids["FeedingRecord"]
+        before_receipts = execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum))
+        execute("UPDATE public.feeding_records SET amount_ml=amount_ml+1 WHERE id=" + sql_literal(source_feeding))
+        assert verify_runtime()["passed"] is False
+        assert execute("SELECT count(*) FROM public.legacy_idempotency_mappings WHERE source_batch_id=" + sql_literal(checksum)) == before_receipts
+        execute("UPDATE public.feeding_records SET amount_ml=amount_ml-1 WHERE id=" + sql_literal(source_feeding))
+        assert verify_runtime()["passed"] is True
         assert execute("SELECT count(*) FROM public.feeding_records WHERE id IN (" + ",".join(sql_literal(value) for value in feeding_ids) + ")") == "2"
         assert execute("SELECT count(*) FROM public.sleep_records WHERE id=" + sql_literal(ids["SleepRecord"])) == "1"
         assert execute("SELECT count(*) FROM public.diaper_records WHERE id=" + sql_literal(ids["DiaperRecord"])) == "1"

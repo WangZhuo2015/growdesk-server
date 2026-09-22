@@ -421,7 +421,9 @@ class CutoverRunner:
             verification = self.phase("target_verification", self._verification)
             report = {
                 "status": "cutover-ready" if verification.get("detail", {}).get("cutoverReady") else "not-cutover-ready",
-                "cutoverReady": bool(verification.get("detail", {}).get("cutoverReady")),
+                "cutoverReady": bool(verification.get("detail", {}).get("releaseCutoverReady")),
+                "releaseCutoverReady": bool(verification.get("detail", {}).get("releaseCutoverReady")),
+                "importIntegrityReady": bool(verification.get("detail", {}).get("importIntegrityReady")),
                 "source": {
                     "sourceId": self.snapshot["sourceId"],
                     "archiveSha256": self.snapshot["archiveSha256"],
@@ -436,8 +438,8 @@ class CutoverRunner:
                 ],
             }
             _write_json_private(self.receipt_dir / "cutover-report.json", report)
-            if not report["cutoverReady"]:
-                raise CutoverError("target verification is not cutover-ready")
+            if not report["importIntegrityReady"]:
+                raise CutoverError("target canonical verification is incomplete")
             return report
         finally:
             env_path.unlink(missing_ok=True)
@@ -481,7 +483,7 @@ class CutoverRunner:
         self.executor.run([
             self.executor.python, str(ROOT / "scripts/legacy-import/verify_target.py"),
             "--archive", self.snapshot["archive"], "--manifest", self.snapshot["manifest"],
-            "--target-container", self.target_container, "--receipt-dir", str(self.receipt_dir), "--output", str(output),
+            "--target-container", self.target_container, "--receipt-dir", str(self.receipt_dir), "--output", str(output), "--require", "import",
         ])
         value = json.loads(output.read_text(encoding="utf-8"))
         if not isinstance(value, dict):
@@ -510,7 +512,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         report = runner.run()
         print(json.dumps({"status": report["status"], "cutoverReady": report["cutoverReady"]}, ensure_ascii=False))
-        return 0
+        return 0 if report["cutoverReady"] else 1
     except Exception as error:
         print(json.dumps({"error": type(error).__name__}, ensure_ascii=False))
         return 1
