@@ -11,4 +11,5 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerVoiceLogs()
 	s.registerWebAISessions()
 	s.registerFormulaProducts()
+	s.registerFoodLibrary()
 }
