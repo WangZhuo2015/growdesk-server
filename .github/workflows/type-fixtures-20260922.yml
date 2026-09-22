@@ -27,7 +27,17 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run backend:db:generate
       - name: Apply only exact-blob guarded test edits
-        run: python3 .github/review/type-fixtures-20260922.py
+        run: |
+          python3 .github/review/type-fixtures-20260922.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tests/integration/web-http-parity.test.ts')
+          text = p.read_text()
+          old = '[savedRecipes[1].id, savedRecipes[2].id, savedRecipes[0].id]'
+          if text.count(old) != 1:
+              raise SystemExit('Ordered recipe assertion changed')
+          p.write_text(text.replace(old, '[readObject(savedRecipes[1]).id, readObject(savedRecipes[2]).id, readObject(savedRecipes[0]).id]'))
+          PY
       - run: npm run backend:build
       - run: npm run backend:typecheck
       - run: npm run backend:lint
