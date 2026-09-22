@@ -1,0 +1,50 @@
+name: Go backend
+on:
+  push:
+    branches: [codex/go-backend-parity-20260922]
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', '.github/workflows/go-backend.yml']
+permissions:
+  contents: read
+concurrency:
+  group: go-backend-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Inventory the reference implementation (not a parity verdict)
+        run: |
+          python3 - <<'PY'
+          import json,re,pathlib
+          root=pathlib.Path('.')
+          doc=json.loads((root/'contracts/openapi.json').read_text())
+          print('=== PINNED HTTP CONTRACT ===')
+          count=0
+          for path,item in doc['paths'].items():
+              for method,op in item.items():
+                  if method not in ['get','post','put','patch','delete','head','options']: continue
+                  count+=1
+                  body=op.get('requestBody',{}).get('content',{}).get('application/json',{}).get('schema',{})
+                  params=[p.get('in','')+':'+p.get('name','') for p in op.get('parameters',[])]
+                  print(json.dumps({'method':method.upper(),'path':path,'operationId':op.get('operationId'),'body':body.get('$ref') or list(body.get('properties',{})),'parameters':params,'responses':list(op.get('responses',{}))},ensure_ascii=False))
+          print('operation_count',count)
+          print('=== DATABASE MODEL FIELDS ===')
+          schema=(root/'prisma/schema.prisma').read_text()
+          for model,content in re.findall(r'model\s+(\w+)\s*\{(.*?)\n\}',schema,re.S):
+              table=re.search(r'@@map\("([^"]+)"\)',content)
+              fields=[]
+              for line in content.splitlines():
+                  m=re.match(r'\s*(\w+)\s+(String\??|Int\??|BigInt\??|Boolean\??|DateTime\??|Float\??|Decimal\??|Json\??|Bytes\??)\s*(.*)',line)
+                  if m: fields.append(' '.join(m.groups()))
+              print(model,table.group(1) if table else model,' | '.join(fields))
+          print('=== IMPLEMENTATION FILES ===')
+          for base in ['apps/api/src','apps/worker/src','apps/scheduler/src','packages/database/src','docs/plan/implementation']:
+              for p in sorted((root/base).rglob('*')):
+                  if p.is_file() and 'generated' not in p.parts: print(p, p.stat().st_size)
+          PY
