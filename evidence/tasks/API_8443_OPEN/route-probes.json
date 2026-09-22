@@ -1,0 +1,912 @@
+[
+  {
+    "operation": "getHealthLive",
+    "method": "GET",
+    "path": "/health/live",
+    "status": 200,
+    "routeMissing": false
+  },
+  {
+    "operation": "getHealthReady",
+    "method": "GET",
+    "path": "/health/ready",
+    "status": 200,
+    "routeMissing": false
+  },
+  {
+    "operation": "register",
+    "method": "POST",
+    "path": "/api/v1/auth/register",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "login",
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "refreshSession",
+    "method": "POST",
+    "path": "/api/v1/auth/refresh",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "logout",
+    "method": "POST",
+    "path": "/api/v1/auth/logout",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listSessions",
+    "method": "GET",
+    "path": "/api/v1/auth/sessions",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "revokeSession",
+    "method": "DELETE",
+    "path": "/api/v1/auth/sessions/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "changePassword",
+    "method": "POST",
+    "path": "/api/v1/auth/password/change",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "regenerateRecoveryCodes",
+    "method": "POST",
+    "path": "/api/v1/auth/recovery-codes/regenerate",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "recoverPassword",
+    "method": "POST",
+    "path": "/api/v1/auth/password/recover",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "exchangeBffSession",
+    "method": "POST",
+    "path": "/api/v1/auth/bff/session",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "revokeBffSession",
+    "method": "DELETE",
+    "path": "/api/v1/auth/bff/session",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getCurrentUser",
+    "method": "GET",
+    "path": "/api/v1/me",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateCurrentUser",
+    "method": "PATCH",
+    "path": "/api/v1/me",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "deleteCurrentUser",
+    "method": "DELETE",
+    "path": "/api/v1/me",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "exportUserData",
+    "method": "POST",
+    "path": "/api/v1/me/export",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "listFamilies",
+    "method": "GET",
+    "path": "/api/v1/families",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFamily",
+    "method": "POST",
+    "path": "/api/v1/families",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFamily",
+    "method": "GET",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateFamily",
+    "method": "PATCH",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFamilyInvite",
+    "method": "POST",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/invites",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "previewFamilyInvite",
+    "method": "GET",
+    "path": "/api/v1/families/invites/preview",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "joinFamily",
+    "method": "POST",
+    "path": "/api/v1/families/join",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFamilyMembers",
+    "method": "GET",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/members",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateFamilyMember",
+    "method": "PATCH",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/members/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "removeFamilyMember",
+    "method": "DELETE",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/members/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFamilyBabies",
+    "method": "GET",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/babies",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFamilyBaby",
+    "method": "POST",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/babies",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getBaby",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateBaby",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listBabyMembers",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/members",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "addBabyMember",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/members",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "removeBabyMember",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/members/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFeedingRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/feeding",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFeedingRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/feeding",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFeedingRecord",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/feeding/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateFeedingRecord",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/feeding/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteFeedingRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/feeding/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listSleepRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/sleep",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createSleepRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/sleep",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getSleepRecord",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/sleep/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateSleepRecord",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/sleep/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteSleepRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/sleep/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listDiaperRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/diaper",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createDiaperRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/diaper",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getDiaperRecord",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/diaper/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateDiaperRecord",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/diaper/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteDiaperRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/diaper/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFoodRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/food",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFoodRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/food",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFoodRecord",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/food/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateFoodRecord",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/food/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteFoodRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/food/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listSupplementRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/supplement",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createSupplementRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/supplement",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getSupplementRecord",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/supplement/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateSupplementRecord",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/supplement/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteSupplementRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/records/supplement/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getTimeline",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/timeline",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createTimelineEvent",
+    "method": "POST",
+    "path": "/sample/timeline",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "getGrowthRecord",
+    "method": "GET",
+    "path": "/sample/growth/00000000-0000-4000-8000-000000000000",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "listGrowthMeasurements",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-measurements",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createGrowthMeasurement",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-measurements",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getGrowthMeasurement",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-measurements/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateGrowthMeasurement",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-measurements/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteGrowthMeasurement",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-measurements/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getGrowthChart",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/growth-chart",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listMedicalReports",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/medical-reports",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createMedicalReport",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/medical-reports",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getMedicalReport",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/medical-reports/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateMedicalReport",
+    "method": "PATCH",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/medical-reports/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteMedicalReport",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/medical-reports/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "createMedicalOcrRun",
+    "method": "POST",
+    "path": "/api/v1/medical/ocr-runs",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "getVaccineSchedule",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/vaccines/schedule",
+    "status": 200,
+    "routeMissing": false
+  },
+  {
+    "operation": "listVaccineRecords",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/vaccines/records",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createVaccineRecord",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/vaccines/records",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteVaccineRecord",
+    "method": "DELETE",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/vaccines/records/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listAiSessions",
+    "method": "GET",
+    "path": "/api/v1/ai/sessions",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createAiSession",
+    "method": "POST",
+    "path": "/api/v1/ai/sessions",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listAiSessionMessages",
+    "method": "GET",
+    "path": "/api/v1/ai/sessions/00000000-0000-4000-8000-000000000000/messages",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createAiRun",
+    "method": "POST",
+    "path": "/api/v1/ai/sessions/00000000-0000-4000-8000-000000000000/runs",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getAiRunEvents",
+    "method": "GET",
+    "path": "/api/v1/ai/runs/00000000-0000-4000-8000-000000000000/events",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "getAiRun",
+    "method": "GET",
+    "path": "/api/v1/ai/runs/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "confirmAiRun",
+    "method": "POST",
+    "path": "/api/v1/ai/runs/00000000-0000-4000-8000-000000000000/confirm",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "cancelAiRun",
+    "method": "POST",
+    "path": "/api/v1/ai/runs/00000000-0000-4000-8000-000000000000/cancel",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "retryAiRun",
+    "method": "POST",
+    "path": "/api/v1/ai/runs/00000000-0000-4000-8000-000000000000/retry",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createVoiceRun",
+    "method": "POST",
+    "path": "/api/v1/voice/runs",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "createDailySummaryRun",
+    "method": "POST",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/daily-summaries/runs",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listDailySummaries",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/daily-summaries",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "executeSyncCommands",
+    "method": "POST",
+    "path": "/api/v1/sync/commands",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFamilyChanges",
+    "method": "GET",
+    "path": "/api/v1/sync/families/00000000-0000-4000-8000-000000000000/changes",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "getUserChanges",
+    "method": "GET",
+    "path": "/api/v1/sync/me/changes",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFamilySnapshot",
+    "method": "POST",
+    "path": "/api/v1/sync/families/00000000-0000-4000-8000-000000000000/snapshots",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFamilySnapshot",
+    "method": "GET",
+    "path": "/api/v1/sync/families/00000000-0000-4000-8000-000000000000/snapshots/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createAttachment",
+    "method": "POST",
+    "path": "/api/v1/attachments",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "completeAttachment",
+    "method": "POST",
+    "path": "/api/v1/attachments/00000000-0000-4000-8000-000000000000/complete",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getAttachmentUploadUrl",
+    "method": "GET",
+    "path": "/api/v1/attachments/00000000-0000-4000-8000-000000000000/upload-url",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteAttachment",
+    "method": "DELETE",
+    "path": "/api/v1/attachments/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "registerPushDevice",
+    "method": "PUT",
+    "path": "/api/v1/devices/00000000-0000-4000-8000-000000000000/push",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "unregisterPushDevice",
+    "method": "DELETE",
+    "path": "/api/v1/devices/00000000-0000-4000-8000-000000000000/push",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listNotifications",
+    "method": "GET",
+    "path": "/api/v1/notifications",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "markNotificationAsRead",
+    "method": "POST",
+    "path": "/api/v1/notifications/00000000-0000-4000-8000-000000000000/read",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFormulaProducts",
+    "method": "GET",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/nutrition/products",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFormulaProduct",
+    "method": "POST",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/nutrition/products",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateFormulaProduct",
+    "method": "PATCH",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/nutrition/products/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteFormulaProduct",
+    "method": "DELETE",
+    "path": "/api/v1/families/00000000-0000-4000-8000-000000000000/nutrition/products/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listFoodLibraryItems",
+    "method": "GET",
+    "path": "/api/v1/food/items",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "createFoodLibraryItem",
+    "method": "POST",
+    "path": "/api/v1/food/items",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFoodGuidelines",
+    "method": "GET",
+    "path": "/api/v1/food/guidelines",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "getFoodPlan",
+    "method": "GET",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/food-plan",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "saveFoodPlan",
+    "method": "PUT",
+    "path": "/api/v1/babies/00000000-0000-4000-8000-000000000000/food-plan",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "listMilestones",
+    "method": "GET",
+    "path": "/api/v1/development/milestones",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listActivities",
+    "method": "GET",
+    "path": "/api/v1/development/activities",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listWarningSigns",
+    "method": "GET",
+    "path": "/api/v1/development/warning-signs",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listBooks",
+    "method": "GET",
+    "path": "/api/v1/books",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "updateBookStatus",
+    "method": "PATCH",
+    "path": "/api/v1/books/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "getAppConfig",
+    "method": "GET",
+    "path": "/api/v1/app-config",
+    "status": 200,
+    "routeMissing": false
+  },
+  {
+    "operation": "getOAuthAuthorizationServerMetadata",
+    "method": "GET",
+    "path": "/.well-known/oauth-authorization-server",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "getOAuthProtectedResourceMetadata",
+    "method": "GET",
+    "path": "/.well-known/oauth-protected-resource",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "getOAuthProtectedMcpResourceMetadata",
+    "method": "GET",
+    "path": "/.well-known/oauth-protected-resource/mcp",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "exchangeMcpOAuthToken",
+    "method": "POST",
+    "path": "/api/v1/mcp/oauth/token",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "revokeMcpOAuthToken",
+    "method": "POST",
+    "path": "/api/v1/mcp/oauth/revoke",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "handleMcpRpc",
+    "method": "POST",
+    "path": "/mcp",
+    "status": 404,
+    "routeMissing": true
+  },
+  {
+    "operation": "createWebAiSession",
+    "method": "POST",
+    "path": "/api/v1/web/ai/sessions",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "listWebAiSessions",
+    "method": "GET",
+    "path": "/api/v1/web/ai/sessions",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "getWebAiSession",
+    "method": "GET",
+    "path": "/api/v1/web/ai/sessions/00000000-0000-4000-8000-000000000000",
+    "status": 401,
+    "routeMissing": false
+  },
+  {
+    "operation": "renameWebAiSession",
+    "method": "PATCH",
+    "path": "/api/v1/web/ai/sessions/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "deleteWebAiSession",
+    "method": "DELETE",
+    "path": "/api/v1/web/ai/sessions/00000000-0000-4000-8000-000000000000",
+    "status": 400,
+    "routeMissing": false
+  },
+  {
+    "operation": "appendWebAiMessage",
+    "method": "POST",
+    "path": "/api/v1/web/ai/sessions/00000000-0000-4000-8000-000000000000/messages",
+    "status": 400,
+    "routeMissing": false
+  }
+]
