@@ -31,6 +31,7 @@ jobs:
           git diff --exit-code -- go.mod go.sum
       - name: Build and race-test the native implementation
         run: |
+          python3 -m py_compile scripts/go-companion-integration.py
           go vet ./...
           go test -race -count=1 ./...
           mkdir -p dist-go
@@ -63,11 +64,15 @@ jobs:
         run: python3 scripts/go-integration.py --binary dist-go/growdesk-api
       - name: Native business transactions and authorization
         run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --report dist-go/native-domain.json
+      - name: Native companion persistence, restart and authorization
+        run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --report dist-go/native-companion.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-domain-${{ github.sha }}
-          path: dist-go/native-domain.json
+          path: |
+            dist-go/native-domain.json
+            dist-go/native-companion.json
           if-no-files-found: ignore
   native-reference-parity:
     runs-on: ubuntu-latest
@@ -97,9 +102,13 @@ jobs:
           npm run backend:build
       - name: Compare actual HTTP responses and durable effects
         run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --reference --report dist-go/http-parity.json
+      - name: Compare companion HTTP and cross-runtime committed state
+        run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: http-parity-${{ github.sha }}
-          path: dist-go/http-parity.json
+          path: |
+            dist-go/http-parity.json
+            dist-go/companion-parity.json
           if-no-files-found: ignore
