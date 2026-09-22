@@ -6,7 +6,7 @@ The TypeScript reference is frozen at `f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4`
 
 ## Current native scope
 
-The executable registers **65 of 151 declared operations**:
+The executable registers **68 of 151 declared operations**:
 
 | Group | Native operations |
 | --- | ---: |
@@ -19,6 +19,7 @@ The executable registers **65 of 151 declared operations**:
 | Voice result history and acknowledgement | 4 |
 | Notifications and push-device registration | 4 |
 | Family formula-product catalog | 4 |
+| Food library catalog and feeding guidelines | 3 |
 
 Run `growdesk-api --contract-inventory` for exact paths and operation IDs. Registration is implementation coverage, not proof that all input combinations are compatible. The inventory deliberately does not label operations independently accepted. Missing operations return HTTP 503 with `GO_OPERATION_NOT_IMPLEMENTED`; they do not proxy to Node, return fake data, or count as successful throughput.
 
@@ -67,7 +68,7 @@ python3 scripts/go-companion-integration.py \
   --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
 ```
 
-Do not use `python -O`: the regression harness uses assertions. PASS reports are written only after the corresponding checks finish successfully. GitHub workflow jobs are separate: `native-static`, `native-postgres`, and `native-reference-parity`. A green native job does not imply a green reference comparison. Consult the exact commit's run and artifacts, not an older screenshot or this document, for results. New scenarios are implemented and wired to CI; this document itself is not a test result.
+Do not use `python -O`: the regression harness uses assertions. PASS reports are written only after the corresponding checks finish successfully. GitHub workflow jobs are separate: `native-static`, `native-postgres`, and `native-reference-parity`. A green native job does not imply a green reference comparison. Consult the exact commit's run and artifacts, not an older screenshot or this document, for results. New scenarios are implemented and wired to CI; this document itself is not a test result. Food-library implementation and HTTP parity are additionally covered by `.github/workflows/go-food-library.yml` and `scripts/go-food-library-integration.py`; they do not replace the full Go test suite.
 
 The domain suite checks family/baby scope, invitations, member management, nullable fields, decimal strings, version conflicts, keyset pagination, soft deletion, timeline projections, idempotent replay, concurrent creation, sleep invariants and stale credentials after revocation. It injects a failure into the family change append and checks that record/timeline/cursor/receipt changes all roll back. In reference mode, it also replays TypeScript-created care receipts through the real Go HTTP API using the same isolated database and credentials.
 
@@ -77,7 +78,7 @@ The companion suite checks:
 - Voice history ownership, explicit baby scope, a 24-hour asynchronous unread window, acknowledgement, list/object/null response shapes and access revoked under previously issued credentials.
 - Conversation creation, complete history, rename/delete, user/baby isolation, identical and conflicting message replay, concurrent exact replay, bounded summaries, protected-image metadata checks, active-task deletion refusal, and history limits that never truncate persisted messages.
 - A database trigger fails the parent-session update after message insertion; the transaction must roll back the inserted message, then recover after the trigger is removed.
-- Formula catalog decimal-string/null/zero semantics, cursor pagination, archive filtering, viewer read/write permissions, soft deletion and existing read-only metadata.
+- Formula catalog decimal-string/null/zero semantics, cursor pagination, archive filtering, viewer read/write permissions, soft deletion and existing read-only metadata. A historical family-viewer fixture is created only in the exclusively owned database: the read model supports viewer, but the management API only accepts admin/member, and that rejection is tested separately.
 - Real process restart with existing credentials, plus native/reference cross-runtime reads and writes against the same owned database.
 
 For differential observations, generated UUIDs are mapped by identity and server-generated timestamps are normalized only after verifying their wire format. Business times, null versus absent, decimal representation, zero values, versions and array order are not stripped. Error comparison currently covers HTTP status and `error.code`, **not byte-exact error messages/request IDs**. Database observations check transactional counts/cursors and tested record results; they are not a complete field-by-field production migration audit.
@@ -86,7 +87,8 @@ The reference generator emits nullable `$ref` siblings in OpenAPI 3.0. The nativ
 
 ## Deliberate limits and deviations
 
-- **86 operations remain unimplemented**, including remaining food/nutrition and supplement domains, growth, medical/vaccine domains, attachment storage APIs, AI execution/ASR, synchronization, and other declared operations. Use inventory, not this illustrative list, as the exact backlog.
+- **83 operations remain unimplemented**, including remaining food records/plans, nutrition and supplement domains, growth, medical/vaccine domains, attachment storage APIs, AI execution/ASR, synchronization, and other declared operations. Use inventory, not this illustrative list, as the exact backlog.
+- **Known reference spec/runtime disagreement:** `POST /api/v1/food/items` returns a bare `FoodLibraryItem` in the actual frozen Fastify route, while the OpenAPI export declares `{data: item}`. The native handler preserves the actual HTTP response to avoid breaking existing consumers. A dedicated regression validates the item schema and explicitly records that the bare response does not satisfy the frozen whole-envelope schema. Real HTTP differential tests verify this exception; it is not blanket OpenAPI compatibility or permission to ignore other validation failures.
 - Native BFF/session regression covers fresh Go sessions. Its encrypted replay/session format uses `go:v1:` and is **not an interoperable reader/writer for existing TypeScript BFF ciphertext**. Do not alternate those session flows across runtimes or advertise rolling-session migration compatibility. This must be resolved and tested before any whole-backend cutover.
 - Go additionally refuses demoting the last effective baby administrator through membership upsert. That closes an orphaning path in the reference and is an intentional security deviation, not an exact-parity claim. It requires dedicated review; shared differential scenarios do not exercise that unsafe reference mutation.
 - Native companion reads reject soft-deleted parent families/babies even where the reference query only checked membership. Concurrent message-ID collisions across different sessions return a controlled conflict instead of relying on a database uniqueness exception. These are explicit hardening decisions requiring review, not a claim to reproduce unsafe/racy reference behavior.
