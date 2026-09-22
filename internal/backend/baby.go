@@ -47,20 +47,22 @@ func (s *Server) registerBabies() {
 }
 
 func (s *Server) listFamilyBabies(ctx context.Context, r *Request) (Result, error) {
-	familyID := r.Params["id"]
-	if _, err := familyRole(ctx, s.DB, r.Principal.UserID, familyID); err != nil {
-		return Result{}, err
-	}
-	rows, err := many(ctx, s.DB, `SELECT to_jsonb(b) FROM babies b JOIN baby_members m ON m.baby_id=b.id AND m.family_id=b.family_id
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		familyID := r.Params["id"]
+		if _, err := familyRole(ctx, q, r.Principal.UserID, familyID); err != nil {
+			return Result{}, err
+		}
+		rows, err := many(ctx, q, `SELECT to_jsonb(b) FROM babies b JOIN baby_members m ON m.baby_id=b.id AND m.family_id=b.family_id
         WHERE b.family_id=$1 AND b.deleted_at IS NULL AND m.user_id=$2 AND m.status='active' AND m.deleted_at IS NULL ORDER BY b.created_at,b.id`, familyID, r.Principal.UserID)
-	if err != nil {
-		return Result{}, err
-	}
-	result := make([]Object, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, babyDTO(row))
-	}
-	return ok(result)
+		if err != nil {
+			return Result{}, err
+		}
+		result := make([]Object, 0, len(rows))
+		for _, row := range rows {
+			result = append(result, babyDTO(row))
+		}
+		return ok(result)
+	})
 }
 
 var avatarPath = regexp.MustCompile(`(?i)^/api/attachments/([a-f0-9-]{36})$`)
@@ -124,17 +126,19 @@ func (s *Server) createFamilyBaby(ctx context.Context, r *Request) (Result, erro
 }
 
 func (s *Server) getBaby(ctx context.Context, r *Request) (Result, error) {
-	if _, err := babyScope(ctx, s.DB, r.Principal.UserID, r.Params["id"], false); err != nil {
-		if normalizedError(err).Status == 403 {
-			return Result{}, apiError(404, "BABY_NOT_FOUND", "Baby not found")
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		if _, err := babyScope(ctx, q, r.Principal.UserID, r.Params["id"], false); err != nil {
+			if normalizedError(err).Status == 403 {
+				return Result{}, apiError(404, "BABY_NOT_FOUND", "Baby not found")
+			}
+			return Result{}, err
 		}
-		return Result{}, err
-	}
-	row, err := one(ctx, s.DB, `SELECT to_jsonb(b) FROM babies b WHERE id=$1 AND deleted_at IS NULL`, r.Params["id"])
-	if err != nil {
-		return Result{}, err
-	}
-	return ok(babyDTO(row))
+		row, err := one(ctx, q, `SELECT to_jsonb(b) FROM babies b WHERE id=$1 AND deleted_at IS NULL`, r.Params["id"])
+		if err != nil {
+			return Result{}, err
+		}
+		return ok(babyDTO(row))
+	})
 }
 
 func (s *Server) updateBaby(ctx context.Context, r *Request) (Result, error) {
@@ -195,19 +199,21 @@ func (s *Server) updateBaby(ctx context.Context, r *Request) (Result, error) {
 }
 
 func (s *Server) listBabyMembers(ctx context.Context, r *Request) (Result, error) {
-	if _, err := babyScope(ctx, s.DB, r.Principal.UserID, r.Params["id"], false); err != nil {
-		return Result{}, err
-	}
-	rows, err := many(ctx, s.DB, `SELECT jsonb_build_object('userId',m.user_id,'babyId',m.baby_id,'familyId',m.family_id,
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		if _, err := babyScope(ctx, q, r.Principal.UserID, r.Params["id"], false); err != nil {
+			return Result{}, err
+		}
+		rows, err := many(ctx, q, `SELECT jsonb_build_object('userId',m.user_id,'babyId',m.baby_id,'familyId',m.family_id,
         'role',m.role,'displayName',u.display_name,'joinedAt',m.created_at) FROM baby_members m JOIN users u ON u.id=m.user_id
         WHERE m.baby_id=$1 AND m.status='active' AND m.deleted_at IS NULL ORDER BY m.created_at,m.id`, r.Params["id"])
-	if err != nil {
-		return Result{}, err
-	}
-	for _, row := range rows {
-		row["joinedAt"] = isoValue(row["joinedAt"])
-	}
-	return ok(rows)
+		if err != nil {
+			return Result{}, err
+		}
+		for _, row := range rows {
+			row["joinedAt"] = isoValue(row["joinedAt"])
+		}
+		return ok(rows)
+	})
 }
 
 // An admin only counts as effective while their family membership is active
@@ -215,6 +221,7 @@ func (s *Server) listBabyMembers(ctx context.Context, r *Request) (Result, error
 func protectBabyAdmin(ctx context.Context, q Querier, familyID, babyID, userID string) error {
 	var count int
 	err := q.QueryRow(ctx, `SELECT COUNT(*) FROM baby_members bm JOIN family_members fm ON fm.user_id=bm.user_id AND fm.family_id=bm.family_id
+        JOIN users u ON u.id=bm.user_id AND u.deleted_at IS NULL
         WHERE bm.family_id=$1 AND bm.baby_id=$2 AND bm.user_id<>$3 AND bm.role='admin' AND bm.status='active' AND bm.deleted_at IS NULL
         AND fm.status='active' AND fm.deleted_at IS NULL AND fm.role IN ('admin','member')`, familyID, babyID, userID).Scan(&count)
 	if err != nil {

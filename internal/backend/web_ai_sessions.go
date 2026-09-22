@@ -77,6 +77,25 @@ func (s *Server) withWebAISession(ctx context.Context, r *Request, work func(pgx
 	if err != nil {
 		return Result{}, err
 	}
+	if babyID := text(row["baby_id"]); babyID != "" {
+		var allowed string
+		err = tx.QueryRow(ctx, `SELECT b.id FROM babies b
+            JOIN families f ON f.id=b.family_id
+            JOIN baby_members bm ON bm.baby_id=b.id AND bm.family_id=b.family_id AND bm.user_id=$1
+            JOIN family_members fm ON fm.family_id=b.family_id AND fm.user_id=$1
+            JOIN users u ON u.id=$1
+            WHERE b.id=$2 AND b.deleted_at IS NULL AND f.deleted_at IS NULL AND u.deleted_at IS NULL
+            AND bm.status='active' AND bm.deleted_at IS NULL AND fm.status='active' AND fm.deleted_at IS NULL
+            FOR SHARE OF b,f,bm,fm,u`, r.Principal.UserID, babyID).Scan(&allowed)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Result{}, apiError(404, "SESSION_NOT_FOUND", "Conversation not found or no longer authorized")
+		}
+		if err != nil {
+			return Result{}, err
+		}
+	}
+	// The initial EXISTS can have been evaluated BEFORE waiting on the parent
+	// lock. Authorization above uses a fresh statement and lasts until commit.
 	result, err := work(tx, row)
 	if err != nil {
 		return Result{}, err
@@ -158,15 +177,20 @@ func optionalQuery(r *Request, name string) any {
 }
 
 func (s *Server) listWebAISessions(ctx context.Context, r *Request) (Result, error) {
+	tx, err := s.DB.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead, AccessMode: pgx.ReadOnly})
+	if err != nil {
+		return Result{}, err
+	}
+	defer rollback(tx)
 	args := []any{r.Principal.UserID, optionalQuery(r, "babyId"), optionalQuery(r, "contextType")}
 	where := `s.user_id=$1 AND ($2::text IS NULL OR s.baby_id=$2) AND ($3::text IS NULL OR s.context_type=$3) AND ` + webAIVisibleBaby
 	var total int64
-	if err := s.DB.QueryRow(ctx, "SELECT count(*) FROM ai_sessions s WHERE "+where, args...).Scan(&total); err != nil {
+	if err := tx.QueryRow(ctx, "SELECT count(*) FROM ai_sessions s WHERE "+where, args...).Scan(&total); err != nil {
 		return Result{}, err
 	}
 	offset, _ := strconv.Atoi(r.HTTP.URL.Query().Get("offset"))
 	args = append(args, companionLimit(r, 30, 100), offset)
-	rows, err := many(ctx, s.DB, "SELECT to_jsonb(s) FROM ai_sessions s WHERE "+where+
+	rows, err := many(ctx, tx, "SELECT to_jsonb(s) FROM ai_sessions s WHERE "+where+
 		" ORDER BY s.updated_at DESC,s.id DESC LIMIT $4 OFFSET $5", args...)
 	if err != nil {
 		return Result{}, err
@@ -179,7 +203,7 @@ func (s *Server) listWebAISessions(ctx context.Context, r *Request) (Result, err
 	if len(ids) > 0 {
 		// Same bounded batch query as the reference: no N+1 queries, image or
 		// tool payloads, or data for a session outside the authorized page.
-		values, err := many(ctx, s.DB, `SELECT jsonb_build_object(
+		values, err := many(ctx, tx, `SELECT jsonb_build_object(
 			'session_id',requested.id,'message_count',(SELECT count(*) FROM ai_messages m WHERE m.session_id=requested.id),
 			'last',CASE WHEN last_message.id IS NULL THEN NULL ELSE to_jsonb(last_message) END)
 			FROM unnest($1::text[]) requested(id)
@@ -203,6 +227,9 @@ func (s *Server) listWebAISessions(ctx context.Context, r *Request) (Result, err
 			last = webAIMessageDTO(message)
 		}
 		data = append(data, webAISessionDTO(row, nil, integer(summary["message_count"]), last))
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return Result{}, err
 	}
 	return ok(Object{"total": total, "sessions": data})
 }

@@ -29,9 +29,9 @@ func formulaProductDTO(row Object) Object {
 	return Object{
 		"id": row["id"], "familyId": row["family_id"], "brand": row["brand"], "name": row["name"],
 		"stage": row["stage"], "scoopGrams": decimalValue(row["scoop_weight_g"]),
-		"waterMlPerScoop": decimalValue(row["water_per_scoop_ml"]),
+		"waterMlPerScoop":     decimalValue(row["water_per_scoop_ml"]),
 		"reconstitutionRatio": decimalValue(row["reconstitution_ratio"]),
-		"servingSizeUnit": row["serving_size_unit"], "nutrientsJson": row["nutrients_json"], "notes": row["notes"],
+		"servingSizeUnit":     row["serving_size_unit"], "nutrientsJson": row["nutrients_json"], "notes": row["notes"],
 		"isActive": row["is_active"], "isDefault": row["is_default"], "isArchived": row["is_archived"],
 		"createdAt": isoValue(row["created_at"]), "updatedAt": isoValue(row["updated_at"]),
 	}
@@ -65,41 +65,43 @@ func formulaProductValues(body Object, create bool) (Object, error) {
 }
 
 func (s *Server) listFormulaProducts(ctx context.Context, r *Request) (Result, error) {
-	familyID := r.Params["familyId"]
-	args := []any{familyID}
-	where := "family_id=$1 AND deleted_at IS NULL"
-	if r.HTTP.URL.Query().Get("includeArchived") != "true" {
-		where += " AND NOT is_archived"
-	}
-	if raw := r.HTTP.URL.Query().Get("cursor"); raw != "" {
-		clock, id, err := companionCursor(raw, "INVALID_CURSOR")
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		familyID := r.Params["familyId"]
+		args := []any{familyID}
+		where := "family_id=$1 AND deleted_at IS NULL"
+		if r.HTTP.URL.Query().Get("includeArchived") != "true" {
+			where += " AND NOT is_archived"
+		}
+		if raw := r.HTTP.URL.Query().Get("cursor"); raw != "" {
+			clock, id, err := companionCursor(raw, "INVALID_CURSOR")
+			if err != nil {
+				return Result{}, err
+			}
+			args = append(args, clock, id)
+			where += " AND (created_at,id)<($2,$3)"
+		}
+		if _, err := familyRole(ctx, q, r.Principal.UserID, familyID); err != nil {
+			return Result{}, err
+		}
+		limit := companionLimit(r, 50, 200)
+		args = append(args, limit+1)
+		rows, err := many(ctx, q, "SELECT to_jsonb(p) FROM formula_products p WHERE "+where+
+			" ORDER BY created_at DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
 		if err != nil {
 			return Result{}, err
 		}
-		args = append(args, clock, id)
-		where += " AND (created_at,id)<($2,$3)"
-	}
-	if _, err := familyRole(ctx, s.DB, r.Principal.UserID, familyID); err != nil {
-		return Result{}, err
-	}
-	limit := companionLimit(r, 50, 200)
-	args = append(args, limit+1)
-	rows, err := many(ctx, s.DB, "SELECT to_jsonb(p) FROM formula_products p WHERE "+where+
-		" ORDER BY created_at DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
-	if err != nil {
-		return Result{}, err
-	}
-	var next any
-	if len(rows) > limit {
-		rows = rows[:limit]
-		last := rows[len(rows)-1]
-		next = encodeCareCursor(last["created_at"], last["id"])
-	}
-	data := make([]Object, 0, len(rows))
-	for _, row := range rows {
-		data = append(data, formulaProductDTO(row))
-	}
-	return Result{Status: http.StatusOK, Body: page(data, next)}, nil
+		var next any
+		if len(rows) > limit {
+			rows = rows[:limit]
+			last := rows[len(rows)-1]
+			next = encodeCareCursor(last["created_at"], last["id"])
+		}
+		data := make([]Object, 0, len(rows))
+		for _, row := range rows {
+			data = append(data, formulaProductDTO(row))
+		}
+		return Result{Status: http.StatusOK, Body: page(data, next)}, nil
+	})
 }
 
 func (s *Server) mutateFormulaProduct(ctx context.Context, r *Request, operation string) (Result, error) {

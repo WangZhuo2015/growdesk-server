@@ -286,48 +286,52 @@ func encodeCareCursor(t any, id any) string {
 }
 
 func (s *Server) listCare(ctx context.Context, r *Request, d careSpec) (Result, error) {
-	scope, err := babyScope(ctx, s.DB, r.Principal.UserID, r.Params["babyId"], false)
-	if err != nil {
-		return Result{}, err
-	}
-	args := []any{scope.FamilyID, scope.BabyID}
-	where := "family_id=$1 AND baby_id=$2 AND deleted_at IS NULL"
-	clock := pgx.Identifier{d.Clock}.Sanitize()
-	if t, id, valid := decodeCareCursor(r.HTTP.URL.Query().Get("cursor")); valid {
-		args = append(args, t, id)
-		where += " AND (" + clock + ",id)<($3,$4)"
-	}
-	limit := pageLimit(r)
-	args = append(args, limit+1)
-	rows, err := many(ctx, s.DB, "SELECT to_jsonb(t) FROM "+pgx.Identifier{d.Table}.Sanitize()+" t WHERE "+where+" ORDER BY "+clock+" DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
-	if err != nil {
-		return Result{}, err
-	}
-	var next any
-	if len(rows) > limit {
-		rows = rows[:limit]
-		last := rows[len(rows)-1]
-		next = encodeCareCursor(last[d.Clock], last["id"])
-	}
-	records := make([]Object, 0, len(rows))
-	for _, row := range rows {
-		records = append(records, careDTO(d, careEntity(d, row)))
-	}
-	return Result{Status: 200, Body: page(records, next)}, nil
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		scope, err := babyScope(ctx, q, r.Principal.UserID, r.Params["babyId"], false)
+		if err != nil {
+			return Result{}, err
+		}
+		args := []any{scope.FamilyID, scope.BabyID}
+		where := "family_id=$1 AND baby_id=$2 AND deleted_at IS NULL"
+		clock := pgx.Identifier{d.Clock}.Sanitize()
+		if t, id, valid := decodeCareCursor(r.HTTP.URL.Query().Get("cursor")); valid {
+			args = append(args, t, id)
+			where += " AND (" + clock + ",id)<($3,$4)"
+		}
+		limit := pageLimit(r)
+		args = append(args, limit+1)
+		rows, err := many(ctx, q, "SELECT to_jsonb(t) FROM "+pgx.Identifier{d.Table}.Sanitize()+" t WHERE "+where+" ORDER BY "+clock+" DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
+		if err != nil {
+			return Result{}, err
+		}
+		var next any
+		if len(rows) > limit {
+			rows = rows[:limit]
+			last := rows[len(rows)-1]
+			next = encodeCareCursor(last[d.Clock], last["id"])
+		}
+		records := make([]Object, 0, len(rows))
+		for _, row := range rows {
+			records = append(records, careDTO(d, careEntity(d, row)))
+		}
+		return Result{Status: 200, Body: page(records, next)}, nil
+	})
 }
 func (s *Server) getCare(ctx context.Context, r *Request, d careSpec) (Result, error) {
-	scope, err := babyScope(ctx, s.DB, r.Principal.UserID, r.Params["babyId"], false)
-	if err != nil {
-		return Result{}, err
-	}
-	row, err := one(ctx, s.DB, "SELECT to_jsonb(t) FROM "+pgx.Identifier{d.Table}.Sanitize()+" t WHERE family_id=$1 AND baby_id=$2 AND id=$3 AND deleted_at IS NULL", scope.FamilyID, scope.BabyID, r.Params["id"])
-	if errors.Is(err, pgx.ErrNoRows) {
-		return Result{}, notFound(d.Kind+"_record", r.Params["id"])
-	}
-	if err != nil {
-		return Result{}, err
-	}
-	return ok(careDTO(d, careEntity(d, row)))
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		scope, err := babyScope(ctx, q, r.Principal.UserID, r.Params["babyId"], false)
+		if err != nil {
+			return Result{}, err
+		}
+		row, err := one(ctx, q, "SELECT to_jsonb(t) FROM "+pgx.Identifier{d.Table}.Sanitize()+" t WHERE family_id=$1 AND baby_id=$2 AND id=$3 AND deleted_at IS NULL", scope.FamilyID, scope.BabyID, r.Params["id"])
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Result{}, notFound(d.Kind+"_record", r.Params["id"])
+		}
+		if err != nil {
+			return Result{}, err
+		}
+		return ok(careDTO(d, careEntity(d, row)))
+	})
 }
 
 func reusedKey(key string) error {
@@ -657,35 +661,37 @@ func careMutationResult(d careSpec, op string, entity Object) (Result, error) {
 }
 
 func (s *Server) getTimeline(ctx context.Context, r *Request) (Result, error) {
-	scope, err := babyScope(ctx, s.DB, r.Principal.UserID, r.Params["babyId"], false)
-	if err != nil {
-		return Result{}, err
-	}
-	args := []any{scope.FamilyID, scope.BabyID}
-	where := "family_id=$1 AND baby_id=$2 AND deleted_at IS NULL"
-	if kind := r.HTTP.URL.Query().Get("entityType"); kind != "" {
-		args = append(args, kind)
-		where += " AND entity_type=$" + strconv.Itoa(len(args))
-	}
-	if t, id, valid := decodeCareCursor(r.HTTP.URL.Query().Get("cursor")); valid {
-		args = append(args, t, id)
-		where += fmt.Sprintf(" AND (occurred_at,id)<($%d,$%d)", len(args)-1, len(args))
-	}
-	limit := pageLimit(r)
-	args = append(args, limit+1)
-	rows, err := many(ctx, s.DB, "SELECT to_jsonb(t) FROM timeline_entries t WHERE "+where+" ORDER BY occurred_at DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
-	if err != nil {
-		return Result{}, err
-	}
-	var next any
-	if len(rows) > limit {
-		rows = rows[:limit]
-		last := rows[len(rows)-1]
-		next = encodeCareCursor(last["occurred_at"], last["id"])
-	}
-	result := make([]Object, 0, len(rows))
-	for _, row := range rows {
-		result = append(result, Object{"id": row["id"], "babyId": row["baby_id"], "entityType": row["entity_type"], "entityId": row["entity_id"], "occurredAt": isoValue(row["occurred_at"]), "summary": row["summary"], "version": text(row["version"])})
-	}
-	return Result{Status: 200, Body: page(result, next)}, nil
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		scope, err := babyScope(ctx, q, r.Principal.UserID, r.Params["babyId"], false)
+		if err != nil {
+			return Result{}, err
+		}
+		args := []any{scope.FamilyID, scope.BabyID}
+		where := "family_id=$1 AND baby_id=$2 AND deleted_at IS NULL"
+		if kind := r.HTTP.URL.Query().Get("entityType"); kind != "" {
+			args = append(args, kind)
+			where += " AND entity_type=$" + strconv.Itoa(len(args))
+		}
+		if t, id, valid := decodeCareCursor(r.HTTP.URL.Query().Get("cursor")); valid {
+			args = append(args, t, id)
+			where += fmt.Sprintf(" AND (occurred_at,id)<($%d,$%d)", len(args)-1, len(args))
+		}
+		limit := pageLimit(r)
+		args = append(args, limit+1)
+		rows, err := many(ctx, q, "SELECT to_jsonb(t) FROM timeline_entries t WHERE "+where+" ORDER BY occurred_at DESC,id DESC LIMIT $"+strconv.Itoa(len(args)), args...)
+		if err != nil {
+			return Result{}, err
+		}
+		var next any
+		if len(rows) > limit {
+			rows = rows[:limit]
+			last := rows[len(rows)-1]
+			next = encodeCareCursor(last["occurred_at"], last["id"])
+		}
+		result := make([]Object, 0, len(rows))
+		for _, row := range rows {
+			result = append(result, Object{"id": row["id"], "babyId": row["baby_id"], "entityType": row["entity_type"], "entityId": row["entity_id"], "occurredAt": isoValue(row["occurred_at"]), "summary": row["summary"], "version": text(row["version"])})
+		}
+		return Result{Status: 200, Body: page(result, next)}, nil
+	})
 }

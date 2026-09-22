@@ -77,18 +77,20 @@ func (s *Server) createFamily(ctx context.Context, r *Request) (Result, error) {
 }
 
 func (s *Server) getFamily(ctx context.Context, r *Request) (Result, error) {
-	id := r.Params["id"]
-	if _, err := familyRole(ctx, s.DB, r.Principal.UserID, id); err != nil {
-		if normalizedError(err).Status == 403 {
-			return Result{}, apiError(404, "FAMILY_NOT_FOUND", "Family not found or access denied")
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		id := r.Params["id"]
+		if _, err := familyRole(ctx, q, r.Principal.UserID, id); err != nil {
+			if normalizedError(err).Status == 403 {
+				return Result{}, apiError(404, "FAMILY_NOT_FOUND", "Family not found or access denied")
+			}
+			return Result{}, err
 		}
-		return Result{}, err
-	}
-	row, err := one(ctx, s.DB, `SELECT to_jsonb(f) FROM families f WHERE id=$1 AND deleted_at IS NULL`, id)
-	if err != nil {
-		return Result{}, err
-	}
-	return ok(familyDTO(row))
+		row, err := one(ctx, q, `SELECT to_jsonb(f) FROM families f WHERE id=$1 AND deleted_at IS NULL`, id)
+		if err != nil {
+			return Result{}, err
+		}
+		return ok(familyDTO(row))
+	})
 }
 
 func (s *Server) updateFamily(ctx context.Context, r *Request) (Result, error) {
@@ -244,24 +246,27 @@ func (s *Server) joinFamily(ctx context.Context, r *Request) (Result, error) {
 }
 
 func (s *Server) listFamilyMembers(ctx context.Context, r *Request) (Result, error) {
-	familyID := r.Params["id"]
-	if _, err := familyRole(ctx, s.DB, r.Principal.UserID, familyID); err != nil {
-		return Result{}, err
-	}
-	rows, err := many(ctx, s.DB, `SELECT jsonb_build_object('id',m.id,'userId',m.user_id,'familyId',m.family_id,'role',m.role,
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		familyID := r.Params["id"]
+		if _, err := familyRole(ctx, q, r.Principal.UserID, familyID); err != nil {
+			return Result{}, err
+		}
+		rows, err := many(ctx, q, `SELECT jsonb_build_object('id',m.id,'userId',m.user_id,'familyId',m.family_id,'role',m.role,
         'username',u.username,'displayName',u.display_name,'relation',m.relation,'joinedAt',m.created_at)
         FROM family_members m JOIN users u ON u.id=m.user_id WHERE m.family_id=$1 AND m.status='active' AND m.deleted_at IS NULL ORDER BY m.created_at,m.id`, familyID)
-	if err != nil {
-		return Result{}, err
-	}
-	for _, row := range rows {
-		row["joinedAt"] = isoValue(row["joinedAt"])
-	}
-	return ok(rows)
+		if err != nil {
+			return Result{}, err
+		}
+		for _, row := range rows {
+			row["joinedAt"] = isoValue(row["joinedAt"])
+		}
+		return ok(rows)
+	})
 }
 
 func activeFamilyMember(ctx context.Context, q Querier, familyID, userID string) (Object, error) {
-	row, err := one(ctx, q, `SELECT to_jsonb(m) FROM family_members m WHERE family_id=$1 AND user_id=$2 AND status='active' AND deleted_at IS NULL`, familyID, userID)
+	row, err := one(ctx, q, `SELECT to_jsonb(m) FROM family_members m JOIN users u ON u.id=m.user_id AND u.deleted_at IS NULL
+        WHERE m.family_id=$1 AND m.user_id=$2 AND m.status='active' AND m.deleted_at IS NULL`, familyID, userID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, apiError(404, "MEMBER_NOT_FOUND", "Target family member not found")
 	}
@@ -270,7 +275,8 @@ func activeFamilyMember(ctx context.Context, q Querier, familyID, userID string)
 
 func protectFamilyAdmin(ctx context.Context, q Querier, familyID, userID string) error {
 	var count int
-	if err := q.QueryRow(ctx, `SELECT COUNT(*) FROM family_members WHERE family_id=$1 AND user_id<>$2 AND role='admin' AND status='active' AND deleted_at IS NULL`, familyID, userID).Scan(&count); err != nil {
+	if err := q.QueryRow(ctx, `SELECT COUNT(*) FROM family_members fm JOIN users u ON u.id=fm.user_id AND u.deleted_at IS NULL
+        WHERE fm.family_id=$1 AND fm.user_id<>$2 AND fm.role='admin' AND fm.status='active' AND fm.deleted_at IS NULL`, familyID, userID).Scan(&count); err != nil {
 		return err
 	}
 	if count == 0 {
