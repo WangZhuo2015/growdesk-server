@@ -54,11 +54,14 @@ func babyScope(ctx context.Context, q Querier, userID, babyID string, write bool
 		return scope, apiError(403, "FAMILY_ACCESS_DENIED", "Access denied to family: "+scope.FamilyID)
 	}
 	err = q.QueryRow(ctx, `SELECT role FROM baby_members WHERE baby_id=$1 AND family_id=$2 AND user_id=$3 AND status='active' AND deleted_at IS NULL`, babyID, scope.FamilyID, userID).Scan(&scope.BabyRole)
-	if errors.Is(err, pgx.ErrNoRows) || (err == nil && write && scope.BabyRole == "viewer") {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return scope, apiError(403, "BABY_ACCESS_DENIED", "Access denied to baby: "+babyID+" (BABY_ACCESS_DENIED)")
 	}
 	if err != nil {
 		return scope, err
+	}
+	if write && scope.BabyRole == "viewer" {
+		return scope, apiError(403, "BABY_WRITE_DENIED", "Access denied to baby: "+babyID+" (BABY_WRITE_DENIED)")
 	}
 	if scope.BabyRole != "admin" && scope.BabyRole != "member" && scope.BabyRole != "viewer" {
 		return scope, apiError(403, "BABY_ACCESS_DENIED", "Unsupported baby member role")
@@ -142,7 +145,7 @@ func (s *Server) registerManagement(id string, public bool, h Handler) {
 			return result, nil
 		}
 		e := normalizedError(err)
-		if e.Code != "FAMILY_ACCESS_DENIED" && e.Code != "BABY_ACCESS_DENIED" && e.Code != "BABY_NOT_FOUND" {
+		if e.Code != "FAMILY_ACCESS_DENIED" && e.Code != "BABY_ACCESS_DENIED" && e.Code != "BABY_NOT_FOUND" && e.Code != "BABY_WRITE_DENIED" {
 			return result, err
 		}
 		switch id {
