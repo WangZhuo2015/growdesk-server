@@ -56,7 +56,7 @@ func (s *Server) createFamily(ctx context.Context, r *Request) (Result, error) {
 	now := time.Now().UTC()
 	id := newID()
 	tz := text(r.Body["timeZone"])
-	if tz == "" {
+	if r.Body["timeZone"] == nil {
 		tz = "Asia/Shanghai"
 	}
 	row, err := insertObject(ctx, tx, "families", Object{"id": id, "name": r.Body["name"], "timezone": tz, "created_at": now, "updated_at": now})
