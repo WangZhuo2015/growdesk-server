@@ -4,47 +4,64 @@ on:
     branches: [codex/go-backend-parity-20260922]
   pull_request:
     branches: [main, codex/web-parity-20260919]
-    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', '.github/workflows/go-backend.yml']
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'scripts/go-*', '.github/workflows/go-backend.yml']
 permissions:
   contents: read
 concurrency:
   group: go-backend-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  contract-inventory:
+  native-static:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Inventory the reference implementation (not a parity verdict)
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Resolve pinned dependencies
+        run: go mod tidy
+      - name: Build and race-test the native implementation
         run: |
-          python3 - <<'PY'
-          import json,re,pathlib
-          root=pathlib.Path('.')
-          doc=json.loads((root/'contracts/openapi.json').read_text())
-          print('=== PINNED HTTP CONTRACT ===')
-          count=0
-          for path,item in doc['paths'].items():
-              for method,op in item.items():
-                  if method not in ['get','post','put','patch','delete','head','options']: continue
-                  count+=1
-                  body=op.get('requestBody',{}).get('content',{}).get('application/json',{}).get('schema',{})
-                  params=[p.get('in','')+':'+p.get('name','') for p in op.get('parameters',[])]
-                  print(json.dumps({'method':method.upper(),'path':path,'operationId':op.get('operationId'),'body':body.get('$ref') or list(body.get('properties',{})),'parameters':params,'responses':list(op.get('responses',{}))},ensure_ascii=False))
-          print('operation_count',count)
-          print('=== DATABASE MODEL FIELDS ===')
-          schema=(root/'prisma/schema.prisma').read_text()
-          for model,content in re.findall(r'model\s+(\w+)\s*\{(.*?)\n\}',schema,re.S):
-              table=re.search(r'@@map\("([^"]+)"\)',content)
-              fields=[]
-              for line in content.splitlines():
-                  m=re.match(r'\s*(\w+)\s+(String\??|Int\??|BigInt\??|Boolean\??|DateTime\??|Float\??|Decimal\??|Json\??|Bytes\??)\s*(.*)',line)
-                  if m: fields.append(' '.join(m.groups()))
-              print(model,table.group(1) if table else model,' | '.join(fields))
-          print('=== IMPLEMENTATION FILES ===')
-          for base in ['apps/api/src','apps/worker/src','apps/scheduler/src','packages/database/src','docs/plan/implementation']:
-              for p in sorted((root/base).rglob('*')):
-                  if p.is_file() and 'generated' not in p.parts: print(p, p.stat().st_size)
-          PY
+          go vet ./...
+          go test -race -count=1 ./...
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --version
+          dist-go/growdesk-api --contract-inventory > dist-go/operations.json
+      - name: Dependency lock output for reproducible source commits
+        if: always()
+        run: |
+          echo '=== go.mod ==='
+          cat go.mod
+          echo '=== go.sum ==='
+          test ! -f go.sum || cat go.sum
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: native-go-${{ github.sha }}
+          path: |
+            dist-go/
+            go.mod
+            go.sum
+  native-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Build native executable
+        run: |
+          go mod tidy
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -o dist-go/growdesk-api ./cmd/growdesk-api
+      - name: Real owned PostgreSQL and Redis HTTP regressions
+        run: python3 scripts/go-integration.py --binary dist-go/growdesk-api
