@@ -30,9 +30,9 @@ class OwnedEnvironment:
             for value in (self.password,self.admin_password,self.jwt): print('::add-mask::' + value, flush=True)
     def run(self, args, data=None):
         return subprocess.run(args, input=data, text=True, check=True, capture_output=True, env=self.env).stdout.strip()
-    def container(self, image, args):
+    def container(self, image, args, command=None):
         name = 'test_growdesk_go_' + self.owner + '_' + str(len(self.containers))
-        cid = self.run(['docker','run','--rm','-d','--name',name,'--label','growdesk.test.owner='+self.owner,*args,image])
+        cid = self.run(['docker','run','--rm','-d','--name',name,'--label','growdesk.test.owner='+self.owner,*args,image,*(command or [])])
         self.containers.append(cid)
         return cid
     def port(self, cid, internal):
@@ -45,7 +45,7 @@ class OwnedEnvironment:
         return self.run(['docker','exec','-i','-e','PGPASSWORD='+self.password,self.pg,'psql','-X','-v','ON_ERROR_STOP=1','-At','-U',self.role,'-d',self.database], statement)
     def start(self):
         self.pg = self.container('postgres:18',['-e','POSTGRES_PASSWORD='+self.admin_password,'-e','POSTGRES_DB=test_bootstrap','-p','127.0.0.1::5432'])
-        redis = self.container('redis:8',['-p','127.0.0.1::6379'])
+        redis = self.container('redis:8',['-p','127.0.0.1::6379'],['redis-server','--requirepass',self.password])
         # The image's temporary initialization server accepts Unix sockets only.
         # Probe TCP so a transient bootstrap server cannot pass readiness.
         for _ in range(100):
@@ -60,7 +60,7 @@ class OwnedEnvironment:
             sql = directory/'migration.sql'
             if sql.is_file(): self.sql(sql.read_text())
         pg_port, redis_port = self.port(self.pg,5432), self.port(redis,6379)
-        self.env.update(DATABASE_URL=f'postgresql://{self.role}:{self.password}@127.0.0.1:{pg_port}/{self.database}?sslmode=disable', REDIS_URL=f'redis://127.0.0.1:{redis_port}/0', JWT_SECRET=self.jwt, SESSION_ENCRYPTION_KEY=self.jwt, GROWDESK_ENV='test', DB_POOL_MAX='10', HOST='127.0.0.1')
+        self.env.update(DATABASE_URL=f'postgresql://{self.role}:{self.password}@127.0.0.1:{pg_port}/{self.database}?sslmode=disable', REDIS_URL=f'redis://default:{self.password}@127.0.0.1:{redis_port}/0', JWT_SECRET=self.jwt, SESSION_ENCRYPTION_KEY=self.jwt, GROWDESK_ENV='test', DB_POOL_MAX='10', HOST='127.0.0.1')
         return self
     def serve(self, binary):
         with socket.socket() as sock:
