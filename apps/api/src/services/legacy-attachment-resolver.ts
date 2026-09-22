@@ -3,7 +3,8 @@ import { BadRequestError, RecordNotFoundError, type PrismaClient } from "@growde
 /** A legacy URL is an identifier, never permission to read a local file. */
 export function normalizedLegacyUploadPath(value: string): string {
   if (typeof value !== "string" || value.length > 1024 || !value.startsWith("/uploads/")
-      || /[%\\?#\u0000-\u001f\u007f]/.test(value)) {
+      || /[%\\?#]/.test(value)
+      || Array.from(value).some(character => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)) {
     throw new BadRequestError("Invalid legacy attachment path");
   }
   const segments = value.slice("/uploads/".length).split("/");
