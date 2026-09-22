@@ -32,16 +32,22 @@ func TestFeedingSignedZeroHasSameReceiptAfterWireValidation(t *testing.T) {
 	}
 	const babyID = "00000000-0000-4000-8000-000000000001"
 	scope := Scope{FamilyID: "00000000-0000-4000-8000-000000000002", BabyID: babyID}
-	makeHash := func(amount any) string {
-		t.Helper()
-		body := Object{"feedingType": "bottle", "occurredAt": "2026-09-22T00:00:00.000Z", "amountMl": amount}
+	request := func() *Request {
 		req := httptest.NewRequest("POST", strings.ReplaceAll(route.Path, "{babyId}", babyID), nil)
 		req.Header.Set("Idempotency-Key", "00000000-0000-4000-8000-000000000003")
-		if err := route.Validate(req, map[string]string{"babyId": babyID}, body); err != nil {
+		return &Request{HTTP: req, Params: map[string]string{"babyId": babyID}}
+	}
+	makeHash := func(minutes any, amount any) string {
+		t.Helper()
+		// Durations are numbers; amountMl is a decimal STRING in this contract.
+		body := Object{"feedingType": "breast", "occurredAt": "2026-09-22T00:00:00.000Z",
+			"leftMinutes": minutes, "amountMl": amount}
+		req := request()
+		if err := route.Validate(req.HTTP, req.Params, body); err != nil {
 			t.Fatal(err)
 		}
-		if _, isString := amount.(string); isString && body["amountMl"] != amount {
-			t.Fatal("wire validation coerced a decimal string")
+		if body["amountMl"] != amount {
+			t.Fatal("wire validation coerced a decimal string or null")
 		}
 		hash, err := careRequestHash(careSpecs[0], "create", scope, "", 0, body)
 		if err != nil {
@@ -49,13 +55,20 @@ func TestFeedingSignedZeroHasSameReceiptAfterWireValidation(t *testing.T) {
 		}
 		return hash
 	}
-	positive := makeHash(json.Number("0"))
+	positive := makeHash(json.Number("0"), nil)
 	for _, raw := range []string{"-0", "-0.0", "-0e20", "0.0"} {
-		if got := makeHash(json.Number(raw)); got != positive {
+		if got := makeHash(json.Number(raw), nil); got != positive {
 			t.Fatalf("equivalent numeric retry %s changed the receipt", raw)
 		}
 	}
-	if makeHash("0.0") == positive || makeHash("0.0") == makeHash("0") {
+	if makeHash(json.Number("0"), "0.0") == makeHash(json.Number("0"), "0") {
 		t.Fatal("distinct decimal-string receipt semantics were lost")
+	}
+	for _, amount := range []any{json.Number("0"), json.Number("-0"), false} {
+		body := Object{"feedingType": "bottle", "occurredAt": "2026-09-22T00:00:00.000Z", "amountMl": amount}
+		req := request()
+		if err := route.Validate(req.HTTP, req.Params, body); err == nil {
+			t.Fatal("non-string amountMl incorrectly accepted")
+		}
 	}
 }
