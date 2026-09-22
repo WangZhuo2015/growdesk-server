@@ -66,7 +66,7 @@ test("legacy upload resolver enforces live object permissions", async t => {
     const id = randomUUID();
     await database.prisma.attachment.create({ data: { id, familyId: a.familyId, babyId,
       uploaderId: a.userId, purpose: "medical_report", mimeType: "image/png", byteSize: 1,
-      sha256: "a".repeat(64), objectKey: `test_legacy_upload/${id}.png`, status: "ready" } });
+      sha256: "a".repeat(64), objectKey: `test_legacy_upload/${id}.png`, status: "ready", expiresAt: new Date(Date.now() + 3_600_000) } });
     const mappingId = randomUUID();
     await database.prisma.legacyIdempotencyMapping.create({ data: {
       id: mappingId, targetEntityType: "attachment_reference", targetEntityId: randomUUID(),

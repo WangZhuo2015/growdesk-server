@@ -23,6 +23,16 @@ export const attachmentRoutes: FastifyPluginAsync<AttachmentRoutesOptions> = asy
   opts: AttachmentRoutesOptions
 ) => {
   const { attachmentService } = opts;
+  const { LegacyAttachmentQuerySchema, LegacyAttachmentResponseSchema } = await import("@growdesk/contracts");
+  const legacySchema = { operationId: "resolveLegacyWebAttachment", querystring: LegacyAttachmentQuerySchema,
+    response: { 200: LegacyAttachmentResponseSchema, 400: ApiErrorEnvelopeSchema,
+      401: ApiErrorEnvelopeSchema, 403: ApiErrorEnvelopeSchema, 404: ApiErrorEnvelopeSchema, 503: ApiErrorEnvelopeSchema } };
+  fastify.get<{ Querystring: { path: string } }>("/api/v1/web/attachments/resolve-legacy", {
+    preHandler: [fastify.authenticate], schema: legacySchema,
+  }, async (request, reply) => {
+    const data = await attachmentService.resolveLegacyUpload(request.principal!, request.query.path);
+    return reply.header("cache-control", "private, no-store").send({ data });
+  });
 
   // Content is always streamed through the authenticated API. The old
   // download-url endpoint intentionally no longer exists: returning a
