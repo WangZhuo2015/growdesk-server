@@ -65,9 +65,22 @@ func run() error {
 	}
 	defer app.Close()
 	app.RegisterBusinessHandlers()
-	server := &http.Server{Addr: config.Address, Handler: app, ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32768}
-	return serveHTTP(ctx, server, log)
+	return serveHTTP(ctx, configuredHTTPServer(config, app), log)
+}
+
+// A handler context deadline does not interrupt blocked socket writes. Keep
+// transport deadlines finite as well, allowing a short error-response grace.
+// Future long-lived streams need explicit bounded per-stream deadlines; they
+// must not remove the default write limit for ordinary API responses.
+func configuredHTTPServer(config backend.Config, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr: config.Address, Handler: handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       config.RequestTimeout,
+		WriteTimeout:      config.RequestTimeout + 5*time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    32768,
+	}
 }
 
 func serveHTTP(ctx context.Context, server *http.Server, log *slog.Logger) error {
