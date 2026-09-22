@@ -31,6 +31,10 @@ func LoadContract() (*Contract, error) {
 	if err != nil {
 		return nil, err
 	}
+	raw, err = nullableReferenceContract(raw)
+	if err != nil {
+		return nil, fmt.Errorf("normalize pinned nullable references: %w", err)
+	}
 	loader := openapi3.NewLoader()
 	loader.IsExternalRefsAllowed = false
 	doc, err := loader.LoadFromData(raw)
