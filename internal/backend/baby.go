@@ -293,6 +293,11 @@ func (s *Server) removeBabyMember(ctx context.Context, r *Request) (Result, erro
 		if err != nil {
 			return nil, err
 		}
+		// The reference domain policy requires a current effective baby admin,
+		// including self-removal; a family viewer is not an effective admin.
+		if current.FamilyRole == "viewer" || current.BabyRole != "admin" {
+			return nil, apiError(409, "LAST_BABY_ADMIN_PROTECTION", "Baby membership revocation requires an effective administrator")
+		}
 		if text(member["role"]) == "admin" {
 			if err = protectBabyAdmin(ctx, tx, scope.FamilyID, scope.BabyID, targetID); err != nil {
 				return nil, err
