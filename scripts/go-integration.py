@@ -46,8 +46,10 @@ class OwnedEnvironment:
     def start(self):
         self.pg = self.container('postgres:18',['-e','POSTGRES_PASSWORD='+self.admin_password,'-e','POSTGRES_DB=test_bootstrap','-p','127.0.0.1::5432'])
         redis = self.container('redis:8',['-p','127.0.0.1::6379'])
+        # The image's temporary initialization server accepts Unix sockets only.
+        # Probe TCP so a transient bootstrap server cannot pass readiness.
         for _ in range(100):
-            probe = subprocess.run(['docker','exec',self.pg,'pg_isready','-U','postgres','-d','test_bootstrap'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            probe = subprocess.run(['docker','exec',self.pg,'pg_isready','-h','127.0.0.1','-U','postgres','-d','test_bootstrap'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if probe.returncode == 0: break
             time.sleep(.2)
         else: raise RuntimeError('owned PostgreSQL did not become ready')
