@@ -1,0 +1,43 @@
+name: Go offline review snapshot
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/go-backend-parity-20260922]
+    paths: [.github/workflows/go-review-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Export public source and verified build inputs only
+        env:
+          GOFLAGS: -mod=readonly
+        run: |
+          set -euo pipefail
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          mkdir -p review-snapshot
+          git bundle create review-snapshot/source.bundle HEAD
+          git rev-parse HEAD > review-snapshot/source-sha.txt
+          go version > review-snapshot/toolchain.txt
+          tar -C "$(go env GOROOT)" -czf review-snapshot/go-sdk.tar.gz .
+          tar -C "$(go env GOPATH)" -czf review-snapshot/go-modules.tar.gz pkg/mod
+          (cd review-snapshot && sha256sum source.bundle source-sha.txt toolchain.txt go-sdk.tar.gz go-modules.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-review-snapshot-${{ github.sha }}
+          path: review-snapshot/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
