@@ -74,8 +74,8 @@ func foodLibraryFamily(ctx context.Context, q Querier, userID, requested string)
 }
 
 func (s *Server) registerFoodLibrary() {
-	s.Register("listFoodLibraryItems", false, s.listFoodLibraryItems)
-	s.Register("createFoodLibraryItem", false, s.createFoodLibraryItem)
+	s.Register("listFoodLibraryItems", false, foodLibraryErrorBoundary(s.listFoodLibraryItems))
+	s.Register("createFoodLibraryItem", false, foodLibraryErrorBoundary(s.createFoodLibraryItem))
 	s.Register("getFoodGuidelines", false, func(_ context.Context, _ *Request) (Result, error) {
 		return ok(foodGuidelines())
 	})
