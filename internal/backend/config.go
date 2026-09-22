@@ -13,6 +13,7 @@ import (
 )
 
 type Config struct {
+	Experimental          bool
 	Address               string
 	Environment           string
 	DatabaseURL           string
@@ -36,9 +37,10 @@ func envOr(name, fallback string) string {
 
 func LoadConfig() (Config, error) {
 	c := Config{
-		Address:     net.JoinHostPort(envOr("HOST", "127.0.0.1"), envOr("PORT", "3081")),
-		Environment: envOr("GROWDESK_ENV", "development"),
-		DatabaseURL: os.Getenv("DATABASE_URL"), RedisURL: os.Getenv("REDIS_URL"),
+		Experimental: os.Getenv("GROWDESK_GO_EXPERIMENTAL") == "1",
+		Address:      net.JoinHostPort(envOr("HOST", "127.0.0.1"), envOr("PORT", "3081")),
+		Environment:  envOr("GROWDESK_ENV", "development"),
+		DatabaseURL:  os.Getenv("DATABASE_URL"), RedisURL: os.Getenv("REDIS_URL"),
 		JWTSecret: os.Getenv("JWT_SECRET"), SessionEncryptionKey: os.Getenv("SESSION_ENCRYPTION_KEY"),
 		InvitePepper: envOr("INVITE_SECRET", os.Getenv("INVITE_CODE_PEPPER")), PublicURL: envOr("PUBLIC_BASE_URL", "http://127.0.0.1:3081"),
 		MaxDBConnections: 10, MaxConcurrentRequests: 256, RequestTimeout: 30 * time.Second, MaxBodyBytes: 1048576,
@@ -76,6 +78,9 @@ func LoadConfig() (Config, error) {
 		return c, err
 	}
 	if err := ValidateRedisURL(c.RedisURL, c.Environment == "test"); err != nil {
+		return c, err
+	}
+	if err := c.validateNativeRuntime(); err != nil {
 		return c, err
 	}
 	return c, nil
@@ -124,12 +129,59 @@ func ValidateDatabaseURL(raw string, test bool) error {
 }
 
 func ValidateRedisURL(raw string, test bool) error {
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "redis" && u.Scheme != "rediss") || u.Hostname() == "" || u.Fragment != "" || u.RawQuery != "" {
-		return errors.New("REDIS_CONFIG_REJECTED")
+	fail := func() error {
+		return errors.New("REDIS_CONFIG_REJECTED: explicit host, password, port and database required")
 	}
-	if test && (u.Hostname() != "127.0.0.1" || u.Port() == "" || u.Port() == "6379") {
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "redis" && u.Scheme != "rediss") || u.Hostname() == "" || u.User == nil || u.Fragment != "" || u.RawQuery != "" {
+		return fail()
+	}
+	password, present := u.User.Password()
+	if !present || password == "" {
+		return fail()
+	}
+	port, err := strconv.Atoi(u.Port())
+	if err != nil || port < 1 || port > 65535 {
+		return fail()
+	}
+	database := strings.TrimPrefix(u.Path, "/")
+	if database == "" {
+		return fail()
+	}
+	for _, c := range database {
+		if c < '0' || c > '9' {
+			return fail()
+		}
+	}
+	if _, err := strconv.ParseUint(database, 10, 31); err != nil {
+		return fail()
+	}
+	if test && (u.Hostname() != "127.0.0.1" || port == 6379) {
 		return errors.New("REDIS_CONFIG_REJECTED: owned loopback and non-default port required")
 	}
 	return nil
+}
+
+// This incremental binary is not a production replacement. The same boundary
+// applies to direct NewServer callers, not just environment-based startup.
+// Ownership is additionally established by the disposable integration harness.
+func (c Config) validateNativeRuntime() error {
+	if !c.Experimental {
+		return errors.New("GROWDESK_GO_EXPERIMENTAL=1 is required for this isolated native preview")
+	}
+	if c.Environment != "test" && c.Environment != "development" {
+		return errors.New("native Go preview refuses production and unknown environments")
+	}
+	if len(c.JWTSecret) < 32 || len(c.SessionEncryptionKey) < 32 {
+		return errors.New("native Go preview requires strong JWT and session encryption keys")
+	}
+	host, rawPort, err := net.SplitHostPort(c.Address)
+	port, portErr := strconv.Atoi(rawPort)
+	if err != nil || portErr != nil || host != "127.0.0.1" || port < 1 || port > 65535 || port == 3088 || port == 3089 {
+		return errors.New("native Go preview requires an isolated loopback HTTP port")
+	}
+	if err := ValidateDatabaseURL(c.DatabaseURL, true); err != nil {
+		return err
+	}
+	return ValidateRedisURL(c.RedisURL, true)
 }

@@ -32,7 +32,7 @@ type Querier interface {
 }
 
 func openDatabase(ctx context.Context, c Config) (*pgxpool.Pool, error) {
-	if err := ValidateDatabaseURL(c.DatabaseURL, c.Environment == "test"); err != nil {
+	if err := c.validateNativeRuntime(); err != nil {
 		return nil, err
 	}
 	cfg, err := pgxpool.ParseConfig(c.DatabaseURL)
@@ -53,7 +53,7 @@ func openDatabase(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 		pool.Close()
 		return nil, errors.New("database unavailable")
 	}
-	if c.Environment == "test" {
+	if c.Environment == "test" || c.Environment == "development" {
 		var name, user string
 		var super bool
 		err = pool.QueryRow(ctx, "SELECT current_database(), current_user, rolsuper FROM pg_roles WHERE rolname=current_user").Scan(&name, &user, &super)

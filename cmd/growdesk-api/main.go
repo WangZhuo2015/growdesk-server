@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,25 +19,81 @@ import (
 	"github.com/WangZhuo2015/growdesk-server/internal/backend"
 )
 
-var revision="development"
-func main(){
-	inventory:=flag.Bool("contract-inventory",false,"print declared/native coverage, not an acceptance verdict")
-	version:=flag.Bool("version",false,"print build and reference revisions")
-	flag.Parse()
-	if *version{_ = json.NewEncoder(os.Stdout).Encode(map[string]string{"revision":revision,"reference":assets.ReferenceCommit});return}
-	if *inventory{
-		contract,err:=backend.LoadContract();if err!=nil{slog.Error("contract load failed","error",err);os.Exit(1)}
-		s:=&backend.Server{Contract:contract,Handlers:map[string]backend.Handler{},Public:map[string]bool{}}
-		s.RegisterBusinessHandlers()
-		rows:=make([]map[string]any,0,len(contract.Routes));for _,r:=range contract.Routes{implemented:=s.Handlers[r.OperationID]!=nil||r.OperationID=="getHealthLive"||r.OperationID=="getHealthReady";rows=append(rows,map[string]any{"method":r.Method,"path":r.Path,"operationId":r.OperationID,"implemented":implemented,"verified":false})};_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"reference":assets.ReferenceCommit,"acceptance":"IMPLEMENTED_NOT_REVIEWED","operations":rows});return
+var revision = "development"
+
+func main() {
+	if err := run(); err != nil {
+		slog.Error("native API stopped", "error", err)
+		os.Exit(1)
 	}
-	log:=slog.New(slog.NewJSONHandler(os.Stdout,nil));slog.SetDefault(log)
-	config,err:=backend.LoadConfig();if err!=nil{log.Error("configuration rejected","error",err);os.Exit(1)}
-	ctx,stop:=signal.NotifyContext(context.Background(),syscall.SIGINT,syscall.SIGTERM);defer stop()
-	startup,cancel:=context.WithTimeout(ctx,10*time.Second);app,err:=backend.NewServer(startup,config,log);cancel();if err!=nil{log.Error("startup failed","error",err);os.Exit(1)}
-	defer app.Close();app.RegisterBusinessHandlers()
-	server:=&http.Server{Addr:config.Address,Handler:app,ReadHeaderTimeout:5*time.Second,ReadTimeout:30*time.Second,IdleTimeout:60*time.Second,MaxHeaderBytes:32768}
-	done:=make(chan error,1);go func(){done<-server.ListenAndServe()}()
-	log.Info("native Go API listening","address",config.Address,"revision",revision,"reference",assets.ReferenceCommit)
-	select{case err:=<-done:if !errors.Is(err,http.ErrServerClosed){log.Error("HTTP server failed","error",err);return};case <-ctx.Done():shutdown,release:=context.WithTimeout(context.Background(),20*time.Second);defer release();if err:=server.Shutdown(shutdown);err!=nil{_ = server.Close();log.Warn("HTTP shutdown deadline reached")}}
+}
+
+func run() error {
+	inventory := flag.Bool("contract-inventory", false, "print declared/native coverage, not an acceptance verdict")
+	version := flag.Bool("version", false, "print build and reference revisions")
+	flag.Parse()
+	if *version {
+		return json.NewEncoder(os.Stdout).Encode(map[string]string{"revision": revision, "reference": assets.ReferenceCommit})
+	}
+	if *inventory {
+		contract, err := backend.LoadContract()
+		if err != nil {
+			return fmt.Errorf("contract load failed: %w", err)
+		}
+		s := &backend.Server{Contract: contract, Handlers: map[string]backend.Handler{}, Public: map[string]bool{}}
+		s.RegisterBusinessHandlers()
+		rows := make([]map[string]any, 0, len(contract.Routes))
+		for _, r := range contract.Routes {
+			implemented := s.Handlers[r.OperationID] != nil || r.OperationID == "getHealthLive" || r.OperationID == "getHealthReady"
+			rows = append(rows, map[string]any{"method": r.Method, "path": r.Path, "operationId": r.OperationID, "implemented": implemented, "verified": false})
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"reference": assets.ReferenceCommit, "acceptance": "IMPLEMENTED_NOT_REVIEWED", "operations": rows})
+	}
+	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(log)
+	config, err := backend.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("configuration rejected: %w", err)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+	startup, cancel := context.WithTimeout(ctx, 10*time.Second)
+	app, err := backend.NewServer(startup, config, log)
+	cancel()
+	if err != nil {
+		return fmt.Errorf("startup failed: %w", err)
+	}
+	defer app.Close()
+	app.RegisterBusinessHandlers()
+	server := &http.Server{Addr: config.Address, Handler: app, ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 32768}
+	return serveHTTP(ctx, server, log)
+}
+
+func serveHTTP(ctx context.Context, server *http.Server, log *slog.Logger) error {
+	// Bind synchronously: never log a successful listener or exit zero when
+	// the address is occupied. Returning lets the caller close DB/Redis first.
+	listener, err := net.Listen("tcp", server.Addr)
+	if err != nil {
+		return fmt.Errorf("HTTP listen failed: %w", err)
+	}
+	defer listener.Close()
+	done := make(chan error, 1)
+	go func() { done <- server.Serve(listener) }()
+	log.Info("native Go API listening", "address", listener.Addr().String(), "revision", revision, "reference", assets.ReferenceCommit)
+	select {
+	case err := <-done:
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("HTTP server failed: %w", err)
+		}
+		return nil
+	case <-ctx.Done():
+		shutdown, release := context.WithTimeout(context.Background(), 20*time.Second)
+		defer release()
+		if err := server.Shutdown(shutdown); err != nil {
+			_ = server.Close()
+			return fmt.Errorf("HTTP shutdown failed: %w", err)
+		}
+		return nil
+	}
 }
