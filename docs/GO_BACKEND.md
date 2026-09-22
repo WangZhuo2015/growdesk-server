@@ -1,8 +1,8 @@
-# Native Go backend: implementation and validation scope
+# Native Go backend: implementation and review scope
 
-Status: **IMPLEMENTED_NOT_REVIEWED**. This is an incremental native implementation, not a complete replacement of GrowDesk and not production cutover approval.
+Status: **IMPLEMENTED_NOT_REVIEWED**. PR #9 introduces an isolated native preview alongside the existing service. Merging this increment is not completion of the Go rewrite, independent acceptance, a benchmark result, or production cutover approval. The default TypeScript deployment remains unchanged.
 
-The TypeScript reference is frozen at `f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4`. Its application source, packages, PostgreSQL schema/migrations and `contracts/openapi.json` remain unchanged. CI checks that boundary. Existing Web pages are not modified.
+The TypeScript reference is frozen at `f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4`. Its `apps`, `packages`, PostgreSQL schema/migrations and `contracts/openapi.json` remain unchanged. CI checks this boundary. Existing Web pages are not modified. Changes to that reference require an explicit, separately reviewed parity rebaseline.
 
 ## Current native scope
 
@@ -21,13 +21,13 @@ The executable registers **68 of 151 declared operations**:
 | Family formula-product catalog | 4 |
 | Food library catalog and feeding guidelines | 3 |
 
-Run `growdesk-api --contract-inventory` for exact paths and operation IDs. Registration is implementation coverage, not proof that all input combinations are compatible. The inventory deliberately does not label operations independently accepted. Missing operations return HTTP 503 with `GO_OPERATION_NOT_IMPLEMENTED`; they do not proxy to Node, return fake data, or count as successful throughput.
+`growdesk-api --contract-inventory` lists every operation. Registration is not independent acceptance or exhaustive input coverage. The **83 missing operations** remain explicit `503 / GO_OPERATION_NOT_IMPLEMENTED` failures after normal validation/authentication. They never proxy to Node or return fabricated success.
 
-API business execution uses Go and PostgreSQL/Redis directly. Node is needed for building the reference implementation and existing tooling, not for serving the implemented native API operations. Conversation history is not AI execution; voice history is not ASR; push-device registration is not push delivery. No Go Worker or Scheduler replacement is delivered in this slice.
+Business execution uses Go and PostgreSQL/Redis directly. Node is used to build the reference and existing tooling, not to serve native operations. Conversation history is not AI execution; voice history is not ASR; device registration is not push delivery. Worker/Scheduler, remaining nutrition/food/growth/medical/vaccine/sync operations, and attachment/S3 lifecycle remain follow-up work.
 
 ## Build
 
-CI pins Go **1.27.1**, and resolves only the committed `go.mod`/`go.sum` graph.
+CI pins Go **1.27.1** and uses only committed `go.mod`/`go.sum` dependencies:
 
 ```sh
 export GOFLAGS=-mod=readonly
@@ -43,66 +43,70 @@ CGO_ENABLED=0 go build -trimpath \
 ./dist-go/growdesk-api --contract-inventory > dist-go/operations.json
 ```
 
-`-race` tests require a supported C toolchain; the deliverable above is built with cgo disabled. CI uploads the Linux amd64 executable, source revision, inventory and SHA-256 checksums as `native-go-<commit>`. No performance improvement is asserted by a successful build.
+Race tests require a supported C toolchain; the distributed binary is built with cgo disabled. Version/inventory commands do not connect to a database. CI checks out the exact PR head for native jobs, records that SHA and includes `source-sha.txt` in `SHA256SUMS`. Historical runs may have used a synthetic merge SHA: read the artifact's actual source identity, not its filename alone.
 
-Runtime configuration includes explicit `DATABASE_URL`, password-protected `REDIS_URL`, `JWT_SECRET` (at least 32 bytes), `SESSION_ENCRYPTION_KEY`, `INVITE_SECRET`, `HOST` and `PORT`. Use isolated credentials and ports for tests. Default database pool size is 10 (`DB_POOL_MAX`); HTTP concurrency defaults to 256 (`HTTP_MAX_CONCURRENCY`). Existing migrations must be applied by the migration owner before starting the service; the server does not auto-migrate a database.
+## Mandatory isolated runtime boundary
 
-## Actual HTTP/database regression commands
+This incomplete executable **refuses production startup**. Both configuration loading and direct database initialization enforce:
 
-The scripts require Docker and Python 3. They create exclusively owned PostgreSQL 18 and password-protected Redis 8 containers on loopback random ports, with temporary `test_` database/role names and a non-superuser business role. They apply real repository SQL migrations and remove only their own containers/processes. They do not accept a production database override.
+- Explicit `GROWDESK_GO_EXPERIMENTAL=1`; environment `test` or `development` only.
+- `HOST=127.0.0.1`; a separate HTTP port, never the old Web's 3088/3089.
+- PostgreSQL at `127.0.0.1`, an explicit non-default port, explicit credentials, and `test_` database/role names. The connected role must actually be non-superuser. This parser is not proof of ownership; the harness independently creates and tracks its containers.
+- Password-protected loopback Redis on a non-default port, explicit database number, and no query/fragment overrides.
+- `JWT_SECRET` and `SESSION_ENCRYPTION_KEY` of at least 32 bytes. If the latter is omitted, current configuration uses the strong JWT secret; distinct keys are recommended. There is no embedded development secret.
+
+The supplied integration harness sets the opt-in and generated test credentials automatically. Do not weaken guards to connect to existing production services. Remote benchmark traffic can enter through a deliberately configured private tunnel to the isolated listener; do not expose this preview as the production API.
+
+Defaults: database pool 10 (`DB_POOL_MAX`), HTTP concurrency 256 (`HTTP_MAX_CONCURRENCY`), request timeout 30 seconds (`HTTP_TIMEOUT_SECONDS`). Socket reads follow the request budget; writes have that budget plus five seconds, preventing slow clients from retaining a handler indefinitely. These are not completed long-lived AI/SSE policies. Future streaming implementations must add bounded per-stream handling without disabling ordinary response deadlines.
+
+Apply the existing migrations through the migration owner; API startup never auto-migrates. No default deployment, ingress or production database is changed by this PR.
+
+## Reproducible HTTP/database regressions
+
+Docker and Python 3 are required. Scripts create exclusively owned PostgreSQL 18 and password-protected Redis 8 containers on random loopback ports, apply actual SQL migrations, use non-superuser `test_` identities and remove only owned resources. They reject optimized Python and do not accept a production database override.
 
 ```sh
 python3 scripts/go-integration.py --binary dist-go/growdesk-api
-python3 scripts/go-domain-integration.py \
-  --binary dist-go/growdesk-api --report dist-go/native-domain.json
-python3 scripts/go-companion-integration.py \
-  --binary dist-go/growdesk-api --report dist-go/native-companion.json
+python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --report dist-go/native-domain.json
+python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --report dist-go/native-companion.json
+python3 scripts/go-food-library-integration.py --binary dist-go/growdesk-api --report dist-go/food-native.json
+python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --report dist-go/native-session-review.json
 
-# Build the unchanged real reference, then compare both runtimes.
 npm ci --ignore-scripts --no-audit --no-fund
 npm run backend:db:generate
 npm run backend:build
-python3 scripts/go-domain-integration.py \
-  --binary dist-go/growdesk-api --reference --report dist-go/http-parity.json
-python3 scripts/go-companion-integration.py \
-  --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
+python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --reference --report dist-go/http-parity.json
+python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
+python3 scripts/go-food-library-integration.py --binary dist-go/growdesk-api --reference --report dist-go/food-reference.json
+python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --reference --report dist-go/session-reference.json
 ```
 
-Do not use `python -O`: the regression harness uses assertions. PASS reports are written only after the corresponding checks finish successfully. GitHub workflow jobs are separate: `native-static`, `native-postgres`, and `native-reference-parity`. A green native job does not imply a green reference comparison. Consult the exact commit's run and artifacts, not an older screenshot or this document, for results. New scenarios are implemented and wired to CI; this document itself is not a test result. Food-library implementation and HTTP parity are additionally covered by `.github/workflows/go-food-library.yml` and `scripts/go-food-library-integration.py`; they do not replace the full Go test suite.
+CI retains separate `native-static`, `native-postgres`, `native-reference-parity`, `food-library-native` and `food-library-reference` results. The session review suites are mandatory steps, not optional local-only checks. Workflows also run after merges into the candidate and main branches. No repository branch-protection settings are changed; workflows alone do not configure server-side required checks.
 
-The domain suite checks family/baby scope, invitations, member management, nullable fields, decimal strings, version conflicts, keyset pagination, soft deletion, timeline projections, idempotent replay, concurrent creation, sleep invariants and stale credentials after revocation. It injects a failure into the family change append and checks that record/timeline/cursor/receipt changes all roll back. In reference mode, it also replays TypeScript-created care receipts through the real Go HTTP API using the same isolated database and credentials.
+Domain tests cover scope, member management, versions, decimals, pagination, soft deletion, timeline, idempotency, concurrent creation and sleep invariants. Trigger-injected failures verify record/timeline/cursor/change/receipt rollback. Companion tests cover notifications, voice history, conversation ownership, message replay/conflicts, bounded summaries, active-task protection, metadata permissions, and formula catalog semantics. They exercise process restart and cross-runtime database reads/writes. Food tests additionally verify atomic item/status creation and its failure rollback.
 
-The companion suite checks:
+Session review adds same-user and cross-user BFF rebinding, concurrent binders, superseded-token denial, rollback after a forced binding UPDATE failure, process restart, ciphertext row binding, and actual one-way TypeScript handoff. Real TCP unit tests exercise incomplete bodies and clients that stop reading responses. Test existence is not a PASS receipt: consult the exact commit's completed CI steps.
 
-- Notification cursor pages and omitted null data; repeated marking preserves the first-read timestamp. Push-device upsert clears an omitted label and isolates identical installation IDs by user.
-- Voice history ownership, explicit baby scope, a 24-hour asynchronous unread window, acknowledgement, list/object/null response shapes and access revoked under previously issued credentials.
-- Conversation creation, complete history, rename/delete, user/baby isolation, identical and conflicting message replay, concurrent exact replay, bounded summaries, protected-image metadata checks, active-task deletion refusal, and history limits that never truncate persisted messages.
-- A database trigger fails the parent-session update after message insertion; the transaction must roll back the inserted message, then recover after the trigger is removed.
-- Formula catalog decimal-string/null/zero semantics, cursor pagination, archive filtering, viewer read/write permissions, soft deletion and existing read-only metadata. A historical family-viewer fixture is created only in the exclusively owned database: the read model supports viewer, but the management API only accepts admin/member, and that rejection is tested separately.
-- Real process restart with existing credentials, plus native/reference cross-runtime reads and writes against the same owned database.
+## Compatibility and intentional differences
 
-For differential observations, generated UUIDs are mapped by identity and server-generated timestamps are normalized only after verifying their wire format. Business times, null versus absent, decimal representation, zero values, versions and array order are not stripped. Error comparison currently covers HTTP status and `error.code`, **not byte-exact error messages/request IDs**. Database observations check transactional counts/cursors and tested record results; they are not a complete field-by-field production migration audit.
+**Ordinary HTTP/business parity.** Differential tests map generated IDs and generated timestamps only after validating their format. Business times, null/absence, decimal representation, zero values, versions and array order are retained. Errors compare status and `error.code`, not byte-identical prose/request IDs. Database observations are not a complete production data audit.
 
-The reference generator emits nullable `$ref` siblings in OpenAPI 3.0. The native loader adapts these in memory to an explicit union of the unchanged referenced schema and a null-only branch. Tests reject malformed non-null objects and verify the shared referenced schema remains non-nullable elsewhere. The published contract and frozen TypeScript schemas are not rewritten.
+**BFF handoff is one-way.** The frozen TypeScript implementation stores a plaintext refresh token in the misleadingly named `encrypted_refresh_token` column. Go reads that representation and encrypts its replacement as `go:v1:` on successful refresh. The session review suite invokes both real servers to verify this path. TypeScript can temporarily return an already-cached access token, but it cannot rotate Go ciphertext. Refresh replay caches also differ: the reference stores JSON and Go stores domain-bound ciphertext. Do not alternate refresh writers, claim rolling-session compatibility, or downgrade Go storage to plaintext. Bidirectional compatibility requires a separate coordinated reference change before mixed-runtime deployment.
 
-## Deliberate limits and deviations
+**Credential replacement.** A successful Go BFF credential rebind revokes the superseded device session and refresh credentials in the same transaction as the new binding. Racing binders receive a controlled `409 / CONCURRENT_MODIFICATION` when their preflight becomes stale; retry with current credentials. This closes the reference's orphan-session behavior and is an explicit security difference, not an exact-parity claim for that unsafe lifecycle.
 
-- **83 operations remain unimplemented**, including remaining food records/plans, nutrition and supplement domains, growth, medical/vaccine domains, attachment storage APIs, AI execution/ASR, synchronization, and other declared operations. Use inventory, not this illustrative list, as the exact backlog.
-- **Known reference spec/runtime disagreement:** `POST /api/v1/food/items` returns a bare `FoodLibraryItem` in the actual frozen Fastify route, while the OpenAPI export declares `{data: item}`. The native handler preserves the actual HTTP response to avoid breaking existing consumers. A dedicated regression validates the item schema and explicitly records that the bare response does not satisfy the frozen whole-envelope schema. Real HTTP differential tests verify this exception; it is not blanket OpenAPI compatibility or permission to ignore other validation failures.
-- Native BFF/session regression covers fresh Go sessions. Its encrypted replay/session format uses `go:v1:` and is **not an interoperable reader/writer for existing TypeScript BFF ciphertext**. Do not alternate those session flows across runtimes or advertise rolling-session migration compatibility. This must be resolved and tested before any whole-backend cutover.
-- Go additionally refuses demoting the last effective baby administrator through membership upsert. That closes an orphaning path in the reference and is an intentional security deviation, not an exact-parity claim. It requires dedicated review; shared differential scenarios do not exercise that unsafe reference mutation.
-- Native companion reads reject soft-deleted parent families/babies even where the reference query only checked membership. Concurrent message-ID collisions across different sessions return a controlled conflict instead of relying on a database uniqueness exception. These are explicit hardening decisions requiring review, not a claim to reproduce unsafe/racy reference behavior.
-- Formula product writes intentionally preserve the existing API's semantics: no care idempotency receipt, family change cursor or version increment is invented. A future stronger catalog contract must be versioned separately.
-- Full malformed-input/error-message equivalence, the entire permission matrix, real private-S3/avatar lifecycle, browser/Web integration and Worker/Scheduler behavior are not certified by these suites. Protected-image tests use real attachment metadata but do not fetch any S3 bytes.
-- JSONB adapters and DTO projections still use generic objects at boundaries. Explicit SQL field allowlists are used; this does not claim a completed all-typed sqlc repository layer.
-- The family synchronization row serializes care mutations per family, matching the existing transactional design. Go's concurrency model does not remove that database contention constraint.
+**Published schema drift.** The frozen `POST /api/v1/food/items` HTTP response is a bare item while the OpenAPI export declares `{data: item}`. Go preserves the actual wire response. Tests record the exception and validate the item separately; neither reference source nor frozen OpenAPI is edited to manufacture success. Nullable `$ref` siblings are adapted in memory without relaxing non-null object validation or mutating shared schemas.
 
-## Benchmark prerequisites
+**Authorization hardening.** Go rejects removing the last effective baby administrator, soft-deleted parent access, and conflicting cross-session message IDs. Scope checks and authorized multi-query reads use a consistent snapshot where implemented. These differences need independent review, not replication of unsafe reference behavior.
 
-First require the exact tested commit's native and differential checks to pass. Only benchmark declared native operations whose requested behavior has passed validation. Do not count 503/401/409 responses or cached idempotency replays as successful create throughput.
+**Catalog semantics.** Formula-product writes intentionally do not invent care receipts, cursor increments or versions absent from the reference. JSONB/DTO boundaries still contain generic objects with explicit SQL field allowlists; this is not a fully generated sqlc layer.
 
-Use equal CPU/memory limits, dataset sizes, PostgreSQL indexes and connection budgets. Keep bcrypt cost, authentication, validation, idempotency receipts, timeline and change-log writes enabled on both sides. Separate reads, fresh writes, intentional replays, conflicts and same-family contention from multiple-family traffic. Measure successful throughput, error rate, p50/p95/p99, process CPU/RSS, database time and pool waits. Do not benchmark the two application processes concurrently against the same constrained database unless measuring that contention intentionally.
+Full malformed-input/error-message equivalence, every permission interleaving, browser acceptance, private S3/avatar byte flows and complete Worker/Scheduler behavior remain outside this increment. Protected-image tests verify metadata only. An independent review must not mark the entire Go rewrite accepted on the strength of these suites.
 
-For conversations, use equal session/message counts and compare bounded summary reads separately from full history and message writes. Push-device tests measure registration only; voice tests measure history only. Neither benchmark should be described as external push delivery or AI/ASR processing throughput.
+## Benchmark boundaries
 
-No production deployment, data migration, branch merge, or benchmark result is included in this implementation slice.
+Require the exact tested commit's native and differential checks first. Benchmark only implemented, validated behavior. Do not count 503, failed authentication, conflicts, or cached idempotency replays as fresh-write throughput.
+
+Use equal CPU/memory limits, data, indexes, connection budgets, bcrypt cost, authentication, validation and transactional side effects. Separate reads, fresh writes, replays, conflicts and same-family contention from multi-family traffic. The family synchronization row still serializes care mutations. Record successful throughput, error rate, p50/p95/p99, CPU/RSS, database time and pool waits. Different SQL projections mean a benchmark compares implementations, not language effects alone.
+
+Compare conversation summaries separately from full histories and message writes. Device registration and voice-history benchmarks are not push/ASR benchmarks. No benchmark result, production deployment or branch merge is asserted by this document.
