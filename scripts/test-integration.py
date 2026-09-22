@@ -182,6 +182,7 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
             # Run the durable Web conversation regression after schema setup,
             # in the same exclusively owned database. Failures remain fatal.
             command(['node', '--import', 'tsx', '--test', 'tests/integration/web-ai-session-regression.test.ts'], env=env)
+            command(['node', '--import', 'tsx', '--test', 'tests/integration/legacy-upload-access.test.ts'], env=env)
             if s3:
                 command(['node', '--import', 'tsx', '--test', 'tests/integration/owned-object-storage.test.ts',
                          'tests/integration/legacy-attachment-promotion.test.ts'], env=env)

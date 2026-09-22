@@ -1,3 +1,4 @@
+import { readObject, readRows, readString, hasHttpStatus } from "./assert-json.js";
 /** Real AWS SDK/HTTP round trip against the runner's exclusive MinIO child. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -64,7 +65,7 @@ test('owned S3 uses real signed PUT, private objects, checksum validation and ph
     assert.deepEqual(Buffer.from(await stored.Body!.transformToByteArray()), bytes);
     await driver.deleteObject(objectKey);
     await assert.rejects(client.send(new HeadObjectCommand({ Bucket: identity.bucket, Key: objectKey })),
-      (error: any) => error.$metadata?.httpStatusCode === 404);
+      (error: unknown) => hasHttpStatus(error, 404));
     await driver.deleteObject(objectKey); // S3 delete is idempotent.
 
     const api = async (method: string, route: string, token?: string, body?: unknown) => fetch(origin + route, {
@@ -77,27 +78,27 @@ test('owned S3 uses real signed PUT, private objects, checksum validation and ph
         username: `test_s3_${run.token}_${suffix}`, password: 'TestStoragePassword123!', displayName: `test_storage_${suffix}`,
       });
       assert.equal(response.status, 201, 'synthetic registration failed');
-      const registered: any = await response.json();
-      tokens.push(registered.data.accessToken);
-      userIds.push(registered.data.user.id);
+      const registered = readObject(readObject(await response.json()).data);
+      tokens.push(readString(registered.accessToken));
+      userIds.push(readString(readObject(registered.user).id));
       const familiesResponse = await api('GET', '/api/v1/families', tokens.at(-1));
       assert.equal(familiesResponse.status, 200);
-      const families: any = await familiesResponse.json();
-      assert.equal(families.data.length, 1);
-      familyIds.push(families.data[0].id);
+      const families = readRows(readObject(await familiesResponse.json()).data);
+      assert.equal(families.length, 1);
+      familyIds.push(readString(families[0]!.id));
     }
     const [tokenA, tokenB] = tokens;
     const babyResponse = await api('POST', `/api/v1/families/${familyIds[0]}/babies`, tokenA,
       { name: 'test_storage_baby', gender: 'girl', birthDate: '2026-01-01' });
     assert.equal(babyResponse.status, 201);
-    const baby: any = await babyResponse.json();
+    const baby = readObject(readObject(await babyResponse.json()).data);
     const pendingResponse = await api('POST', '/api/v1/attachments', tokenA, {
       purpose: 'medical_report', mimeType: 'image/png', byteSize: bytes.length, sha256: sha,
-      ownerScope: { familyId: familyIds[0], babyId: baby.data.id },
+      ownerScope: { familyId: familyIds[0], babyId: readString(baby.id) },
     });
     assert.equal(pendingResponse.status, 201);
-    const pending: any = await pendingResponse.json();
-    const attachment = pending.data;
+    const pending = readObject(readObject(await pendingResponse.json()).data);
+    const attachment = { id: readString(pending.id), objectKey: readString(pending.objectKey), uploadUrl: readString(pending.uploadUrl) };
     uploadedKeys.add(attachment.objectKey);
     assert.equal(new URL(attachment.uploadUrl).origin, identity.endpoint);
     assert.equal((await fetch(attachment.uploadUrl, { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: bytes })).status, 200);
@@ -130,7 +131,7 @@ test('owned S3 uses real signed PUT, private objects, checksum validation and ph
     assert.deepEqual(Buffer.from(await recoveredContent.arrayBuffer()), bytes);
     assert.equal((await api('DELETE', attPath, tokenA)).status, 200);
     await assert.rejects(client.send(new HeadObjectCommand({ Bucket: identity.bucket, Key: attachment.objectKey })),
-      (error: any) => error.$metadata?.httpStatusCode === 404);
+      (error: unknown) => hasHttpStatus(error, 404));
     assert.equal((await api('GET', `${attPath}/content`, tokenA)).status, 404);
   } finally {
     for (const key of uploadedKeys) await driver.deleteObject(key);

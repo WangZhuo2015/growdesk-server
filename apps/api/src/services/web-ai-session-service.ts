@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import type { WebAiSession, WebAiMessage, WebAiSessionInput, WebAiMessageInput, WebAiListOptions } from "@growdesk/contracts";
+import { loadSessionMessageSummaries } from "./web-ai-session-summary.js";
 
 type Database = Pick<pg.Pool, "query">;
 interface SessionRow { id: string; user_id: string; baby_id: string | null; title: string; context_type: string; created_at: Date; updated_at: Date }
@@ -73,12 +74,11 @@ export class WebAiSessionService {
     const where = `s.user_id = $1 AND ($2::text IS NULL OR s.baby_id = $2) AND ($3::text IS NULL OR s.context_type = $3) AND ${visibleBaby}`;
     const count = await this.pool.query<{ total: string }>(`SELECT count(*) AS total FROM ai_sessions s WHERE ${where}`, values);
     const rows = await this.pool.query<SessionRow>(`SELECT s.* FROM ai_sessions s WHERE ${where} ORDER BY s.updated_at DESC, s.id DESC LIMIT $4 OFFSET $5`, [...values, options.limit ?? 30, options.offset ?? 0]);
-    const sessions: WebAiSession[] = [];
-    for (const row of rows.rows) {
-      const countResult = await this.pool.query<{ total: string }>("SELECT count(*) AS total FROM ai_messages WHERE session_id = $1", [row.id]);
-      const last = await this.pool.query<MessageRow>("SELECT id, session_id, role, left(content, 4096) AS content, NULL::text AS image, NULL::text AS tools_json, created_at FROM ai_messages WHERE session_id = $1 ORDER BY created_at DESC, id DESC LIMIT 1", [row.id]);
-      sessions.push(sessionDto(row, [], Number(countResult.rows[0]!.total), last.rows[0] ? messageDto(last.rows[0]) : null));
-    }
+    const summaries = await loadSessionMessageSummaries(this.pool, rows.rows.map(row => row.id));
+    const sessions = rows.rows.map(row => {
+      const summary = summaries.get(row.id)!;
+      return sessionDto(row, [], summary.messageCount, summary.lastMessage);
+    });
     return { total: Number(count.rows[0]!.total), sessions };
   }
 

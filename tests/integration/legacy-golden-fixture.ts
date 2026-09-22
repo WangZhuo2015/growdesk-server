@@ -1,3 +1,4 @@
+import { readObject, readString } from "./assert-json.js";
 /** Same logical synthetic records in owned PG and owned legacy SQLite. Never reads a live database. */
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -15,7 +16,7 @@ const id = (n: number) => `a0000000-0000-4000-8000-${String(n).padStart(12, "0")
 const date = "2026-09-19";
 const stamp = "2026-09-19T00:00:00.000Z";
 const password = "TestGoldenPassword123!";
-type Row = Record<string, any>;
+type Row = Record<string, unknown>;
 interface Options {
   database: DatabaseContext;
   run: { directory: string; token?: string; database: string; user: string; pgPort: number };
@@ -244,7 +245,12 @@ export async function runLegacyGolden(options: Options) {
   const seeded = spawnSync("python3", ["-c", python, legacyRoot, sqlite, fixtureFile], { encoding: "utf8" });
   assert.equal(seeded.status, 0, seeded.stderr);
   const dateFields = new Set(["createdAt", "updatedAt", "birthDate", "occurredAt", "startedAt", "endedAt", "measurementDate", "reportDate", "administeredDate", "scheduledDate", "completedDate", "startDate"]);
-  const prisma = database.prisma as any;
+  const prisma = database.prisma;
+  // A finite fixture model map is the dynamic seeding boundary. Prisma still
+  // validates every create at runtime; source fields are never typed as any.
+  const seed = database.prisma as unknown as Record<string, {
+    create(input: { data: Record<string, unknown> }): Promise<unknown>;
+  }>;
   let child: ChildProcess | undefined;
   try {
     for (const [model, rows] of Object.entries(fixture.canonical)) for (const row of rows) {
@@ -252,7 +258,7 @@ export async function runLegacyGolden(options: Options) {
       // The canonical contract uses girl; the current Prisma babies table stores its
       // internal female value and exposes girl through family-baby-service.
       if (model === "baby" && data.gender === "girl") data.gender = "female";
-      await prisma[model].create({ data });
+      await seed[model]!.create({ data });
     }
     const listener = net.createServer();
     await new Promise<void>(resolve => listener.listen(0, "127.0.0.1", resolve));
@@ -263,7 +269,7 @@ export async function runLegacyGolden(options: Options) {
     const env: NodeJS.ProcessEnv = { PATH: process.env.PATH, HOME: root, NODE_ENV: "production", PORT: String(port), HOSTNAME: "127.0.0.1", GROWDESK_ENABLED: "false", DATABASE_URL: `file:${sqlite}`, JWT_SECRET: "test_golden_012345678901234567890123456789", AI_API_KEY: "", AI_BASE_URL: "http://127.0.0.1:1", SEED_DEMO: "0" };
     const foodReference = JSON.parse(fs.readFileSync(path.join(legacyRoot, "data/04_foods.json"), "utf8"));
     assert.equal(await prisma.foodLibraryItem.count({ where: {
-      id: { in: foodReference.foodItems.map((food: any) => food.id) }, isCustom: false, familyId: null,
+      id: { in: foodReference.foodItems.map((food: unknown) => readString(readObject(food).id)) }, isCustom: false, familyId: null,
     } }), foodReference.foodItems.length, "Fresh migrations must install the public food catalogue");
     const references = spawnSync(process.execPath, ["--import", "tsx", "prisma/seed.ts"], { cwd: legacyRoot, env, encoding: "utf8", timeout: 60_000 });
     assert.equal(references.status, 0, references.stderr);
@@ -279,14 +285,14 @@ export async function runLegacyGolden(options: Options) {
     const dumped = spawnSync("python3", ["-c", referenceDumpScript, sqlite], { encoding: "utf8" });
     assert.equal(dumped.status, 0, dumped.stderr);
     const referenceRows = JSON.parse(dumped.stdout) as Record<string, Row[]>;
-    const parseJson = (value: unknown) => {
+    const parseJson = (value: unknown): unknown => {
       if (typeof value !== "string") return value ?? null;
       return JSON.parse(value);
     };
     const vaccineIds = new Map<string, string>();
     for (const row of referenceRows.Vaccine ?? []) {
       vaccineIds.set(String(row.vaccineId), String(row.id));
-      await prisma.vaccine.create({ data: {
+      await seed.vaccine!.create({ data: {
         id: row.id,
         vaccineCode: row.vaccineId,
         name: row.name,
@@ -321,7 +327,7 @@ export async function runLegacyGolden(options: Options) {
       } });
     }
     for (const row of referenceRows.VaccineDose ?? []) {
-      await prisma.vaccineDose.create({ data: {
+      await seed.vaccineDose!.create({ data: {
         id: row.id,
         vaccineId: row.vaccineId,
         doseNumber: row.doseNumber,
@@ -342,7 +348,7 @@ export async function runLegacyGolden(options: Options) {
     for (const row of referenceRows.VaccineScheduleEntry ?? []) {
       const vaccineId = vaccineIds.get(String(row.vaccineId));
       assert.ok(vaccineId, `Unknown legacy vaccine code in schedule: ${row.vaccineId}`);
-      await prisma.vaccineScheduleEntry.create({ data: {
+      await seed.vaccineScheduleEntry!.create({ data: {
         id: row.id,
         vaccineId,
         ageMonths: row.ageMonths,
@@ -358,7 +364,7 @@ export async function runLegacyGolden(options: Options) {
       } });
     }
     for (const row of referenceRows.VaccineStrategyGroup ?? []) {
-      await prisma.vaccineStrategyGroup.create({ data: {
+      await seed.vaccineStrategyGroup!.create({ data: {
         id: row.id,
         strategyId: row.strategyId,
         name: row.name,
@@ -388,7 +394,7 @@ export async function runLegacyGolden(options: Options) {
     fs.closeSync(log);
     for (let n = 0; n < 100; n++) {
       if (child.exitCode !== null) throw new Error("Legacy Next exited before readiness");
-      try { if ((await fetch(origin + "/api/app-config", { signal: AbortSignal.timeout(1000) })).ok) break; } catch {}
+      try { if ((await fetch(origin + "/api/app-config", { signal: AbortSignal.timeout(1000) })).ok) break; } catch { /* Readiness retries and diagnostic parsing retain their bounded failure paths. */ }
       if (n === 99) throw new Error("Legacy Next readiness timed out");
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -409,7 +415,7 @@ export async function runLegacyGolden(options: Options) {
             else if (typeof record.errorCode === "string") code = record.errorCode;
             else if (typeof error?.code === "string") code = error.code;
           }
-        } catch {}
+        } catch { /* Readiness retries and diagnostic parsing retain their bounded failure paths. */ }
         assert.fail(`Golden login failed at owned port: ${response.status}; message=${message}; code=${code}`);
       }
       const cookie = response.headers.getSetCookie().map(value => value.split(";")[0]).join("; ");

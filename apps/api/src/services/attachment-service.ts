@@ -40,7 +40,13 @@ class AttachmentInUseError extends Error {
   }
 }
 
+import { resolveLegacyUpload } from "./legacy-attachment-resolver.js";
+
 export class AttachmentService {
+  async resolveLegacyUpload(principal: UserPrincipal, pathname: string) {
+    return resolveLegacyUpload(this.prisma, principal.userId, pathname);
+  }
+
   constructor(
     private readonly prisma: PrismaClient,
     private readonly storageDriver: StorageDriver

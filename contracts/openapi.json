@@ -28673,6 +28673,275 @@
           }
         }
       }
+    },
+    "/api/v1/web/attachments/resolve-legacy": {
+      "get": {
+        "operationId": "resolveLegacyWebAttachment",
+        "summary": "Resolve a promoted legacy upload using current object-level authorization",
+        "tags": [
+          "Attachments"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 10,
+              "maxLength": 1024,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "path",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [

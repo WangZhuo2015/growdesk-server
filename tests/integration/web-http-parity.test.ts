@@ -1,3 +1,4 @@
+import { readObject, readRows, readString, valueAt } from "./assert-json.js";
 /**
  * Run only from scripts/test-integration.py --web-root <old Web repository>.
  *
@@ -35,7 +36,7 @@ interface OwnedRun {
 
 interface HttpResult {
   status: number;
-  body: any;
+  body: unknown;
   headers: Headers;
 }
 
@@ -104,7 +105,7 @@ async function freePort(): Promise<number> {
   return port;
 }
 
-function parseResponseBody(raw: string): any {
+function parseResponseBody(raw: string): unknown {
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -144,7 +145,7 @@ function bodySummary(body: unknown): string {
   }
 }
 
-function expectStatus(result: HttpResult, status: number, label: string): any {
+function expectStatus(result: HttpResult, status: number, label: string): unknown {
   assert.equal(result.status, status, `${label}: ${bodySummary(result.body)}`);
   return result.body;
 }
@@ -205,22 +206,22 @@ async function stopProcess(child: ChildProcess | null): Promise<void> {
   });
 }
 
-function idFromBody(body: any): string {
-  const value = body?.id ?? body?.data?.id ?? body?.record?.id;
-  assert.equal(typeof value, "string", `missing record ID: ${bodySummary(body)}`);
-  return value;
+function idFromBody(body: unknown): string {
+  return readString(valueAt(body, "id") ?? valueAt(body, "data", "id") ?? valueAt(body, "record", "id"));
 }
 
-function versionFromBody(body: any): string {
-  const value = body?.version ?? body?.baseVersion ?? body?.data?.version ?? body?.record?.version;
+function versionFromBody(body: unknown): string {
+  const value = valueAt(body, "version") ?? valueAt(body, "baseVersion")
+    ?? valueAt(body, "data", "version") ?? valueAt(body, "record", "version");
   assert.match(String(value), /^[1-9]\d*$/, `missing record version: ${bodySummary(body)}`);
   return String(value);
 }
 
-function listFromBody(body: any): any[] {
-  if (Array.isArray(body)) return body;
-  if (Array.isArray(body?.data)) return body.data;
-  if (Array.isArray(body?.records)) return body.records;
+function listFromBody(body: unknown): Record<string, unknown>[] {
+  if (Array.isArray(body)) return readRows(body);
+  const object = readObject(body);
+  if (Array.isArray(object.data)) return readRows(object.data);
+  if (Array.isArray(object.records)) return readRows(object.records);
   assert.fail(`legacy list response is not an array: ${bodySummary(body)}`);
 }
 
@@ -238,7 +239,7 @@ async function runLegacyCrud(
     method: "POST", cookie, origin, body: { ...createBody, clientId: randomUUID() },
   });
   const createdBody = expectStatus(created, 201, `${label} create`);
-  if (expectedRecorder) assert.equal(createdBody.recordedById, expectedRecorder, `${label} must expose the authenticated recorder`);
+  if (expectedRecorder) assert.equal(valueAt(createdBody, "recordedById"), expectedRecorder, `${label} must expose the authenticated recorder`);
   const id = idFromBody(createdBody);
   let version = versionFromBody(createdBody);
 
@@ -504,10 +505,10 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   });
   const registrationBody = expectStatus(registration, 201, "register");
   const aCookie = sessionCookie(registration, "register A");
-  const aUserId = registrationBody?.user?.id;
-  const aFamilyId = registrationBody?.family?.id ?? registrationBody?.families?.[0]?.id;
-  assert.equal(typeof aUserId, "string", "register response missing user id");
-  assert.equal(typeof aFamilyId, "string", "register response missing family id");
+  const aUserId = valueAt(registrationBody, "user", "id");
+  const aFamilyId = valueAt(registrationBody, "family", "id") ?? valueAt(registrationBody, "families", 0, "id");
+  assert.ok(typeof aUserId === "string", "register response missing user id");
+  assert.ok(typeof aFamilyId === "string", "register response missing family id");
   users.push(aUserId);
   families.push(aFamilyId);
 
@@ -517,11 +518,11 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   });
   const loginBody = expectStatus(login, 200, "login");
   const activeCookie = sessionCookie(login, "login A");
-  assert.equal(loginBody?.user?.id, aUserId, "login returned a different principal");
+  assert.equal(valueAt(loginBody, "user", "id"), aUserId, "login returned a different principal");
 
   const me = await request(webOrigin, "/api/auth/me", { cookie: activeCookie });
   const meBody = expectStatus(me, 200, "me");
-  assert.equal(meBody?.user?.id, aUserId, "me did not resolve the authenticated principal");
+  assert.equal(valueAt(meBody, "user", "id"), aUserId, "me did not resolve the authenticated principal");
 
   const babyResponse = await request(webOrigin, "/api/baby", {
     method: "POST", cookie: activeCookie, origin: webOrigin,
@@ -534,7 +535,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   });
   const babyBody = expectStatus(babyResponse, 201, "baby create");
   const babyId = idFromBody(babyBody);
-  assert.equal(babyBody.familyId, aFamilyId, "baby was created outside the selected family");
+  assert.equal(valueAt(babyBody, "familyId"), aFamilyId, "baby was created outside the selected family");
 
   await runLegacyCrud(
     webOrigin, activeCookie, webOrigin, "feeding", "/api/records/feeding",
@@ -562,20 +563,20 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     { notes: "test_http_growth_updated" },
   );
 
-  const savedRecipes: any[] = [];
+  const savedRecipes: Record<string, unknown>[] = [];
   for (const [index, recipeDate] of ["2026-09-18", "2026-09-19", "2026-09-19"].entries()) {
     const result = await request(webOrigin, "/api/food/plans", {
       method: "POST", cookie: activeCookie, origin: webOrigin,
       body: { babyId, date: recipeDate, name: `test_http_recipe_${index}`, ingredients: ["test_carrot"], steps: ["test_step"] },
     });
     const recipe = expectStatus(result, 201, "food recipe create");
-    assert.equal(recipe.babyId, babyId);
-    assert.equal(recipe.date, recipeDate);
-    assert.ok(recipe.id && recipe.createdAt);
-    savedRecipes.push(recipe);
+    assert.equal(valueAt(recipe, "babyId"), babyId);
+    assert.equal(valueAt(recipe, "date"), recipeDate);
+    assert.ok(valueAt(recipe, "id") && valueAt(recipe, "createdAt"));
+    savedRecipes.push(readObject(recipe));
   }
   const allRecipes = listFromBody(expectStatus(await request(webOrigin, `/api/food/plans?babyId=${babyId}`, { cookie: activeCookie }), 200, "recipe history"));
-  assert.deepEqual(allRecipes.map(row => row.id), [savedRecipes[1].id, savedRecipes[2].id, savedRecipes[0].id]);
+  assert.deepEqual(allRecipes.map(row => row.id), [readObject(savedRecipes[1]).id, readObject(savedRecipes[2]).id, readObject(savedRecipes[0]).id]);
   for (const recipe of savedRecipes) assert.deepEqual(allRecipes.find(row => row.id === recipe.id), recipe, "recipe identity/content must survive later saves");
   const dayRecipes = listFromBody(expectStatus(await request(webOrigin, `/api/food/plans?babyId=${babyId}&date=2026-09-19`, { cookie: activeCookie }), 200, "same-day recipes"));
   assert.equal(dayRecipes.length, 2);
@@ -583,11 +584,11 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
 
   const pendingBody = { babyId, clientId: randomUUID(), name: "test_pending_vaccine", dose: "第1剂", scheduledDate: "2026-09-20", isCompleted: false };
   const pending = expectStatus(await request(webOrigin, "/api/vaccines", { method: "POST", cookie: activeCookie, origin: webOrigin, body: pendingBody }), 201, "pending vaccine create");
-  assert.equal(pending.record.isCompleted, false);
-  assert.equal(pending.record.completedDate, null);
+  assert.equal(valueAt(pending, "record", "isCompleted"), false);
+  assert.equal(valueAt(pending, "record", "completedDate"), null);
   const repeatedPending = expectStatus(await request(webOrigin, "/api/vaccines", { method: "POST", cookie: activeCookie, origin: webOrigin, body: pendingBody }), 201, "pending vaccine idempotent retry");
   assert.deepEqual(repeatedPending, pending);
-  const pendingId = idFromBody(pending.record);
+  const pendingId = idFromBody(valueAt(pending, "record"));
   const reminders = listFromBody(expectStatus(await request(webOrigin, `/api/notifications?babyId=${babyId}`, { cookie: activeCookie }), 200, "pending vaccine reminder"));
   assert.ok(reminders.some(row => row.id === `vaccine-${pendingId}`), "a real saved pending record must produce its reminder");
   expectStatus(await request(webOrigin, `/api/vaccines?id=${pendingId}&babyId=${babyId}`, { method: "DELETE", cookie: activeCookie, origin: webOrigin }), 200, "pending vaccine delete");
@@ -601,8 +602,8 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     body: { familyId: aFamilyId, expiresInDays: 7 },
   });
   const inviteBody = expectStatus(invite, 200, "family invite");
-  assert.match(String(inviteBody?.inviteCode), /^[A-F0-9]{12}$/, "invite code must be six-byte uppercase hex");
-  const preview = await request(webOrigin, `/api/family/preview?code=${encodeURIComponent(inviteBody.inviteCode)}`);
+  assert.match(String(valueAt(inviteBody, "inviteCode")), /^[A-F0-9]{12}$/, "invite code must be six-byte uppercase hex");
+  const preview = await request(webOrigin, `/api/family/preview?code=${encodeURIComponent(readString(valueAt(inviteBody, "inviteCode")))}`);
   expectStatus(preview, 200, "family invite preview");
 
   const registrationB = await request(webOrigin, "/api/auth/register", {
@@ -611,10 +612,10 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   });
   const registrationBBody = expectStatus(registrationB, 201, "register B");
   const bCookie = sessionCookie(registrationB, "register B");
-  assert.equal(typeof registrationBBody?.user?.id, "string", "register B response missing user id");
-  const bFamilyId = registrationBBody?.family?.id ?? registrationBBody?.families?.[0]?.id;
-  assert.equal(typeof bFamilyId, "string", "register B response missing family id");
-  users.push(registrationBBody.user.id);
+  assert.equal(typeof valueAt(registrationBBody, "user", "id"), "string", "register B response missing user id");
+  const bFamilyId = valueAt(registrationBBody, "family", "id") ?? valueAt(registrationBBody, "families", 0, "id");
+  assert.ok(typeof bFamilyId === "string", "register B response missing family id");
+  users.push(readString(valueAt(registrationBBody, "user", "id")));
   families.push(bFamilyId);
 
   const foreignBaby = await request(webOrigin, `/api/baby?babyId=${encodeURIComponent(babyId)}`, { cookie: bCookie });
@@ -635,19 +636,19 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
   });
   // The legacy route historically returns 200 for this JSON resource create.
   const aiCreateBody = expectStatus(aiCreate, 200, "AI session create");
-  const aiSessionId = idFromBody(aiCreateBody?.session);
-  assert.equal(aiCreateBody?.session?.babyId, babyId, "AI session lost baby scope");
+  const aiSessionId = idFromBody(valueAt(aiCreateBody, "session"));
+  assert.equal(valueAt(aiCreateBody, "session", "babyId"), babyId, "AI session lost baby scope");
 
   // The POST crosses into canonical API storage. Verify that persisted row over
   // the Fastify TCP listener before exercising the legacy local CRUD adapter.
   const apiLogin = await request(apiOrigin, "/api/v1/auth/login", {
     method: "POST", body: { username: aUsername, password: TEST_PASSWORD },
   });
-  const apiToken = expectStatus(apiLogin, 200, "canonical API login")?.data?.accessToken;
-  assert.equal(typeof apiToken, "string", "canonical API login did not return an access token");
+  const apiToken = valueAt(expectStatus(apiLogin, 200, "canonical API login"), "data", "accessToken");
+  assert.ok(typeof apiToken === "string", "canonical API login did not return an access token");
   const canonicalSessions = await request(apiOrigin, "/api/v1/ai/sessions?limit=100", { authorization: `Bearer ${apiToken}` });
   const canonicalBody = expectStatus(canonicalSessions, 200, "canonical AI session list");
-  assert.ok((canonicalBody?.data ?? []).some((session: any) => session.id === aiSessionId), "AI session was not persisted by the API");
+  assert.ok(listFromBody(canonicalBody).some((session) => session.id === aiSessionId), "AI session was not persisted by the API");
 
   // Medical and vaccine services already maintain timeline projections with
   // their own entity types. Exercise the production Fastify serializer over
@@ -666,7 +667,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
       notes: "test_http_medical_notes",
     },
   });
-  const medicalId = idFromBody(expectStatus(medicalCreate, 201, "canonical medical create")?.data);
+  const medicalId = idFromBody(expectStatus(medicalCreate, 201, "canonical medical create"));
   const vaccineCreate = await request(apiOrigin, `/api/v1/babies/${encodeURIComponent(babyId)}/vaccines/records`, {
     method: "POST",
     authorization: `Bearer ${apiToken}`,
@@ -678,26 +679,26 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
       notes: "test_http_vaccine_notes",
     },
   });
-  const vaccineId = idFromBody(expectStatus(vaccineCreate, 201, "canonical vaccine create")?.data);
+  const vaccineId = idFromBody(expectStatus(vaccineCreate, 201, "canonical vaccine create"));
 
   const canonicalTimeline = await request(apiOrigin, `/api/v1/babies/${encodeURIComponent(babyId)}/timeline?limit=200`, {
     authorization: `Bearer ${apiToken}`,
   });
   const canonicalTimelineBody = expectStatus(canonicalTimeline, 200, "canonical timeline with medical and vaccine projections");
-  const canonicalTimelineRows = Array.isArray(canonicalTimelineBody?.data) ? canonicalTimelineBody.data : [];
-  const canonicalTimelineSummary = canonicalTimelineRows.map((entry: any) => ({
+  const canonicalTimelineRows = listFromBody(canonicalTimelineBody);
+  const canonicalTimelineSummary = canonicalTimelineRows.map((entry) => ({
     id: entry?.id,
     entityId: entry?.entityId,
     entityType: entry?.entityType,
     summary: entry?.summary,
   }));
-  assert.ok(canonicalTimelineRows.some((entry: any) => entry.entityId === medicalId && entry.entityType === "medical"), `canonical timeline omitted medical projection (${bodySummary({ medicalId, rows: canonicalTimelineSummary })})`);
-  assert.ok(canonicalTimelineRows.some((entry: any) => entry.entityId === vaccineId && entry.entityType === "vaccine"), `canonical timeline omitted vaccine projection (${bodySummary({ vaccineId, rows: canonicalTimelineSummary })})`);
+  assert.ok(canonicalTimelineRows.some((entry) => entry.entityId === medicalId && entry.entityType === "medical"), `canonical timeline omitted medical projection (${bodySummary({ medicalId, rows: canonicalTimelineSummary })})`);
+  assert.ok(canonicalTimelineRows.some((entry) => entry.entityId === vaccineId && entry.entityType === "vaccine"), `canonical timeline omitted vaccine projection (${bodySummary({ vaccineId, rows: canonicalTimelineSummary })})`);
 
   const webTimeline = await request(webOrigin, `/api/records/timeline?babyId=${encodeURIComponent(babyId)}&date=2026-09-18`, { cookie: activeCookie });
   const webTimelineRows = listFromBody(expectStatus(webTimeline, 200, "Web timeline with medical and vaccine projections"));
-  const webMedical = webTimelineRows.find((entry: any) => entry?.entityId === medicalId || entry?.recordId === medicalId || entry?.id === medicalId);
-  const webVaccine = webTimelineRows.find((entry: any) => entry?.entityId === vaccineId || entry?.recordId === vaccineId || entry?.id === vaccineId);
+  const webMedical = webTimelineRows.find((entry) => entry?.entityId === medicalId || entry?.recordId === medicalId || entry?.id === medicalId);
+  const webVaccine = webTimelineRows.find((entry) => entry?.entityId === vaccineId || entry?.recordId === vaccineId || entry?.id === vaccineId);
   assert.equal(webMedical?.type, "medical", "Web timeline dropped the medical discriminator");
   assert.match(String(webMedical?.detail), /test_http_medical/, "Web timeline dropped the medical summary");
   assert.equal(webVaccine?.type, "vaccine", "Web timeline dropped the vaccine discriminator");
@@ -705,7 +706,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
 
   const aiList = await request(webOrigin, "/api/ai/sessions?babyId=" + encodeURIComponent(babyId), { cookie: activeCookie });
   const aiListBody = expectStatus(aiList, 200, "AI session list");
-  assert.ok((aiListBody?.sessions ?? []).some((session: any) => session.id === aiSessionId), "AI list omitted the created session");
+  assert.ok(readRows(valueAt(aiListBody, "sessions")).some((session) => session.id === aiSessionId), "AI list omitted the created session");
 
   const aiGet = await request(webOrigin, `/api/ai/sessions/${encodeURIComponent(aiSessionId)}`, { cookie: activeCookie });
   expectStatus(aiGet, 200, "AI session get");
@@ -713,7 +714,7 @@ test("old Web HTTP parity against a real Fastify listener and owned PostgreSQL",
     method: "PATCH", cookie: activeCookie, origin: webOrigin, body: { title: "test_http_ai_renamed" },
   });
   const aiPatchBody = expectStatus(aiPatch, 200, "AI session patch");
-  assert.equal(aiPatchBody?.session?.title, "test_http_ai_renamed", "AI session title did not update");
+  assert.equal(valueAt(aiPatchBody, "session", "title"), "test_http_ai_renamed", "AI session title did not update");
   const aiDelete = await request(webOrigin, `/api/ai/sessions/${encodeURIComponent(aiSessionId)}`, {
     method: "DELETE", cookie: activeCookie, origin: webOrigin,
   });

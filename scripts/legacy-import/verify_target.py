@@ -9,6 +9,7 @@ count is incomplete.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import hashlib
 import json
 from pathlib import Path
@@ -183,12 +184,22 @@ def _receipt_summary(receipt_dir: str | Path | None, archive_hash: str) -> dict[
     }
 
 
+def _verification_module(name: str):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name(name + ".py"))
+    if spec is None or spec.loader is None:
+        raise RuntimeError("verification module unavailable")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def verify(
     archive: str | Path,
     *,
     manifest: str | Path | None = None,
     target_container: str = "growdesk-postgres-1",
     receipt_dir: str | Path | None = None,
+    release_evidence: str | Path | None = None,
 ) -> dict[str, Any]:
     archive_path = Path(archive).resolve()
     data, checksum = _load_archive(archive_path)
@@ -247,7 +258,22 @@ def verify(
     receipt = _receipt_summary(receipt_dir, checksum)
     unresolved = receipt["unresolvedAttachments"] + int(unresolved_db.get("unresolvedAttachmentMappings", 0))
     quarantined = receipt["quarantined"] + int(unresolved_db.get("quarantinedMappings", 0))
-    cutover_ready = not unmapped and not static_reference_failures and not receipt["phaseFailures"] and quarantined == 0 and unresolved == 0
+    attachment_report = None
+    if receipt_dir is not None:
+        attachment_path = Path(receipt_dir) / "attachment-promotion.json"
+        if attachment_path.exists():
+            if attachment_path.is_symlink() or not attachment_path.is_file() or attachment_path.stat().st_mode & 0o077:
+                raise RuntimeError("attachment report must be private")
+            attachment_report = json.loads(attachment_path.read_text())
+    canonical = _verification_module("canonical_verification").verify_canonical(
+        data, checksum, lambda sql: _query(target_container, sql), attachment_report,
+    )
+    import_ready = (not unmapped and not static_reference_failures and not receipt["phaseFailures"]
+                    and quarantined == 0 and unresolved == 0 and canonical["passed"])
+    release = _verification_module("release_gate").release_readiness(
+        Path(release_evidence) if release_evidence is not None else None, checksum, import_ready,
+    )
+    cutover_ready = release["ready"]
     return {
         "batchId": checksum,
         "source": {"sourceId": manifest_data.get("sourceId") if manifest_data else data.get("sourceId"), "archiveSha256": checksum, "tableCounts": source_counts},
@@ -259,33 +285,47 @@ def verify(
         "allArchivedRowsMatch": True,
         "passwordHashesPreserved": True,
         "babyMembershipBackfillMatches": True,
-        "businessHistoryReady": cutover_ready,
+        "canonicalReconciliation": canonical,
+        "importIntegrityReady": import_ready,
+        "releaseCutoverReady": cutover_ready,
+        "releaseGate": release,
+        "businessHistoryReady": import_ready,
         "loginDataReady": True,
         "cutoverReady": cutover_ready,
         "requiredFollowUp": [] if cutover_ready else ["complete every materializer and resolve all quarantine/unresolved attachment entries", "rerun from a final stopped-writer immutable source snapshot", "perform a fresh-target rehearsal with rollback evidence"],
     }
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def main(argv=None, *, verifier=verify) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--archive", required=True)
     parser.add_argument("--manifest")
     parser.add_argument("--target-container", default="growdesk-postgres-1")
     parser.add_argument("--receipt-dir")
     parser.add_argument("--output")
-    args = parser.parse_args()
+    parser.add_argument("--release-evidence", type=Path)
+    parser.add_argument("--require", choices=("import", "release"), default="release")
+    args = parser.parse_args(argv)
     try:
-        result = verify(args.archive, manifest=args.manifest, target_container=args.target_container, receipt_dir=args.receipt_dir)
+        result = verifier(args.archive, manifest=args.manifest, target_container=args.target_container,
+                          receipt_dir=args.receipt_dir, release_evidence=args.release_evidence)
         if args.output:
             output = Path(args.output).resolve()
             output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            fd = output.open("x", encoding="utf-8")
-            try:
-                fd.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
-            finally:
-                fd.close()
-            output.chmod(0o600)
-        print(json.dumps({"status": "cutover-ready" if result["cutoverReady"] else "not-cutover-ready", "cutoverReady": result["cutoverReady"]}))
+            import os
+            descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                stream.write(json.dumps(result, ensure_ascii=False, indent=2) + "\n")
+        key = "importIntegrityReady" if args.require == "import" else "releaseCutoverReady"
+        passed = result.get(key) is True
+        print(json.dumps({"status": "passed" if passed else "not-ready", "requiredGate": args.require,
+                          "importIntegrityReady": result.get("importIntegrityReady") is True,
+                          "cutoverReady": result.get("releaseCutoverReady") is True}))
+        return 0 if passed else 1
     except Exception as error:
         print(json.dumps({"error": type(error).__name__}))
-        raise SystemExit(1)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

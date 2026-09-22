@@ -684,7 +684,7 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     });
     assert.equal(retry.statusCode, 200, retry.payload);
     const retryBody = retry.json<{
-      data: { id: string; planData: Record<string, any>; createdAt: string; version: string };
+      data: { id: string; planData: Record<string, unknown>; createdAt: string; version: string };
     }>();
     assert.equal(retryBody.data.id, initialBody.data.id);
     assert.equal(retryBody.data.version, "3");
@@ -699,7 +699,7 @@ test("SH-04FO: Food Record Pipeline suite", async (t) => {
     });
     assert.equal(final.statusCode, 200);
     const finalBody = final.json<{
-      data: { id: string; planData: Record<string, any>; createdAt: string; version: string };
+      data: { id: string; planData: Record<string, unknown>; createdAt: string; version: string };
     }>();
     assert.equal(finalBody.data.id, initialBody.data.id);
     assert.equal(finalBody.data.version, "3");
