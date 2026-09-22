@@ -1,0 +1,37 @@
+name: Go offline verification inputs
+on:
+  push:
+    branches: [codex/go-backend-parity-20260922]
+    paths: [.github/workflows/go-offline-tooling.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    if: github.repository == 'WangZhuo2015/growdesk-server'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Archive committed source and public Go dependencies only
+        run: |
+          set -eu
+          mkdir -p offline-go
+          git rev-parse HEAD > offline-go/source-sha.txt
+          git archive HEAD > offline-go/source.tar
+          go mod tidy
+          cp go.mod go.sum offline-go/
+          tar -czf offline-go/goroot.tar.gz -C "$(go env GOROOT)" .
+          tar -czf offline-go/gomodcache.tar.gz -C "$(go env GOMODCACHE)" .
+          (cd offline-go && sha256sum source.tar goroot.tar.gz gomodcache.tar.gz > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-offline-${{ github.sha }}
+          path: offline-go/
+          retention-days: 2
