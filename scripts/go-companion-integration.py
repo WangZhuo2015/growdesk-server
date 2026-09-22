@@ -67,7 +67,13 @@ class CompanionScenario(DOMAIN.Scenario):
         invite = self.call('POST', f'/api/v1/families/{fid}/invites', 201, {'expiresInDays': 1}, owner)['data']
         self.call('POST', '/api/v1/families/join', 200, {'inviteCode': invite['inviteCode']}, viewer)
         self.call('POST', f'/api/v1/babies/{bid}/members', 201, {'userId': vid, 'role': 'viewer'}, owner)
-        self.call('PATCH', f'/api/v1/families/{fid}/members/{vid}', 200, {'role': 'viewer'}, owner)
+        # The read model allows a family viewer, but management mutations only
+        # accept admin/member. Test that distinction, then seed a historical
+        # read-only membership directly in this exclusively owned fixture DB.
+        self.call('PATCH', f'/api/v1/families/{fid}/members/{vid}', 400, {'role': 'viewer'}, owner,
+                  observe='family management does not accept viewer role mutation')
+        self.owned.sql(f"UPDATE family_members SET role='viewer' WHERE family_id='{fid}' AND user_id='{vid}';")
+        assert self.owned.sql(f"SELECT role FROM family_members WHERE family_id='{fid}' AND user_id='{vid}';") == 'viewer'
         self.notifications(uid, owner, oid, outsider)
         voice_id = self.voice_logs(bid, uid, owner, outsider, viewer)
         formula_id = self.formulas(fid, owner, outsider, viewer)
