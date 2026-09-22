@@ -71,6 +71,37 @@ func parseWireVersion(value string) (int64, error) {
 	return version, nil
 }
 
+// Sleep/diaper legacy DELETE endpoints omit a query schema and default to
+// version 1. Keep that protocol without ever substituting the current version.
+func careBaseVersion(d careSpec, op, raw string) (int64, error) {
+	if d.Kind == "feeding" {
+		return parseWireVersion(raw)
+	}
+	if op == "delete" && raw == "" {
+		return 1, nil
+	}
+	// Reference parseInt accepts leading zeros and an optional sign. Extremely
+	// large/unparseable values cannot match a persisted int32 version; zero
+	// preserves the conflict path without risking integer overflow.
+	raw = strings.TrimSpace(raw)
+	end := 0
+	if len(raw) > 0 && (raw[0] == '+' || raw[0] == '-') {
+		end = 1
+	}
+	start := end
+	for end < len(raw) && raw[end] >= '0' && raw[end] <= '9' {
+		end++
+	}
+	if end == start {
+		return 0, nil
+	}
+	n, err := strconv.ParseInt(raw[:end], 10, 64)
+	if err != nil {
+		return 0, nil
+	}
+	return n, nil
+}
+
 func normalizedCareValue(field careField, value any) (any, error) {
 	if value == nil {
 		return nil, nil
@@ -444,7 +475,7 @@ func (s *Server) mutateCare(ctx context.Context, r *Request, d careSpec, op stri
 		if op == "delete" {
 			raw = r.HTTP.URL.Query().Get("baseVersion")
 		}
-		version, err = parseWireVersion(raw)
+		version, err = careBaseVersion(d, op, raw)
 		if err != nil {
 			return Result{}, err
 		}
@@ -542,7 +573,7 @@ func (s *Server) mutateCare(ctx context.Context, r *Request, d careSpec, op stri
 		values["id"], values["family_id"], values["baby_id"] = id, scope.FamilyID, scope.BabyID
 		values["created_at"], values["recorded_by_user_id"], values["source_agent"] = now, r.Principal.UserID, r.Body["sourceAgent"]
 		source := text(r.Body["source"])
-		if source == "" {
+		if r.Body["source"] == nil {
 			source = "ui_manual"
 		}
 		values["source"] = source
