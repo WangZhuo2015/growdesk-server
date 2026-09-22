@@ -2,10 +2,10 @@ name: Go food library parity
 
 on:
   push:
-    branches: [codex/go-backend-parity-20260922]
+    branches: [main, codex/web-parity-20260919, codex/go-backend-parity-20260922]
   pull_request:
     branches: [main, codex/web-parity-20260919]
-    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-food-library.yml']
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-food-library.yml', 'docs/GO*', 'evidence/tasks/GO*/**']
 
 permissions:
   contents: read
@@ -29,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Keep the reference implementation and database contract immutable
@@ -65,6 +66,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: food-library-${{ matrix.runtime }}-${{ github.sha }}
+          name: food-library-${{ matrix.runtime }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: dist-go/food-${{ matrix.runtime }}.json
           if-no-files-found: warn
