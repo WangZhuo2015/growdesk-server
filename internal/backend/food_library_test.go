@@ -90,7 +90,11 @@ func TestFoodLibraryWireContract(t *testing.T) {
 					t.Fatalf("status=%#v", status)
 				}
 			}
-			if err := c.ByID["createFoodLibraryItem"].ValidateResponse(context.Background(), 201, wire); err != nil {
+			// The frozen OpenAPI wraps this item in data, but the actual
+			// Fastify route returns FoodLibraryItemSchema directly. Validate
+			// the DTO here; the discrepancy and real HTTP wire have separate tests.
+			schema := c.ByID["createFoodLibraryItem"].Operation.Responses.Status(201).Value.Content.Get("application/json").Schema.Value.Properties["data"].Value
+			if err := schema.VisitJSON(wire, wireFormats...); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -101,6 +105,24 @@ func TestFoodLibraryWireContract(t *testing.T) {
 	}
 	if err := c.ByID["listFoodLibraryItems"].ValidateResponse(context.Background(), 200, empty); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Track the existing spec/runtime disagreement explicitly. Do not change the
+// reference artifact or silently claim whole-envelope OpenAPI compatibility.
+// scripts/go-food-library-integration.py compares the actual Fastify response.
+func TestFoodLibraryKnownOpenAPIEnvelopeDrift(t *testing.T) {
+	c, err := LoadContract()
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := foodLibraryWire(t, foodLibraryItem{ID: "test_food", Name: "test_food", Category: "fruit", AllergenRisk: "low", RecommendedAgeMonths: 6})
+	route := c.ByID["createFoodLibraryItem"]
+	if err := route.ValidateResponse(context.Background(), 201, item); err == nil {
+		t.Fatal("frozen OpenAPI envelope changed: review and remove the documented compatibility exception")
+	}
+	if err := route.ValidateResponse(context.Background(), 201, envelope(item)); err != nil {
+		t.Fatalf("unexpected drift beyond the known data envelope: %v", err)
 	}
 }
 
