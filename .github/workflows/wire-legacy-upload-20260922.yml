@@ -53,6 +53,9 @@ jobs:
           old="command(['node', '--import', 'tsx', '--test', 'tests/integration/web-ai-session-regression.test.ts'], env=env)"
           edit('scripts/test-integration.py','6c4415108fd6ed5939c6058052d043c7daf8b750',old,
             old+"\n            command(['node', '--import', 'tsx', '--test', 'tests/integration/legacy-upload-access.test.ts'], env=env)")
+          edit('tests/integration/legacy-upload-access.test.ts','7e6fc51f71278643a4edbb15c4f4cc15422eeada',
+            'objectKey: `test_legacy_upload/${id}.png`, status: "ready"',
+            'objectKey: `test_legacy_upload/${id}.png`, status: "ready", expiresAt: new Date(Date.now() + 3_600_000)')
           PY
       - name: Install owned test infrastructure
         run: |
@@ -72,7 +75,7 @@ jobs:
       - name: Publish verified wiring and remove temporary workflow
         run: |
           git rm .github/workflows/wire-legacy-upload-20260922.yml
-          git add apps/api/src/services/attachment-service.ts apps/api/src/routes/attachment-routes.ts scripts/test-integration.py contracts/openapi.json
+          git add apps/api/src/services/attachment-service.ts apps/api/src/routes/attachment-routes.ts scripts/test-integration.py contracts/openapi.json tests/integration/legacy-upload-access.test.ts
           git diff --cached --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
