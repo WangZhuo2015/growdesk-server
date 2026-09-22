@@ -1,0 +1,124 @@
+name: Go backend
+on:
+  push:
+    branches: [main, codex/web-parity-20260919, codex/go-backend-parity-20260922]
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-backend.yml', 'docs/GO*', 'evidence/tasks/GO*/**']
+permissions:
+  contents: read
+concurrency:
+  group: go-backend-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  GOFLAGS: -mod=readonly
+jobs:
+  native-static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Verify locked dependencies
+        run: |
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+      - name: Build and race-test the native implementation
+        run: |
+          python3 -m py_compile scripts/go-*.py
+          go vet ./...
+          go test -race -count=1 ./...
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --version
+          dist-go/growdesk-api --contract-inventory > dist-go/operations.json
+          git rev-parse HEAD > dist-go/source-sha.txt
+          (cd dist-go && sha256sum growdesk-api operations.json source-sha.txt > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-go-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/
+          if-no-files-found: error
+  native-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Build native executable
+        run: |
+          go mod download
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -o dist-go/growdesk-api ./cmd/growdesk-api
+      - name: Native authentication on owned PostgreSQL and Redis
+        run: python3 scripts/go-integration.py --binary dist-go/growdesk-api
+      - name: Native business transactions and authorization
+        run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --report dist-go/native-domain.json
+      - name: Native companion persistence, restart and authorization
+        run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --report dist-go/native-companion.json
+      - name: Native BFF lifecycle, races and rollback
+        run: python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --report dist-go/native-session-review.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-domain-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist-go/native-domain.json
+            dist-go/native-companion.json
+            dist-go/native-session-review.json
+          if-no-files-found: warn
+  native-reference-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Keep the reference implementation and schema immutable
+        run: git diff --exit-code f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4 -- apps packages prisma contracts/openapi.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Build both real implementations
+        run: |
+          go mod download
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -o dist-go/growdesk-api ./cmd/growdesk-api
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run backend:build
+      - name: Compare actual HTTP responses and durable effects
+        run: python3 scripts/go-domain-integration.py --binary dist-go/growdesk-api --reference --report dist-go/http-parity.json
+      - name: Compare companion HTTP and cross-runtime committed state
+        run: python3 scripts/go-companion-integration.py --binary dist-go/growdesk-api --reference --report dist-go/companion-parity.json
+      - name: Verify real reference BFF handoff and lifecycle boundaries
+        run: python3 scripts/go-session-review-integration.py --binary dist-go/growdesk-api --reference --report dist-go/session-reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: http-parity-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist-go/http-parity.json
+            dist-go/companion-parity.json
+            dist-go/session-reference.json
+          if-no-files-found: warn
