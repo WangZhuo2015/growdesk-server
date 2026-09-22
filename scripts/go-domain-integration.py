@@ -125,7 +125,10 @@ class Scenario:
             self.alias(value['user']['id'], label)
         owner, caregiver, outsider = (users[n]['accessToken'] for n in ('owner', 'caregiver', 'outsider'))
         uid, cid = users['owner']['user']['id'], users['caregiver']['user']['id']
-        self.call('GET', '/api/v1/families', 200, token=owner, observe='empty families')
+        initial = self.call('GET', '/api/v1/families', 200, token=owner)
+        assert len(initial['data']) == 1, 'registration must create one default family'
+        self.alias(initial['data'][0]['id'], 'default_family')
+        self.observations.append({'case': 'registration default family', 'status': 200, 'body': self.normalize(initial)})
         family = self.call('POST', '/api/v1/families', 201, {'name': 'Test Family', 'timeZone': 'Asia/Tokyo'}, owner)['data']
         fid = self.alias(family['id'], 'family')
         self.observations.append({'case': 'create family', 'status': 201, 'body': self.normalize({'data': family})})
@@ -137,6 +140,13 @@ class Scenario:
         self.call('GET', '/api/v1/families/invites/preview?code=' + invite['inviteCode'], 200, observe='preview invite')
         self.call('POST', '/api/v1/families/join', 200, {'inviteCode': invite['inviteCode']}, caregiver, observe='join family')
         self.call('POST', '/api/v1/families/join', 404, {'inviteCode': invite['inviteCode']}, outsider, observe='single use invite')
+        members = self.call('GET', f'/api/v1/families/{fid}/members', 200, token=owner)
+        assert {row['userId'] for row in members['data']} == {uid, cid}
+        for member in members['data']:
+            self.alias(member['id'], 'membership_' + self.ids[member['userId']])
+        self.observations.append({'case': 'list family members', 'status': 200, 'body': self.normalize(members)})
+        self.call('PATCH', f'/api/v1/families/{fid}/members/{cid}', 200, {'role': 'admin'}, owner, observe='promote family member')
+        self.call('PATCH', f'/api/v1/families/{fid}/members/{cid}', 200, {'role': 'member'}, owner, observe='demote family member')
         baby = self.call('POST', f'/api/v1/families/{fid}/babies', 201, {
             'name': 'Test Baby', 'birthDate': '2026-01-02', 'gender': 'girl', 'gestationalWeeks': 36, 'gestationalDays': 3}, owner)['data']
         bid = self.alias(baby['id'], 'baby')
@@ -160,20 +170,19 @@ class Scenario:
         }
         replay = None
         for kind, body in fixture.items():
-            path = bp + '/records/' + kind
-            self.call('GET', path, 200, token=owner, observe=kind + ' empty list')
-            key = 'test_go_create_' + kind
+            path = f'{bp}/records/{kind}'
+            self.call('GET', path, 200, token=owner, observe=kind + ' empty page')
             before = self.state(fid)
+            key = 'test_go_create_' + kind
             record = self.call('POST', path, 201, body, owner, key)['data']
-            rid = self.alias(record['id'], kind + '_record')
+            rid = self.alias(record['id'], kind)
             self.observations.append({'case': kind + ' create', 'status': 201, 'body': self.normalize({'data': record})})
+            assert record['version'] == '1'
             after = self.state(fid)
             assert int(after['cursor']) == int(before['cursor']) + 1
-            assert after['receipts'] == before['receipts'] + 1
-            assert after['changes'] == before['changes'] + 1
-            assert after['timeline'] == before['timeline'] + 1
+            for field in ('changes', 'receipts', 'timeline', kind): assert after[field] == before[field] + 1, field
             assert self.call('POST', path, 201, body, owner, key)['data'] == record
-            assert self.state(fid) == after, 'replay appended duplicate durable state'
+            assert self.state(fid) == after, 'replay modified durable state'
             self.call('POST', path, 409, {**body, 'notes': 'different'}, owner, key, kind + ' conflicting create replay')
             self.call('GET', path + '/' + rid, 200, token=caregiver, observe=kind + ' read')
             self.call('GET', path + '/' + rid, 403, token=outsider, observe=kind + ' cross-family denied')
