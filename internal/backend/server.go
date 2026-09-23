@@ -15,10 +15,10 @@ import (
 
 type Principal struct{ UserID, SessionID, Username, DeviceLabel string }
 type Request struct {
-	HTTP      *http.Request
-	Route     *Route
-	Params    map[string]string
-	Body      Object
+	HTTP   *http.Request
+	Route  *Route
+	Params map[string]string
+	Body   Object
 	// RawBody is bounded by MaxBodyBytes. It is only used to recover key order
 	// for legacy receipt protocols; validated Body remains authoritative.
 	RawBody   []byte
@@ -136,8 +136,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.writeError(w, invalid("Invalid JSON object"), requestID)
 				return
 			}
-			rawBody = raw
+			// Other operations must not retain a second large request buffer.
+			if route.OperationID == "createGrowthMeasurement" || route.OperationID == "updateGrowthMeasurement" {
+				rawBody = raw
+			}
 		}
+	}
+	if err := normalizeReferenceCatalogQuery(route.OperationID, r); err != nil {
+		s.writeError(w, err, requestID)
+		return
 	}
 	if err := route.Validate(r, params, body); err != nil {
 		s.writeError(w, err, requestID)
