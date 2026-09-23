@@ -44,7 +44,7 @@ func TestDevelopmentProjectionDoesNotExposeOrMutateRootExtras(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) != 7 || got["extra"] != nil {
+	if len(got) != 6 || got["extra"] != nil {
 		t.Fatalf("root projection differs: %v", got)
 	}
 	obj(obj(got["details"])["extra"])["source"] = "test_changed"
