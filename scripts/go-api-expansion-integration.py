@@ -26,8 +26,8 @@ class ExpansionScenario(SUPPORT.DOMAIN.Scenario):
         assert set(result) == {'scope','epoch','changes','nextCursor','highWater','hasMore'}
         data, signature = result['nextCursor'].split('.')
         raw = base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
-        # The public fallback is checked only on the frozen reference. Native
-        # signing must instead use this harness's randomly generated JWT key.
+        # Only the frozen reference has this public fallback. Native signing
+        # uses the harness's random strong key, never a published constant.
         key = self.owned.env.get('SESSION_SECRET') or (
             self.owned.env['JWT_SECRET'] if runtime == 'go' else 'growdesk-default-sync-cursor-hmac-secret-32ch')
         assert hmac.compare_digest(signature, hmac.new(key.encode(),raw,hashlib.sha256).hexdigest())
@@ -66,9 +66,14 @@ class ExpansionScenario(SUPPORT.DOMAIN.Scenario):
         assert self.call('POST',path,201,body,owner,'test_growth_first') == first
         self.call('POST',path,409,{**body,'notes':'different'},owner,'test_growth_first',observe='growth reused key')
         self.call('PATCH',path+'/'+rid,409,{'baseVersion':'99','notes':'test_stale'},owner,'test_growth_stale',observe='growth stale version')
-        patch = {'baseVersion':'1','weightKg':'0','heightCm':None}
-        second = self.call('PATCH',path+'/'+rid,200,patch,owner,'test_growth_patch',observe='growth zero null patch')
-        assert second['data']['weightKg']=='0.00' and second['data']['heightCm'] is None
+        if runtime == 'go':
+            # Existing SQL explicitly requires positive measurements. Do not
+            # loosen the database or declare zero a valid benchmark write.
+            self.call('PATCH',path+'/'+rid,400,{'baseVersion':'1','weightKg':'0','heightCm':None},owner,'test_growth_zero')
+            assert self.call('GET',path+'/'+rid,200,token=owner)==first
+        patch = {'baseVersion':'1','weightKg':'8.10','heightCm':None}
+        second = self.call('PATCH',path+'/'+rid,200,patch,owner,'test_growth_patch',observe='growth decimal and null patch')
+        assert second['data']['weightKg']=='8.10' and second['data']['heightCm'] is None
         assert second['data']['notes']==body['notes']
         assert self.call('PATCH',path+'/'+rid,200,patch,owner,'test_growth_patch')==second
         with ThreadPoolExecutor(max_workers=4) as pool:
