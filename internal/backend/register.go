@@ -23,4 +23,7 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerSyncFeeds()
 	s.registerAIHistory()
 	s.registerRecordSnapshots()
+	s.registerAIRunReads()
+	s.registerAttachments()
+	s.registerLegacyAttachments()
 }
