@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 import signal
 import subprocess
-import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('nutrition_domain_tools', ROOT / 'scripts/go-domain-integration.py')
@@ -18,6 +17,10 @@ assert SPEC and SPEC.loader
 DOMAIN = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(DOMAIN)
 TOOLS = DOMAIN.TOOLS
+
+
+def record_path(baby_id, kind):
+    return f'/api/v1/babies/{baby_id}/records/{kind}'
 
 
 class NutritionScenario(DOMAIN.Scenario):
@@ -66,7 +69,7 @@ class NutritionScenario(DOMAIN.Scenario):
         }
         live = {}
         for kind, fixture in fixtures.items():
-            path = f'/api/v1/babies/{bid}/{kind}'
+            path = record_path(bid, kind)
             self.call('GET', path, 401, observe=kind + ' authentication required')
             self.call('GET', path, 200, token=owner, observe=kind + ' empty list')
             self.call('GET', path, 403, token=outsider)
@@ -91,7 +94,7 @@ class NutritionScenario(DOMAIN.Scenario):
             rid = value['id']
             item = path + '/' + rid
             assert self.call('GET', item, 200, token=owner, observe=kind + ' get') == created
-            self.call('GET', f'/api/v1/babies/{other_bid}/{kind}/{rid}', 404, token=owner,
+            self.call('GET', record_path(other_bid, kind) + '/' + rid, 404, token=owner,
                       observe=kind + ' other baby cannot address record')
             patch = {'baseVersion': '1', 'notes': None}
             if kind == 'food':
