@@ -13,14 +13,40 @@ concurrency:
 env:
   GOFLAGS: -mod=readonly
 jobs:
+  complete-operation-coverage:
+    name: All 151 operations must have native implementations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Inspect the compiled registration inventory
+        run: |
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --contract-inventory > dist-go/operations.json
+          python3 scripts/go-coverage.py dist-go/operations.json --require-complete
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-full-coverage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/operations.json
+          if-no-files-found: error
   domain-parity:
-    name: food-plan-${{ matrix.mode }}
+    name: ${{ matrix.module }}-${{ matrix.mode }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         mode: [native, reference]
+        module: [food-plan, nutrition-records]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,15 +82,16 @@ jobs:
           npm run backend:build
       - name: Native transactional and permission regression
         if: matrix.mode == 'native'
-        run: python3 scripts/go-food-plan-integration.py --binary dist-go/growdesk-api --report dist-go/food-plan-native.json
+        run: python3 scripts/go-${{ matrix.module }}-integration.py --binary dist-go/growdesk-api --report dist-go/${{ matrix.module }}-native.json
       - name: Actual HTTP and persistent-state differential
         if: matrix.mode == 'reference'
-        run: python3 scripts/go-food-plan-integration.py --binary dist-go/growdesk-api --reference --report dist-go/food-plan-reference.json
+        run: python3 scripts/go-${{ matrix.module }}-integration.py --binary dist-go/growdesk-api --reference --report dist-go/${{ matrix.module }}-reference.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: go-completion-${{ matrix.mode }}-${{ github.event.pull_request.head.sha || github.sha }}
+          name: go-completion-${{ matrix.module }}-${{ matrix.mode }}-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            dist-go/food-plan-*.json
+            dist-go/*-native.json
+            dist-go/*-reference.json
             dist-go/operations.json
           if-no-files-found: error
