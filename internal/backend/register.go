@@ -1,7 +1,7 @@
 package backend
 
-// RegisterBusinessHandlers installs native implementations only. Missing
-// operations remain explicit failures and never count as parity coverage.
+// RegisterBusinessHandlers installs native implementations. Missing operations
+// remain explicit errors and are never proxied to the TypeScript reference.
 func (s *Server) RegisterBusinessHandlers() {
 	s.registerAuth()
 	s.registerFamilies()
@@ -14,4 +14,6 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerFoodLibrary()
 	s.registerFoodPlans()
 	s.registerNutritionRecords()
+	s.registerKnowledge()
+	s.registerBooks()
 }
