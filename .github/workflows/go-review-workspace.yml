@@ -1,0 +1,43 @@
+name: Go review workspace
+on:
+  pull_request:
+    branches: [codex/web-parity-20260919]
+    paths: ['.github/workflows/go-review-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  workspace:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/go-completion-20260923'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Export committed source and verified Go dependencies only
+        env:
+          GOFLAGS: -mod=readonly
+        run: |
+          set -eu
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          mkdir -p review-export
+          git rev-parse HEAD > review-export/source-sha.txt
+          git archive --format=tar HEAD > review-export/source.tar
+          git bundle create review-export/source.bundle HEAD
+          tar -czf review-export/go-toolchain.tar.gz -C "$(go env GOROOT)" .
+          tar -czf review-export/go-modules.tar.gz -C "$(go env GOMODCACHE)" .
+          (cd review-export && sha256sum source.tar source.bundle go-toolchain.tar.gz go-modules.tar.gz source-sha.txt > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-review-workspace-${{ github.event.pull_request.head.sha }}
+          path: review-export/*
+          retention-days: 3
+          if-no-files-found: error
