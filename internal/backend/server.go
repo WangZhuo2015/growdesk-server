@@ -113,7 +113,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if err := decodeJSON(raw, &body); err != nil || body == nil { s.writeError(w, invalid("Invalid JSON object"), requestID); return }
 			// Retain bytes only for declared reference request-order protocols.
 			switch route.OperationID {
-			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport": rawBody = raw
+			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord": rawBody = raw
 			}
 		}
 	}
