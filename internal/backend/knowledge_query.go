@@ -3,8 +3,10 @@ package backend
 import (
 	"math"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -59,14 +61,28 @@ func normalizeReferenceCatalogQuery(operation string, request *http.Request) err
 	return nil
 }
 
+var referenceDecimalMonth = regexp.MustCompile(`^[+-]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][+-]?[0-9]+)?$`)
+
+// ECMAScript WhiteSpace plus LineTerminator, not Go's broader TrimSpace.
+// In particular U+FEFF is accepted, while U+0085 is not numeric whitespace.
+func referenceNumberWhitespace(r rune) bool {
+	switch r {
+	case '\t', '\v', '\f', '\n', '\r', '\uFEFF', '\u2028', '\u2029':
+		return true
+	default:
+		return unicode.Is(unicode.Zs, r)
+	}
+}
+
 // Ajv integer coercion accepts nonempty numeric strings such as "2.0", "2e0"
-// and JS Number radix prefixes. Unlike Go numeric syntax, underscores and hex
-// floating-point notation are not accepted. Empty text is not coercible.
+// and unsigned JS Number radix prefixes. Unlike Go numeric syntax, underscores,
+// signed nondecimal values and hex floating-point notation are not accepted.
+// Empty text is not coercible; a nonempty string of JS whitespace becomes zero.
 func referenceQueryMonth(raw string) (int, bool) {
 	if raw == "" {
 		return 0, false
 	}
-	value := strings.TrimSpace(raw)
+	value := strings.TrimFunc(raw, referenceNumberWhitespace)
 	if strings.Contains(value, "_") {
 		return 0, false
 	}
@@ -88,6 +104,9 @@ func referenceQueryMonth(raw string) (int, bool) {
 		}
 		number = float64(parsed)
 	} else {
+		if !referenceDecimalMonth.MatchString(value) {
+			return 0, false
+		}
 		parsed, err := strconv.ParseFloat(value, 64)
 		if err != nil {
 			return 0, false
