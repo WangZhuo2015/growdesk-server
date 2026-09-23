@@ -19,6 +19,8 @@ type Request struct {
 	Route     *Route
 	Params    map[string]string
 	Body      Object
+	// RawBody is bounded and used only for legacy ordered receipt hashing.
+	RawBody   []byte
 	Principal Principal
 	RequestID string
 }
@@ -30,15 +32,16 @@ type Result struct {
 }
 type Handler func(context.Context, *Request) (Result, error)
 type Server struct {
-	Config    Config
-	DB        *pgxpool.Pool
-	Redis     *redis.Client
-	Contract  *Contract
-	Handlers  map[string]Handler
-	Public    map[string]bool
-	Log       *slog.Logger
-	slots     chan struct{}
-	hashSlots chan struct{}
+	Config      Config
+	DB          *pgxpool.Pool
+	Redis       *redis.Client
+	ObjectStore *nativeObjectStore
+	Contract    *Contract
+	Handlers    map[string]Handler
+	Public      map[string]bool
+	Log         *slog.Logger
+	slots       chan struct{}
+	hashSlots   chan struct{}
 }
 
 func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error) {
@@ -67,13 +70,25 @@ func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error)
 	rc.ReadTimeout = 3 * time.Second
 	rc.WriteTimeout = 3 * time.Second
 	rc.MaxRetries = 1
-	red := redis.NewClient(rc)
-	s := &Server{Config: c, DB: pool, Redis: red, Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log, slots: make(chan struct{}, c.MaxConcurrentRequests), hashSlots: make(chan struct{}, 4)}
+	store, err := newNativeObjectStore(c)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	s := &Server{
+		Config: c, DB: pool, Redis: redis.NewClient(rc), ObjectStore: store,
+		Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log,
+		slots: make(chan struct{}, c.MaxConcurrentRequests), hashSlots: make(chan struct{}, 4),
+	}
 	s.registerHealth()
 	return s, nil
 }
 
-func (s *Server) Close() { _ = s.Redis.Close(); s.DB.Close() }
+func (s *Server) Close() {
+	s.ObjectStore.Close()
+	_ = s.Redis.Close()
+	s.DB.Close()
+}
 func (s *Server) Register(id string, public bool, h Handler) {
 	if s.Handlers[id] != nil {
 		panic("duplicate native handler: " + id)
@@ -81,21 +96,37 @@ func (s *Server) Register(id string, public bool, h Handler) {
 	if s.Contract.ByID[id] == nil {
 		panic("handler without contract: " + id)
 	}
-	s.Handlers[id] = h
-	s.Public[id] = public
+	s.Handlers[id], s.Public[id] = h, public
 }
+
+// Snapshot DELETE defines both null and omitted bodies as the empty object.
+// No other JSON API gains nullable-object coercion from this compatibility rule.
+func decodeNativeBody(operation string, raw []byte) (Object, error) {
+	var body Object
+	if err := decodeJSON(raw, &body); err != nil {
+		return nil, invalid("Invalid JSON object")
+	}
+	if body == nil {
+		if operation == "deleteRecordWithSnapshot" {
+			return Object{}, nil
+		}
+		return nil, invalid("Invalid JSON object")
+	}
+	return body, nil
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestID := newID()
 	w.Header().Set("X-Request-ID", requestID)
 	w.Header().Set("Cache-Control", "private, no-store")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	defer func() {
-		if v := recover(); v != nil {
+		if recover() != nil {
 			s.Log.Error("request panic", "requestId", requestID)
 			s.writeError(w, apiError(500, "INTERNAL_ERROR", "An unexpected error occurred"), requestID)
 		}
 	}()
-	route, params := s.Contract.Match(r.Method, r.URL.Path)
+	route, params := s.matchNativeRoute(r.Method, r.URL.Path)
 	if route == nil {
 		s.writeError(w, apiError(404, "NOT_FOUND", "Route not found"), requestID)
 		return
@@ -112,6 +143,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 	body := Object(nil)
+	if route.OperationID == "deleteRecordWithSnapshot" {
+		body = Object{}
+	}
+	var rawBody []byte
 	if r.Body != nil && r.ContentLength != 0 {
 		raw, err := io.ReadAll(io.LimitReader(r.Body, s.Config.MaxBodyBytes+1))
 		if err != nil {
@@ -128,24 +163,33 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.writeError(w, apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Expected application/json"), requestID)
 				return
 			}
-			if err := decodeJSON(raw, &body); err != nil || body == nil {
-				s.writeError(w, invalid("Invalid JSON object"), requestID)
+			body, err = decodeNativeBody(route.OperationID, raw)
+			if err != nil {
+				s.writeError(w, err, requestID)
 				return
 			}
+			switch route.OperationID {
+			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord":
+				rawBody = raw
+			}
 		}
+	}
+	if err := normalizeReferenceCatalogQuery(route.OperationID, r); err != nil {
+		s.writeError(w, err, requestID)
+		return
 	}
 	if err := route.Validate(r, params, body); err != nil {
 		s.writeError(w, err, requestID)
 		return
 	}
-	req := &Request{HTTP: r, Route: route, Params: params, Body: body, RequestID: requestID}
+	req := &Request{HTTP: r, Route: route, Params: params, Body: body, RawBody: rawBody, RequestID: requestID}
 	if !s.Public[route.OperationID] {
-		p, err := s.authenticate(ctx, r)
+		principal, err := s.authenticate(ctx, r)
 		if err != nil {
 			s.writeError(w, err, requestID)
 			return
 		}
-		req.Principal = p
+		req.Principal = principal
 	}
 	h := s.Handlers[route.OperationID]
 	if h == nil {
@@ -160,9 +204,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if result.Status == 0 {
 		result.Status = 200
 	}
-	for k, values := range result.Headers {
-		for _, v := range values {
-			w.Header().Add(k, v)
+	for key, values := range result.Headers {
+		for _, value := range values {
+			w.Header().Add(key, value)
 		}
 	}
 	if result.Stream != nil {
@@ -182,6 +226,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write(raw)
 	}
 }
+
 func (s *Server) writeError(w http.ResponseWriter, err error, id string) {
 	e := normalizedError(err)
 	body := Object{"code": e.Code, "message": e.Message, "requestId": id}
@@ -193,7 +238,7 @@ func (s *Server) writeError(w http.ResponseWriter, err error, id string) {
 	w.WriteHeader(e.Status)
 	_, _ = w.Write(raw)
 }
-func ok(v any) (Result, error)      { return Result{Status: 200, Body: envelope(v)}, nil }
+func ok(v any) (Result, error) { return Result{Status: 200, Body: envelope(v)}, nil }
 func created(v any) (Result, error) { return Result{Status: 201, Body: envelope(v)}, nil }
 func (s *Server) registerHealth() {
 	s.Register("getHealthLive", true, func(ctx context.Context, r *Request) (Result, error) {
@@ -206,16 +251,9 @@ func (s *Server) registerHealth() {
 		redisOK := s.Redis.Ping(ctx).Err() == nil
 		status, code := "ok", 200
 		p, rd := "ok", "ok"
-		if !pgOK {
-			p = "unavailable"
-		}
-		if !redisOK {
-			rd = "unavailable"
-		}
-		if !pgOK || !redisOK {
-			status = "unavailable"
-			code = 503
-		}
+		if !pgOK { p = "unavailable" }
+		if !redisOK { rd = "unavailable" }
+		if !pgOK || !redisOK { status, code = "unavailable", 503 }
 		return Result{Status: code, Body: Object{"status": status, "service": "growdesk-api", "stage": "foundation", "dependencies": Object{"postgres": p, "redis": rd}}}, nil
 	})
 }

@@ -1,12 +1,14 @@
 # Native Go backend: implementation and review scope
 
-Status: **IMPLEMENTED_NOT_REVIEWED**. PR #9 introduces an isolated native preview alongside the existing service. Merging this increment is not completion of the Go rewrite, independent acceptance, a benchmark result, or production cutover approval. The default TypeScript deployment remains unchanged.
+**Current continuation:** PR #10 registers **86/151 operations**, with **65 still missing**. See [GO_COMPLETION.md](GO_COMPLETION.md) for the added domains, current validation, remaining work and reproduction commands. The 68-operation table below records the historical PR #9 foundation, not the current branch's full inventory.
+
+Status: **IMPLEMENTED_NOT_REVIEWED**. PR #9 introduced an isolated native preview alongside the existing service. Merging an increment is not completion of the Go rewrite, independent acceptance, a benchmark result, or production cutover approval. The default TypeScript deployment remains unchanged.
 
 The TypeScript reference is frozen at `f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4`. Its `apps`, `packages`, PostgreSQL schema/migrations and `contracts/openapi.json` remain unchanged. CI checks this boundary. Existing Web pages are not modified. Changes to that reference require an explicit, separately reviewed parity rebaseline.
 
-## Current native scope
+## Historical PR #9 native scope
 
-The executable registers **68 of 151 declared operations**:
+At the PR #9 checkpoint, the executable registered **68 of 151 declared operations**:
 
 | Group | Native operations |
 | --- | ---: |
@@ -21,7 +23,7 @@ The executable registers **68 of 151 declared operations**:
 | Family formula-product catalog | 4 |
 | Food library catalog and feeding guidelines | 3 |
 
-`growdesk-api --contract-inventory` lists every operation. Registration is not independent acceptance or exhaustive input coverage. The **83 missing operations** remain explicit `503 / GO_OPERATION_NOT_IMPLEMENTED` failures after normal validation/authentication. They never proxy to Node or return fabricated success.
+`growdesk-api --contract-inventory` lists every operation in the current build. Registration is not independent acceptance or exhaustive input coverage. The **83 operations missing at PR #9** remained explicit `503 / GO_OPERATION_NOT_IMPLEMENTED` failures after normal validation/authentication. The current missing count is reported in GO_COMPLETION.md and the compiled inventory. Missing operations never proxy to Node or return fabricated success.
 
 Business execution uses Go and PostgreSQL/Redis directly. Node is used to build the reference and existing tooling, not to serve native operations. Conversation history is not AI execution; voice history is not ASR; device registration is not push delivery. Worker/Scheduler, remaining nutrition/food/growth/medical/vaccine/sync operations, and attachment/S3 lifecycle remain follow-up work.
 
@@ -95,7 +97,7 @@ Session review adds same-user and cross-user BFF rebinding, concurrent binders, 
 
 **Credential replacement.** A successful Go BFF credential rebind revokes the superseded device session and refresh credentials in the same transaction as the new binding. Racing binders receive a controlled `409 / CONCURRENT_MODIFICATION` when their preflight becomes stale; retry with current credentials. This closes the reference's orphan-session behavior and is an explicit security difference, not an exact-parity claim for that unsafe lifecycle.
 
-**Published schema drift.** The frozen `POST /api/v1/food/items` HTTP response is a bare item while the OpenAPI export declares `{data: item}`. Go preserves the actual wire response. Tests record the exception and validate the item separately; neither reference source nor frozen OpenAPI is edited to manufacture success. Nullable `$ref` siblings are adapted in memory without relaxing non-null object validation or mutating shared schemas.
+**Published schema drift.** The frozen `POST /api/v1/food/items` HTTP response is a bare item while the OpenAPI export declares `{data: item}`. Go preserves the actual wire response. Tests record the exception and validate the item separately; neither reference source nor frozen OpenAPI is edited to manufacture success. Nullable `$ref` siblings are adapted in memory without relaxing non-null object validation or mutating shared schemas. PR #10 also records omitted query schemas for development catalogs and book listing; see GO_COMPLETION.md.
 
 **Authorization hardening.** Go rejects removing the last effective baby administrator, soft-deleted parent access, and conflicting cross-session message IDs. Scope checks and authorized multi-query reads use a consistent snapshot where implemented. These differences need independent review, not replication of unsafe reference behavior.
 

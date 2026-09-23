@@ -16,6 +16,14 @@ func nullableReferenceContract(raw []byte) ([]byte, error) {
 	if err := json.Unmarshal(raw, &document); err != nil {
 		return nil, err
 	}
+	// Type.Unknown exports an empty schema, which accepts every JSON value,
+	// including null. The OpenAPI 3.0 reader otherwise rejects null at these
+	// positions. Never apply this to an enclosing typed object or to examples.
+	allowUnknownNull := func(value any) {
+		if schema, ok := value.(map[string]any); ok && len(schema) == 0 {
+			schema["nullable"] = true
+		}
+	}
 	var visit func(any) error
 	visit = func(value any) error {
 		switch node := value.(type) {
@@ -40,6 +48,16 @@ func nullableReferenceContract(raw []byte) ([]byte, error) {
 				// Literal user examples/defaults are data, not schema references.
 				if key == "example" || key == "examples" || key == "default" || key == "enum" || key == "const" {
 					continue
+				}
+				switch key {
+				case "additionalProperties", "items", "schema":
+					allowUnknownNull(child)
+				case "properties", "schemas", "patternProperties":
+					if entries, ok := child.(map[string]any); ok {
+						for _, schema := range entries {
+							allowUnknownNull(schema)
+						}
+					}
 				}
 				if err := visit(child); err != nil {
 					return err

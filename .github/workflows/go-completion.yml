@@ -1,0 +1,97 @@
+name: Go completion parity
+on:
+  push:
+    branches: [main, codex/web-parity-20260919]
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'apps/**', 'packages/**', 'prisma/**', 'contracts/**', 'scripts/go-*', '.github/workflows/go-completion.yml', 'docs/GO*', 'evidence/tasks/GO*/**']
+permissions:
+  contents: read
+concurrency:
+  group: go-completion-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  GOFLAGS: -mod=readonly
+jobs:
+  complete-operation-coverage:
+    name: All 151 operations must have native implementations
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Inspect the compiled registration inventory
+        run: |
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --contract-inventory > dist-go/operations.json
+          python3 scripts/go-coverage.py dist-go/operations.json --require-complete
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-full-coverage-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/operations.json
+          if-no-files-found: error
+  domain-parity:
+    name: ${{ matrix.module }}-${{ matrix.mode }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [native, reference]
+        module: [food-plan, nutrition-records, knowledge, supplement-catalog, medical, vaccines, api-expansion, record-snapshots]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Keep reference implementation and schema immutable
+        run: git diff --exit-code f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4 -- apps packages prisma contracts/openapi.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Build the exact native commit
+        run: |
+          go mod download all
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          python3 -m py_compile scripts/go-*.py
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --version
+          dist-go/growdesk-api --contract-inventory > dist-go/operations.json
+      - uses: actions/setup-node@v4
+        if: matrix.mode == 'reference'
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Build the frozen TypeScript reference
+        if: matrix.mode == 'reference'
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run backend:build
+      - name: Native transactional and permission regression
+        if: matrix.mode == 'native'
+        run: python3 scripts/go-${{ matrix.module }}-integration.py --binary dist-go/growdesk-api --report dist-go/${{ matrix.module }}-native.json
+      - name: Actual HTTP and persistent-state differential
+        if: matrix.mode == 'reference'
+        run: python3 scripts/go-${{ matrix.module }}-integration.py --binary dist-go/growdesk-api --reference --report dist-go/${{ matrix.module }}-reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-completion-${{ matrix.module }}-${{ matrix.mode }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist-go/*-native.json
+            dist-go/*-reference.json
+            dist-go/operations.json
+          if-no-files-found: error
