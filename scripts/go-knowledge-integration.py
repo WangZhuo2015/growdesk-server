@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 import signal
 import subprocess
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlencode
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location('knowledge_domain', ROOT / 'scripts/go-domain-integration.py')
@@ -82,7 +82,22 @@ class KnowledgeScenario(DOMAIN.Scenario):
                 assert actual == expected, (kind, query)
             for query in ('month=-1', 'month=217', 'month=test_invalid'):
                 self.call('GET', path + '?' + query, 400, token=owner, observe=kind + ' invalid month')
-        print('PASS exact knowledge data, filtering, response allowlists and configuration', flush=True)
+            # Run the same accepted/rejected wire inputs on both real servers;
+            # Go's own numeric parser is not a substitute for this oracle.
+            canonical = {month: self.call('GET', path + '?month=' + str(month), 200, token=owner)
+                         for month in (0, 2)}
+            for raw, month in (("\ufeff2\ufeff", 2), ("\u00a02\u00a0", 2), ("\u20282\u2029", 2),
+                               ("\u30002\u3000", 2), ('0x2', 2), ('0o2', 2), ('0b10', 2),
+                               ('+2.0', 2), ('.2e1', 2), ('2.e0', 2), ("\ufeff", 0),
+                               ('1e-9999', 0), ('-1e-9999', 0)):
+                query = urlencode({'month': raw})
+                actual = self.exact(kind + ' numeric ' + query, self.call('GET', path + '?' + query, 200, token=owner))
+                assert actual == canonical[month], (kind, query)
+            for raw in ("\u00852\u0085", "\u0085", "\u180e2", "\u200b2", '+0x1p1', '-0x0p0',
+                        '+0x2', '-0b0', '0x2p0', '2_0', '２', '0o8', '0b2', '0x', '.', '2e'):
+                query = urlencode({'month': raw})
+                self.call('GET', path + '?' + query, 400, token=owner, observe=kind + ' rejected numeric ' + query)
+        print('PASS exact knowledge data, filtering, numeric grammar, response allowlists and configuration', flush=True)
 
         listing = f'/api/v1/books?familyId={fid}'
         self.call('GET', listing, 401, observe='books authentication')
