@@ -50,7 +50,7 @@ func (s *Server) getFoodPlan(ctx context.Context, r *Request) (Result, error) {
 			return ok(Object{"id": nil, "babyId": scope.BabyID, "planData": Object{}, "createdAt": nil, "updatedAt": iso(time.Now()), "version": "0"})
 		}
 		if err != nil {
-			return Result{}, err
+			return Result{}, legacyQueryFailure(err)
 		}
 		return ok(foodPlanDTO(row))
 	})
@@ -104,10 +104,10 @@ func (s *Server) saveFoodPlan(ctx context.Context, r *Request) (Result, error) {
 		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Food plan changed; reload before saving")
 	}
 	if err != nil {
-		return Result{}, err
+		return Result{}, legacyQueryFailure(err)
 	}
 	if err = tx.Commit(ctx); err != nil {
-		return Result{}, err
+		return Result{}, legacyQueryFailure(err)
 	}
 	return ok(foodPlanDTO(row))
 }
