@@ -46,7 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         mode: [native, reference]
-        module: [food-plan, nutrition-records, knowledge, supplement-catalog, medical, vaccines]
+        module: [food-plan, nutrition-records, knowledge, supplement-catalog, medical, vaccines, api-expansion]
     steps:
       - uses: actions/checkout@v4
         with:
