@@ -13,4 +13,5 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerFormulaProducts()
 	s.registerFoodLibrary()
 	s.registerFoodPlans()
+	s.registerNutritionRecords()
 }
