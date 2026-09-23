@@ -19,6 +19,9 @@ type Request struct {
 	Route     *Route
 	Params    map[string]string
 	Body      Object
+	// RawBody is bounded by MaxBodyBytes. It is only used to recover key order
+	// for legacy receipt protocols; validated Body remains authoritative.
+	RawBody   []byte
 	Principal Principal
 	RequestID string
 }
@@ -112,6 +115,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 	body := Object(nil)
+	var rawBody []byte
 	if r.Body != nil && r.ContentLength != 0 {
 		raw, err := io.ReadAll(io.LimitReader(r.Body, s.Config.MaxBodyBytes+1))
 		if err != nil {
@@ -132,13 +136,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				s.writeError(w, invalid("Invalid JSON object"), requestID)
 				return
 			}
+			rawBody = raw
 		}
 	}
 	if err := route.Validate(r, params, body); err != nil {
 		s.writeError(w, err, requestID)
 		return
 	}
-	req := &Request{HTTP: r, Route: route, Params: params, Body: body, RequestID: requestID}
+	req := &Request{HTTP: r, Route: route, Params: params, Body: body, RawBody: rawBody, RequestID: requestID}
 	if !s.Public[route.OperationID] {
 		p, err := s.authenticate(ctx, r)
 		if err != nil {
