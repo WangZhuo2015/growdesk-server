@@ -33,7 +33,8 @@ type recordChange struct {
 	OccurredAt time.Time
 }
 
-func (s *Server) executeRecordCommand(ctx context.Context, r *Request, command recordCommand) (Object, error) {
+func (s *Server) executeRecordCommand(ctx context.Context, r *Request, command recordCommand) (result Object, err error) {
+	defer func() { err = legacyQueryFailure(err) }()
 	table, allowed := domainRecordTables[command.Kind]
 	if !allowed || command.Apply == nil || command.Key == "" || command.RequestHash == "" {
 		return nil, errors.New("invalid internal record command")
