@@ -1,0 +1,35 @@
+name: Go review storage runtime
+on:
+  pull_request:
+    branches: [codex/web-parity-20260919]
+    paths: ['.github/workflows/go-review-storage.yml']
+permissions:
+  contents: read
+jobs:
+  test-runtime:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/go-completion-20260923'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Build pinned public S3 test dependency
+        env:
+          MINIO_VERSION: RELEASE.2025-10-15T17-29-55Z
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/test-storage"
+          GOBIN="$RUNNER_TEMP/test-storage" CGO_ENABLED=0 go install "github.com/minio/minio@$MINIO_VERSION"
+          "$RUNNER_TEMP/test-storage/minio" --version > "$RUNNER_TEMP/test-storage/version.txt"
+          go version -m "$RUNNER_TEMP/test-storage/minio" > "$RUNNER_TEMP/test-storage/build-info.txt"
+          module="$(go env GOMODCACHE)/github.com/minio/minio@$MINIO_VERSION"
+          cp "$module/LICENSE" "$RUNNER_TEMP/test-storage/LICENSE"
+          (cd "$RUNNER_TEMP/test-storage" && sha256sum minio version.txt build-info.txt LICENSE > SHA256SUMS)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: isolated-minio-RELEASE.2025-10-15T17-29-55Z
+          path: ${{ runner.temp }}/test-storage/*
+          retention-days: 3
+          if-no-files-found: error
