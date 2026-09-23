@@ -19,4 +19,5 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerSupplementCatalog()
 	s.registerMedicalReports()
 	s.registerVaccines()
+	s.registerGrowth()
 }
