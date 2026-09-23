@@ -51,7 +51,14 @@ class SupplementScenario(DOMAIN.Scenario):
         self.observations.append({'case': 'create product', 'body': self.normalize(first)})
         self.cursor_only(before, fid)
         self.call('PATCH', path + '/' + pid, 409, {'baseVersion': 9, 'notes': 'stale'}, owner, observe='product stale version')
-        self.call('PATCH', path + '/' + pid, 200, {'baseVersion': 1, 'isActive': False, 'defaultDose': '0'}, owner, observe='zero dose and inactive product')
+        # The existing PostgreSQL constraints require positive product/schedule
+        # doses. Zero remains covered in nested JSON, not as a valid dose.
+        if runtime == 'go':
+            for dose in ('0', '-1'):
+                snapshot = self.catalog_state(fid)
+                self.call('PATCH', path + '/' + pid, 400, {'baseVersion': 1, 'defaultDose': dose}, owner)
+                assert self.catalog_state(fid) == snapshot
+        self.call('PATCH', path + '/' + pid, 200, {'baseVersion': 1, 'isActive': False, 'defaultDose': '0.25'}, owner, observe='fractional dose and inactive product')
         assert self.call('GET', path, 200, token=owner)['data'] == []
         self.call('GET', path + '?includeArchived=true', 200, token=owner, observe='include inactive product')
         self.call('PATCH', path + '/' + pid, 200, {'baseVersion': 2, 'isActive': True, 'nutrientsJson': None}, owner, observe='reactivate and clear JSON')
@@ -65,12 +72,16 @@ class SupplementScenario(DOMAIN.Scenario):
         assert {page['data'][0]['id'], last['data'][0]['id']} == {pid, second['id']}
         self.call('GET', schedules, 200, token=owner, observe='empty schedules')
         before = self.state(fid)
-        schedule = self.call('POST', schedules, 201, {'productId': pid, 'customDays': [], 'targetDose': '0',
+        schedule = self.call('POST', schedules, 201, {'productId': pid, 'customDays': [], 'targetDose': '0.5',
             'reminderTime': None, 'startDate': '2026-04-05', 'notes': 'test schedule'}, owner)['data']
         sid = self.alias(schedule['id'], 'schedule')
-        assert schedule['targetDose'] == '0' and schedule['customDays'] == []
+        assert schedule['targetDose'] == '0.5' and schedule['customDays'] == []
         self.observations.append({'case': 'create schedule', 'body': self.normalize(schedule)})
         self.cursor_only(before, fid)
+        if runtime == 'go':
+            snapshot = self.catalog_state(fid)
+            self.call('POST', schedules, 400, {'id': sid, 'productId': pid, 'targetDose': '0'}, owner)
+            assert self.catalog_state(fid) == snapshot
         self.call('POST', schedules, 409, {'id': sid, 'productId': pid, 'baseVersion': 8}, owner, observe='schedule stale version')
         self.call('POST', schedules, 200, {'productId': pid, 'baseVersion': 1, 'customDays': None}, owner, observe='upsert existing schedule')
         self.call('GET', schedules + '?date=2026-04-05', 200, token=owner, observe='uncompleted schedule')
@@ -79,9 +90,6 @@ class SupplementScenario(DOMAIN.Scenario):
         observed = self.call('GET', schedules + '?date=2026-04-05', 200, token=owner, observe='completed schedule')
         assert observed['data'][0]['isCompletedToday'] is True
         assert self.call('GET', schedules + '?date=2026-04-06', 200, token=owner)['data'][0]['isCompletedToday'] is False
-
-        # All catalog mutations and cascading schedule deletion must roll back
-        # when the *last* cursor write fails. Snapshot actual rows, not counts.
         self.owned.sql(f"""CREATE FUNCTION test_supplement_failure() RETURNS trigger LANGUAGE plpgsql AS $$
           BEGIN RAISE EXCEPTION 'test_catalog_cursor_failure'; END; $$;
           CREATE TRIGGER test_supplement_failure BEFORE UPDATE ON family_sync_states
@@ -117,7 +125,6 @@ class SupplementScenario(DOMAIN.Scenario):
         assert self.call('GET', schedules, 200, token=owner)['data'] == []
         self.call('DELETE', schedules + '/' + sid, 404, token=owner, observe='cascaded schedule stays deleted')
         self.call('DELETE', path + '/' + pid, 404, token=owner, observe='product deletion not repeated as success')
-        # Native authorization intentionally rechecks live rows inside writes.
         if runtime == 'go':
             self.owned.sql(f"UPDATE family_members SET role='viewer' WHERE family_id='{fid}' AND user_id='{uid}';")
             before = self.catalog_state(fid)
