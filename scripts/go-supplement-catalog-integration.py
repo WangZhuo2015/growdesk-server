@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Supplement products and schedules against owned databases and real HTTP."""
+import base64
 from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 import json
@@ -13,6 +14,18 @@ DOMAIN, TOOLS = SUPPORT.DOMAIN, SUPPORT.TOOLS
 
 
 class SupplementScenario(DOMAIN.Scenario):
+    def normalize(self, value, key=''):
+        if isinstance(value, dict) and isinstance(value.get('page'), dict) and value['page'].get('nextCursor'):
+            raw = value['page']['nextCursor']
+            clock, identity = base64.urlsafe_b64decode(raw + '=' * (-len(raw) % 4)).decode().split('|')
+            assert value['data'] and value['data'][-1]['id'] == identity
+            assert value['data'][-1]['createdAt'] == clock, 'cursor must bind the returned row, not any generated clock'
+        if key == 'nextCursor' and isinstance(value, str):
+            clock, identity = base64.urlsafe_b64decode(value + '=' * (-len(value) % 4)).decode().split('|')
+            assert identity in self.ids
+            return super().normalize(clock, 'createdAt') + '|<' + self.ids[identity] + '>'
+        return super().normalize(value, key)
+
     def catalog_state(self, family):
         return json.loads(self.owned.sql(f"""SELECT jsonb_build_object(
           'sync',(SELECT to_jsonb(s) FROM family_sync_states s WHERE family_id='{family}'),
@@ -51,8 +64,8 @@ class SupplementScenario(DOMAIN.Scenario):
         self.observations.append({'case': 'create product', 'body': self.normalize(first)})
         self.cursor_only(before, fid)
         self.call('PATCH', path + '/' + pid, 409, {'baseVersion': 9, 'notes': 'stale'}, owner, observe='product stale version')
-        # The existing PostgreSQL constraints require positive product/schedule
-        # doses. Zero remains covered in nested JSON, not as a valid dose.
+        # Product/schedule doses are positive by the existing SQL constraints.
+        # Nested JSON still tests zeros and false without weakening those rules.
         if runtime == 'go':
             for dose in ('0', '-1'):
                 snapshot = self.catalog_state(fid)
@@ -133,7 +146,7 @@ class SupplementScenario(DOMAIN.Scenario):
             self.owned.sql(f"UPDATE family_members SET status='revoked' WHERE family_id='{fid}' AND user_id='{uid}';")
             self.call('GET', path, 403, token=owner)
             self.call('GET', schedules, 403, token=owner)
-        print('PASS supplement products/schedules: parity, CAS, rollback, restart and scope', flush=True)
+        print('PASS supplement products/schedules: CAS, rollback, restart and scope', flush=True)
         return {'httpAssertions': self.calls, 'observations': self.observations}
 
 
