@@ -20,4 +20,6 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerMedicalReports()
 	s.registerVaccines()
 	s.registerGrowth()
+	s.registerSyncFeeds()
+	s.registerAIHistory()
 }
