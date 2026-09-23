@@ -46,7 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         mode: [native, reference]
-        module: [food-plan, nutrition-records, knowledge, supplement-catalog, medical, vaccines, api-expansion]
+        module: [food-plan, nutrition-records, knowledge, supplement-catalog, medical, vaccines, api-expansion, record-snapshots]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +61,7 @@ jobs:
           cache: true
       - name: Build the exact native commit
         run: |
-          go mod download
+          go mod download all
           go mod verify
           git diff --exit-code -- go.mod go.sum
           python3 -m py_compile scripts/go-*.py
