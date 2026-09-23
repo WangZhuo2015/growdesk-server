@@ -55,8 +55,12 @@ func providerHTTPClient(timeout time.Duration)*http.Client{
 var actionUUID=regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 func parseNativeAssistant(raw string)(nativeAIResult,error){
 	out:=nativeAIResult{Text:raw,Actions:[]nativeAIAction{}}
+	if len(raw)>maxProviderResponse{return out,providerFailure("AI_PROVIDER_INVALID_RESPONSE","AI response exceeds the size budget",false)}
 	normalized:=strings.TrimSpace(raw)
 	if strings.HasPrefix(normalized,"```")&&strings.HasSuffix(normalized,"```"){normalized=strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(normalized,"```"),"```"));normalized=strings.TrimSpace(strings.TrimPrefix(normalized,"json"))}
+	// Ordinary text is a supported read-only answer. Structured JSON must be
+	// a complete value before any action fields are interpreted.
+	if !json.Valid([]byte(normalized)){return out,nil}
 	var object Object
 	if err:=decodeJSON([]byte(normalized),&object);err!=nil||object==nil{return out,nil}
 	out.Text=text(object["text"]);out.Usage=obj(object["usage"])
