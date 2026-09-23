@@ -138,6 +138,14 @@ func schemaJSONValue(v any) any {
 }
 
 func (r *Route) Validate(req *http.Request, params map[string]string, body Object) error {
+	// The frozen food-plan route has a preValidation hook before its schema.
+	// Preserve the 409 precondition signal even for non-string/missing versions;
+	// clients must not treat a lost CAS precondition as an ordinary field error.
+	if r.OperationID == "saveFoodPlan" {
+		if _, ok := body["baseVersion"].(string); !ok {
+			return apiError(409, "CONCURRENCY_CONFLICT", "baseVersion is required; reload the food plan before saving")
+		}
+	}
 	query := req.URL.Query()
 	allowedQuery := map[string]bool{}
 	for _, p := range r.Operation.Parameters {
