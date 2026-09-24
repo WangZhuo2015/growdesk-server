@@ -12,26 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: server
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
         with:
-          repository: WangZhuo2015/baby_panel_for_cecilia
-          ref: c3582203f0577f0b2b31d46f5157d3b5308361f1
-          path: web
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Export committed Git objects only
+          go-version: '1.27.1'
+          cache: false
+      - name: Retrieve exact public module and committed source bundle
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/consolidation"
-          for repo in server web; do
-            git -C "$repo" bundle create "$RUNNER_TEMP/consolidation/$repo.bundle" --all
-            git -C "$repo" for-each-ref --format='%(objectname) %(refname)' > "$RUNNER_TEMP/consolidation/$repo-refs.txt"
-            git -C "$repo" rev-parse HEAD > "$RUNNER_TEMP/consolidation/$repo-head.txt"
-          done
+          mkdir -p "$RUNNER_TEMP/consolidation" "$RUNNER_TEMP/public-go-modules" "$RUNNER_TEMP/empty-module"
+          git bundle create "$RUNNER_TEMP/consolidation/server.bundle" --all
+          git rev-parse HEAD > "$RUNNER_TEMP/consolidation/server-head.txt"
+          cd "$RUNNER_TEMP/empty-module"
+          GOMODCACHE="$RUNNER_TEMP/public-go-modules" go mod download -json github.com/SherClockHolmes/webpush-go@v1.4.0 > "$RUNNER_TEMP/consolidation/webpush-module.json"
+          tar -czf "$RUNNER_TEMP/consolidation/webpush-module.tar.gz" -C "$RUNNER_TEMP/public-go-modules" .
           cd "$RUNNER_TEMP/consolidation"
           sha256sum ./* > SHA256SUMS
       - uses: actions/upload-artifact@v4
