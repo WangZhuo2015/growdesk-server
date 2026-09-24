@@ -441,7 +441,10 @@ async function verifyBusinessSourceMapping(tx: Tx, reference: PlannedBusinessAtt
     where: { uq_legacy_idempotency_type_source: { targetEntityType, sourceKey } },
     select: { targetEntityId: true, status: true, sourceSystem: true, sourceBatchId: true, sourceTable: true, sourceId: true, sourceHash: true, mappingVersion: true },
   });
-  if (!mapping || mapping.status !== "mapped" || mapping.sourceSystem !== reference.sourceSystem || mapping.sourceBatchId !== reference.sourceBatchId ||
+  const allowedStatuses = targetEntityType === "medical"
+    ? ["mapped", "mapped_with_unresolved_attachment"]
+    : ["mapped"];
+  if (!mapping || !allowedStatuses.includes(mapping.status) || mapping.sourceSystem !== reference.sourceSystem || mapping.sourceBatchId !== reference.sourceBatchId ||
       mapping.sourceTable !== reference.sourceTable || mapping.sourceId !== reference.sourceId || mapping.sourceHash !== reference.sourceHash ||
       (reference.kind === "ai_message_image" && mapping.mappingVersion !== "ai-history-v1")) {
     throw new ReferenceBackfillFailure("BUSINESS_RECEIPT_MISMATCH", "canonical business target is missing an exact legacy materialization receipt", { sourceKey });
@@ -541,6 +544,16 @@ async function applyReference(tx: Tx, reference: PlannedBusinessAttachmentRefere
       await tx.medicalReportAttachment.create({ data: { id: referenceMappingId(reference.sourceKey), reportId: target.targetEntityId, attachmentId: reference.targetAttachmentId } });
       if (existingReference) status = "reconciled";
     }
+    await tx.legacyIdempotencyMapping.updateMany({
+      where: {
+        targetEntityType: "medical",
+        targetEntityId: target.targetEntityId,
+        status: "mapped_with_unresolved_attachment",
+      },
+      data: {
+        status: "mapped",
+      },
+    });
   } else if (reference.kind === "ai_message_image") {
     const message = await tx.aiChatMessage.findUnique({ where: { id: target.targetEntityId }, select: { image: true } });
     const expectedImage = privateAvatarPath(reference.targetAttachmentId);
