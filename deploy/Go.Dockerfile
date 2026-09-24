@@ -3,8 +3,14 @@ FROM golang:1.27.1-bookworm AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
+COPY *.go ./
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
+COPY contracts/ ./contracts/
+COPY prisma/ ./prisma/
+COPY packages/ ./packages/
+COPY apps/ ./apps/
+COPY native/ ./native/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /bin/growdesk-api ./cmd/growdesk-api
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /bin/growdesk-worker ./cmd/growdesk-worker
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /bin/growdesk-scheduler ./cmd/growdesk-scheduler
