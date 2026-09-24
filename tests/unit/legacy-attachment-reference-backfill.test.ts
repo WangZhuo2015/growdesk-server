@@ -69,12 +69,13 @@ test("pure reference planner maps canonical business and AI message fields", () 
   assert.deepEqual(plan.quarantine, []);
 });
 
-test("AI archive receipts are internally consumed while unsupported AI job references remain quarantined", () => {
+test("AI archive and job receipts are internally consumed while unsupported references remain quarantined", () => {
   const report: PlannedAttachmentReport = {
     mappingVersion: ATTACHMENT_PROMOTION_MAPPING_VERSION,
     receipts: [
-      receipt({ table: "AiJob", id: "test_reference_ai_job", field: "imageUrl", path: "public/uploads/ai/test.png", purpose: "growth_photo", babyId: "test_reference_baby", attachmentId: "test_reference_ai_attachment" }),
+      receipt({ table: "UnknownTable", id: "test_reference_unknown", field: "imageUrl", path: "public/uploads/ai/test.png", purpose: "growth_photo", babyId: "test_reference_baby", attachmentId: "test_reference_ai_attachment" }),
       receipt({ table: "AiArchive", id: "test_reference_voice", field: "filePath", path: "data/archive/test.m4a", purpose: "voice_note", babyId: "test_reference_baby", attachmentId: "test_reference_voice_attachment" }),
+      receipt({ table: "AiJob", id: "test_reference_ai_job", field: "imageUrl", path: "public/uploads/ai/test.png", purpose: "growth_photo", babyId: "test_reference_baby", attachmentId: "test_reference_ai_attachment" }),
     ],
   };
 

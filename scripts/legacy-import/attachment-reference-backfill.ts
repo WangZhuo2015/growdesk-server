@@ -205,9 +205,10 @@ function validateReceipt(raw: unknown): PlannedBusinessAttachmentReference | nul
   if (raw.targetSha256 !== attachment.sha256 || raw.targetByteSize !== attachment.byteSize || raw.targetObjectKey !== attachment.objectKey) {
     throw new ReferenceBackfillFailure("TARGET_METADATA_MISMATCH", "attachment receipt metadata does not match its target");
   }
-  // AiArchive materialization consumes this receipt directly into
-  // ai_archive_entries.attachment_id. It is not a second business reference.
+  // AiArchive and AiJob materializations consume their receipts directly into
+  // their audit tables. They are not a second business reference.
   if (sourceTable === "AiArchive" && sourceField === "filePath") return null;
+  if (sourceTable === "AiJob") return null;
   const rule = ruleFor(sourceTable, sourceField);
   if (!rule) {
     throw new ReferenceBackfillFailure(
