@@ -227,6 +227,8 @@ def _json(value: Any) -> str:
 def _json_value(value: Any, label: str, *, default: Any = None, expected: type | tuple[type, ...] | None = None) -> Any:
     if value in (None, ""):
         value = default
+    if value is None and default is None:
+        return None
     if isinstance(value, str):
         try:
             value = json.loads(value)

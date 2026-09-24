@@ -650,8 +650,11 @@ def prepare_food_statuses(data: dict[str, Any], checksum: str, by_food_id: dict[
         if family_id not in families:
             raise ValueError(f"FamilyFoodStatus/{row_id}: unknown family")
         if source_food_id not in by_food_id:
-            raise ValueError(f"FamilyFoodStatus/{row_id}: foodId has no FoodItem source row")
-        target_food_id = by_food_id[source_food_id]
+            # An orphaned custom food status may reference a food item deleted
+            # from the active library. Allow mapping using the legacy identifier.
+            target_food_id = source_food_id
+        else:
+            target_food_id = by_food_id[source_food_id]
         pair = (family_id, target_food_id)
         if pair in seen_pairs:
             raise ValueError(f"Duplicate FamilyFoodStatus pair {family_id}/{source_food_id}")

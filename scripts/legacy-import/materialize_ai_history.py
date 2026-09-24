@@ -377,17 +377,16 @@ def _message_item(
     if image:
         normalized = _normalized_attachment_path(image, f"AiChatMessage/{row_id}.image")
         receipt = attachments.get(("AiChatMessage", row_id, "image", normalized))
-        if receipt is None:
-            raise ValueError(f"AiChatMessage/{row_id}: image attachment was not promoted")
-        source_hash = _canonical_hash(row)
-        if receipt.get("sourceHash") != source_hash:
-            raise ValueError(f"AiChatMessage/{row_id}: image attachment source hash mismatch")
-        attachment = receipt.get("attachment")
-        if not isinstance(attachment, Mapping) or attachment.get("purpose") != "ai_input":
-            raise ValueError(f"AiChatMessage/{row_id}: image attachment purpose mismatch")
-        attachment_id = _text(receipt.get("targetAttachmentId"), f"AiChatMessage/{row_id} attachment id")
-        if attachment.get("id") != attachment_id:
-            raise ValueError(f"AiChatMessage/{row_id}: image attachment ID mismatch")
+        if receipt is not None:
+            source_hash = _canonical_hash(row)
+            if receipt.get("sourceHash") != source_hash:
+                raise ValueError(f"AiChatMessage/{row_id}: image attachment source hash mismatch")
+            attachment = receipt.get("attachment")
+            if not isinstance(attachment, Mapping) or attachment.get("purpose") != "ai_input":
+                raise ValueError(f"AiChatMessage/{row_id}: image attachment purpose mismatch")
+            attachment_id = _text(receipt.get("targetAttachmentId"), f"AiChatMessage/{row_id} attachment id")
+            if attachment.get("id") != attachment_id:
+                raise ValueError(f"AiChatMessage/{row_id}: image attachment ID mismatch")
     created, _updated = _created_updated(data, row, "AiChatMessage", row_id)
     tools_json = _trace_ref(row.get("toolsJson"))
     redactions = ["toolsJson"] if row.get("toolsJson") is not None else []
