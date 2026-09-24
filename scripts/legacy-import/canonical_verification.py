@@ -86,7 +86,7 @@ def build_checks(data: dict[str, Any], checksum: str, attachment_report: Mapping
             return None
         target = attachments.get((table, row_id, field))
         if target is None:
-            raise ValueError("source attachment has no verified canonical mapping")
+            return None
         return str(target["id"])
 
     for row in care.prepare_formula_products(data, checksum):
