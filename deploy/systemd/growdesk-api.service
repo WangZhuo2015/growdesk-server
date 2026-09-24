@@ -1,0 +1,20 @@
+[Unit]
+Description=GrowDesk Go API Service
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=growdesk
+Group=growdesk
+WorkingDirectory=/opt/growdesk
+ExecStart=/opt/growdesk/bin/growdesk-api
+Restart=always
+RestartSec=5s
+Environment=GROWDESK_ENV=production
+Environment=PORT=3081
+Environment=HOST=127.0.0.1
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
