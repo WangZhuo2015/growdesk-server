@@ -16,6 +16,9 @@ func (s *Server) bffExchange(ctx context.Context, r *Request) (Result, error) {
 	if text(r.Body["username"]) != "" && text(r.Body["password"]) != "" {
 		return s.bindBffSession(ctx, r)
 	}
+	if text(r.Body["legacyAuthToken"]) != "" {
+		return s.bindBffLegacySession(ctx, r)
+	}
 	pre, err := one(ctx, s.DB, "SELECT to_jsonb(b) FROM bff_sessions b WHERE session_secret_hash=$1", secretHash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Result{}, apiError(401, "BFF_SESSION_NOT_FOUND", "BFF session does not exist or has expired")

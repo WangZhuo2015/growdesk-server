@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -26,11 +27,6 @@ func sameBffBinding(before, after Object) bool {
 	return true
 }
 
-// Rebinding replaces a credential, not just a pointer to a still-live old
-// session. Lock all involved users in sorted order, then device -> BFF, matching
-// exchange/revocation. A stale preflight is a retryable conflict, never authority
-// to overwrite another binding. Everything, including old revocation, commits
-// together so a failed new binding cannot log out the existing session.
 func (s *Server) bindBffSession(ctx context.Context, r *Request) (Result, error) {
 	secretHash := text(r.Body["sessionSecretHash"])
 	password := text(r.Body["password"])
@@ -38,6 +34,48 @@ func (s *Server) bindBffSession(ctx context.Context, r *Request) (Result, error)
 	if err != nil {
 		return Result{}, err
 	}
+	return s.bindBffForUser(ctx, r, secretHash, text(verified["id"]), verified, password)
+}
+
+func (s *Server) bindBffLegacySession(ctx context.Context, r *Request) (Result, error) {
+	secretHash := text(r.Body["sessionSecretHash"])
+	if len(secretHash) != 64 || !rawRefreshPattern.MatchString(secretHash) {
+		return Result{}, apiError(400, "INVALID_SESSION_SECRET_HASH", "Session secret hash must be 64 hexadecimal characters")
+	}
+	tokenString := text(r.Body["legacyAuthToken"])
+	claims := jwt.MapClaims{}
+	token, err := jwt.ParseWithClaims(strings.TrimSpace(tokenString), claims, func(token *jwt.Token) (any, error) {
+		return []byte(s.Config.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err != nil || !token.Valid {
+		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "Invalid or expired legacy authentication token")
+	}
+	if text(claims["typ"]) == "mcp" {
+		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "MCP tokens cannot be used as web sessions")
+	}
+	uid := text(claims["userId"])
+	if uid == "" {
+		uid = text(claims["sub"])
+	}
+	if uid == "" {
+		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "Legacy token missing user identity")
+	}
+	verified, err := one(ctx, s.DB, "SELECT to_jsonb(u) FROM users u WHERE id=$1 AND deleted_at IS NULL", uid)
+	if errors.Is(err, pgx.ErrNoRows) || verified == nil {
+		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "User not found or deleted")
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	return s.bindBffForUser(ctx, r, secretHash, uid, verified, "")
+}
+
+// Rebinding replaces a credential, not just a pointer to a still-live old
+// session. Lock all involved users in sorted order, then device -> BFF, matching
+// exchange/revocation. A stale preflight is a retryable conflict, never authority
+// to overwrite another binding. Everything, including old revocation, commits
+// together so a failed new binding cannot log out the existing session.
+func (s *Server) bindBffForUser(ctx context.Context, r *Request, secretHash, uid string, verified Object, password string) (Result, error) {
 	before, err := one(ctx, s.DB, "SELECT to_jsonb(b) FROM bff_sessions b WHERE session_secret_hash=$1", secretHash)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return Result{}, err
@@ -47,7 +85,6 @@ func (s *Server) bindBffSession(ctx context.Context, r *Request) (Result, error)
 		return Result{}, err
 	}
 	defer rollback(tx)
-	uid := text(verified["id"])
 	users := []string{uid}
 	if before != nil && text(before["user_id"]) != uid {
 		users = append(users, text(before["user_id"]))

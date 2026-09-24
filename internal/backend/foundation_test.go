@@ -48,3 +48,73 @@ func TestAccessTokenClaims(t *testing.T){secret:=strings.Repeat("s",40);s:=&Serv
 func TestBcryptLegacyBytes(t *testing.T){s:=&Server{hashSlots:make(chan struct{},1)};password:=strings.Repeat("a",71)+"中";hash,err:=s.passwordHash(context.Background(),password,4);if err!=nil{t.Fatal(err)};valid,err:=s.checkPassword(context.Background(),password+"ignored",hash);if err!=nil||!valid{t.Fatal("bcryptjs byte truncation compatibility failed")}}
 func TestOrderedHash(t *testing.T){h,err:=orderedHash("b",1,"a",nil);if err!=nil{t.Fatal(err)};if h!=hashText(`{"b":1,"a":null}`){t.Fatal("property order changed")};h2,_:=orderedHash("a",nil,"b",1);if h==h2{t.Fatal("ordered protocol unexpectedly sorted")}}
 func TestJSONPrecision(t *testing.T){var data Object;if err:=decodeJSON([]byte(`{"cursor":9007199254740993,"empty":null}`),&data);err!=nil{t.Fatal(err)};raw,err:=jsonText(data);if err!=nil||!strings.Contains(raw,"9007199254740993"){t.Fatal("JSON number precision lost")};if decodeJSON([]byte(`{} {}`),&data)==nil{t.Fatal("trailing JSON value accepted")}}
+func TestLegacyTokenValidation(t *testing.T){
+	secret := strings.Repeat("s", 40)
+	s := &Server{Config: Config{JWTSecret: secret}}
+	now := time.Now().Unix()
+
+	// 1. Valid legacy token
+	validToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": "test_user_id",
+		"username": "test_user",
+		"iat": now,
+		"exp": now + 3600,
+	}).SignedString([]byte(secret))
+	if err != nil { t.Fatal(err) }
+
+	claims := jwt.MapClaims{}
+	parsed, err := jwt.ParseWithClaims(validToken, claims, func(token *jwt.Token) (any, error) {
+		return []byte(s.Config.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err != nil || !parsed.Valid || text(claims["userId"]) != "test_user_id" {
+		t.Fatalf("valid legacy token parse failed: %v", err)
+	}
+
+	// 2. MCP token rejection
+	mcpToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": "test_user_id",
+		"username": "test_user",
+		"typ": "mcp",
+		"iat": now,
+		"exp": now + 3600,
+	}).SignedString([]byte(secret))
+	if err != nil { t.Fatal(err) }
+	mcpClaims := jwt.MapClaims{}
+	_, _ = jwt.ParseWithClaims(mcpToken, mcpClaims, func(token *jwt.Token) (any, error) {
+		return []byte(s.Config.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if text(mcpClaims["typ"]) != "mcp" {
+		t.Fatal("expected typ=mcp")
+	}
+
+	// 3. Expired token rejection
+	expiredToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": "test_user_id",
+		"username": "test_user",
+		"iat": now - 7200,
+		"exp": now - 3600,
+	}).SignedString([]byte(secret))
+	if err != nil { t.Fatal(err) }
+	_, err = jwt.ParseWithClaims(expiredToken, jwt.MapClaims{}, func(token *jwt.Token) (any, error) {
+		return []byte(s.Config.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err == nil {
+		t.Fatal("expired legacy token must be rejected")
+	}
+
+	// 4. Bad signature rejection
+	badSigToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"userId": "test_user_id",
+		"username": "test_user",
+		"iat": now,
+		"exp": now + 3600,
+	}).SignedString([]byte("wrong-secret-key-that-does-not-match-40-bytes"))
+	if err != nil { t.Fatal(err) }
+	_, err = jwt.ParseWithClaims(badSigToken, jwt.MapClaims{}, func(token *jwt.Token) (any, error) {
+		return []byte(s.Config.JWTSecret), nil
+	}, jwt.WithValidMethods([]string{"HS256"}))
+	if err == nil {
+		t.Fatal("legacy token with wrong secret must be rejected")
+	}
+}
+
