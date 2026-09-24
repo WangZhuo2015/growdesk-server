@@ -16,33 +16,34 @@ import (
 // owns the atomic record/timeline/change/cursor/receipt transaction. Table names
 // are a closed internal allowlist, never request fields or route parameters.
 var domainRecordTables = map[string]string{
+	"feeding": "feeding_records", "sleep": "sleep_records", "diaper": "diaper_records",
 	"food": "food_records", "supplement": "supplement_records",
 	"growth": "growth_measurements", "medical": "medical_reports", "vaccine": "vaccine_records",
 }
 
 type recordCommand struct {
-	Scope Scope
+	Scope                                              Scope
 	Kind, ID, Operation, Key, RequestHash, PayloadHash string
-	BaseVersion int64
-	Apply func(context.Context, pgx.Tx, Object, int64) (recordChange, error)
+	BaseVersion                                        int64
+	Apply                                              func(context.Context, pgx.Tx, Object, int64) (recordChange, error)
 }
 
 type recordChange struct {
 	Entity, Payload Object
-	Summary string
-	OccurredAt time.Time
+	Summary         string
+	OccurredAt      time.Time
+}
+
+type recordOutcome struct {
+	Entity   Object
+	Version  int64
+	Cursor   string
+	Replayed bool
 }
 
 func (s *Server) executeRecordCommand(ctx context.Context, r *Request, command recordCommand) (result Object, err error) {
 	defer func() { err = legacyQueryFailure(err) }()
-	table, allowed := domainRecordTables[command.Kind]
-	if !allowed || command.Apply == nil || command.Key == "" || command.RequestHash == "" {
-		return nil, errors.New("invalid internal record command")
-	}
-	if command.Operation != "create" && command.Operation != "update" && command.Operation != "delete" && command.Operation != "restore" {
-		return nil, errors.New("unsupported internal record operation")
-	}
-	if _, err := babyScope(ctx, s.DB, r.Principal.UserID, command.Scope.BabyID, true); err != nil {
+	if _, err = babyScope(ctx, s.DB, r.Principal.UserID, command.Scope.BabyID, true); err != nil {
 		return nil, err
 	}
 	tx, err := s.DB.Begin(ctx)
@@ -50,73 +51,88 @@ func (s *Server) executeRecordCommand(ctx context.Context, r *Request, command r
 		return nil, err
 	}
 	defer rollback(tx)
-	cursor, err := lockFamily(ctx, tx, command.Scope.FamilyID)
+	outcome, err := s.executeRecordCommandTx(ctx, tx, r, command)
 	if err != nil {
 		return nil, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return nil, err
+	}
+	return outcome.Entity, nil
+}
+
+// The caller owns commit/rollback. AI confirmations can therefore publish the
+// business write, its receipt and the run's terminal state atomically.
+func (s *Server) executeRecordCommandTx(ctx context.Context, tx pgx.Tx, r *Request, command recordCommand) (recordOutcome, error) {
+	table, allowed := domainRecordTables[command.Kind]
+	if !allowed || command.Apply == nil || command.Key == "" || command.RequestHash == "" {
+		return recordOutcome{}, errors.New("invalid internal record command")
+	}
+	if command.Operation != "create" && command.Operation != "update" && command.Operation != "delete" && command.Operation != "restore" {
+		return recordOutcome{}, errors.New("unsupported internal record operation")
+	}
+	cursor, err := lockFamily(ctx, tx, command.Scope.FamilyID)
+	if err != nil {
+		return recordOutcome{}, err
 	}
 	current, err := babyScope(ctx, tx, r.Principal.UserID, command.Scope.BabyID, true)
 	if err != nil {
-		return nil, err
+		return recordOutcome{}, err
 	}
 	if current.FamilyID != command.Scope.FamilyID {
-		return nil, apiError(403, "BABY_SCOPE_MISMATCH", "Baby scope changed")
+		return recordOutcome{}, apiError(403, "BABY_SCOPE_MISMATCH", "Baby scope changed")
 	}
 	receipt, err := one(ctx, tx, `SELECT to_jsonb(i) FROM idempotency_receipts i WHERE actor_id=$1 AND scope_id=$2 AND command_id=$3`, r.Principal.UserID, current.FamilyID, command.Key)
 	if err == nil {
 		if strings.TrimSpace(text(receipt["request_hash"])) != command.RequestHash {
-			return nil, reusedKey(command.Key)
+			return recordOutcome{}, reusedKey(command.Key)
 		}
 		// Some reference hashes omit explicit null or omit the target scope.
 		// A secondary digest on native receipts closes those ambiguities while
 		// retaining the reference hash and its ordinary replay interoperability.
 		if digest := text(obj(receipt["result_summary"])["nativePayloadHash"]); digest != "" && digest != command.PayloadHash {
-			return nil, reusedKey(command.Key)
+			return recordOutcome{}, reusedKey(command.Key)
 		}
 		entity := obj(receipt["response_body"])
 		if entity == nil || text(entity["familyId"]) != current.FamilyID || text(entity["babyId"]) != current.BabyID || (command.Operation != "create" && text(entity["id"]) != command.ID) {
-			return nil, reusedKey(command.Key)
+			return recordOutcome{}, reusedKey(command.Key)
 		}
-		if err = tx.Commit(ctx); err != nil {
-			return nil, err
-		}
-		return entity, nil
+		summary := obj(receipt["result_summary"])
+		return recordOutcome{Entity: entity, Version: integer(entity["version"]), Cursor: text(summary["familyCursor"]), Replayed: true}, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
+		return recordOutcome{}, err
 	}
 	nextVersion := int64(1)
 	var existing Object
 	if command.Operation != "create" {
 		existing, err = one(ctx, tx, "SELECT to_jsonb(t) FROM "+pgx.Identifier{table}.Sanitize()+" t WHERE family_id=$1 AND baby_id=$2 AND id=$3 FOR UPDATE", current.FamilyID, current.BabyID, command.ID)
 		if errors.Is(err, pgx.ErrNoRows) || (err == nil && existing["deleted_at"] != nil && command.Operation != "restore") {
-			return nil, notFound(command.Kind, command.ID)
+			return recordOutcome{}, notFound(command.Kind, command.ID)
 		}
 		if err != nil {
-			return nil, err
+			return recordOutcome{}, err
 		}
 		version := integer(existing["version"])
 		if version != command.BaseVersion || version >= math.MaxInt32 {
-			return nil, apiError(409, "CONCURRENCY_CONFLICT", fmt.Sprintf("Version conflict on %s:%s", command.Kind, command.ID))
+			return recordOutcome{}, apiError(409, "CONCURRENCY_CONFLICT", fmt.Sprintf("Version conflict on %s:%s", command.Kind, command.ID))
 		}
 		nextVersion = version + 1
 	}
 	if cursor == math.MaxInt64 {
-		return nil, apiError(409, "CONCURRENCY_CONFLICT", "Family cursor range exhausted")
+		return recordOutcome{}, apiError(409, "CONCURRENCY_CONFLICT", "Family cursor range exhausted")
 	}
 	change, err := command.Apply(ctx, tx, existing, nextVersion)
 	if err != nil {
-		return nil, err
+		return recordOutcome{}, err
 	}
 	if change.Entity == nil || change.Payload == nil || change.OccurredAt.IsZero() || text(change.Entity["id"]) != command.ID || text(change.Entity["familyId"]) != current.FamilyID || text(change.Entity["babyId"]) != current.BabyID {
-		return nil, errors.New("invalid internal domain result")
+		return recordOutcome{}, errors.New("invalid internal domain result")
 	}
 	if err = publishRecordChange(ctx, tx, r.Principal.UserID, command, change, cursor+1, nextVersion); err != nil {
-		return nil, err
+		return recordOutcome{}, err
 	}
-	if err = tx.Commit(ctx); err != nil {
-		return nil, err
-	}
-	return change.Entity, nil
+	return recordOutcome{Entity: change.Entity, Version: nextVersion, Cursor: strconv.FormatInt(cursor+1, 10)}, nil
 }
 
 func publishRecordChange(ctx context.Context, tx pgx.Tx, userID string, command recordCommand, change recordChange, cursor, version int64) error {
