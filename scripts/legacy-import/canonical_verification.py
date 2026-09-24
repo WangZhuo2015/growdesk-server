@@ -117,7 +117,7 @@ def build_checks(data: dict[str, Any], checksum: str, attachment_report: Mapping
         add("MedicalReport", "medical_reports", medical._replay_target_predicate(row))
         attachment_id = image_id("MedicalReport", row["id"], "imageUrl")
         if attachment_id is not None:
-            add("MedicalReport", "medical_report_attachments", "t.medical_report_id = " + literal(row["id"]) + " AND t.attachment_id = " + literal(attachment_id))
+            add("MedicalReport", "medical_report_attachments", "t.report_id = " + literal(row["id"]) + " AND t.attachment_id = " + literal(attachment_id))
 
     supplements = _module("materialize_supplement_vaccine")
     for row in supplements.prepare_materialization(data, checksum):
