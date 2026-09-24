@@ -94,10 +94,16 @@ class GrowthMappingTests(unittest.TestCase):
             map_growth_measurement(self.data, row, self.checksum)
 
     def test_rejects_image_rows_and_lossy_measurements(self) -> None:
+        attachment_row = copy.deepcopy(self.row)
+        attachment_row["attachmentId"] = "00000000-0000-0000-0000-000000000001"
+        with self.assertRaisesRegex(ValueError, "attachment"):
+            map_growth_measurement(self.data, attachment_row, self.checksum)
+
         image_row = copy.deepcopy(self.row)
         image_row["imageUrl"] = "/uploads/growth/test.jpg"
-        with self.assertRaisesRegex(ValueError, "attachment"):
-            map_growth_measurement(self.data, image_row, self.checksum)
+        mapped_image = map_growth_measurement(self.data, image_row, self.checksum)
+        self.assertIsNone(mapped_image["attachment_id"])
+        self.assertEqual(mapped_image["metadata"]["legacyImageUrl"], "/uploads/growth/test.jpg")
 
         for key, value in (
             ("weightKg", "7.256"),  # target DECIMAL(5,2) cannot represent this without rounding

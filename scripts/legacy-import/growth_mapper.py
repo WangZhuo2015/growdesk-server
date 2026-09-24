@@ -187,10 +187,12 @@ def map_growth_measurement(
     row_id = _text(row.get("id"), "id")
     family_id, baby_id, actor_id, client_id = _identity_context(data, row)
 
-    for attachment_field in ("imageUrl", "attachmentId"):
-        attachment = row.get(attachment_field)
-        if attachment not in (None, ""):
-            raise ValueError(f"{TABLE}/{row_id}: {attachment_field} requires attachment promotion")
+    attachment = row.get("attachmentId")
+    if attachment not in (None, ""):
+        raise ValueError(f"{TABLE}/{row_id}: attachmentId requires attachment promotion")
+    image_url = row.get("imageUrl")
+    if image_url is not None and not isinstance(image_url, str):
+        raise ValueError(f"{TABLE}/{row_id}: imageUrl must be a string or null")
 
     raw_date = row.get("date")
     recorded_date = row.get("recordedDate")
@@ -252,6 +254,7 @@ def map_growth_measurement(
         "legacyDate": raw_date,
         "legacyCreatedAt": row.get("createdAt"),
         "legacyUpdatedAt": row.get("updatedAt"),
+        "legacyImageUrl": image_url,
         "legacyGrowth": {
             "ageInMonths": age_in_months,
             "ageLabel": age_label,

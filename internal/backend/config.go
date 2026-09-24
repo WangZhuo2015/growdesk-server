@@ -166,6 +166,31 @@ func ValidateRedisURL(raw string, test bool) error {
 // applies to direct NewServer callers, not just environment-based startup.
 // Ownership is additionally established by the disposable integration harness.
 func (c Config) validateNativeRuntime() error {
+	if c.Environment == "production" {
+		if len(c.JWTSecret) < 32 || len(c.SessionEncryptionKey) < 32 {
+			return errors.New("production requires strong JWT and session encryption keys (at least 32 bytes)")
+		}
+		host, rawPort, err := net.SplitHostPort(c.Address)
+		port, portErr := strconv.Atoi(rawPort)
+		if err != nil || portErr != nil || host != "127.0.0.1" || port < 1 || port > 65535 || port == 3088 || port == 3089 {
+			return errors.New("production requires an isolated loopback HTTP port distinct from legacy ports 3088 and 3089")
+		}
+		if err := ValidateDatabaseURL(c.DatabaseURL, false); err != nil {
+			return err
+		}
+		u, _ := url.Parse(c.DatabaseURL)
+		if u != nil {
+			if u.User.Username() == "postgres" || u.User.Username() == "root" {
+				return errors.New("DATABASE_CONFIG_REJECTED: production requires a non-superuser database role")
+			}
+			name := strings.TrimPrefix(u.Path, "/")
+			if testName.MatchString(u.User.Username()) || testName.MatchString(name) {
+				return errors.New("DATABASE_CONFIG_REJECTED: production refuses test-prefixed database and role")
+			}
+		}
+		return ValidateRedisURL(c.RedisURL, false)
+	}
+
 	if !c.Experimental {
 		return errors.New("GROWDESK_GO_EXPERIMENTAL=1 is required for this isolated native preview")
 	}
