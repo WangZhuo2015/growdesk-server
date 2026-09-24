@@ -199,3 +199,7 @@ func (s *Server) downloadNativeUserExport(ctx context.Context, r *Request) (Resu
 		return ok(payload)
 	})
 }
+
+func (s *Server) registerNativeExports() {
+	s.Register("exportUserData", false, s.exportNativeUserData)
+}

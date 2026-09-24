@@ -29,4 +29,7 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerSyncCommands()
 	s.registerAttachments()
 	s.registerLegacyAttachments()
+	s.registerNativeExports()
+	s.registerSamples()
+	s.registerMcpOAuth()
 }

@@ -128,6 +128,8 @@ func (s *Server) registerAuth() {
 	s.Register("listSessions", false, s.listSessions)
 	s.Register("revokeSession", false, s.revokeSessionHandler)
 	s.Register("getCurrentUser", false, s.me)
+	s.Register("updateCurrentUser", false, s.updateCurrentUser)
+	s.Register("deleteCurrentUser", false, s.deleteCurrentUser)
 	s.Register("changePassword", false, s.changePassword)
 	s.Register("regenerateRecoveryCodes", false, s.regenerateCodes)
 	s.Register("recoverPassword", true, s.recoverPassword)
@@ -208,6 +210,51 @@ func (s *Server) me(ctx context.Context, r *Request) (Result, error) {
 		return Result{}, err
 	}
 	return ok(userDTO(row))
+}
+
+func (s *Server) updateCurrentUser(ctx context.Context, r *Request) (Result, error) {
+	nameVal, hasName := r.Body["displayName"]
+	if !hasName {
+		row, err := one(ctx, s.DB, "SELECT to_jsonb(u) FROM users u WHERE id=$1 AND deleted_at IS NULL", r.Principal.UserID)
+		if err != nil {
+			return Result{}, err
+		}
+		return ok(userDTO(row))
+	}
+	name := strings.TrimSpace(text(nameVal))
+	if len(name) < 1 || len(name) > 50 {
+		return Result{}, apiError(400, "VALIDATION_FAILED", "displayName must be between 1 and 50 characters")
+	}
+	row, err := one(ctx, s.DB, `UPDATE users SET display_name=$2, updated_at=NOW() WHERE id=$1 AND deleted_at IS NULL RETURNING to_jsonb(users)`, r.Principal.UserID, name)
+	if err != nil {
+		return Result{}, err
+	}
+	return ok(userDTO(row))
+}
+
+func (s *Server) deleteCurrentUser(ctx context.Context, r *Request) (Result, error) {
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	defer rollback(tx)
+	tag, err := tx.Exec(ctx, "UPDATE users SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1 AND deleted_at IS NULL", r.Principal.UserID)
+	if err != nil {
+		return Result{}, err
+	}
+	if tag.RowsAffected() == 0 {
+		return Result{}, notFound("User", r.Principal.UserID)
+	}
+	if _, err = tx.Exec(ctx, "UPDATE device_sessions SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL", r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
+	if _, err = tx.Exec(ctx, "UPDATE refresh_credentials SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL", r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return Result{}, err
+	}
+	return ok(Object{"success": true})
 }
 func (s *Server) listSessions(ctx context.Context, r *Request) (Result, error) {
 	rows, err := many(ctx, s.DB, `SELECT to_jsonb(d) FROM device_sessions d WHERE user_id=$1 AND revoked_at IS NULL AND absolute_expires_at>NOW() ORDER BY last_seen_at DESC`, r.Principal.UserID)
