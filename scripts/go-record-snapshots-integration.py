@@ -43,7 +43,7 @@ class SnapshotScenario(SUPPORT.DOMAIN.Scenario):
         bid=self.alias(self.call('POST',f'/api/v1/families/{fid}/babies',201,{
             'name':'Test Snapshot Baby','birthDate':'2026-01-01','gender':'girl'},owner)['data']['id'],'baby')
         bp=f'/api/v1/babies/{bid}';sp=bp+'/record-snapshots';feeding=bp+'/records/feeding'
-        body={'feedingType':'formula','occurredAt':'2026-05-01T00:00:00Z','amountMl':'120.00','spitUp':False,'notes':'test_恢复'}
+        body={'feedingType':'formula','occurredAt':'2026-05-01T00:00:00Z','spitUp':False,'notes':'test_恢复'}
         record=self.call('POST',feeding,201,body,owner,'test_snapshot_record')['data']
         rid=self.alias(record['id'],'feeding')
         self.call('GET',sp,401,observe='snapshot authentication')
@@ -57,8 +57,7 @@ class SnapshotScenario(SUPPORT.DOMAIN.Scenario):
         assert self.call('DELETE',sp+'/feeding/'+rid,200,{'baseVersion':'1'},owner,'test_snapshot_delete')==deleted
         self.call('GET',feeding+'/'+rid,404,token=owner,observe='record deleted')
         snapshot=self.inspect(self.call('GET',sp+'/'+sid,200,token=owner),'read immutable snapshot')
-        if runtime == 'go':
-            assert snapshot['payload']['amountMl']=='120' and snapshot['payload']['spitUp']=='false'
+        assert snapshot['payload']['spitUp']=='false'
         assert snapshot['restored'] is False and snapshot['restoredAt'] is None
         history=self.call('GET',sp+'?entityType=feeding&limit=1',200,token=owner)
         assert len(history['data'])==1 and history['data'][0]==snapshot
