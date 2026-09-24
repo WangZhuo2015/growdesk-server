@@ -12,7 +12,7 @@ func (s *Server) registerAIHistory(){
 	s.Register("createAiSession",false,s.createCoreAISession)
 	s.Register("listAiSessions",false,s.listCoreAISessions)
 	s.Register("listAiSessionMessages",false,s.listCoreAIMessages)
-	s.Register("listDailySummaries",false,s.listDailySummaries)
+	s.Register("listDailySummaries",false,dailySummaryErrorBoundary(s.listDailySummaries))
 }
 
 func coreAISessionDTO(row Object) Object {

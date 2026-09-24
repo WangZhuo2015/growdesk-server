@@ -37,8 +37,8 @@ func TestNativeDomainRegistration(t *testing.T) {
 			}
 		}
 	}
-	if s.Handlers["createAiRun"] != nil {
-		t.Fatal("unimplemented AI must not be counted as a native operation")
+	if s.Handlers["createAiRun"] == nil || s.Public["createAiRun"] {
+		t.Fatal("createAiRun must be registered and authenticated")
 	}
 }
 

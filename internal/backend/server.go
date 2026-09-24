@@ -15,10 +15,10 @@ import (
 
 type Principal struct{ UserID, SessionID, Username, DeviceLabel string }
 type Request struct {
-	HTTP      *http.Request
-	Route     *Route
-	Params    map[string]string
-	Body      Object
+	HTTP   *http.Request
+	Route  *Route
+	Params map[string]string
+	Body   Object
 	// RawBody is bounded and used only for legacy ordered receipt hashing.
 	RawBody   []byte
 	Principal Principal
@@ -36,6 +36,7 @@ type Server struct {
 	DB          *pgxpool.Pool
 	Redis       *redis.Client
 	ObjectStore *nativeObjectStore
+	PushHTTP    *http.Client
 	Contract    *Contract
 	Handlers    map[string]Handler
 	Public      map[string]bool
@@ -77,7 +78,7 @@ func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error)
 	}
 	s := &Server{
 		Config: c, DB: pool, Redis: redis.NewClient(rc), ObjectStore: store,
-		Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log,
+		PushHTTP: nativePushClient(c), Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log,
 		slots: make(chan struct{}, c.MaxConcurrentRequests), hashSlots: make(chan struct{}, 4),
 	}
 	s.registerHealth()
@@ -85,6 +86,9 @@ func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error)
 }
 
 func (s *Server) Close() {
+	if s.PushHTTP != nil {
+		s.PushHTTP.CloseIdleConnections()
+	}
 	s.ObjectStore.Close()
 	_ = s.Redis.Close()
 	s.DB.Close()
@@ -169,7 +173,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			switch route.OperationID {
-			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord":
+			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord", "executeSyncCommands":
 				rawBody = raw
 			}
 		}
@@ -238,7 +242,7 @@ func (s *Server) writeError(w http.ResponseWriter, err error, id string) {
 	w.WriteHeader(e.Status)
 	_, _ = w.Write(raw)
 }
-func ok(v any) (Result, error) { return Result{Status: 200, Body: envelope(v)}, nil }
+func ok(v any) (Result, error)      { return Result{Status: 200, Body: envelope(v)}, nil }
 func created(v any) (Result, error) { return Result{Status: 201, Body: envelope(v)}, nil }
 func (s *Server) registerHealth() {
 	s.Register("getHealthLive", true, func(ctx context.Context, r *Request) (Result, error) {
@@ -251,9 +255,15 @@ func (s *Server) registerHealth() {
 		redisOK := s.Redis.Ping(ctx).Err() == nil
 		status, code := "ok", 200
 		p, rd := "ok", "ok"
-		if !pgOK { p = "unavailable" }
-		if !redisOK { rd = "unavailable" }
-		if !pgOK || !redisOK { status, code = "unavailable", 503 }
+		if !pgOK {
+			p = "unavailable"
+		}
+		if !redisOK {
+			rd = "unavailable"
+		}
+		if !pgOK || !redisOK {
+			status, code = "unavailable", 503
+		}
 		return Result{Status: code, Body: Object{"status": status, "service": "growdesk-api", "stage": "foundation", "dependencies": Object{"postgres": p, "redis": rd}}}, nil
 	})
 }
