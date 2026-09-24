@@ -649,10 +649,12 @@ def prepare_food_statuses(data: dict[str, Any], checksum: str, by_food_id: dict[
         seen_ids.add(row_id)
         if family_id not in families:
             raise ValueError(f"FamilyFoodStatus/{row_id}: unknown family")
+        is_orphan = False
         if source_food_id not in by_food_id:
             # An orphaned custom food status may reference a food item deleted
             # from the active library. Allow mapping using the legacy identifier.
             target_food_id = source_food_id
+            is_orphan = True
         else:
             target_food_id = by_food_id[source_food_id]
         pair = (family_id, target_food_id)
@@ -694,6 +696,7 @@ def prepare_food_statuses(data: dict[str, Any], checksum: str, by_food_id: dict[
             "family_id": family_id,
             "source_food_id": source_food_id,
             "food_item_id": target_food_id,
+            "is_orphan": is_orphan,
             "tried": tried,
             "reaction": reaction,
             "legacy_status": status,
@@ -920,18 +923,22 @@ def _status_sql(item: dict[str, Any], checksum: str, delimiter: str, source_syst
         literal(item["reaction"]), literal(item["legacy_status"]), literal(item["legacy_acceptance"]),
         literal(item["legacy_first_added_date"]), literal(item["created_at"]), literal(item["updated_at"]), metadata_sql,
     ]
-    return f"""DO {delimiter}
-BEGIN
-{_source_guard(item, checksum)}
-  IF NOT EXISTS (SELECT 1 FROM public.families WHERE id={literal(item['family_id'])} AND deleted_at IS NULL) THEN
-    RAISE EXCEPTION 'Legacy food status family is missing: %', {literal(source_key)};
-  END IF;
+    library_guard = ""
+    if not item.get("is_orphan"):
+        library_guard = f"""
   IF NOT EXISTS (
     SELECT 1 FROM public.food_library_items f
     WHERE f.id={literal(item['food_item_id'])} AND (f.is_custom=false OR f.family_id={literal(item['family_id'])})
   ) THEN
     RAISE EXCEPTION 'Legacy food status item is missing or crosses family: %', {literal(source_key)};
   END IF;
+"""
+    return f"""DO {delimiter}
+BEGIN
+{_source_guard(item, checksum)}
+  IF NOT EXISTS (SELECT 1 FROM public.families WHERE id={literal(item['family_id'])} AND deleted_at IS NULL) THEN
+    RAISE EXCEPTION 'Legacy food status family is missing: %', {literal(source_key)};
+  END IF;{library_guard}
   IF EXISTS (SELECT 1 FROM public.legacy_idempotency_mappings WHERE target_entity_type='family_food_status' AND source_key={literal(source_key)}) THEN
     IF NOT EXISTS (
       SELECT 1 FROM public.legacy_idempotency_mappings
