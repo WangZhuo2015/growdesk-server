@@ -37,8 +37,8 @@ func TestCompanionNativeRegistration(t *testing.T) {
 			}
 		})
 	}
-	if s.Handlers["createAiRun"] != nil {
-		t.Fatal("conversation history must not be reported as an AI execution engine")
+	if s.Handlers["createAiRun"] == nil || s.Public["createAiRun"] {
+		t.Fatal("createAiRun must be registered and authenticated")
 	}
 }
 

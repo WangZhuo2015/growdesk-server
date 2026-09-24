@@ -173,7 +173,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			switch route.OperationID {
-			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord":
+			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord", "executeSyncCommands":
 				rawBody = raw
 			}
 		}

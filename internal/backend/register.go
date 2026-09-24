@@ -24,6 +24,9 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerAIHistory()
 	s.registerRecordSnapshots()
 	s.registerAIRunReads()
+	s.registerAIRunCommands()
+	s.registerFamilySnapshots()
+	s.registerSyncCommands()
 	s.registerAttachments()
 	s.registerLegacyAttachments()
 }

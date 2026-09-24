@@ -86,6 +86,7 @@ jobs:
   recovery-build:
     name: Unmerged recovery compilation (diagnostic only)
     needs: audit-tests
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
