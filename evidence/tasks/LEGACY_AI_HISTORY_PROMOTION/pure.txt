@@ -1,0 +1,2 @@
+Command: python3 scripts/legacy-import/test_ai_history_materializer.py
+Result: AI history materializer pure tests PASS (9)

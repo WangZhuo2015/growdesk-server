@@ -1,0 +1,5 @@
+Environment: one-time owned PostgreSQL 18, database=test_growdesk_integration, role=test_runner, test_ users/family/babies, all repository migrations applied
+Command: python3 scripts/legacy-import/test_ai_history_materializer_integration.py
+Result: AI history materializer owned PostgreSQL integration PASS
+Focused rerun: one-time owned PostgreSQL 18, database=test_growdesk_integration, role=test_runner, all repository migrations applied
+Result: AI history materializer focused owned PostgreSQL integration PASS

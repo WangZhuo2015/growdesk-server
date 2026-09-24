@@ -157,6 +157,20 @@ export class AiService {
     const sessions = await this.prisma.aiSession.findMany({
       where: {
         userId: principal.userId,
+        OR: [
+          { babyId: null },
+          {
+            baby: {
+              members: {
+                some: {
+                  userId: principal.userId,
+                  status: "active",
+                  deletedAt: null,
+                },
+              },
+            },
+          },
+        ],
       },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       take: limit + 1,
@@ -195,6 +209,7 @@ export class AiService {
     if (!session || session.userId !== principal.userId) {
       throw new RecordNotFoundError("AiSession", sessionId);
     }
+    if (session.babyId) await this.assertBabyAccess(principal, session.babyId);
 
     const limit = Math.min(query.limit ?? 50, 100);
     const messages = await this.prisma.aiChatMessage.findMany({
@@ -232,6 +247,7 @@ export class AiService {
     if (!session || session.userId !== principal.userId) {
       throw new RecordNotFoundError("AiSession", sessionId);
     }
+    if (session.babyId) await this.assertBabyAccess(principal, session.babyId);
     assertAiProviderConfigured();
 
     const runId = randomUUID();
@@ -322,6 +338,7 @@ export class AiService {
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
     }
+    if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
 
     const task = run.taskExecution;
     return {
@@ -374,6 +391,7 @@ export class AiService {
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
     }
+    if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
 
     const events = await this.prisma.aiRunEvent.findMany({
       where: { runId, sequence: { gt: after } },
@@ -411,6 +429,7 @@ export class AiService {
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
     }
+    if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
     if (run.taskExecution.status !== "awaiting_confirmation") {
       throw new ConcurrencyConflictError(
         `Run is in '${run.taskExecution.status}', only runs in 'awaiting_confirmation' can be confirmed`,
@@ -545,6 +564,7 @@ export class AiService {
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
     }
+    if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
 
     if (
       run.taskExecution.status === "succeeded" ||
@@ -566,6 +586,10 @@ export class AiService {
 
     if (!run || run.userId !== principal.userId) {
       throw new RecordNotFoundError("AiRun", runId);
+    }
+    if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
+    if (run.taskExecution.kind === "legacy_ai_job") {
+      throw new ConcurrencyConflictError("Historical AI jobs are terminal audit records and cannot be retried");
     }
 
     if (run.taskExecution.status !== "failed" && run.taskExecution.status !== "cancelled") {

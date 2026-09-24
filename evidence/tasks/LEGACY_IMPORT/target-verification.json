@@ -1,0 +1,20 @@
+{
+  "batchId": "295d6488d5b9fff6888025c1e88e3abc592a3383cbb0e9628a99aeba6bd87bd2",
+  "counts": {
+    "users": 5,
+    "families": 1,
+    "babies": 1,
+    "familyMembers": 5,
+    "babyMembers": 5,
+    "archiveRows": 1311,
+    "apiCanReadUsers": false,
+    "apiCanReadArchive": false,
+    "appliedMigrations": 1
+  },
+  "allArchivedRowsMatch": true,
+  "passwordHashesPreserved": true,
+  "babyMembershipBackfillMatches": true,
+  "businessHistoryReady": false,
+  "newLoginReady": false,
+  "sameBatchReplayVerified": true
+}

@@ -1,0 +1,71 @@
+name: Go food library parity
+
+on:
+  push:
+    branches: [main, codex/web-parity-20260919, codex/go-backend-parity-20260922]
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'apps/**', 'packages/**', 'prisma/**', 'scripts/go-*', '.github/workflows/go-food-library.yml', 'docs/GO*', 'evidence/tasks/GO*/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-food-library-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOFLAGS: -mod=readonly
+
+jobs:
+  food-library:
+    name: food-library-${{ matrix.runtime }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [native, reference]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Keep the reference implementation and database contract immutable
+        run: git diff --exit-code f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4 -- apps packages prisma contracts/openapi.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Build and test the committed native implementation
+        run: |
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          go test -race -count=1 ./internal/backend -run '^TestFoodLibrary'
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+      - uses: actions/setup-node@v4
+        if: matrix.runtime == 'reference'
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Build the real unchanged TypeScript reference
+        if: matrix.runtime == 'reference'
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run backend:build
+      - name: Verify native SQL transactions, permissions and restart persistence
+        if: matrix.runtime == 'native'
+        run: python3 scripts/go-food-library-integration.py --binary dist-go/growdesk-api --report dist-go/food-native.json
+      - name: Compare HTTP representations and bidirectional database interoperability
+        if: matrix.runtime == 'reference'
+        run: python3 scripts/go-food-library-integration.py --binary dist-go/growdesk-api --reference --report dist-go/food-reference.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: food-library-${{ matrix.runtime }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/food-${{ matrix.runtime }}.json
+          if-no-files-found: warn

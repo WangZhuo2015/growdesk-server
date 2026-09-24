@@ -7,6 +7,7 @@ import {
   RecordNotFoundError,
   BabyAccessDeniedError,
   FamilyAccessDeniedError,
+  BadRequestError,
 } from "@growdesk/database";
 import type { UserPrincipal } from "@growdesk/domain";
 import type {
@@ -17,10 +18,26 @@ import type {
   FoodReaction,
   FoodLibraryItem,
   CreateFoodLibraryItemRequest,
+  FoodLibraryItemsQuery,
   FoodGuidelineItem,
   FoodPlan,
 } from "@growdesk/contracts";
 import crypto from "node:crypto";
+
+const MAX_FOOD_PLAN_VERSION = 9_223_372_036_854_775_807n;
+
+function parseFoodPlanVersion(value: string): bigint {
+  let version: bigint;
+  try {
+    version = BigInt(value);
+  } catch {
+    throw new BadRequestError("baseVersion must be a non-negative 64-bit integer", "INVALID_BASE_VERSION");
+  }
+  if (version < 0n || version > MAX_FOOD_PLAN_VERSION) {
+    throw new BadRequestError("baseVersion must be a non-negative 64-bit integer", "INVALID_BASE_VERSION");
+  }
+  return version;
+}
 
 export interface KeysetPaginationQuery {
   readonly cursor?: string;
@@ -106,6 +123,24 @@ export class FoodService {
     this.repo = new ScopedFoodRepository(prisma);
     this.libraryRepo = new FoodLibraryRepository(prisma);
     this.planRepo = new FoodPlanRepository(prisma);
+  }
+
+  /**
+   * Resolve a family scope without ever selecting the first membership when
+   * the principal belongs to more than one family. The omitted form remains
+   * compatible with the legacy single-family Web client.
+   */
+  private resolveLibraryFamilyId(principal: UserPrincipal, requestedFamilyId?: string): string {
+    const activeFamilies = principal.familyMemberships.filter((membership) => membership.status === "active");
+    if (requestedFamilyId) {
+      if (!activeFamilies.some((membership) => membership.familyId === requestedFamilyId)) {
+        throw new FamilyAccessDeniedError(requestedFamilyId);
+      }
+      return requestedFamilyId;
+    }
+    if (activeFamilies.length === 1 && activeFamilies[0]) return activeFamilies[0].familyId;
+    if (activeFamilies.length === 0) throw new FamilyAccessDeniedError("none");
+    throw new BadRequestError("A familyId is required when the account has multiple active families", "FAMILY_SELECTION_REQUIRED");
   }
 
   private async resolveBabyFamily(babyId: string): Promise<string> {
@@ -320,10 +355,11 @@ export class FoodService {
 
   // Food Library
   async listFoodLibraryItems(
-    principal: UserPrincipal
+    principal: UserPrincipal,
+    query: FoodLibraryItemsQuery = {},
   ): Promise<FoodLibraryItem[]> {
-    const activeFamily = principal.familyMemberships.find((m) => m.status === "active");
-    const items = await this.libraryRepo.listItems(activeFamily?.familyId);
+    const familyId = this.resolveLibraryFamilyId(principal, query.familyId);
+    const items = await this.libraryRepo.listItems(principal, familyId);
     return items as FoodLibraryItem[];
   }
 
@@ -331,18 +367,14 @@ export class FoodService {
     principal: UserPrincipal,
     body: CreateFoodLibraryItemRequest
   ): Promise<FoodLibraryItem> {
-    const activeFamily = principal.familyMemberships.find(
-      (m) => m.status === "active" && ["owner", "admin", "caregiver", "member"].includes(m.role)
-    );
-    if (!activeFamily) {
-      throw new FamilyAccessDeniedError("none");
-    }
+    const familyId = this.resolveLibraryFamilyId(principal, body.familyId);
 
-    const item = await this.libraryRepo.createCustomItem(activeFamily.familyId, {
+    const item = await this.libraryRepo.createCustomItem(principal, familyId, {
       name: body.name,
       category: body.category,
       allergenRisk: body.allergenRisk,
       recommendedAgeMonths: body.recommendedAgeMonths,
+      tried: body.tried,
     });
 
     // Legacy Web "create as tried": persist the explicit family status in the
@@ -373,23 +405,30 @@ export class FoodService {
     const plan = await this.planRepo.getPlan(familyId, babyId);
     if (!plan) {
       return {
+        id: null,
         babyId,
         planData: {},
+        createdAt: null,
         updatedAt: new Date().toISOString(),
+        version: "0",
       };
     }
 
     return {
+      id: plan.id,
       babyId: plan.babyId,
       planData: plan.planData,
+      createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
+      version: plan.version.toString(),
     };
   }
 
   async saveFoodPlan(
     principal: UserPrincipal,
     babyId: string,
-    planData: Record<string, unknown>
+    planData: Record<string, unknown>,
+    baseVersion: string,
   ): Promise<FoodPlan> {
     const familyId = await this.resolveBabyFamily(babyId);
     const hasBaby = principal.babyMemberships?.some(
@@ -397,11 +436,14 @@ export class FoodService {
     );
     if (!hasBaby) throw new BabyAccessDeniedError(babyId);
 
-    const plan = await this.planRepo.savePlan(familyId, babyId, planData);
+    const plan = await this.planRepo.savePlan(familyId, babyId, planData, parseFoodPlanVersion(baseVersion));
     return {
+      id: plan.id,
       babyId: plan.babyId,
       planData: plan.planData,
+      createdAt: plan.createdAt.toISOString(),
       updatedAt: plan.updatedAt.toISOString(),
+      version: plan.version.toString(),
     };
   }
 }

@@ -16,6 +16,15 @@ export interface VerifiedTokenClaims {
   readonly deviceLabel?: string;
 }
 
+export interface VerifiedMcpTokenClaims {
+  readonly userId: string;
+  readonly sessionId: string;
+  readonly jti: string;
+  readonly scopes: ReadonlySet<string>;
+  readonly babyId?: string;
+  readonly clientId?: string;
+}
+
 export async function signAccessToken(
   payload: AccessTokenPayload,
   secret: string = DEFAULT_JWT_SECRET,
@@ -60,6 +69,44 @@ export async function verifyAccessToken(
     sessionId: payload.sid,
     jti: typeof payload.jti === "string" ? payload.jti : crypto.randomUUID(),
     deviceLabel: typeof payload.deviceLabel === "string" ? payload.deviceLabel : undefined,
+  };
+}
+
+/**
+ * Verify the separate OAuth/MCP bearer audience. A regular app access token
+ * has audience `baby-panel-api` and is deliberately rejected here. The MCP
+ * grant is still tied to a live application session so principal resolution
+ * can re-check current user, family and baby memberships on every request.
+ */
+export async function verifyMcpAccessToken(
+  token: string,
+  secret: string = DEFAULT_JWT_SECRET,
+  expectedAudience: string,
+  expectedIssuer?: string,
+): Promise<VerifiedMcpTokenClaims> {
+  if (!expectedAudience.trim()) throw new Error("MCP_RESOURCE_AUDIENCE_NOT_CONFIGURED");
+  const secretKey = new TextEncoder().encode(secret);
+  const { payload } = await jose.jwtVerify(token, secretKey, {
+    ...(expectedIssuer ? { issuer: expectedIssuer } : {}),
+    audience: expectedAudience,
+  });
+
+  // Legacy OAuth-issued MCP tokens had no typ claim; an app JWT explicitly
+  // carries at+jwt and must not be accepted on this endpoint.
+  if (payload.typ === "at+jwt" || typeof payload.sub !== "string" || typeof payload.sid !== "string") {
+    throw new Error("INVALID_MCP_TOKEN_CLAIMS");
+  }
+  if (typeof payload.scope !== "string") throw new Error("MCP_SCOPE_MISSING");
+  const scopes = new Set(payload.scope.split(/\s+/).map((scope) => scope.trim()).filter(Boolean));
+  if (scopes.size === 0) throw new Error("MCP_SCOPE_MISSING");
+
+  return {
+    userId: payload.sub,
+    sessionId: payload.sid,
+    jti: typeof payload.jti === "string" ? payload.jti : crypto.randomUUID(),
+    scopes,
+    babyId: typeof payload.baby_id === "string" && payload.baby_id ? payload.baby_id : undefined,
+    clientId: typeof payload.client_id === "string" && payload.client_id ? payload.client_id : undefined,
   };
 }
 

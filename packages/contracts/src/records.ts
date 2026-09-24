@@ -43,6 +43,7 @@ export const FeedingRecordSchema = Type.Object(
     notes: Nullable(Type.String({ maxLength: 1000 })),
     source: Type.String({ default: "ui_manual" }),
     sourceAgent: Nullable(Type.String()),
+    recordedByUserId: Type.Optional(Nullable(UuidString)),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -125,6 +126,7 @@ export const SleepRecordSchema = Type.Object(
     notes: Nullable(Type.String({ maxLength: 1000 })),
     source: Type.String({ default: "ui_manual" }),
     sourceAgent: Nullable(Type.String()),
+    recordedByUserId: Type.Optional(Nullable(UuidString)),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -202,6 +204,7 @@ export const DiaperRecordSchema = Type.Object(
     notes: Nullable(Type.String({ maxLength: 1000 })),
     source: Type.String({ default: "ui_manual" }),
     sourceAgent: Nullable(Type.String()),
+    recordedByUserId: Type.Optional(Nullable(UuidString)),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -353,9 +356,15 @@ export const SupplementRecordSchema = Type.Object(
     babyId: UuidString,
     familyId: UuidString,
     supplementName: Type.String({ minLength: 1, maxLength: 100 }),
+    // Promoted legacy product IDs are source-stable strings and may predate
+    // UUID enforcement; family/baby scope still comes from the session.
+    productId: Nullable(Type.String({ minLength: 1, maxLength: 128 })),
     occurredAt: DateTimeString,
     amount: Nullable(Type.String()),
+    dose: Nullable(DecimalString),
+    unitName: Nullable(Type.String({ maxLength: 50 })),
     notes: Nullable(Type.String({ maxLength: 1000 })),
+    recordedByUserId: Type.Optional(Nullable(UuidString)),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -368,8 +377,11 @@ export type SupplementRecord = Static<typeof SupplementRecordSchema>;
 export const CreateSupplementRequestSchema = Type.Object(
   {
     supplementName: Type.String({ minLength: 1, maxLength: 100 }),
+    productId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
     occurredAt: DateTimeString,
     amount: Type.Optional(Nullable(Type.String())),
+    dose: Type.Optional(Nullable(DecimalString)),
+    unitName: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
     notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
   },
   { $id: "CreateSupplementRequest", additionalProperties: false }
@@ -381,8 +393,11 @@ export const UpdateSupplementRequestSchema = Type.Object(
   {
     baseVersion: BigIntString,
     supplementName: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+    productId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
     occurredAt: Type.Optional(DateTimeString),
     amount: Type.Optional(Nullable(Type.String())),
+    dose: Type.Optional(Nullable(DecimalString)),
+    unitName: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
     notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
   },
   { $id: "UpdateSupplementRequest", additionalProperties: false }
@@ -416,6 +431,8 @@ export const TimelineEntityTypeSchema = Type.Union([
   Type.Literal("food"),
   Type.Literal("supplement"),
   Type.Literal("growth"),
+  Type.Literal("medical"),
+  Type.Literal("vaccine"),
 ]);
 
 export type TimelineEntityType = Static<typeof TimelineEntityTypeSchema>;
@@ -504,3 +521,121 @@ export const DeleteRecordResponseSchema = Type.Object(
 );
 
 export type DeleteRecordResponse = Static<typeof DeleteRecordResponseSchema>;
+
+// Durable MCP/Web undo snapshots. The payload is intentionally opaque at the
+// HTTP boundary; only the server may interpret it during a scoped restore.
+export const RecordSnapshotEntityTypeSchema = Type.Union([
+  Type.Literal("feeding"),
+  Type.Literal("sleep"),
+  Type.Literal("diaper"),
+  Type.Literal("food"),
+  Type.Literal("growth"),
+  Type.Literal("medical_report"),
+  Type.Literal("vaccine"),
+  Type.Literal("food_plan"),
+  Type.Literal("supplement"),
+]);
+
+export type RecordSnapshotEntityType = Static<typeof RecordSnapshotEntityTypeSchema>;
+
+export const RecordSnapshotSchema = Type.Object(
+  {
+    id: Type.String({ minLength: 1, maxLength: 200 }),
+    familyId: UuidString,
+    babyId: UuidString,
+    userId: Nullable(UuidString),
+    source: Type.String(),
+    sourceAgent: Nullable(Type.String()),
+    action: Type.String(),
+    entityType: RecordSnapshotEntityTypeSchema,
+    entityId: Type.String({ minLength: 1 }),
+    payload: Type.Unknown(),
+    payloadHash: Type.String({ pattern: "^[0-9a-f]{64}$" }),
+    sourceSystem: Type.Optional(Nullable(Type.String())),
+    sourceBatchId: Type.Optional(Nullable(Type.String({ pattern: "^[0-9a-f]{64}$" }))),
+    sourceTable: Type.Optional(Nullable(Type.String())),
+    sourceId: Type.Optional(Nullable(Type.String())),
+    sourceHash: Type.Optional(Nullable(Type.String({ pattern: "^[0-9a-f]{64}$" }))),
+    mappingVersion: Type.Optional(Nullable(Type.String())),
+    restored: Type.Boolean(),
+    restoredAt: Nullable(DateTimeString),
+    createdAt: DateTimeString,
+  },
+  { $id: "RecordSnapshot", additionalProperties: false },
+);
+
+export type RecordSnapshot = Static<typeof RecordSnapshotSchema>;
+
+export const RecordSnapshotListQuerySchema = Type.Object(
+  {
+    entityType: Type.Optional(RecordSnapshotEntityTypeSchema),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200, default: 50 })),
+    cursor: Type.Optional(Type.String({ minLength: 1, maxLength: 500 })),
+  },
+  { $id: "RecordSnapshotListQuery", additionalProperties: false },
+);
+
+export type RecordSnapshotListQuery = Static<typeof RecordSnapshotListQuerySchema>;
+
+export const RecordSnapshotDeleteRequestSchema = Type.Object(
+  {
+    baseVersion: Type.Optional(BigIntString),
+  },
+  { $id: "RecordSnapshotDeleteRequest", additionalProperties: false },
+);
+
+export type RecordSnapshotDeleteRequest = Static<typeof RecordSnapshotDeleteRequestSchema>;
+
+export const RecordSnapshotDeleteResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        success: Type.Literal(true),
+        id: Type.String(),
+        deleted: Type.Literal(true),
+        snapshotId: Type.String(),
+        entityType: RecordSnapshotEntityTypeSchema,
+        version: BigIntString,
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "RecordSnapshotDeleteResponse", additionalProperties: false },
+);
+
+export type RecordSnapshotDeleteResponse = Static<typeof RecordSnapshotDeleteResponseSchema>;
+
+export const RecordSnapshotRestoreRequestSchema = Type.Object(
+  {
+    snapshotId: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    entityType: Type.Optional(RecordSnapshotEntityTypeSchema),
+  },
+  { $id: "RecordSnapshotRestoreRequest", additionalProperties: false },
+);
+
+export type RecordSnapshotRestoreRequest = Static<typeof RecordSnapshotRestoreRequestSchema>;
+
+export const RecordSnapshotRestoreResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        success: Type.Literal(true),
+        snapshotId: Type.String(),
+        restoredId: Type.String(),
+        entityType: RecordSnapshotEntityTypeSchema,
+        version: Type.Optional(BigIntString),
+        replayed: Type.Optional(Type.Boolean()),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "RecordSnapshotRestoreResponse", additionalProperties: false },
+);
+
+export type RecordSnapshotRestoreResponse = Static<typeof RecordSnapshotRestoreResponseSchema>;
+
+export const RecordSnapshotListResponseSchema = PaginatedEnvelope(RecordSnapshotSchema, {
+  $id: "RecordSnapshotListResponse",
+});
+
+export type RecordSnapshotListResponse = Static<typeof RecordSnapshotListResponseSchema>;

@@ -6,6 +6,10 @@ ARG NODE_IMAGE=node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b
 
 FROM ${NODE_IMAGE} AS build
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 ARG BUILD_REVISION=unknown
 LABEL org.opencontainers.image.revision="${BUILD_REVISION}"
 
@@ -15,15 +19,22 @@ WORKDIR /app
 COPY package.json package-lock.json tsconfig.json tsconfig.backend.json ./
 COPY apps ./apps
 COPY packages ./packages
+COPY prisma ./prisma
 
 RUN npm ci --ignore-scripts --no-audit --no-fund
+RUN npx prisma generate --schema=prisma/schema.prisma
 RUN npm run backend:build
 
 # The final image contains only runtime dependencies. Build tooling stays in
 # this stage and is never copied into the runtime image.
 RUN npm prune --omit=dev --ignore-scripts --no-audit --no-fund
+RUN node --input-type=module -e "await import('fastify-plugin')"
 
 FROM ${NODE_IMAGE} AS runtime
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG BUILD_REVISION=unknown
 LABEL org.opencontainers.image.revision="${BUILD_REVISION}"

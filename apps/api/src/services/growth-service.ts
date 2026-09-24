@@ -64,6 +64,18 @@ export function mapEntityToGrowthMeasurement(entity: GrowthMeasurementEntity): G
     version: entity.version.toString(),
     createdAt: toIso(entity.createdAt),
     updatedAt: toIso(entity.updatedAt),
+    ...(entity.legacyDate !== null
+      ? {
+          legacyDate: entity.legacyDate,
+          legacyAgeInMonths: entity.legacyAgeInMonths,
+          legacyAgeLabel: entity.legacyAgeLabel,
+          legacyPercentile: entity.legacyPercentile,
+          legacyClientId: entity.legacyClientId,
+          legacyRecordedById: entity.legacyRecordedById,
+          legacySource: entity.legacySource,
+          legacySourceAgent: entity.legacySourceAgent,
+        }
+      : {}),
   };
 }
 

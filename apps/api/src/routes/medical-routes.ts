@@ -1,4 +1,5 @@
 import { readRecordVersion } from "./record-version.js";
+import { Type } from "@sinclair/typebox";
 import { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { MedicalService } from "../services/medical-service.js";
 import { VaccineService } from "../services/vaccine-service.js";
@@ -14,6 +15,11 @@ import {
   VaccineScheduleResponseSchema,
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
+  VaccineCatalogResponseSchema,
+  VaccineSelectionListResponseSchema,
+  UpsertVaccineSelectionRequestSchema,
+  VaccineSelectionSchema,
+  type UpsertVaccineSelectionRequest,
   DeleteRecordResponseSchema,
   ApiErrorEnvelopeSchema,
 } from "@growdesk/contracts";
@@ -57,6 +63,20 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
       },
     },
     getSchedule
+  );
+
+  fastify.get(
+    "/api/v1/vaccines/catalog",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        response: {
+          200: VaccineCatalogResponseSchema,
+          401: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (_request, reply) => reply.status(200).send(await vaccineService.getVaccineCatalog()),
   );
 
   // 2. Baby Medical Reports
@@ -407,5 +427,39 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
     "/api/v1/babies/:babyId/vaccines/records/:recordId",
     createDeleteVaccineOptions(),
     deleteVaccine
+  );
+
+  fastify.get<{ Params: { babyId: string } }>(
+    "/api/v1/babies/:babyId/vaccines/selections",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        response: {
+          200: VaccineSelectionListResponseSchema,
+          401: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => reply.status(200).send({ data: await vaccineService.listVaccineSelections(request.principal!, request.params.babyId) }),
+  );
+
+  fastify.put<{ Params: { babyId: string }; Body: UpsertVaccineSelectionRequest }>(
+    "/api/v1/babies/:babyId/vaccines/selections",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        body: UpsertVaccineSelectionRequestSchema,
+        response: {
+          200: Type.Object({ data: VaccineSelectionSchema }),
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
+          404: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => reply.status(200).send({ data: await vaccineService.upsertVaccineSelection(request.principal!, request.params.babyId, request.body) }),
   );
 };

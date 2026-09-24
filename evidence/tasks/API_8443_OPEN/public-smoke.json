@@ -1,0 +1,193 @@
+{
+  "ok": true,
+  "phase": "full",
+  "checks": [
+    {
+      "name": "api_base_guard",
+      "status": "passed"
+    },
+    {
+      "name": "phase_guard",
+      "status": "passed"
+    },
+    {
+      "name": "cleanup_database_guard",
+      "status": "passed"
+    },
+    {
+      "name": "health_live",
+      "status": "passed"
+    },
+    {
+      "name": "health_ready",
+      "status": "passed"
+    },
+    {
+      "name": "register_account_a",
+      "status": "passed"
+    },
+    {
+      "name": "login_account_a",
+      "status": "passed"
+    },
+    {
+      "name": "refresh_account_a",
+      "status": "passed"
+    },
+    {
+      "name": "me_after_refresh",
+      "status": "passed"
+    },
+    {
+      "name": "list_families_a",
+      "status": "passed"
+    },
+    {
+      "name": "create_family_a",
+      "status": "passed"
+    },
+    {
+      "name": "create_baby_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_family_babies_a",
+      "status": "passed"
+    },
+    {
+      "name": "get_baby_a",
+      "status": "passed"
+    },
+    {
+      "name": "register_account_b",
+      "status": "passed"
+    },
+    {
+      "name": "list_families_b",
+      "status": "passed"
+    },
+    {
+      "name": "create_family_b",
+      "status": "passed"
+    },
+    {
+      "name": "create_baby_b",
+      "status": "passed"
+    },
+    {
+      "name": "list_family_babies_b",
+      "status": "passed"
+    },
+    {
+      "name": "get_baby_b",
+      "status": "passed"
+    },
+    {
+      "name": "cross_scope_family_and_baby",
+      "status": "passed"
+    },
+    {
+      "name": "list_feeding_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_sleep_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_diaper_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_food_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_supplement_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_growth_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_medical_a",
+      "status": "passed"
+    },
+    {
+      "name": "list_vaccine_a",
+      "status": "passed"
+    },
+    {
+      "name": "feeding_create",
+      "status": "passed"
+    },
+    {
+      "name": "feeding_get",
+      "status": "passed"
+    },
+    {
+      "name": "cross_scope_feeding_write",
+      "status": "passed"
+    },
+    {
+      "name": "feeding_update",
+      "status": "passed"
+    },
+    {
+      "name": "feeding_delete",
+      "status": "passed"
+    },
+    {
+      "name": "feeding_get_deleted",
+      "status": "passed"
+    },
+    {
+      "name": "full_sleep_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_diaper_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_food_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_supplement_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_growth_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_medical_crud",
+      "status": "passed"
+    },
+    {
+      "name": "full_vaccine_get",
+      "status": "skipped",
+      "reason": "contract_has_no_individual_get"
+    },
+    {
+      "name": "full_vaccine_update",
+      "status": "skipped",
+      "reason": "contract_has_no_update_route"
+    },
+    {
+      "name": "full_vaccine_crud",
+      "status": "passed"
+    },
+    {
+      "name": "s3_attachment",
+      "status": "passed"
+    }
+  ],
+  "cleanup": {
+    "status": "passed",
+    "deletedFamilies": 4,
+    "deletedUsers": 2
+  }
+}

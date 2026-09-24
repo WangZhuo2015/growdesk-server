@@ -3,6 +3,7 @@ import {
   ScopedFormulaProductRepository,
   type FormulaProductEntity,
   RecordNotFoundError,
+  BadRequestError,
 } from "@growdesk/database";
 import type { UserPrincipal } from "@growdesk/domain";
 import type {
@@ -21,6 +22,12 @@ export function mapEntityToFormulaProduct(entity: FormulaProductEntity): Formula
     stage: entity.stage,
     scoopGrams: entity.scoopWeightG,
     waterMlPerScoop: entity.waterPerScoopMl,
+    reconstitutionRatio: entity.reconstitutionRatio,
+    servingSizeUnit: entity.servingSizeUnit,
+    nutrientsJson: entity.nutrientsJson,
+    notes: entity.notes,
+    isActive: entity.isActive,
+    isDefault: entity.isDefault,
     isArchived: entity.isArchived,
     createdAt: entity.createdAt.toISOString(),
     updatedAt: entity.updatedAt.toISOString(),
@@ -37,12 +44,24 @@ export class FormulaProductService {
   async listFormulaProducts(
     principal: UserPrincipal,
     familyId: string,
-    options: { limit?: number; includeArchived?: boolean } = {}
-  ): Promise<{ data: FormulaProduct[]; page: { nextCursor: null } }> {
-    const records = await this.repo.listByFamily(principal, familyId, options);
+    options: { limit?: number; includeArchived?: boolean; cursor?: string } = {}
+  ): Promise<{ data: FormulaProduct[]; page: { nextCursor: string | null } }> {
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), 200);
+    let before: { createdAt: Date; id: string } | undefined;
+    if (options.cursor) {
+      const [date, id, extra] = Buffer.from(options.cursor, "base64url").toString("utf8").split("|");
+      const createdAt = new Date(date ?? "");
+      if (!Number.isFinite(createdAt.getTime()) || !id || !/^[A-Za-z0-9_-]{1,128}$/.test(id) || extra !== undefined) {
+        throw new BadRequestError("Invalid formula product cursor", "INVALID_CURSOR");
+      }
+      before = { createdAt, id };
+    }
+    const records = await this.repo.listByFamily(principal, familyId, { ...options, limit, before, lookahead: true });
+    const visible = records.slice(0, limit);
+    const last = visible.at(-1);
     return {
-      data: records.map(mapEntityToFormulaProduct),
-      page: { nextCursor: null },
+      data: visible.map(mapEntityToFormulaProduct),
+      page: { nextCursor: records.length > limit && last ? Buffer.from(`${last.createdAt.toISOString()}|${last.id}`).toString("base64url") : null },
     };
   }
 

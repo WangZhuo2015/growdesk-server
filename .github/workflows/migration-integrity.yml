@@ -1,0 +1,67 @@
+name: Migration integrity
+
+on:
+  push:
+    branches: [main, codex/web-parity-20260919, codex/migration-readiness-20260922]
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migration-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Migration and release gate regressions
+        run: |
+          python3 scripts/legacy-import/test_verify_target.py
+          python3 scripts/legacy-import/test_cutover_runner.py
+          python3 scripts/legacy-import/test_release_gate.py
+          python3 scripts/legacy-import/test_readiness_regression.py
+
+  backend-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:db:generate
+      - run: npm run backend:test:guard
+      - name: Full unit suite, including session query-count regression
+        run: npm run backend:test:unit
+
+  canonical-migration:
+    runs-on: macos-14
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - name: Install exclusively owned test dependencies
+        run: |
+          brew install postgresql@18 redis
+          echo "PG_BIN=$(brew --prefix postgresql@18)/bin" >> "$GITHUB_ENV"
+          echo "REDIS_BIN=$(brew --prefix redis)/bin" >> "$GITHUB_ENV"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run backend:db:generate
+      - name: Verify real migrations, all materializers and corrupted canonical rows
+        run: python3 scripts/test-integration.py --legacy-care

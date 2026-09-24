@@ -1,0 +1,122 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Migration.Dockerfile
+#1 transferring dockerfile: 723B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#2 DONE 1.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 323B done
+#3 DONE 0.0s
+
+#4 [1/9] FROM docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+#4 resolve docker.io/library/node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c 0.0s done
+#4 CACHED
+
+#5 [internal] load build context
+#5 transferring context: 236.81kB 0.0s done
+#5 DONE 0.1s
+
+#6 [2/9] WORKDIR /migration
+#6 DONE 0.1s
+
+#7 [3/9] COPY package.json package-lock.json ./
+#7 DONE 0.0s
+
+#8 [4/9] COPY apps ./apps
+#8 DONE 0.0s
+
+#9 [5/9] COPY packages ./packages
+#9 DONE 0.0s
+
+#10 [6/9] RUN npm ci --ignore-scripts --no-audit --no-fund
+#10 3.010 npm warn deprecated cron-parser@4.9.0: v4 is no longer maintained, upgrade to v5
+#10 8.466 
+#10 8.466 added 323 packages in 8s
+#10 8.469 npm notice
+#10 8.469 npm notice New minor version of npm available! 11.11.0 -> 11.19.1
+#10 8.469 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.19.1
+#10 8.469 npm notice To update run: npm install -g npm@11.19.1
+#10 8.469 npm notice
+#10 DONE 16.6s
+
+#11 [7/9] COPY prisma ./prisma
+#11 DONE 0.2s
+
+#12 [8/9] COPY prisma.config.ts ./
+#12 DONE 0.1s
+
+#13 [9/9] RUN DATABASE_URL=postgresql://test_build:test_build@127.0.0.1:6543/test_build node node_modules/prisma/build/index.js --version
+#13 1.163 Loaded Prisma config from prisma.config.ts.
+#13 1.163 
+#13 1.186 prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+#13 1.186 Please manually install OpenSSL via `apt-get update -y && apt-get install -y openssl` and try installing Prisma again. If you're running Prisma on Docker, add this command to your Dockerfile, or switch to an image that already has OpenSSL installed.
+#13 2.229 Prisma schema loaded from prisma/schema.prisma.
+#13 2.251 prisma               : 7.10.0
+#13 2.251 @prisma/client       : 7.10.0
+#13 2.251 Operating System     : linux
+#13 2.251 Architecture         : arm64
+#13 2.251 Node.js              : v24.14.1
+#13 2.251 TypeScript           : 5.9.3
+#13 2.251 Query Compiler       : enabled
+#13 2.251 PSL                  : @prisma/prisma-schema-wasm 7.10.0-4.0edf323efd1d98336f3f0a68684b56f689b900d3
+#13 2.251 Schema Engine        : schema-engine-cli 0edf323efd1d98336f3f0a68684b56f689b900d3 (at node_modules/@prisma/engines/schema-engine-linux-arm64-openssl-1.1.x)
+#13 2.251 Default Engines Hash : 0edf323efd1d98336f3f0a68684b56f689b900d3
+#13 2.251 Studio               : 0.33.0
+#13 2.251 Prisma CLI Path      : /migration/node_modules/prisma
+#13 DONE 2.3s
+
+#14 exporting to image
+#14 exporting layers
+#14 exporting layers 19.8s done
+#14 exporting manifest sha256:31812b5ff97ecbf2475e624cfbb5b09746c7fd6c9e97fd0a4764b6ea31256cb4 0.0s done
+#14 exporting config sha256:831b634fb790662a8485f5f7f3d88102facfa609b44a4aebe1775ac4203eb3c2 0.0s done
+#14 exporting attestation manifest sha256:36482bc9d6963a7e53662a08778a3349847d0273810b94ff1c6e70efecc24917 0.0s done
+#14 exporting manifest list sha256:d21c3188279d08305294e890a71c54ad28bcee15f19e86e19975a4640c6cd42c 0.0s done
+#14 naming to docker.io/library/growdesk-migration:e00cedcca786ec9a618053353750504b56b68607 done
+#14 unpacking to docker.io/library/growdesk-migration:e00cedcca786ec9a618053353750504b56b68607
+#14 unpacking to docker.io/library/growdesk-migration:e00cedcca786ec9a618053353750504b56b68607 3.9s done
+#14 DONE 23.8s
+Loaded Prisma config from prisma.config.ts.
+
+prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+Please manually install OpenSSL via `apt-get update -y && apt-get install -y openssl` and try installing Prisma again. If you're running Prisma on Docker, add this command to your Dockerfile, or switch to an image that already has OpenSSL installed.
+Datasource "db": PostgreSQL database "growdesk", schemas "legacy_import, public" at "postgres:5432"
+
+1 migration found in prisma/migrations
+
+Applying migration `202609120001_identity`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 202609120001_identity/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+prisma:warn Prisma failed to detect the libssl/openssl version to use, and may not work as expected. Defaulting to "openssl-1.1.x".
+Please manually install OpenSSL via `apt-get update -y && apt-get install -y openssl` and try installing Prisma again. If you're running Prisma on Docker, add this command to your Dockerfile, or switch to an image that already has OpenSSL installed.
+Prisma schema loaded from prisma/schema.prisma.
+{"status": "prepared", "tableCounts": {"ActivityRecommendation": 25, "AgentVoiceLog": 9, "AiArchive": 502, "AiChatMessage": 62, "AiChatSession": 17, "AiJob": 4, "Baby": 1, "Book": 5, "DataRelease": 1, "DevelopmentMilestone": 119, "DevelopmentWarningSign": 32, "DiaperRecord": 48, "Family": 1, "FamilyBookStatus": 0, "FamilyFoodStatus": 6, "FamilyMember": 5, "FeedingGuideline": 4, "FeedingRecord": 84, "FoodItem": 50, "FoodLogRecord": 14, "FoodPlan": 0, "FormulaProduct": 2, "GrowthMeasurement": 7, "MedicalReport": 2, "MilestoneSourceRef": 0, "RecordSnapshot": 7, "ScheduleEngineRule": 8, "SleepRecord": 48, "SourceRef": 59, "SupplementProduct": 3, "SupplementRecord": 24, "SupplementSchedule": 3, "User": 5, "Vaccine": 33, "VaccineDose": 58, "VaccineRecord": 5, "VaccineScheduleEntry": 51, "VaccineSelection": 4, "VaccineSourceRef": 0, "VaccineStrategyGroup": 3}}
+{
+  "batchId": "295d6488d5b9fff6888025c1e88e3abc592a3383cbb0e9628a99aeba6bd87bd2",
+  "counts": {
+    "users": 5,
+    "families": 1,
+    "babies": 1,
+    "familyMembers": 5,
+    "babyMembers": 5,
+    "archiveRows": 1311,
+    "apiCanReadUsers": false,
+    "apiCanReadArchive": false,
+    "appliedMigrations": 1
+  },
+  "allArchivedRowsMatch": true,
+  "passwordHashesPreserved": true,
+  "babyMembershipBackfillMatches": true,
+  "businessHistoryReady": false,
+  "newLoginReady": false
+}
+Prisma migration and atomic identity import completed

@@ -30,6 +30,12 @@ export function decodeMedicalKeysetCursor(cursor: string): { reportDate: Date; i
   }
 }
 
+async function lockAttachmentRows(tx: Prisma.TransactionClient, attachmentIds: readonly string[]) {
+  for (const attachmentId of [...new Set(attachmentIds)].sort()) {
+    await tx.$queryRaw`SELECT id FROM public.attachments WHERE id = ${attachmentId} FOR UPDATE`;
+  }
+}
+
 export class MedicalService {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -184,6 +190,7 @@ export class MedicalService {
 
       // 4. Attach attachments
       if (input.attachmentIds && input.attachmentIds.length > 0) {
+        await lockAttachmentRows(tx, input.attachmentIds);
         for (const attId of input.attachmentIds) {
           const attachment = await tx.attachment.findFirst({ where: { id: attId, familyId, babyId, status: "ready", deletedAt: null, purpose: "medical_report" } });
           if (!attachment) throw new RecordNotFoundError("Attachment", attId);
@@ -359,6 +366,14 @@ export class MedicalService {
 
       // Update attachments if provided
       if (input.attachmentIds !== undefined) {
+        const existingLinks = await tx.medicalReportAttachment.findMany({
+          where: { reportId },
+          select: { attachmentId: true },
+        });
+        await lockAttachmentRows(tx, [
+          ...existingLinks.map((link) => link.attachmentId),
+          ...input.attachmentIds,
+        ]);
         await tx.medicalReportAttachment.deleteMany({
           where: { reportId },
         });

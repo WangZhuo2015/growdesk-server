@@ -206,6 +206,55 @@ test("SH-03C: Family and Baby Authorization & Management suite", async (t) => {
     assert.equal(reJoinRes.statusCode, 404);
   });
 
+  await t.test("FB-04A: family projection preserves real member identity, relation, and role", async () => {
+    const listRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${family1Id}/members`,
+      headers: { authorization: `Bearer ${userA.token}` },
+    });
+    assert.equal(listRes.statusCode, 200, listRes.payload);
+    const members = listRes.json().data as Array<Record<string, unknown>>;
+    assert.equal(members.length, 2);
+    const memberA = members.find(member => member.userId === userA.userId);
+    const memberB = members.find(member => member.userId === userB.userId);
+    assert.ok(memberA);
+    assert.equal(memberA.id, (await ctx.prisma.familyMember.findUniqueOrThrow({ where: { uq_family_members_family_user: { familyId: family1Id, userId: userA.userId } } })).id);
+    assert.equal(memberA.familyId, family1Id);
+    assert.equal(memberA.username, userA.username);
+    assert.equal(memberA.relation, "parent");
+    assert.equal(memberA.role, "admin");
+    assert.ok(memberB);
+    assert.equal(memberB.id, (await ctx.prisma.familyMember.findUniqueOrThrow({ where: { uq_family_members_family_user: { familyId: family1Id, userId: userB.userId } } } )).id);
+    assert.equal(memberB.username, userB.username);
+    assert.equal(memberB.relation, "parent");
+    assert.equal(memberB.role, "member");
+
+    // A viewer row is a valid family permission. The projection must preserve
+    // it rather than silently changing it to member.
+    await ctx.prisma.familyMember.update({
+      where: { uq_family_members_family_user: { familyId: family1Id, userId: userB.userId } },
+      data: { role: "viewer" },
+    });
+    const viewerRes = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${family1Id}/members`,
+      headers: { authorization: `Bearer ${userA.token}` },
+    });
+    assert.equal(viewerRes.statusCode, 200, viewerRes.payload);
+    assert.equal((viewerRes.json().data as Array<Record<string, unknown>>).find(member => member.userId === userB.userId)?.role, "viewer");
+    await ctx.prisma.familyMember.update({
+      where: { uq_family_members_family_user: { familyId: family1Id, userId: userB.userId } },
+      data: { role: "member" },
+    });
+
+    const crossFamily = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${family1Id}/members`,
+      headers: { authorization: `Bearer ${userC.token}` },
+    });
+    assert.equal(crossFamily.statusCode, 403, crossFamily.payload);
+  });
+
   await t.test("FB-05: User A creates Baby 1; User B cannot see Baby 1 in list or get", async () => {
     const createBabyRes = await app.inject({
       method: "POST",

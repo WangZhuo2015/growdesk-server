@@ -25,6 +25,15 @@ def instant(value):
     if parsed.tzinfo is None:raise ValueError('Ambiguous legacy timestamp')
     return parsed.astimezone(datetime.timezone.utc).isoformat()
 
+def gestational_days(weeks):
+    # Legacy Web persists completed gestational weeks; canonical Baby stores
+    # total days and projects weeks/remainder at its API boundary.
+    if weeks is None:
+        return None
+    if isinstance(weeks, bool) or not isinstance(weeks, int) or not 20 <= weeks <= 44:
+        raise ValueError('Invalid legacy gestational weeks')
+    return weeks * 7
+
 def load_archive(path):
     raw=Path(path).read_bytes();data=json.loads(raw)
     if data.get('formatVersion')!=1 or data.get('timeZone')!='Asia/Shanghai':raise ValueError('Unsupported archive')
@@ -72,7 +81,7 @@ def render_import(data, checksum):
         insert('public.family_sync_states',dict(family_id=row['id'],epoch=str(uuid.uuid5(uuid.NAMESPACE_URL,checksum+'/family/'+row['id'])),created_at=now,updated_at=now))
     for row in tables['Baby']:
         # Legacy URLs are provenance, not authorized public object URLs.
-        insert('public.babies',dict(id=row['id'],family_id=row['familyId'],nickname=row['nickname'],birth_date=row['birthDate'],gender=row['gender'],gestational_age=row.get('gestationalAge'),avatar_metadata=json.dumps({'legacyUrl':row.get('avatarUrl'),'state':'pending_private_attachment_mapping'}),**metadata(row)))
+        insert('public.babies',dict(id=row['id'],family_id=row['familyId'],nickname=row['nickname'],birth_date=row['birthDate'],gender=row['gender'],gestational_age=gestational_days(row.get('gestationalAge')),avatar_metadata=json.dumps({'legacyUrl':row.get('avatarUrl'),'state':'pending_private_attachment_mapping'}),**metadata(row)))
     for row in tables['FamilyMember']:
         insert('public.family_members',dict(id=row['id'],family_id=row['familyId'],user_id=row['userId'],role=row['role'],relation=row.get('relation','parent'),status='active',**metadata(row)))
         for baby in tables['Baby']:

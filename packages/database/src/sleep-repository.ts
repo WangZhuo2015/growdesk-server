@@ -1,7 +1,17 @@
 import { PrismaClient, Prisma } from "./generated/client.js";
 import { UserPrincipal } from "@growdesk/domain";
-import { executeFamilyUnitOfWork, CommandExecutionResult } from "./unit-of-work.js";
-import { FamilyAccessDeniedError, BabyAccessDeniedError, RecordNotFoundError } from "./errors.js";
+import {
+  executeFamilyUnitOfWork,
+  CommandExecutionResult,
+  LegacyIdempotencyGoneError,
+  LegacyReplayResult,
+} from "./unit-of-work.js";
+import {
+  FamilyAccessDeniedError,
+  BabyAccessDeniedError,
+  RecordNotFoundError,
+  IdempotencyKeyReusedError,
+} from "./errors.js";
 
 export interface CreateSleepInput {
   readonly commandId: string;
@@ -81,6 +91,13 @@ function mapSleepRow(row: {
   };
 }
 
+function sameDate(actual: Date | null, expected: Date | null | undefined): boolean {
+  if (actual === null || expected === null || expected === undefined) {
+    return actual === (expected ?? null);
+  }
+  return actual.getTime() === expected.getTime();
+}
+
 export class SleepRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -104,6 +121,37 @@ export class SleepRepository {
           select: { version: true },
         });
         return row?.version ?? null;
+      },
+      findLegacyReplay: async (tx): Promise<LegacyReplayResult<SleepRecordEntity> | null> => {
+        const legacyRows = await tx.sleepRecord.findMany({
+          where: {
+            familyId: input.familyId,
+            babyId: input.babyId,
+            legacyClientId: input.commandId,
+          },
+          orderBy: { id: "asc" },
+        });
+        if (legacyRows.length === 0) return null;
+        if (legacyRows.some((row) => row.deletedAt !== null)) {
+          throw new LegacyIdempotencyGoneError(input.commandId);
+        }
+        if (legacyRows.length !== 1) {
+          throw new IdempotencyKeyReusedError(input.commandId);
+        }
+
+        const row = legacyRows[0];
+        if (!row) throw new IdempotencyKeyReusedError(input.commandId);
+        const sameFields =
+          row.sleepType === input.sleepType &&
+          sameDate(row.startedAt, input.startedAt) &&
+          sameDate(row.endedAt, input.endedAt ?? null) &&
+          row.nightWakingCount === (input.nightWakingCount ?? 0) &&
+          row.notes === (input.notes ?? null);
+        if (!sameFields) {
+          throw new IdempotencyKeyReusedError(input.commandId);
+        }
+
+        return { result: mapSleepRow(row), version: row.version };
       },
       execute: async (tx, meta) => {
         // If creating an ongoing/active sleep (endedAt is null), check if one already exists

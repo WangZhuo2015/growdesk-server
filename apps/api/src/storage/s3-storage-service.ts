@@ -2,6 +2,39 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, Head
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "node:crypto";
 
+export interface StorageObject {
+  /**
+   * The object body is deliberately exposed as an async iterable so callers
+   * can forward it without buffering the complete object in application
+   * memory.
+   */
+  body: AsyncIterable<Uint8Array>;
+  contentType?: string;
+  contentLength?: number;
+}
+
+export class StorageObjectUnavailableError extends Error {
+  readonly statusCode = 503;
+  readonly code = "ATTACHMENT_STORAGE_UNAVAILABLE";
+
+  constructor() {
+    super("Attachment storage is temporarily unavailable");
+    this.name = "StorageObjectUnavailableError";
+  }
+}
+
+export class StorageObjectDeleteError extends Error {
+  readonly statusCode = 503;
+  readonly code = "ATTACHMENT_STORAGE_DELETE_FAILED";
+
+  constructor() {
+    super("Attachment storage deletion is temporarily unavailable");
+    this.name = "StorageObjectDeleteError";
+  }
+}
+
+const STORAGE_DELETE_TIMEOUT_MS = 10_000;
+
 export interface StorageDriver {
   generatePresignedUploadUrl(params: {
     objectKey: string;
@@ -10,11 +43,7 @@ export interface StorageDriver {
     expiresInSeconds?: number;
   }): Promise<{ uploadUrl: string; expiresAt: Date }>;
 
-  generatePresignedDownloadUrl(params: {
-    objectKey: string;
-    filename?: string;
-    expiresInSeconds?: number;
-  }): Promise<{ downloadUrl: string; expiresAt: Date }>;
+  getObject(objectKey: string): Promise<StorageObject>;
 
   verifyUploadedObject(params: {
     objectKey: string;
@@ -73,24 +102,25 @@ export class AwsS3StorageDriver implements StorageDriver {
     return { uploadUrl, expiresAt };
   }
 
-  async generatePresignedDownloadUrl(params: {
-    objectKey: string;
-    filename?: string;
-    expiresInSeconds?: number;
-  }): Promise<{ downloadUrl: string; expiresAt: Date }> {
-    const expiresIn = params.expiresInSeconds ?? 900;
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
+  async getObject(objectKey: string): Promise<StorageObject> {
+    try {
+      const object = await this.client.send(new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: objectKey,
+      }));
+      if (!object.Body) throw new StorageObjectUnavailableError();
 
-    const command = new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: params.objectKey,
-      ResponseContentDisposition: params.filename
-        ? `attachment; filename="${encodeURIComponent(params.filename)}"`
-        : undefined,
-    });
-
-    const downloadUrl = await getSignedUrl(this.client, command, { expiresIn });
-    return { downloadUrl, expiresAt };
+      return {
+        // The Node.js AWS SDK handler returns an IncomingMessage/Readable body,
+        // both of which implement AsyncIterable<Uint8Array>.
+        body: object.Body as unknown as AsyncIterable<Uint8Array>,
+        contentType: object.ContentType,
+        contentLength: object.ContentLength,
+      };
+    } catch (error) {
+      if (error instanceof StorageObjectUnavailableError) throw error;
+      throw new StorageObjectUnavailableError();
+    }
   }
 
   async verifyUploadedObject(params: {
@@ -139,12 +169,23 @@ export class AwsS3StorageDriver implements StorageDriver {
   }
 
   async deleteObject(objectKey: string): Promise<void> {
-    await this.client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: objectKey,
-      })
-    );
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), STORAGE_DELETE_TIMEOUT_MS);
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: objectKey,
+        }),
+        { abortSignal: abortController.signal },
+      );
+    } catch {
+      // Do not expose provider errors or credentials. The caller must keep the
+      // database row retryable and return a non-success response.
+      throw new StorageObjectDeleteError();
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 }
 
@@ -166,15 +207,14 @@ export class MockStorageDriver implements StorageDriver {
     return { uploadUrl, expiresAt };
   }
 
-  async generatePresignedDownloadUrl(params: {
-    objectKey: string;
-    filename?: string;
-    expiresInSeconds?: number;
-  }): Promise<{ downloadUrl: string; expiresAt: Date }> {
-    const expiresIn = params.expiresInSeconds ?? 900;
-    const expiresAt = new Date(Date.now() + expiresIn * 1000);
-    const downloadUrl = `https://s3.mock.local/download/${params.objectKey}?expires=${expiresAt.getTime()}`;
-    return { downloadUrl, expiresAt };
+  async getObject(objectKey: string): Promise<StorageObject> {
+    const existing = this.objects.get(objectKey);
+    if (!existing?.buffer) throw new StorageObjectUnavailableError();
+    return {
+      body: (async function* () { yield existing.buffer!; })(),
+      contentType: existing.mimeType,
+      contentLength: existing.byteSize,
+    };
   }
 
   async verifyUploadedObject(params: {

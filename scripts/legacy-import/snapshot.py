@@ -57,21 +57,37 @@ def capture(source, destination, source_id):
         archive.write_bytes(payload)
         archive.chmod(0o600)
         files=[]
+        captured_paths = {}
         for relative in ['public/uploads', 'data/archive']:
-            folder=source.parent/relative
-            if not folder.exists(): continue
-            if folder.is_symlink(): raise ValueError('Attachment root is a symlink')
-            for file in sorted(folder.rglob('*')):
-                if file.is_symlink(): raise ValueError('Attachment symlink rejected')
-                if not file.is_file(): continue
-                if not stat.S_ISREG(file.stat().st_mode) or file.stat().st_size > 256*1024*1024:
-                    raise ValueError('Unsupported attachment file')
-                rel=file.relative_to(source.parent)
-                target=destination/'files'/rel
-                target.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
-                shutil.copyfile(file,target)
-                target.chmod(0o600)
-                files.append(dict(path=str(rel),size=target.stat().st_size,sha256=hashlib.sha256(target.read_bytes()).hexdigest()))
+            # Standalone Next deployments can retain runtime-created files
+            # below `.next/standalone` even when the source-tree copy was
+            # pruned by a later build. Capture both approved roots by their
+            # canonical application-relative path and fail on disagreement.
+            for base in (source.parent, source.parent/'.next/standalone'):
+                folder=base/relative
+                if not folder.exists(): continue
+                if folder.is_symlink(): raise ValueError('Attachment root is a symlink')
+                for file in sorted(folder.rglob('*')):
+                    if file.is_symlink(): raise ValueError('Attachment symlink rejected')
+                    if not file.is_file(): continue
+                    # Repository placeholders are not user attachments and
+                    # must not become zero-byte quarantine entries.
+                    if file.name == '.gitkeep': continue
+                    if not stat.S_ISREG(file.stat().st_mode) or file.stat().st_size > 256*1024*1024:
+                        raise ValueError('Unsupported attachment file')
+                    rel=file.relative_to(base)
+                    size=file.stat().st_size
+                    digest=hashlib.sha256(file.read_bytes()).hexdigest()
+                    prior=captured_paths.get(str(rel))
+                    if prior is not None:
+                        if prior != (size,digest): raise ValueError('Conflicting attachment copies')
+                        continue
+                    captured_paths[str(rel)]=(size,digest)
+                    target=destination/'files'/rel
+                    target.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
+                    shutil.copyfile(file,target)
+                    target.chmod(0o600)
+                    files.append(dict(path=str(rel),size=size,sha256=digest))
         (destination/'files.json').write_text(json.dumps(files,ensure_ascii=False))
         manifest=dict(sourceId=source_id, sourceSha256=envelope['sourceSha256'],
                       archiveSha256=hashlib.sha256(payload).hexdigest(), capturedAt=envelope['capturedAt'],

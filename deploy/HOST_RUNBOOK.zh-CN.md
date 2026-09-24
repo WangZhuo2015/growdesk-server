@@ -33,6 +33,8 @@ npm run backend:release:package
 - `POSTGRES_SUPERUSER_PASSWORD`：仅 PG 引导使用；API 不持有。
 - `GROWDESK_DB_PASSWORD`：独立应用角色，仅 CONNECT/USAGE；未来业务迁移另设 migration role。
 - `REDIS_PASSWORD`：独立 Redis 实例。
+- `MINIO_ROOT_USER`、`MINIO_ROOT_PASSWORD`：私有对象存储访问凭据。
+- `S3_BUCKET`、`S3_REGION`：生产附件桶与签名区域；对象存储不发布宿主机端口。
 - `GROWDESK_IMAGE_TAG`：本次完整 Git SHA。
 - `GROWDESK_HOST_PORT`：检查确认的回环端口。
 

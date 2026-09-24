@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { SignJWT } from "jose";
 import { buildApiApp } from "../../apps/api/src/app.js";
 import { createDatabaseContext } from "../../packages/database/src/client.js";
 import { requireTestDatabaseUrl } from "../../packages/testkit/src/environment.js";
@@ -98,11 +99,36 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
   if (!suppRows[0]?.exists) {
     await ctx.pool.query(supplementSql);
   }
+  const actorSql = fs.readFileSync("prisma/migrations/202609190017_supplement_record_actor/migration.sql", "utf8");
+  const { rows: actorRows } = await ctx.pool.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'supplement_records' AND column_name = 'recorded_by_user_id'`,
+  );
+  if (!actorRows[0]) {
+    await ctx.pool.query(actorSql);
+  }
+
+  // The normalized product/schedule graph is additive to the original care
+  // tables. Apply the prerequisite medical/vaccine tables and promotion slice
+  // in this owned PostgreSQL run so the endpoint checks exercise real FKs and
+  // transaction behavior rather than an in-memory substitute.
+  const medicalVaccineSql = fs.readFileSync("prisma/migrations/202609120010_attachments_medical_vaccines/migration.sql", "utf8");
+  const { rows: vaccineRows } = await ctx.pool.query("SELECT to_regclass('public.vaccine_records') as exists");
+  if (!vaccineRows[0]?.exists) {
+    await ctx.pool.query(medicalVaccineSql);
+  }
+  const promotionSql = fs.readFileSync("prisma/migrations/202609190021_supplement_vaccine_promotion/migration.sql", "utf8");
+  const { rows: promotionRows } = await ctx.pool.query("SELECT to_regclass('public.supplement_products') as exists");
+  if (!promotionRows[0]?.exists) {
+    await ctx.pool.query(promotionSql);
+  }
 
   // Identities
   const userAName = `test_supp_a_${Date.now()}`;
   const userBName = `test_supp_b_${Date.now()}`;
   let tokenA = "";
+  let sessionIdA = "";
+  let userAId = "";
   let familyAId = "";
   let babyAId = "";
   let tokenB = "";
@@ -124,7 +150,10 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
       },
     });
     assert.strictEqual(regResA.statusCode, 201);
-    tokenA = regResA.json<{ data: { accessToken: string } }>().data.accessToken;
+    const registration = regResA.json<{ data: { accessToken: string; sessionId: string; user: { id: string } } }>().data;
+    tokenA = registration.accessToken;
+    sessionIdA = registration.sessionId;
+    userAId = registration.user.id;
 
     const famResA = await app.inject({
       method: "GET",
@@ -217,6 +246,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(body.data.supplementName, "Vitamin D3");
     assert.strictEqual(body.data.amount, "400 IU");
     assert.strictEqual(body.data.notes, "Morning drop");
+    assert.strictEqual(body.data.recordedByUserId, userAId);
     assert.strictEqual(body.data.version, "1");
     record1Version = body.data.version;
 
@@ -229,6 +259,11 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     assert.strictEqual(tlRows[0].baby_id, babyAId);
     assert.strictEqual(tlRows[0].family_id, familyAId);
     assert.strictEqual(tlRows[0].deleted_at, null);
+    const { rows: actorRows } = await ctx.pool.query(
+      `SELECT recorded_by_user_id FROM supplement_records WHERE id = $1`,
+      [record1Id],
+    );
+    assert.strictEqual(actorRows[0]?.recorded_by_user_id, userAId);
   });
 
   await t.test("SU-02: Idempotency replay with same key returns cached result", async () => {
@@ -376,6 +411,7 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     const updated = validUpdateRes.json().data;
     assert.strictEqual(updated.supplementName, "Vitamin D3 + K2");
     assert.strictEqual(updated.amount, "600 IU");
+    assert.strictEqual(updated.recordedByUserId, userAId);
     assert.strictEqual(updated.version, "2");
     record1Version = updated.version;
   });
@@ -449,5 +485,214 @@ test("SH-04SU: Supplement Record Pipeline suite", async (t) => {
     );
     assert.strictEqual(tlRows.length, 1);
     assert.notStrictEqual(tlRows[0].deleted_at, null);
+  });
+
+  await t.test("SU-08: Normalized supplement catalog, schedules, completion projection and CAS", async () => {
+    const productResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: {
+        name: "test normalized vitamin",
+        brand: "test brand",
+        dosageForm: "drops",
+        unitName: "滴",
+        defaultDose: "1.5",
+        nutrientsJson: { vitaminD: { amount: 400, unit: "IU" } },
+      },
+    });
+    assert.equal(productResponse.statusCode, 201, productResponse.body);
+    const product = productResponse.json<{ data: { id: string; familyId: string; version: number } }>().data;
+    assert.equal(product.familyId, familyAId);
+    assert.equal(product.version, 1);
+
+    const secondProductResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { name: "test normalized vitamin 2", unitName: "滴", defaultDose: "1" },
+    });
+    assert.equal(secondProductResponse.statusCode, 201, secondProductResponse.body);
+
+    const firstPageResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products?limit=1`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(firstPageResponse.statusCode, 200, firstPageResponse.body);
+    const firstPage = firstPageResponse.json<{ data: Array<{ id: string }>; page: { nextCursor: string | null } }>();
+    assert.equal(firstPage.data.length, 1);
+    assert.ok(firstPage.page.nextCursor);
+
+    const secondPageResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products?limit=1&cursor=${encodeURIComponent(firstPage.page.nextCursor!)}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(secondPageResponse.statusCode, 200, secondPageResponse.body);
+    const secondPage = secondPageResponse.json<{ data: Array<{ id: string }>; page: { nextCursor: string | null } }>();
+    assert.equal(secondPage.data.length, 1);
+    assert.notEqual(secondPage.data[0]?.id, firstPage.data[0]?.id);
+
+    const staleProductResponse = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/families/${familyAId}/nutrition/supplement-products/${product.id}`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { baseVersion: 99, notes: "test stale product" },
+    });
+    assert.equal(staleProductResponse.statusCode, 409, staleProductResponse.body);
+    assert.equal(staleProductResponse.json().error.code, "CONCURRENCY_CONFLICT");
+
+    const scheduleResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { productId: product.id, frequency: "daily", targetDose: "1.5", startDate: "2026-09-19" },
+    });
+    assert.equal(scheduleResponse.statusCode, 201, scheduleResponse.body);
+    const schedule = scheduleResponse.json<{ data: { id: string; version: number; isCompletedToday: boolean } }>().data;
+    assert.equal(schedule.version, 1);
+    assert.equal(schedule.isCompletedToday, false);
+
+    const staleScheduleResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules`,
+      headers: { authorization: `Bearer ${tokenA}` },
+      payload: { id: schedule.id, productId: product.id, baseVersion: 99, targetDose: "2" },
+    });
+    assert.equal(staleScheduleResponse.statusCode, 409, staleScheduleResponse.body);
+    assert.equal(staleScheduleResponse.json().error.code, "CONCURRENCY_CONFLICT");
+
+    const recordResponse = await app.inject({
+      method: "POST",
+      url: `/api/v1/babies/${babyAId}/records/supplement`,
+      headers: { authorization: `Bearer ${tokenA}`, "idempotency-key": "test_normalized_schedule_record" },
+      payload: {
+        supplementName: "test normalized vitamin",
+        productId: product.id,
+        occurredAt: "2026-09-19T09:30:00.000Z",
+        dose: "1.5",
+        unitName: "滴",
+      },
+    });
+    assert.equal(recordResponse.statusCode, 201, recordResponse.body);
+
+    const completedScheduleResponse = await app.inject({
+      method: "GET",
+      url: `/api/v1/babies/${babyAId}/nutrition/supplement-schedules?date=2026-09-19`,
+      headers: { authorization: `Bearer ${tokenA}` },
+    });
+    assert.equal(completedScheduleResponse.statusCode, 200, completedScheduleResponse.body);
+    const completedSchedule = completedScheduleResponse.json<{ data: Array<{ id: string; isCompletedToday: boolean }> }>();
+    assert.equal(completedSchedule.data.find((row) => row.id === schedule.id)?.isCompletedToday, true);
+  });
+
+  await t.test("SU-09: MCP supplement product tool enforces audience, scope, baby binding and idempotency", async () => {
+    const audience = "https://test.growdesk.invalid/mcp";
+    const signMcpToken = async (scope: string, babyId = babyAId) => new SignJWT({
+      sub: userAId,
+      sid: sessionIdA,
+      scope,
+      baby_id: babyId,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setAudience(audience)
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(new TextEncoder().encode(jwtSecret));
+
+    const mcpToken = await signMcpToken("baby:read baby:write");
+    const listResponse = await app.inject({
+      method: "POST",
+      url: "/mcp",
+      headers: { authorization: `Bearer ${mcpToken}` },
+      payload: { jsonrpc: "2.0", id: "test-mcp-list", method: "tools/list" },
+    });
+    assert.equal(listResponse.statusCode, 401, "the app test harness must use the configured MCP audience");
+
+    const configuredApp = buildApiApp({ databaseContext: ctx, jwtSecret, mcpResourceAudience: audience });
+    try {
+      const appTokenResponse = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${tokenA}` },
+        payload: { jsonrpc: "2.0", id: "test-mcp-app-token", method: "tools/list" },
+      });
+      assert.equal(appTokenResponse.statusCode, 401);
+
+      const list = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: { jsonrpc: "2.0", id: "test-mcp-list-2", method: "tools/list" },
+      });
+      assert.equal(list.statusCode, 200, list.body);
+      assert.equal(list.json().result.tools[0].name, "create_supplement_product");
+
+      const createPayload = {
+        jsonrpc: "2.0",
+        id: "test-mcp-create-1",
+        method: "tools/call",
+        params: {
+          name: "create_supplement_product",
+          arguments: {
+            name: "test_mcp_dha",
+            brand: "test_mcp_brand",
+            dosageForm: "capsule",
+            unitName: "粒",
+            defaultDose: 1,
+            nutrients: { vitaminD: 400, dha: { amount: 100.126, unit: "mg" }, invalid: -1 },
+            notes: "test_mcp_notes",
+            idempotencyKey: "test_mcp_supplement_1",
+          },
+        },
+      };
+      const created = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: createPayload,
+      });
+      assert.equal(created.statusCode, 200, created.body);
+      const createdText = created.json().result.content[0].text;
+      const createdData = JSON.parse(createdText);
+      assert.equal(createdData.success, true);
+      assert.equal(createdData.replayed, false);
+      assert.equal(createdData.product.nutrients.vitamin_d.amount, 400);
+      assert.equal(createdData.product.nutrients.dha.amount, 100.13);
+
+      const replay = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${mcpToken}` },
+        payload: createPayload,
+      });
+      assert.equal(replay.statusCode, 200, replay.body);
+      const replayData = JSON.parse(replay.json().result.content[0].text);
+      assert.equal(replayData.replayed, true);
+      assert.equal(replayData.product.id, createdData.product.id);
+
+      const missingScopeToken = await signMcpToken("baby:read");
+      const forbidden = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${missingScopeToken}` },
+        payload: createPayload,
+      });
+      assert.equal(forbidden.statusCode, 200);
+      assert.equal(forbidden.json().error.code, -32003);
+
+      const wrongBaby = await signMcpToken("baby:write", babyBId);
+      const wrongBabyCall = await configuredApp.inject({
+        method: "POST",
+        url: "/mcp",
+        headers: { authorization: `Bearer ${wrongBaby}` },
+        payload: createPayload,
+      });
+      assert.equal(wrongBabyCall.statusCode, 200);
+      assert.equal(wrongBabyCall.json().error.code, -32003);
+    } finally {
+      await configuredApp.close();
+    }
   });
 });

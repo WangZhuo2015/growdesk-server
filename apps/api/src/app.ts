@@ -3,6 +3,7 @@ import { weatherRoutes } from "./routes/weather-routes.js";
 import { bookRoutes } from "./routes/book-routes.js";
 import { knowledgeRoutes } from "./routes/knowledge-routes.js";
 import Fastify from "fastify";
+import AjvCompiler from "@fastify/ajv-compiler";
 import { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import {
   ApiErrorEnvelopeSchema,
@@ -80,6 +81,8 @@ import {
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
   CreateVaccineRecordRequestSchema,
+  VaccineCatalogItemSchema,
+  VaccineCatalogResponseSchema,
   RegisterPushDeviceRequestSchema,
   NotificationItemSchema,
   NotificationListResponseSchema,
@@ -93,6 +96,15 @@ import {
   AiRunConfirmResponseSchema,
   AiRunRetryResponseSchema,
   VoiceRunResponseSchema,
+  VoiceLogBabySchema,
+  VoiceLogSchema,
+  CreateVoiceLogRequestSchema,
+  VoiceLogResponseSchema,
+  VoiceLogListResponseSchema,
+  VoiceLogUnreadResponseSchema,
+  VoiceLogQueryResponseSchema,
+  VoiceLogListQuerySchema,
+  AcknowledgeVoiceLogRequestSchema,
   DailySummaryRunResponseSchema,
   DailySummaryItemSchema,
   DailySummaryListResponseSchema,
@@ -106,6 +118,7 @@ import {
   CreateSyncSnapshotResponseSchema,
   SyncSnapshotSchema,
   SyncSnapshotResponseSchema,
+  RecordSnapshotSchema,
   type HealthLiveResponse,
   type HealthReadyResponse,
 } from "@growdesk/contracts";
@@ -128,13 +141,17 @@ import { diaperRoutes } from "./routes/diaper-routes.js";
 import { sleepRoutes } from "./routes/sleep-routes.js";
 import { foodRoutes } from "./routes/food-routes.js";
 import { supplementRoutes } from "./routes/supplement-routes.js";
+import { supplementCatalogRoutes } from "./routes/supplement-catalog-routes.js";
+import { mcpRoutes } from "./routes/mcp-routes.js";
 import { growthRoutes } from "./routes/growth-routes.js";
 import { timelineRoutes } from "./routes/timeline-routes.js";
 import { attachmentRoutes } from "./routes/attachment-routes.js";
 import { medicalRoutes } from "./routes/medical-routes.js";
 import { notificationRoutes } from "./routes/notification-routes.js";
 import { aiRoutes } from "./routes/ai-routes.js";
+import { voiceLogRoutes } from "./routes/voice-log-routes.js";
 import { syncRoutes } from "./routes/sync-routes.js";
+import { recordSnapshotRoutes } from "./routes/record-snapshot-routes.js";
 import { AttachmentService } from "./services/attachment-service.js";
 import { MedicalService } from "./services/medical-service.js";
 import { VaccineService } from "./services/vaccine-service.js";
@@ -152,6 +169,9 @@ export interface ApiAppOptions {
   readonly databaseContext?: DatabaseContext;
   readonly replayStore?: ReplayStore;
   readonly jwtSecret?: string;
+  /** Exact OAuth/MCP resource audience, normally `<publicBaseUrl>/mcp`. */
+  readonly mcpResourceAudience?: string;
+  readonly mcpIssuer?: string;
   readonly storageDriver?: StorageDriver;
 }
 
@@ -173,8 +193,34 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     ownsDatabaseContext = true;
   }
 
+  const defaultValidatorFactory = AjvCompiler();
+  const strictBodyValidatorFactory = AjvCompiler();
+  const buildValidator: AjvCompiler.BuildCompilerFromPool = (externalSchemas, serverOptions) => {
+    if (serverOptions?.mode === "JTD") throw new Error("API contracts require JSON Schema validation");
+    const defaultValidator = defaultValidatorFactory(externalSchemas, serverOptions);
+    const strictBodyValidator = strictBodyValidatorFactory(externalSchemas, {
+      ...serverOptions,
+      customOptions: {
+        ...serverOptions?.customOptions,
+        coerceTypes: false,
+      },
+    });
+
+    // The compiler package types this argument as AnySchema, although its
+    // runtime receives Fastify's route definition including httpPart.
+    const compile: ReturnType<typeof defaultValidatorFactory> = (routeOptions) =>
+      typeof routeOptions === "object" && routeOptions !== null && routeOptions.httpPart === "body"
+        ? strictBodyValidator(routeOptions)
+        : defaultValidator(routeOptions);
+    return compile;
+  };
   const app = Fastify({
     logger: options.logger ?? false,
+    schemaController: {
+      compilersFactory: {
+        buildValidator,
+      },
+    },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   // Register shared schemas
@@ -253,6 +299,8 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(VaccineRecordResponseSchema);
   app.addSchema(VaccineListResponseSchema);
   app.addSchema(CreateVaccineRecordRequestSchema);
+  app.addSchema(VaccineCatalogItemSchema);
+  app.addSchema(VaccineCatalogResponseSchema);
   app.addSchema(RegisterPushDeviceRequestSchema);
   app.addSchema(NotificationItemSchema);
   app.addSchema(NotificationListResponseSchema);
@@ -266,6 +314,15 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(AiRunConfirmResponseSchema);
   app.addSchema(AiRunRetryResponseSchema);
   app.addSchema(VoiceRunResponseSchema);
+  app.addSchema(VoiceLogBabySchema);
+  app.addSchema(VoiceLogSchema);
+  app.addSchema(CreateVoiceLogRequestSchema);
+  app.addSchema(VoiceLogResponseSchema);
+  app.addSchema(VoiceLogListResponseSchema);
+  app.addSchema(VoiceLogUnreadResponseSchema);
+  app.addSchema(VoiceLogQueryResponseSchema);
+  app.addSchema(VoiceLogListQuerySchema);
+  app.addSchema(AcknowledgeVoiceLogRequestSchema);
   app.addSchema(DailySummaryRunResponseSchema);
   app.addSchema(DailySummaryItemSchema);
   app.addSchema(DailySummaryListResponseSchema);
@@ -279,6 +336,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(CreateSyncSnapshotResponseSchema);
   app.addSchema(SyncSnapshotSchema);
   app.addSchema(SyncSnapshotResponseSchema);
+  app.addSchema(RecordSnapshotSchema);
 
   // Standard API Error Envelope Handler
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -403,6 +461,17 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       prisma: databaseContext.prisma,
     });
 
+    app.register(supplementCatalogRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
+    app.register(mcpRoutes, {
+      prisma: databaseContext.prisma,
+      jwtSecret: options.jwtSecret,
+      resourceAudience: options.mcpResourceAudience ?? process.env.MCP_RESOURCE_AUDIENCE ?? "http://127.0.0.1:3080/mcp",
+      issuer: options.mcpIssuer ?? process.env.MCP_ISSUER,
+    });
+
     app.register(growthRoutes, {
       prisma: databaseContext.prisma,
     });
@@ -447,12 +516,20 @@ export function buildApiApp(options: ApiAppOptions = {}) {
       aiService,
     });
 
+    app.register(voiceLogRoutes, {
+      prisma: databaseContext.prisma,
+    });
+
     // The Web plugin uses its own inline contracts. Do not register every
     // exported schema: nested/aliased $ids can break the existing validators.
     app.register(webAiRoutes, { pool: databaseContext.pool });
 
     app.register(syncRoutes, {
       syncService,
+    });
+
+    app.register(recordSnapshotRoutes, {
+      prisma: databaseContext.prisma,
     });
   }
 

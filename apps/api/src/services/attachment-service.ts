@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { PrismaClient, RecordNotFoundError, FamilyAccessDeniedError, BadRequestError, BabyAccessDeniedError } from "@growdesk/database";
 import { UserPrincipal } from "@growdesk/domain";
-import { StorageDriver } from "../storage/s3-storage-service.js";
+import { StorageDriver, StorageObjectDeleteError, type StorageObject } from "../storage/s3-storage-service.js";
 import {
   AttachmentPurpose,
   CreateAttachmentRequest,
@@ -22,8 +22,31 @@ const ALLOWED_MIME_TYPES = new Set([
 
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024; // 20MiB
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25MiB
+const DELETE_TRANSACTION_OPTIONS = {
+  // S3 is called while the attachment row is locked so a failed delete can
+  // roll the database state back. Keep that lock bounded and make a slow
+  // provider call retryable instead of holding it indefinitely.
+  maxWait: 2_000,
+  timeout: 15_000,
+} as const;
+
+class AttachmentInUseError extends Error {
+  readonly statusCode = 409;
+  readonly code = "ATTACHMENT_IN_USE";
+
+  constructor() {
+    super("Attachment is still referenced by family data");
+    this.name = "AttachmentInUseError";
+  }
+}
+
+import { resolveLegacyUpload } from "./legacy-attachment-resolver.js";
 
 export class AttachmentService {
+  async resolveLegacyUpload(principal: UserPrincipal, pathname: string) {
+    return resolveLegacyUpload(this.prisma, principal.userId, pathname);
+  }
+
   constructor(
     private readonly prisma: PrismaClient,
     private readonly storageDriver: StorageDriver
@@ -39,11 +62,17 @@ export class AttachmentService {
     if (uploaderOnly && attachment.uploaderId !== principal.userId) throw new FamilyAccessDeniedError(attachment.familyId);
   }
 
-  async getDownloadUrl(principal: UserPrincipal, attachmentId: string) {
+  async getContent(principal: UserPrincipal, attachmentId: string): Promise<StorageObject & { mimeType: string; byteSize: number }> {
     const attachment = await this.getAttachment(principal, attachmentId);
     if (attachment.status !== "ready") throw new BadRequestError("Attachment is not ready");
-    const url = await this.storageDriver.generatePresignedDownloadUrl({ objectKey: attachment.objectKey, expiresInSeconds: 60 });
-    return { downloadUrl: url.downloadUrl, mimeType: attachment.mimeType, byteSize: attachment.byteSize };
+    const object = await this.storageDriver.getObject(attachment.objectKey);
+    return {
+      ...object,
+      // The attachment row is the authorized application metadata. The
+      // storage content type is advisory and is never allowed to override it.
+      mimeType: attachment.mimeType,
+      byteSize: attachment.byteSize,
+    };
   }
 
   async createAttachment(
@@ -235,23 +264,56 @@ export class AttachmentService {
   }
 
   async deleteAttachment(principal: UserPrincipal, attachmentId: string) {
-    const attachment = await this.prisma.attachment.findUnique({
-      where: { id: attachmentId },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      // Keep the reference check and the soft-delete under one row lock. The
+      // storage call is intentionally inside this transaction so a failed
+      // delete rolls back without hiding the attachment from a retry.
+      await tx.$queryRaw`SELECT id FROM public.attachments WHERE id = ${attachmentId} FOR UPDATE`;
+      const attachment = await tx.attachment.findUnique({
+        where: { id: attachmentId },
+      });
 
-    if (!attachment || attachment.deletedAt) {
-      throw new RecordNotFoundError("Attachment", attachmentId);
-    }
+      if (!attachment || attachment.deletedAt) {
+        throw new RecordNotFoundError("Attachment", attachmentId);
+      }
 
-    this.authorize(principal, attachment, true);
+      this.authorize(principal, attachment, true);
 
-    await this.prisma.attachment.update({
-      where: { id: attachmentId },
-      data: { deletedAt: new Date() },
-    });
+      const medicalReferences = await tx.medicalReportAttachment.count({
+        where: { attachmentId },
+      });
+      const avatarReferences = await tx.baby.count({
+        where: {
+          avatarUrl: `/api/attachments/${attachmentId}`,
+          deletedAt: null,
+        },
+      });
+      const growthReferences = await tx.growthMeasurement.count({
+        where: { attachmentId },
+      });
+      const aiMessageReferences = await tx.aiChatMessage.count({
+        where: { image: `/api/attachments/${attachmentId}` },
+      });
+      const aiArchiveReferences = await tx.aiArchiveEntry.count({
+        where: { attachmentId },
+      });
+      if (medicalReferences > 0 || avatarReferences > 0 || growthReferences > 0 || aiMessageReferences > 0 || aiArchiveReferences > 0) {
+        throw new AttachmentInUseError();
+      }
 
-    await this.storageDriver.deleteObject(attachment.objectKey).catch(() => {});
+      try {
+        await this.storageDriver.deleteObject(attachment.objectKey);
+      } catch (error) {
+        if (error instanceof StorageObjectDeleteError) throw error;
+        throw new StorageObjectDeleteError();
+      }
 
-    return { data: { success: true } };
+      await tx.attachment.update({
+        where: { id: attachmentId },
+        data: { deletedAt: new Date() },
+      });
+
+      return { data: { success: true } };
+    }, DELETE_TRANSACTION_OPTIONS);
   }
 }

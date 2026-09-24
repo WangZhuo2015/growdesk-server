@@ -22,6 +22,10 @@ export function createDatabaseContext(options: DatabaseContextOptions): Database
 
   const pool = new pg.Pool({
     connectionString: config.url,
+    // Prisma's PostgreSQL adapter serializes timestamps in UTC and expects
+    // timestamptz results in UTC. Pin every pooled session independently of
+    // the host/role timezone, including reads of SQL-imported legacy history.
+    options: "-c timezone=UTC",
     max: options.maxConnections ?? 10,
     idleTimeoutMillis: options.idleTimeoutMillis ?? 10000,
     connectionTimeoutMillis: options.connectionTimeoutMillis ?? 5000,

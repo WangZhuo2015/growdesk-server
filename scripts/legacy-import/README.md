@@ -22,3 +22,29 @@ users. A local backup does not establish cloud authorization or enable sync.
 
 All test input is synthetic, uses test_ names, and runs on disposable local
 PostgreSQL managed by scripts/test-integration.py. No test reads the live DB.
+
+`attachment_promotion.py` is the read-only attachment promotion boundary. It
+reads `legacy.json`, `files.json`, `manifest.json`, and optional exported
+`import_rows.json`, then writes a new 0600 JSON receipt containing deterministic
+Attachment IDs/object keys and explicit quarantine entries for missing files,
+ownership conflicts, path traversal, size/hash/MIME mismatches, and orphan
+files. It never writes PostgreSQL or S3/MinIO and its `storage` fields remain
+`not_written`. `attachment-promotion-runtime.ts` is the separately invoked
+owned-storage worker: it rechecks the immutable archive file with a streaming
+SHA-256/size guard, copies to the private S3/MinIO bucket, verifies MIME/size/
+hash with HEAD plus streaming GET, and commits an idempotent Attachment row plus
+`LegacyIdempotencyMapping` in PostgreSQL before returning `ready`. It emits
+machine-readable quarantine on any owner/path/object/DB conflict and exposes
+`reconcile()` for a verified object left by a rolled-back database transaction.
+It does not backfill business references; the S3 PUT and PostgreSQL commit are
+still separate systems and require the explicit receipt/reconcile boundary.
+
+`embedded_attachment_audit.py` is run as part of that read-only planner. It
+scans `RecordSnapshot.payloadJson`, `AiJob.resultJson`, and `AiArchive.content`
+recursively for local attachment paths and media-key values, records JSON
+pointers with path deduplication, and never copies embedded content into a
+report. Every discovered reference is a hard quarantine until a reviewed
+canonical mapping exists; missing or duplicate `files.json` paths are reported
+as `EMBEDDED_FILE_MISSING`/`EMBEDDED_FILE_AMBIGUOUS`. It can also be inspected
+alone with `python3 embedded_attachment_audit.py --archive <snapshot> --output
+<new-report> --allow-quarantine`.

@@ -20,6 +20,11 @@ services:
       PORT: 3080
       DATABASE_URL: "postgresql://growdesk:${GROWDESK_DB_PASSWORD:?GROWDESK_DB_PASSWORD is required}@postgres:5432/growdesk"
       REDIS_URL: "redis://:${REDIS_PASSWORD:?REDIS_PASSWORD is required}@redis:6379/0"
+      S3_BUCKET: "${S3_BUCKET:?S3_BUCKET is required}"
+      S3_REGION: "${S3_REGION:-us-east-1}"
+      S3_ENDPOINT: "http://storage:9000"
+      AWS_ACCESS_KEY_ID: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
+      AWS_SECRET_ACCESS_KEY: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
     ports:
       - "127.0.0.1:${GROWDESK_HOST_PORT:-3180}:3080"
     depends_on:
@@ -27,10 +32,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     networks:
       - growdesk-ingress
       - growdesk-db
       - growdesk-redis
+      - growdesk-storage
     healthcheck:
       test:
         - CMD
@@ -142,6 +150,63 @@ services:
           cpus: "0.10"
           memory: 128M
 
+  storage:
+    image: ${GROWDESK_MINIO_IMAGE:-quay.io/minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e}
+    init: true
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
+    volumes:
+      - growdesk-storage-data:/data
+    networks:
+      - growdesk-storage
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "0.75"
+          memory: 768M
+        reservations:
+          cpus: "0.10"
+          memory: 256M
+
+  storage-init:
+    image: ${GROWDESK_MINIO_MC_IMAGE:-quay.io/minio/mc@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727}
+    restart: "no"
+    depends_on:
+      storage:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:?MINIO_ROOT_USER is required}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?MINIO_ROOT_PASSWORD is required}"
+      S3_BUCKET: "${S3_BUCKET:?S3_BUCKET is required}"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set local http://storage:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" >/dev/null
+        mc mb --ignore-existing "local/$${S3_BUCKET}" >/dev/null
+        mc anonymous set none "local/$${S3_BUCKET}" >/dev/null
+    networks:
+      - growdesk-storage
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *default-logging
+
 configs:
   growdesk-postgres-init:
     content: |
@@ -181,6 +246,8 @@ volumes:
     name: growdesk-postgres-data
   growdesk-redis-data:
     name: growdesk-redis-data
+  growdesk-storage-data:
+    name: growdesk-storage-data
 
 networks:
   growdesk-ingress:
@@ -190,4 +257,7 @@ networks:
     internal: true
   growdesk-redis:
     name: growdesk-redis
+    internal: true
+  growdesk-storage:
+    name: growdesk-storage
     internal: true

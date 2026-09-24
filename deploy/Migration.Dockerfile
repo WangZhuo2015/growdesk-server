@@ -1,5 +1,6 @@
 # A separate, one-shot migration tool. Never run migrations from API startup.
 FROM node:24.14.1-bookworm-slim@sha256:b506e7321f176aae77317f99d67a24b272c1f09f1d10f1761f2773447d8da26c
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /migration
 COPY package.json package-lock.json ./
 COPY apps ./apps

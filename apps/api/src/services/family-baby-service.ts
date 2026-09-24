@@ -40,6 +40,7 @@ async function verifyAvatarReference(tx: Prisma.TransactionClient, avatarUrl: st
   if (!avatarUrl) return;
   const match = /^\/api\/attachments\/([a-f0-9-]{36})$/i.exec(avatarUrl);
   if (!match) throw new ApiError(422, "INVALID_AVATAR", "Use an uploaded avatar attachment");
+  await tx.$queryRaw`SELECT id FROM public.attachments WHERE id = ${match[1]} FOR UPDATE`;
   const attachment = await tx.attachment.findFirst({ where: { id: match[1], familyId, purpose: "avatar", status: "ready", deletedAt: null, OR: [{ babyId }, { babyId: null, uploaderId: userId }] } });
   if (!attachment) throw new ApiError(403, "AVATAR_ACCESS_DENIED", "Avatar attachment is not available for this baby");
   if (!attachment.babyId) await tx.attachment.update({ where: { id: attachment.id }, data: { babyId } });
@@ -60,6 +61,13 @@ export function toContractFamily(family: {
     createdAt: family.createdAt.toISOString(),
     updatedAt: family.updatedAt.toISOString(),
   };
+}
+
+function toContractFamilyMemberRole(role: string): ContractFamilyMember["role"] {
+  if (role === "admin" || role === "member" || role === "viewer") return role;
+  // The database CHECK constraint should make this unreachable. Do not
+  // silently turn an unknown permission into a weaker-looking member role.
+  throw new ApiError(500, "INVALID_FAMILY_MEMBER_ROLE", "Family member has an unsupported role");
 }
 
 export function toDbGender(gender?: "boy" | "girl" | "other"): string {
@@ -518,10 +526,13 @@ export class FamilyBabyService {
     });
 
     return members.map((m) => ({
+      id: m.id,
       userId: m.userId,
       familyId: m.familyId,
-      role: m.role === "admin" ? "admin" : "member",
+      role: toContractFamilyMemberRole(m.role),
+      username: m.user.username,
       displayName: m.user.displayName,
+      relation: m.relation,
       joinedAt: m.createdAt.toISOString(),
     }));
   }

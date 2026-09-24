@@ -65,6 +65,7 @@ export function mapEntityToFeedingRecord(entity: FeedingRecordEntity): FeedingRe
     notes: entity.notes,
     source: entity.source,
     sourceAgent: entity.sourceAgent,
+    recordedByUserId: entity.recordedByUserId,
     version: entity.version.toString(),
     createdAt: toIso(entity.createdAt),
     updatedAt: toIso(entity.updatedAt),
