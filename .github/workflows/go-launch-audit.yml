@@ -1,0 +1,121 @@
+name: Go launch audit (not deployment)
+on:
+  pull_request:
+    branches: [main, codex/web-parity-20260919]
+    paths:
+      - scripts/release/**
+      - docs/GO_LIVE_HANDOFF.zh-CN.md
+      - .github/workflows/go-launch-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: go-launch-audit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  audit-tests:
+    name: Launch audit regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Test evidence rejection and metadata-only execution
+        run: python3 -B -m unittest discover -s scripts/release -p 'test_*.py' -v
+  candidate-readiness:
+    name: Candidate source blockers (must fail while NO_GO)
+    needs: audit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -mod=readonly
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: server
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: WangZhuo2015/baby_panel_for_cecilia
+          ref: c3582203f0577f0b2b31d46f5157d3b5308361f1
+          path: web
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: server/go.sum
+      - name: Build exact candidate metadata binary without starting services
+        working-directory: server
+        run: |
+          set -eu
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          mkdir -p "$RUNNER_TEMP/go-launch-bin"
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o "$RUNNER_TEMP/go-launch-bin/growdesk-api" ./cmd/growdesk-api
+      - name: Audit full registration and known source blockers
+        run: |
+          python3 -B server/scripts/release/go_launch_audit.py \
+            --server-root server --web-root web \
+            --binary "$RUNNER_TEMP/go-launch-bin/growdesk-api" \
+            --output "$RUNNER_TEMP/go-launch-report.json"
+      - name: Stage only tracked handoff tools and sanitized diagnostics
+        if: always()
+        run: |
+          set -eu
+          mkdir -p "$RUNNER_TEMP/go-live-handoff"
+          for file in server/docs/GO_LIVE_HANDOFF.zh-CN.md server/scripts/release/go_launch_audit.py server/scripts/release/test_go_launch_audit.py; do
+            if test -f "$file"; then cp "$file" "$RUNNER_TEMP/go-live-handoff/"; fi
+          done
+          if test -f "$RUNNER_TEMP/go-launch-report.json"; then cp "$RUNNER_TEMP/go-launch-report.json" "$RUNNER_TEMP/go-live-handoff/"; fi
+          git -C server rev-parse HEAD > "$RUNNER_TEMP/go-live-handoff/server-source-sha.txt"
+          git -C web rev-parse HEAD > "$RUNNER_TEMP/go-live-handoff/web-source-sha.txt"
+          cd "$RUNNER_TEMP/go-live-handoff"
+          sha256sum ./* > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-live-handoff-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/go-live-handoff/
+          if-no-files-found: error
+          retention-days: 30
+  recovery-build:
+    name: Unmerged recovery compilation (diagnostic only)
+    needs: audit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -mod=readonly
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 994a6e4c21167aacf80b7609175a0d1979462668
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: go.sum
+      - name: Compile immutable recovery without accepting or merging it
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = '994a6e4c21167aacf80b7609175a0d1979462668'
+          git rev-parse HEAD > "$RUNNER_TEMP/recovery-source-sha.txt"
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          go build ./... 2>&1 | tee "$RUNNER_TEMP/go-recovery-build.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: go-recovery-diagnostic-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/recovery-source-sha.txt
+            ${{ runner.temp }}/go-recovery-build.log
+          if-no-files-found: error
+          retention-days: 30
