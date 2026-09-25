@@ -183,6 +183,9 @@ export const BffSessionExchangeRequestSchema = Type.Object(
     username: Type.Optional(Type.String({ minLength: 1 })),
     password: Type.Optional(Type.String({ minLength: 1 })),
     deviceLabel: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    // Match the existing published Go exchange contract. This is only its wire
+    // type: the Go handler separately enforces token profile, size and lifetime.
+    legacyAuthToken: Type.Optional(Type.String()),
   },
   { $id: "BffSessionExchangeRequest", additionalProperties: false }
 );
