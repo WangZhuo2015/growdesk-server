@@ -9,6 +9,35 @@ import { generateCanonicalOpenApi } from "../../../scripts/contract-generator.mj
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
+// A megabyte string diff hides the changed field in CI output. This is only
+// bounded diagnostic context: the original byte-for-byte assertion stays below.
+function firstContractDifference(left: unknown, right: unknown, location = "$"): string | null {
+  if (Object.is(left, right)) return null;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    if (left.length !== right.length) return `${location}: array lengths ${left.length} != ${right.length}`;
+    for (let i = 0; i < left.length; i++) {
+      const difference = firstContractDifference(left[i], right[i], `${location}[${i}]`);
+      if (difference) return difference;
+    }
+    return null;
+  }
+  if (left !== null && right !== null && typeof left === "object" && typeof right === "object" &&
+      !Array.isArray(left) && !Array.isArray(right)) {
+    const a = left as Record<string, unknown>;
+    const b = right as Record<string, unknown>;
+    for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) {
+      const child = `${location}[${JSON.stringify(key)}]`;
+      if (!Object.hasOwn(a, key)) return `${child}: missing from stored snapshot`;
+      if (!Object.hasOwn(b, key)) return `${child}: absent from generated contract`;
+      const difference = firstContractDifference(a[key], b[key], child);
+      if (difference) return difference;
+    }
+    return null;
+  }
+  const preview = (value: unknown) => String(JSON.stringify(value)).slice(0, 160);
+  return `${location}: stored ${preview(left)} != generated ${preview(right)}`;
+}
+
 describe("GrowDesk Contracts Test Suite", () => {
   test("ApiErrorEnvelope schema validates standard error payload", () => {
     const validError = {
@@ -172,6 +201,9 @@ describe("GrowDesk Contracts Test Suite", () => {
     const diskContent = await fs.readFile(diskPath, "utf8");
     const generatedContent = JSON.stringify(generated, null, 2) + "\n";
 
+    if (diskContent !== generatedContent) {
+      console.error("OPENAPI_DRIFT:", firstContractDifference(JSON.parse(diskContent), generated) ?? "formatting or property order differs");
+    }
     assert.equal(
       diskContent,
       generatedContent,
