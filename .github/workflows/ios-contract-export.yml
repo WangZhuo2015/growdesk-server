@@ -1,0 +1,25 @@
+name: Export pinned public iOS contract
+on:
+  push:
+    branches: [chore/ios-contract-export-20260925]
+    paths: [.github/workflows/ios-contract-export.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 98064ba4566be7e2a99106efdfb6628af461343e
+          persist-credentials: false
+      - name: Export public schema only (no private repositories or credentials)
+        run: |
+          mkdir -p "$RUNNER_TEMP/ios-contract"
+          cp contracts/openapi.json "$RUNNER_TEMP/ios-contract/openapi.json"
+          sha256sum contracts/openapi.json > "$RUNNER_TEMP/ios-contract/SHA256SUMS"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-contract-98064ba
+          path: ${{ runner.temp }}/ios-contract
+          retention-days: 1
