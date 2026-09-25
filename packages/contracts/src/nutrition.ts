@@ -297,9 +297,6 @@ export const CreateFoodLibraryItemRequestSchema = Type.Object(
     category: Type.String({ minLength: 1, maxLength: 50 }),
     allergenRisk: FoodAllergenRiskSchema,
     recommendedAgeMonths: Type.Integer({ minimum: 0 }),
-    // Optional legacy compatibility: create the item with an explicit family
-    // "tried" status in one step (old Web marks custom foods tried on create).
-    tried: Type.Optional(Type.Boolean()),
   },
   { $id: "CreateFoodLibraryItemRequest", additionalProperties: false }
 );

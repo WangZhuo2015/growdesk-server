@@ -1,23 +1,50 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest } from "fastify";
 import { FoodService } from "../../apps/api/src/services/food-service.js";
 import { foodRoutes } from "../../apps/api/src/routes/food-routes.js";
 import type { PrismaClient } from "@growdesk/database";
 import type { UserPrincipal } from "@growdesk/domain";
 
+type Row = Record<string, unknown>;
+type CreateArguments = { data: Row };
+type Transaction = {
+  foodLibraryItem: { create(args: CreateArguments): Promise<Row> };
+  familyFoodStatus: { create(args: CreateArguments): Promise<Row> };
+};
 const principal = { userId: "test_user_food", familyMemberships: [{ familyId: "test_family_food", status: "active", role: "admin" }], babyMemberships: [] } as unknown as UserPrincipal;
 const body = { name: "test_rice", category: "other", allergenRisk: "low" as const, recommendedAgeMonths: 6, tried: true };
+
+// The real service and repository execute. Only the database boundary is a
+// fixture: stage item/status changes and expose them to reads after commit.
 function harness() {
-  const writes: any[] = [];
-  const rows: any[] = [];
-  const prisma = { foodLibraryItem: {
-    create: async ({ data }: any) => { const row = { ...data, id: "test_custom_food" }; rows.push(row); return row; },
-    findMany: async () => rows,
-  }, familyFoodStatus: {
-    upsert: async (args: any) => { writes.push(args); return args.create; },
-    findMany: async () => writes.map(write => write.create),
-  } } as unknown as PrismaClient;
+  const writes: Array<{ create: Row }> = [];
+  const rows: Row[] = [];
+  const prisma = {
+    $transaction: async <T>(apply: (tx: Transaction) => Promise<T>): Promise<T> => {
+      const pendingRows: Row[] = [];
+      const pendingStatuses: Array<{ create: Row }> = [];
+      const result = await apply({
+        foodLibraryItem: { create: async ({ data }) => {
+          const row = { ...data, id: "test_custom_food" };
+          pendingRows.push(row);
+          return row;
+        } },
+        familyFoodStatus: { create: async ({ data }) => {
+          pendingStatuses.push({ create: data });
+          return data;
+        } },
+      });
+      rows.push(...pendingRows);
+      writes.push(...pendingStatuses);
+      return result;
+    },
+    foodLibraryItem: { findMany: async () => rows },
+    familyFoodStatus: {
+      upsert: async () => { throw new Error("Post-commit status writes are forbidden"); },
+      findMany: async () => writes.map(write => write.create),
+    },
+  } as unknown as PrismaClient;
   return { writes, prisma, service: new FoodService(prisma) };
 }
 
@@ -25,6 +52,7 @@ test("F3 service persists explicit tried in the active family and returns it on 
   const h = harness();
   const created = await h.service.createFoodLibraryItem(principal, body);
   assert.equal(h.writes.length, 1, "tried status must be persisted");
+  assert.ok(h.writes[0], "the explicit tried status must have a persisted row");
   assert.equal(h.writes[0].create.familyId, "test_family_food");
   assert.equal(h.writes[0].create.foodItemId, "test_custom_food");
   assert.equal(h.writes[0].create.tried, true);
@@ -35,7 +63,7 @@ test("F3 service persists explicit tried in the active family and returns it on 
 test("F3 route-local create schema accepts optional tried without dropping it", async t => {
   const h = harness();
   const app = Fastify({ ajv: { customOptions: { removeAdditional: false } } });
-  app.decorate("authenticate", async (request: any) => { request.principal = principal; });
+  app.decorate("authenticate", async (request: FastifyRequest) => { request.principal = principal; });
   await app.register(foodRoutes, { prisma: h.prisma });
   t.after(() => app.close());
   const response = await app.inject({ method: "POST", url: "/api/v1/food/items", payload: body });
@@ -55,5 +83,6 @@ test("F3 omission keeps old create behavior; false is explicitly persisted", asy
   assert.equal(h.writes.length, 0);
   await h.service.createFoodLibraryItem(principal, { ...body, tried: false });
   assert.equal(h.writes.length, 1);
+  assert.ok(h.writes[0], "false must be persisted, not treated as omission");
   assert.equal(h.writes[0].create.tried, false);
 });

@@ -1,0 +1,57 @@
+name: Post-launch attachment reconciliation
+on:
+  pull_request:
+    branches: [main]
+    paths: ['scripts/legacy-import/**', '.github/workflows/postlaunch-attachment-reconciliation.yml']
+  push:
+    branches: [main]
+    paths: ['scripts/legacy-import/**', '.github/workflows/postlaunch-attachment-reconciliation.yml']
+permissions:
+  contents: read
+jobs:
+  receipt-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate
+          persist-credentials: false
+      - name: Existing release checks and new attachment regressions
+        working-directory: candidate
+        run: |
+          set -eu
+          python3 -B scripts/legacy-import/test_verify_target.py
+          python3 -B scripts/legacy-import/test_cutover_runner.py
+          python3 -B scripts/legacy-import/test_release_gate.py
+          python3 -B scripts/legacy-import/test_readiness_regression.py
+          python3 -B scripts/legacy-import/test_attachment_reconciliation.py -v
+      - uses: actions/checkout@v4
+        with:
+          ref: fbb2e689c8fc76bf7a093ce73f646f473a4fee44
+          path: baseline
+          persist-credentials: false
+      - name: The same missing-mapping test must detect vulnerable baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C baseline rev-parse HEAD)" = fbb2e689c8fc76bf7a093ce73f646f473a4fee44
+          test ! -e baseline/scripts/legacy-import/test_attachment_reconciliation.py
+          cp candidate/scripts/legacy-import/test_attachment_reconciliation.py baseline/scripts/legacy-import/test_attachment_reconciliation.py
+          git -C baseline diff --exit-code
+          set +e
+          python3 -B baseline/scripts/legacy-import/test_attachment_reconciliation.py AttachmentReconciliationTests.test_growth_image_requires_mapping_before_query > "$RUNNER_TEMP/attachment-negative-control.log" 2>&1
+          result=$?
+          set -e
+          test "$result" -ne 0
+          grep -Fq 'AssertionError: unmapped source image must not reach the database query' "$RUNNER_TEMP/attachment-negative-control.log"
+          grep -Fq 'FAILED (failures=1)' "$RUNNER_TEMP/attachment-negative-control.log"
+          echo 'PASS negative control: baseline incorrectly proceeded with an unresolved image'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: attachment-reconciliation-negative-control-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/attachment-negative-control.log
+          if-no-files-found: warn
+          retention-days: 14

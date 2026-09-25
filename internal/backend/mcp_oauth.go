@@ -358,8 +358,12 @@ func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
 		}
 		defer rollback(tx)
 
-		cursor, err := lockFamily(ctx, tx, scope.FamilyID)
+		cursor, err := lockMcpMutationScope(ctx, tx, auth, targetBabyID, scope.FamilyID)
 		if err != nil {
+			status := normalizedError(err).Status
+			if status == 403 || status == 404 {
+				return rpcError(rpcID, -32003, "Access denied to baby"), nil
+			}
 			return Result{}, err
 		}
 

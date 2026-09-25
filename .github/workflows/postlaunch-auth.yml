@@ -1,0 +1,71 @@
+name: Post-launch authentication regression
+on:
+  pull_request:
+    branches: [main]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'packages/contracts/**', 'apps/api/src/services/food-service.ts', 'tests/unit/food-library-create-transaction.test.ts', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
+  push:
+    branches: [main]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'packages/contracts/**', 'apps/api/src/services/food-service.ts', 'tests/unit/food-library-create-transaction.test.ts', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
+permissions:
+  contents: read
+concurrency:
+  group: postlaunch-auth-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-auth-privacy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -mod=readonly
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Locked build, full vet and race tests
+        run: |
+          set -eu
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          go vet ./...
+          go test -race -count=1 ./...
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --version
+      - name: Actual HTTP and durable authorization on owned databases
+        run: python3 scripts/go-postlaunch-auth-integration.py --binary dist-go/growdesk-api --report dist-go/postlaunch-auth.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: postlaunch-auth-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/postlaunch-auth.json
+          if-no-files-found: warn
+          retention-days: 14
+  food-contract-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Build the existing contract and repository dependencies
+        run: |
+          set -eu
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run --workspace=@growdesk/contracts build
+          npm run --workspace=@growdesk/domain build
+          npm run --workspace=@growdesk/database build
+      - name: Preserve optional boolean semantics and one transaction per create
+        run: node --import tsx --test packages/contracts/tests/food-create-tried.test.ts tests/unit/food-library-create-transaction.test.ts
