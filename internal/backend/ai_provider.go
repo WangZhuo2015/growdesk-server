@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -90,7 +89,7 @@ func callNativeAI(ctx context.Context,c nativeProviderConfig,sessionID,babyID,me
 	req.Header.Set("Content-Type","application/json");req.Header.Set("Authorization","Bearer "+c.APIKey)
 	client:=providerHTTPClient(c.Timeout);defer client.CloseIdleConnections()
 	response,err:=client.Do(req)
-	if err!=nil{if errors.Is(ctx.Err(),context.DeadlineExceeded){return nativeAIResult{},providerFailure("AI_PROVIDER_TIMEOUT","AI provider request timed out",true)};if ctx.Err()!=nil{return nativeAIResult{},ctx.Err()};return nativeAIResult{},providerFailure("AI_PROVIDER_NETWORK_ERROR","AI provider connection failed",true)}
+	if err!=nil{return nativeAIResult{},nativeProviderRequestError(ctx,err)}
 	defer response.Body.Close()
 	if response.StatusCode<200||response.StatusCode>=300{code:="AI_PROVIDER_HTTP_ERROR";if response.StatusCode==401||response.StatusCode==403{code="AI_PROVIDER_AUTH_FAILED"};return nativeAIResult{},providerFailure(code,fmt.Sprintf("AI provider returned HTTP %d",response.StatusCode),response.StatusCode==408||response.StatusCode==409||response.StatusCode==429||response.StatusCode>=500)}
 	if strings.Contains(strings.ToLower(response.Header.Get("Content-Type")),"text/event-stream"){return readNativeAIStream(response.Body,delta)}
