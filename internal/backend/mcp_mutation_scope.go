@@ -24,10 +24,11 @@ func lockMcpMutationScope(ctx context.Context, tx pgx.Tx, auth *mcpAuthContext, 
 	}
 	if auth.principal.SessionID != "" {
 		var active bool
+		// NOW() is the transaction start, not the time after the lock wait.
 		err = tx.QueryRow(ctx, `SELECT EXISTS (
 			SELECT 1 FROM device_sessions d JOIN users u ON u.id=d.user_id
 			WHERE d.id=$1 AND d.user_id=$2 AND d.revoked_at IS NULL
-			AND d.absolute_expires_at>NOW() AND u.deleted_at IS NULL
+			AND d.absolute_expires_at>clock_timestamp() AND u.deleted_at IS NULL
 		)`, auth.principal.SessionID, auth.principal.UserID).Scan(&active)
 		if err != nil {
 			return 0, err
