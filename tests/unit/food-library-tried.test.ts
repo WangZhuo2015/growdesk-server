@@ -52,6 +52,7 @@ test("F3 service persists explicit tried in the active family and returns it on 
   const h = harness();
   const created = await h.service.createFoodLibraryItem(principal, body);
   assert.equal(h.writes.length, 1, "tried status must be persisted");
+  assert.ok(h.writes[0], "the explicit tried status must have a persisted row");
   assert.equal(h.writes[0].create.familyId, "test_family_food");
   assert.equal(h.writes[0].create.foodItemId, "test_custom_food");
   assert.equal(h.writes[0].create.tried, true);
@@ -82,5 +83,6 @@ test("F3 omission keeps old create behavior; false is explicitly persisted", asy
   assert.equal(h.writes.length, 0);
   await h.service.createFoodLibraryItem(principal, { ...body, tried: false });
   assert.equal(h.writes.length, 1);
+  assert.ok(h.writes[0], "false must be persisted, not treated as omission");
   assert.equal(h.writes[0].create.tried, false);
 });
