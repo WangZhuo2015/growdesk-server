@@ -1,0 +1,119 @@
+name: Post-launch MCP mutation authorization
+on:
+  pull_request:
+    branches: [main]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'prisma/**', 'contracts/**', 'scripts/go-*', '.github/workflows/postlaunch-mcp-lock.yml']
+  push:
+    branches: [main]
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'prisma/**', 'contracts/**', 'scripts/go-*', '.github/workflows/postlaunch-mcp-lock.yml']
+permissions:
+  contents: read
+concurrency:
+  group: postlaunch-mcp-lock-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native-lock-races:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -mod=readonly
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Locked dependencies, vet and full race suite
+        run: |
+          set -eu
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          go vet ./...
+          go test -race -count=1 ./...
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --version
+      - name: Actual HTTP and PostgreSQL permission interleavings
+        run: python3 -B scripts/go-mcp-lock-integration.py --binary dist-go/growdesk-api --report dist-go/mcp-lock-races.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mcp-lock-races-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/mcp-lock-races.json
+          if-no-files-found: warn
+          retention-days: 14
+  vulnerable-baseline-negative-control:
+    name: The same regression must reject the pre-fix baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOFLAGS: -mod=readonly
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: fbb2e689c8fc76bf7a093ce73f646f473a4fee44
+          path: baseline
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: baseline/go.sum
+      - name: Build immutable vulnerable Go source without changing it
+        working-directory: baseline
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD)" = fbb2e689c8fc76bf7a093ce73f646f473a4fee44
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+      - name: Reject exactly the known unauthorized-success failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Copy only the new test driver; all Go source and database harness
+          # remain the baseline. Its untracked driver is explicitly identified.
+          test ! -e baseline/scripts/go-mcp-lock-integration.py
+          cp candidate/scripts/go-mcp-lock-integration.py baseline/scripts/go-mcp-lock-integration.py
+          git -C baseline diff --exit-code
+          mkdir -p baseline/dist-go
+          git -C candidate rev-parse HEAD > baseline/dist-go/test-source-sha.txt
+          sha256sum baseline/scripts/go-mcp-lock-integration.py > baseline/dist-go/test-driver.sha256
+          set +e
+          python3 -B baseline/scripts/go-mcp-lock-integration.py --binary baseline/dist-go/growdesk-api --report baseline/dist-go/negative-control.json > baseline/dist-go/negative-control.log 2>&1
+          result=$?
+          set -e
+          test "$result" -ne 0
+          grep -Fq 'AssertionError: revoked request exposed a result or cached private product' baseline/dist-go/negative-control.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('baseline/dist-go/negative-control.json').read_text())
+          assert report['status'] == 'FAIL'
+          assert report['commit'] == 'fbb2e689c8fc76bf7a093ce73f646f473a4fee44'
+          assert report['cases'] == ['authorized creation and idempotent replay preserve one durable write']
+          print('PASS negative control: the pre-fix baseline returned success after baby revocation')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mcp-lock-negative-control-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            baseline/dist-go/negative-control.json
+            baseline/dist-go/negative-control.log
+            baseline/dist-go/test-source-sha.txt
+            baseline/dist-go/test-driver.sha256
+          if-no-files-found: warn
+          retention-days: 14
