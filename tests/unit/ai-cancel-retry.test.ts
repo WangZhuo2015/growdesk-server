@@ -91,6 +91,7 @@ test("A3 cancel keeps ownership checks and records a request without stealing a 
   assert.equal(queries.length, 0);
   await service.cancelRun({ userId: "test_user" }, "test_run");
   assert.equal(queries.length, 1);
+  assert.ok(queries[0], "the accepted cancellation must produce a query");
   assert.match(queries[0].sql, /cancel_requested_at = CURRENT_TIMESTAMP/);
   assert.doesNotMatch(queries[0].sql, /lease_owner = NULL/);
 });
