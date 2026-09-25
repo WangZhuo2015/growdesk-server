@@ -377,16 +377,9 @@ export class FoodService {
       tried: body.tried,
     });
 
-    // Legacy Web "create as tried": persist the explicit family status in the
-    // same step so the new item shows up in the tried list immediately.
-    if (body.tried !== undefined) {
-      await this.libraryRepo.updateFamilyStatus(activeFamily.familyId, item.id, {
-        tried: body.tried,
-        reaction: null,
-      });
-      return { ...item, familyStatus: { tried: body.tried, reaction: null } } as FoodLibraryItem;
-    }
-
+    // The repository commits the item and optional family status together.
+    // A second write here would run after commit and could report a failed
+    // request even though creation already succeeded (or overwrite a newer status).
     return item as FoodLibraryItem;
   }
 

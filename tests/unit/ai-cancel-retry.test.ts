@@ -5,22 +5,36 @@ import vm from "node:vm";
 import { createRequire } from "node:module";
 import ts from "typescript";
 
+type QueryClient = {
+  query(sql: string, values?: unknown): Promise<{ rows: unknown[]; rowCount: number }>;
+};
+type TestPrincipal = { userId: string };
+type AiServiceInstance = {
+  retryRun(principal: TestPrincipal, id: string): Promise<{ data: { status: string } }>;
+  cancelRun(principal: TestPrincipal, id: string): Promise<unknown>;
+};
+
 const require = createRequire(import.meta.url);
-function load(relative: string, mocks: Record<string, unknown>) {
+function load<T>(relative: string, mocks: Record<string, unknown>): T {
   const source = fs.readFileSync(new URL(relative, import.meta.url), "utf8");
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  const module = { exports: {} as any };
+  const module = { exports: {} as Record<string, unknown> };
   vm.runInNewContext(code, { module, exports: module.exports, Date, require: (id: string) => {
     if (id in mocks) return mocks[id];
     if (id.startsWith("node:")) return require(id);
     throw new Error(`Unmocked import ${id}`);
   } });
-  return module.exports;
+  // Only the module boundary is asserted; the production implementation runs.
+  return module.exports as T;
 }
-const { TaskExecutionRepository } = load("../../packages/database/src/task-repository.ts", {
+const { TaskExecutionRepository } = load<{
+  TaskExecutionRepository: { reconcile(client: QueryClient): Promise<unknown> };
+}>("../../packages/database/src/task-repository.ts", {
   "./generated/client.js": { Prisma: { JsonNull: null } }, "./errors.js": {},
 });
-const { AiService } = load("../../apps/api/src/services/ai-service.ts", {
+const { AiService } = load<{
+  AiService: new (database: unknown, pool: unknown) => AiServiceInstance;
+}>("../../apps/api/src/services/ai-service.ts", {
   "@growdesk/database": { Prisma: { JsonNull: null }, TaskExecutionRepository, RecordNotFoundError: Error, ConcurrencyConflictError: Error },
   "./feeding-service.js": {}, "@growdesk/contracts": {},
 });
@@ -44,11 +58,11 @@ test("A3 reconcile terminates unclaimed cancellations before recovery or max-att
 for (const status of ["cancelled", "failed"]) {
   test(`A3 retry ${status} task clears the cancellation marker before dispatch`, async () => {
     const marker = new Date("2026-09-17T00:00:00Z");
-    const task: any = { status, attempt: 1, cancelRequestedAt: marker };
+    const task: Record<string, unknown> = { status, attempt: 1, cancelRequestedAt: marker };
     let dispatched = false;
     const tx = {
-      taskExecution: { update: async ({ data }: any) => { Object.assign(task, data); } },
-      taskOutbox: { create: async ({ data }: any) => {
+      taskExecution: { update: async ({ data }: { data: Record<string, unknown> }) => { Object.assign(task, data); } },
+      taskOutbox: { create: async ({ data }: { data: Record<string, unknown> }) => {
         assert.equal(task.cancelRequestedAt, null, "retry must clear cancellation or claimTask will refuse the queued run");
         assert.equal(task.status, "queued");
         assert.equal(data.aggregateId, "test_run");
@@ -56,7 +70,10 @@ for (const status of ["cancelled", "failed"]) {
         dispatched = true;
       } },
     };
-    const service = new AiService({ aiRun: { findUnique: async () => ({ userId: "test_user", taskExecution: task }) }, $transaction: async (fn: any) => fn(tx) }, {});
+    const service = new AiService({
+      aiRun: { findUnique: async () => ({ userId: "test_user", taskExecution: task }) },
+      $transaction: async (fn: (transaction: typeof tx) => Promise<unknown>) => fn(tx),
+    }, {});
     const result = await service.retryRun({ userId: "test_user" }, "test_run");
     assert.equal(result.data.status, "queued");
     assert.equal(task.attempt, 2);
@@ -67,13 +84,14 @@ for (const status of ["cancelled", "failed"]) {
 }
 
 test("A3 cancel keeps ownership checks and records a request without stealing a running lease", async () => {
-  const queries: any[] = [];
-  const pool = { query: async (sql: string, values: any) => { queries.push({ sql, values }); return { rows: [], rowCount: 1 }; } };
+  const queries: Array<{ sql: string; values?: unknown }> = [];
+  const pool: QueryClient = { query: async (sql, values) => { queries.push({ sql, values }); return { rows: [], rowCount: 1 }; } };
   const service = new AiService({ aiRun: { findUnique: async () => ({ userId: "test_user", taskExecution: { status: "running" } }) } }, pool);
   await assert.rejects(() => service.cancelRun({ userId: "test_other_user" }, "test_run"));
   assert.equal(queries.length, 0);
   await service.cancelRun({ userId: "test_user" }, "test_run");
   assert.equal(queries.length, 1);
+  assert.ok(queries[0], "the accepted cancellation must produce a query");
   assert.match(queries[0].sql, /cancel_requested_at = CURRENT_TIMESTAMP/);
   assert.doesNotMatch(queries[0].sql, /lease_owner = NULL/);
 });

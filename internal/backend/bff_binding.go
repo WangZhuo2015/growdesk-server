@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -42,30 +41,20 @@ func (s *Server) bindBffLegacySession(ctx context.Context, r *Request) (Result, 
 	if len(secretHash) != 64 || !rawRefreshPattern.MatchString(secretHash) {
 		return Result{}, apiError(400, "INVALID_SESSION_SECRET_HASH", "Session secret hash must be 64 hexadecimal characters")
 	}
-	tokenString := text(r.Body["legacyAuthToken"])
-	claims := jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(strings.TrimSpace(tokenString), claims, func(token *jwt.Token) (any, error) {
-		return []byte(s.Config.JWTSecret), nil
-	}, jwt.WithValidMethods([]string{"HS256"}))
-	if err != nil || !token.Valid {
-		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "Invalid or expired legacy authentication token")
-	}
-	if text(claims["typ"]) == "mcp" {
-		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "MCP tokens cannot be used as web sessions")
-	}
-	uid := text(claims["userId"])
-	if uid == "" {
-		uid = text(claims["sub"])
-	}
-	if uid == "" {
-		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "Legacy token missing user identity")
-	}
-	verified, err := one(ctx, s.DB, "SELECT to_jsonb(u) FROM users u WHERE id=$1 AND deleted_at IS NULL", uid)
-	if errors.Is(err, pgx.ErrNoRows) || verified == nil {
-		return Result{}, apiError(401, "INVALID_LEGACY_TOKEN", "User not found or deleted")
-	}
+	uid, err := legacyWebTokenUser(text(r.Body["legacyAuthToken"]), s.Config.JWTSecret)
 	if err != nil {
 		return Result{}, err
+	}
+	verified, err := one(ctx, s.DB, "SELECT to_jsonb(u) FROM users u WHERE id=$1 AND deleted_at IS NULL", uid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Result{}, invalidLegacyWebToken()
+	}
+	// A database outage is not an invalid login and must remain a server error.
+	if err != nil {
+		return Result{}, err
+	}
+	if verified == nil {
+		return Result{}, invalidLegacyWebToken()
 	}
 	return s.bindBffForUser(ctx, r, secretHash, uid, verified, "")
 }
