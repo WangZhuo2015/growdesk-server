@@ -86,7 +86,10 @@ def build_checks(data: dict[str, Any], checksum: str, attachment_report: Mapping
             return None
         target = attachments.get((table, row_id, field))
         if target is None:
-            return None
+            # A present legacy reference is an obligation to reconcile an
+            # attachment, not permission to accept NULL or omit its predicate.
+            # Keep the original private path out of diagnostics.
+            raise ValueError("missing canonical attachment mapping")
         return str(target["id"])
 
     for row in care.prepare_formula_products(data, checksum):
