@@ -2,10 +2,10 @@ name: Post-launch authentication regression
 on:
   pull_request:
     branches: [main]
-    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'packages/contracts/**', 'apps/api/src/services/food-service.ts', 'tests/unit/food-library-create-transaction.test.ts', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
   push:
     branches: [main]
-    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
+    paths: ['**/*.go', 'go.mod', 'go.sum', 'contracts/**', 'packages/contracts/**', 'apps/api/src/services/food-service.ts', 'tests/unit/food-library-create-transaction.test.ts', 'prisma/**', 'scripts/go-*', '.github/workflows/postlaunch-auth.yml']
 permissions:
   contents: read
 concurrency:
@@ -47,3 +47,25 @@ jobs:
           path: dist-go/postlaunch-auth.json
           if-no-files-found: warn
           retention-days: 14
+  food-contract-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Build the existing contract and repository dependencies
+        run: |
+          set -eu
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run --workspace=@growdesk/contracts build
+          npm run --workspace=@growdesk/domain build
+          npm run --workspace=@growdesk/database build
+      - name: Preserve optional boolean semantics and one transaction per create
+        run: node --import tsx --test packages/contracts/tests/food-create-tried.test.ts tests/unit/food-library-create-transaction.test.ts
