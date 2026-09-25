@@ -37,6 +37,8 @@ class AttachmentReconciliationTests(unittest.TestCase):
             "receipts": [{
                 "sourceBatchId": self.checksum(), "sourceTable": table,
                 "sourceId": row_id, "sourceField": field,
+                "sourcePath": "public/uploads/test_unmapped_private_image.png",
+                "targetAttachmentId": "00000000-0000-4000-8000-000000000007",
                 "attachment": {
                     "id": "00000000-0000-4000-8000-000000000007",
                     "familyId": "00000000-0000-4000-8000-000000000001",
