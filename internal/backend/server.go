@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -135,16 +136,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, apiError(404, "NOT_FOUND", "Route not found"), requestID)
 		return
 	}
+	slotReleased := false
 	select {
 	case s.slots <- struct{}{}:
-		defer func() { <-s.slots }()
+		defer func() {
+			if !slotReleased {
+				<-s.slots
+			}
+		}()
 	default:
 		w.Header().Set("Retry-After", "1")
 		s.writeError(w, apiError(503, "SERVER_BUSY", "Server concurrency limit reached"), requestID)
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), s.Config.RequestTimeout)
-	defer cancel()
+	isWebSocket := strings.EqualFold(r.Header.Get("Upgrade"), "websocket")
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if isWebSocket {
+		ctx = r.Context()
+	} else {
+		ctx, cancel = context.WithTimeout(r.Context(), s.Config.RequestTimeout)
+		defer cancel()
+	}
 	r = r.WithContext(ctx)
 	body := Object(nil)
 	if route.OperationID == "deleteRecordWithSnapshot" {
@@ -214,6 +227,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if result.Stream != nil {
+		if isWebSocket && !slotReleased {
+			<-s.slots
+			slotReleased = true
+		}
 		if err := result.Stream(w); err != nil {
 			s.Log.Warn("stream interrupted", "operationId", route.OperationID, "requestId", requestID)
 		}

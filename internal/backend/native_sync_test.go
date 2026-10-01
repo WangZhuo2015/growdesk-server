@@ -157,8 +157,8 @@ func TestNativeFullOperationCoverage(t *testing.T) {
 	if len(missing) > 0 {
 		t.Fatalf("missing %d operations: %v", len(missing), missing)
 	}
-	if len(s.Handlers) != 151 {
-		t.Fatalf("expected 151 handlers, got %d", len(s.Handlers))
+	if len(s.Handlers) != len(contract.Routes) {
+		t.Fatalf("expected %d handlers, got %d", len(contract.Routes), len(s.Handlers))
 	}
 }
 

@@ -28945,6 +28945,908 @@
           }
         }
       }
+    },
+    "/api/v1/passport/pairings": {
+      "post": {
+        "operationId": "createPassportPairing",
+        "summary": "Request a new pairing code from Passport device",
+        "tags": [
+          "Passport"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "hardware",
+                  "firmwareVersion"
+                ],
+                "properties": {
+                  "hardware": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "firmwareVersion": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "capabilities": {
+                    "additionalProperties": true,
+                    "type": "object",
+                    "properties": {
+                      "display": {
+                        "maxLength": 50,
+                        "type": "string"
+                      },
+                      "microphone": {
+                        "type": "boolean"
+                      },
+                      "speaker": {
+                        "type": "boolean"
+                      },
+                      "buttons": {
+                        "minimum": 0,
+                        "maximum": 10,
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "pairingId",
+                        "pairCode",
+                        "pollToken",
+                        "expiresAt"
+                      ],
+                      "properties": {
+                        "pairingId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "pairCode": {
+                          "minLength": 4,
+                          "maxLength": 20,
+                          "type": "string"
+                        },
+                        "pollToken": {
+                          "minLength": 16,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/pairings/claim": {
+      "post": {
+        "operationId": "claimPassportPairing",
+        "summary": "Claim a pairing code by authenticated user for a family and baby",
+        "tags": [
+          "Passport"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "pairCode",
+                  "familyId",
+                  "babyId"
+                ],
+                "properties": {
+                  "pairCode": {
+                    "minLength": 4,
+                    "maxLength": 20,
+                    "type": "string"
+                  },
+                  "familyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "deviceLabel": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "pairingId",
+                        "status"
+                      ],
+                      "properties": {
+                        "pairingId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "claimed"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/pairings/{id}/poll": {
+      "post": {
+        "operationId": "pollPassportPairing",
+        "summary": "Poll pairing completion status by Passport device",
+        "tags": [
+          "Passport"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "pollToken"
+                ],
+                "properties": {
+                  "pollToken": {
+                    "minLength": 16,
+                    "maxLength": 128,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "status"
+                      ],
+                      "properties": {
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "claimed"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "completed"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "expired"
+                              ]
+                            }
+                          ]
+                        },
+                        "deviceId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "deviceCredential": {
+                          "minLength": 16,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/auth/token": {
+      "post": {
+        "operationId": "exchangePassportAuthToken",
+        "summary": "Exchange device credential for short-lived Passport JWT",
+        "tags": [
+          "Passport"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "deviceCredential": {
+                    "minLength": 16,
+                    "maxLength": 128,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "accessToken",
+                        "expiresIn",
+                        "tokenType"
+                      ],
+                      "properties": {
+                        "accessToken": {
+                          "minLength": 1,
+                          "type": "string"
+                        },
+                        "expiresIn": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "tokenType": {
+                          "type": "string",
+                          "enum": [
+                            "Bearer"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/devices": {
+      "get": {
+        "operationId": "listPassportDevices",
+        "summary": "List passport devices owned by user",
+        "tags": [
+          "Passport"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "description": "Keyset cursor to fetch next page"
+          },
+          {
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "integer"
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "description": "Page size"
+          }
+        ],
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data",
+                    "page"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "ownerUserId",
+                          "familyId",
+                          "babyId",
+                          "deviceLabel",
+                          "firmwareVersion",
+                          "hardwareVersion",
+                          "capabilities",
+                          "lastSeenAt",
+                          "revokedAt",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "ownerUserId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "babyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "deviceLabel": {
+                            "type": "string"
+                          },
+                          "firmwareVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "hardwareVersion": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "capabilities": {
+                            "type": "object",
+                            "additionalProperties": {},
+                            "nullable": true
+                          },
+                          "lastSeenAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "revokedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "nextCursor"
+                      ],
+                      "properties": {
+                        "nextCursor": {
+                          "description": "Keyset opaque pagination cursor",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/devices/{id}": {
+      "get": {
+        "operationId": "getPassportDevice",
+        "summary": "Get passport device details",
+        "tags": [
+          "Passport"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "ownerUserId",
+                        "familyId",
+                        "babyId",
+                        "deviceLabel",
+                        "firmwareVersion",
+                        "hardwareVersion",
+                        "capabilities",
+                        "lastSeenAt",
+                        "revokedAt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "ownerUserId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "deviceLabel": {
+                          "type": "string"
+                        },
+                        "firmwareVersion": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "hardwareVersion": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "capabilities": {
+                          "type": "object",
+                          "additionalProperties": {},
+                          "nullable": true
+                        },
+                        "lastSeenAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "revokedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "revokePassportDevice",
+        "summary": "Revoke passport device",
+        "tags": [
+          "Passport"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/passport/ws": {
+      "get": {
+        "operationId": "connectPassportWebSocket",
+        "summary": "WebSocket voice gateway for Passport device (Upgrade: websocket)",
+        "tags": [
+          "Passport"
+        ],
+        "x-implementation-status": "READY_PASSPORT",
+        "responses": {
+          "101": {
+            "description": "WebSocket switching protocols",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "WebSocket switching protocols",
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "servers": [

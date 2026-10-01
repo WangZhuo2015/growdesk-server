@@ -19,3 +19,4 @@ export type { HttpMethod, RouteDefinition } from "./routes.js";
 export { ROUTE_DEFINITIONS } from "./all-routes.js";
 export * from "./web-ai.js";
 export * from "./legacy-attachments.js";
+export * from "./passport.js";

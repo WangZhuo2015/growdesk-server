@@ -212,7 +212,7 @@ export interface RouteDefinition {
   operationId: string;
   summary: string;
   tags: string[];
-  implementationStatus: "READY" | "READY_TEST_SAMPLE" | "PLANNED_SH02" | "PLANNED_SH03" | "PLANNED_SH04F" | "PLANNED_SH04S" | "PLANNED_SH04D" | "PLANNED_SH04FO" | "PLANNED_SH04SU" | "PLANNED_SH04G" | "PLANNED_SH04N" | "PLANNED_SH04T" | "PLANNED_SH06" | "PLANNED_SH07" | "PLANNED_SH08" | "PLANNED_SH09";
+  implementationStatus: "READY" | "READY_TEST_SAMPLE" | "PLANNED_SH02" | "PLANNED_SH03" | "PLANNED_SH04F" | "PLANNED_SH04S" | "PLANNED_SH04D" | "PLANNED_SH04FO" | "PLANNED_SH04SU" | "PLANNED_SH04G" | "PLANNED_SH04N" | "PLANNED_SH04T" | "PLANNED_SH06" | "PLANNED_SH07" | "PLANNED_SH08" | "PLANNED_SH09" | "PLANNED_PASSPORT" | "READY_PASSPORT";
   body?: TSchema;
   params?: TSchema;
   querystring?: TSchema;

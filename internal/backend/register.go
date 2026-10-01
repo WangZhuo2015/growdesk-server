@@ -32,4 +32,5 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerNativeExports()
 	s.registerSamples()
 	s.registerMcpOAuth()
+	s.registerPassport()
 }
