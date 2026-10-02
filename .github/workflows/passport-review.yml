@@ -1,0 +1,83 @@
+name: Passport review
+on:
+  pull_request:
+    paths:
+      - 'internal/backend/passport*'
+      - '.github/workflows/passport-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: passport-review-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  confirmation-authorization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: test_passport_admin_password
+          POSTGRES_DB: test_bootstrap
+        ports: ['5432/tcp']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d test_bootstrap"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      GOFLAGS: -mod=readonly
+      PASSPORT_REQUIRE_INTEGRATION: '1'
+      PGHOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Create and migrate the owned test database
+        shell: bash
+        env:
+          PGPORT: ${{ job.services.postgres.ports['5432'] }}
+        run: |
+          set -euo pipefail
+          PGPASSWORD=test_passport_admin_password psql -X -v ON_ERROR_STOP=1 -U postgres -d test_bootstrap <<'SQL'
+          CREATE ROLE test_passport_review LOGIN PASSWORD 'test_passport_app_password' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION;
+          CREATE DATABASE test_passport_review OWNER test_passport_review;
+          SQL
+          export PGPASSWORD=test_passport_app_password
+          for migration in prisma/migrations/*/migration.sql; do
+            psql -X -q -v ON_ERROR_STOP=1 -U test_passport_review -d test_passport_review -f "$migration"
+          done
+          psql -X -q -v ON_ERROR_STOP=1 -U test_passport_review -d test_passport_review -f native/migrations/0003_passport.sql
+      - name: Exercise actual confirmation and revocation lock ordering
+        env:
+          TEST_PASSPORT_DATABASE_URL: postgresql://test_passport_review:test_passport_app_password@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/test_passport_review?sslmode=disable
+        run: go test -race -count=3 -v ./internal/backend -run '^TestPassportConfirmationRevocationIntegration$'
+  review-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Capture the public Redis test binary and its runtime libraries
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p redis-tools/lib
+          docker run --rm -v "$PWD/redis-tools:/out" debian:bookworm bash -euc '
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq redis-server
+            cp -L /usr/bin/redis-server /out/redis-server
+            ldd /usr/bin/redis-server | awk '\''/=> \/.*\(/ { print $3 }'\'' | while read -r library; do
+              case "$(basename "$library")" in libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*) continue ;; esac
+              cp -L "$library" /out/lib/
+            done
+          '
+          tar -czf passport-redis.tar.gz redis-tools
+      - uses: actions/upload-artifact@v4
+        with:
+          name: passport-redis-${{ github.run_id }}
+          path: passport-redis.tar.gz
+          retention-days: 1
+          if-no-files-found: error

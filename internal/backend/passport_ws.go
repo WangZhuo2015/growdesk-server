@@ -67,6 +67,13 @@ func (s *Server) handlePassportWebSocket(ctx context.Context, r *Request) (Resul
 }
 
 func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.Conn, principal *PassportPrincipal) error {
+	ctx, cancel := context.WithDeadline(ctx, principal.ExpiresAt)
+	defer cancel()
+	// Closing the socket also wakes an idle ReadMessage at token expiration.
+	go func() {
+		<-ctx.Done()
+		_ = conn.Close()
+	}()
 	var writeMu sync.Mutex
 	sendJSON := func(v any) error {
 		writeMu.Lock()
@@ -77,6 +84,14 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 		writeMu.Lock()
 		defer writeMu.Unlock()
 		return conn.WriteMessage(websocket.BinaryMessage, data)
+	}
+	sendAccessError := func(err error) {
+		code, message := "AUTHORIZATION_FAILED", "Unable to verify current device access"
+		var appErr *APIError
+		if errors.As(err, &appErr) {
+			code, message = appErr.Code, appErr.Message
+		}
+		_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": message})
 	}
 
 	// 1. Load baby name from DB
@@ -97,7 +112,7 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 		currentTurnID   string
 		currentAudioBuf bytes.Buffer
 		isRecording     bool
-		currentPending  *pendingCardProposal
+		currentPending  passportPending[pendingCardProposal]
 		ttsCancel       context.CancelFunc
 		ttsCancelMu     sync.Mutex
 		seenTurns       = make(map[string]bool)
@@ -166,6 +181,10 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 			})
 
 		case "audio.start":
+			if err := s.requirePassportTurnAccess(ctx, principal); err != nil {
+				sendAccessError(err)
+				return err
+			}
 			// User pressed OK button to start talking
 			stopTTS() // PTT immediately interrupts any playing TTS
 			turnID := text(frame["turnId"])
@@ -185,6 +204,10 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 			// User released OK button
 			if !isRecording {
 				continue
+			}
+			if err := s.requirePassportTurnAccess(ctx, principal); err != nil {
+				sendAccessError(err)
+				return err
 			}
 			isRecording = false
 			turnID := text(frame["turnId"])
@@ -209,27 +232,29 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 		case "card.confirm":
 			runID := text(frame["runId"])
 			planHash := text(frame["planHash"])
-			actionID := text(frame["actionId"])
+			pending := currentPending.load()
 
-			if currentPending == nil || currentPending.RunID != runID {
+			if pending == nil || pending.RunID != runID {
 				_ = sendJSON(Object{"v": 1, "type": "error", "code": "NO_PENDING_PROPOSAL", "message": "No active proposal card found"})
 				continue
 			}
 
-			if actionID == "" {
-				actionID = currentPending.Action.ActionID
+			actionID, err := passportConfirmedActionID(frame["actionIds"], pending.Action.ActionID)
+			if err != nil {
+				_ = sendJSON(Object{"v": 1, "type": "error", "code": "INVALID_CONFIRMATION", "message": err.Error()})
+				continue
 			}
 
-			recordID, err := s.executePassportCardConfirmation(ctx, principal, runID, planHash, actionID, currentPending.PlanHash, currentPending.Action, currentPending.ExpiresAt)
+			recordID, err := s.executePassportCardConfirmation(ctx, principal, runID, planHash, actionID, pending.PlanHash, pending.Action, pending.ExpiresAt)
 			if err != nil {
 				_ = sendJSON(Object{"v": 1, "type": "error", "code": "CONFIRM_FAILED", "message": err.Error()})
 			} else {
-				currentPending = nil
+				currentPending.clear(pending)
 				_ = sendJSON(Object{
 					"v":          1,
 					"type":       "card.saved",
 					"runId":      runID,
-					"entityType": currentPendingEntityType(currentPending),
+					"entityType": currentPendingEntityType(pending),
 					"recordId":   recordID,
 				})
 			}
@@ -273,7 +298,7 @@ func (s *Server) processVoiceTurn(
 	sendBinary func([]byte) error,
 	ttsCancelOut *context.CancelFunc,
 	ttsCancelMu *sync.Mutex,
-	pendingOut **pendingCardProposal,
+	pendingOut *passportPending[pendingCardProposal],
 ) {
 	config, err := nativeProviderConfiguration()
 	if err != nil {
@@ -344,12 +369,12 @@ func (s *Server) processVoiceTurn(
 			planHash, _ := canonicalNativeHash(rawActions)
 			expiry := time.Now().Add(2 * time.Minute)
 
-			*pendingOut = &pendingCardProposal{
+			pendingOut.store(&pendingCardProposal{
 				RunID:     runID,
 				PlanHash:  planHash,
 				Action:    action,
 				ExpiresAt: expiry,
-			}
+			})
 
 			_ = sendJSON(Object{
 				"v":     1,
@@ -442,8 +467,8 @@ func (s *Server) callPassportAgent(ctx context.Context, c nativeProviderConfig, 
 	}
 
 	// OpenAI-compatible call with structured tool/system prompt
-	systemPrompt := fmt.Sprintf("You are GrowDesk's private AI assistant for baby '%s'. Return JSON with 'text' and 'actions'. " +
-		"Supported entities: feeding, sleep, diaper, food, supplement, growth. Operation must be 'create'. " +
+	systemPrompt := fmt.Sprintf("You are GrowDesk's private AI assistant for baby '%s'. Return JSON with 'text' and 'actions'. "+
+		"Supported entities: feeding, sleep, diaper, food, supplement, growth. Operation must be 'create'. "+
 		"Actions are proposals only. Never claim database write has finished.", babyName)
 
 	var messages []Object

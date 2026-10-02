@@ -19,6 +19,33 @@ type PassportPrincipal struct {
 	BabyID      string
 	DeviceLabel string
 	Scopes      []string
+	ExpiresAt   time.Time
+}
+
+// Voice turns may arrive long after the handshake. Check current authorization
+// before starting new work on an existing connection.
+func (s *Server) requirePassportTurnAccess(ctx context.Context, principal *PassportPrincipal) error {
+	if !time.Now().Before(principal.ExpiresAt) {
+		return apiError(401, "INVALID_PASSPORT_TOKEN", "Passport token is expired")
+	}
+	var active bool
+	err := s.DB.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM passport_devices
+		WHERE id=$1 AND owner_user_id=$2 AND family_id=$3 AND baby_id=$4 AND revoked_at IS NULL)`,
+		principal.DeviceID, principal.OwnerUserID, principal.FamilyID, principal.BabyID).Scan(&active)
+	if err != nil {
+		return err
+	}
+	if !active {
+		return apiError(403, "DEVICE_ACCESS_REVOKED", "Device access has been revoked or its scope has changed")
+	}
+	scope, err := babyScope(ctx, s.DB, principal.OwnerUserID, principal.BabyID, false)
+	if err != nil {
+		return err
+	}
+	if scope.FamilyID != principal.FamilyID {
+		return apiError(403, "BABY_SCOPE_MISMATCH", "Device baby scope has changed")
+	}
+	return nil
 }
 
 func (s *Server) exchangePassportAuthToken(ctx context.Context, r *Request) (Result, error) {
@@ -140,6 +167,10 @@ func (s *Server) AuthenticatePassport(ctx context.Context, tokenString string) (
 	if err != nil || !token.Valid || text(claims["typ"]) != "passport+jwt" {
 		return nil, apiError(http.StatusUnauthorized, "INVALID_PASSPORT_TOKEN", "Passport token is invalid or expired")
 	}
+	expiration, err := claims.GetExpirationTime()
+	if err != nil || expiration == nil {
+		return nil, apiError(http.StatusUnauthorized, "INVALID_PASSPORT_TOKEN", "Passport token expiration is required")
+	}
 
 	deviceID := text(claims["deviceId"])
 	if deviceID == "" {
@@ -175,9 +206,12 @@ func (s *Server) AuthenticatePassport(ctx context.Context, tokenString string) (
 	}
 
 	// Re-verify baby scope in family
-	_, err = babyScope(ctx, s.DB, row.ownerUserID, row.babyID, false)
+	currentScope, err := babyScope(ctx, s.DB, row.ownerUserID, row.babyID, false)
 	if err != nil {
 		return nil, apiError(http.StatusForbidden, "BABY_ACCESS_DENIED", "Access to baby is no longer permitted")
+	}
+	if currentScope.FamilyID != row.familyID {
+		return nil, apiError(http.StatusForbidden, "BABY_SCOPE_MISMATCH", "Device baby scope has changed")
 	}
 
 	var scopes []string
@@ -196,5 +230,6 @@ func (s *Server) AuthenticatePassport(ctx context.Context, tokenString string) (
 		BabyID:      row.babyID,
 		DeviceLabel: row.deviceLabel,
 		Scopes:      scopes,
+		ExpiresAt:   expiration.Time,
 	}, nil
 }

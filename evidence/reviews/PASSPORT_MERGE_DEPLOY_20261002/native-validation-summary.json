@@ -1,0 +1,6 @@
+{
+  "go-integration": "PASS",
+  "go-domain-integration": "PASS",
+  "go-companion-integration": "PASS",
+  "go-session-review-integration": "PASS"
+}

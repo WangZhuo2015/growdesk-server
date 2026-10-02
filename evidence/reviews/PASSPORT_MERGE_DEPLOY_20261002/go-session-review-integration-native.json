@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "scope": "BFF lifecycle review; not whole-backend acceptance",
+  "commit": "4393837ef8a7f06b64d5c0241bc0430f491d644c",
+  "realReferenceHandoff": false,
+  "bidirectionalRefreshSupported": false
+}

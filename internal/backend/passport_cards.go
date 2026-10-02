@@ -3,8 +3,11 @@ package backend
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type PassportCardField struct {
@@ -25,9 +28,9 @@ type PassportCard struct {
 }
 
 type PassportConfirmationMeta struct {
-	PlanHash  string `json:"planHash"`
+	PlanHash  string   `json:"planHash"`
 	ActionIDs []string `json:"actionIds"`
-	ExpiresAt string `json:"expiresAt"`
+	ExpiresAt string   `json:"expiresAt"`
 }
 
 func projectActionToCard(action nativeAIAction) (PassportCard, error) {
@@ -147,6 +150,9 @@ func projectActionToCard(action nativeAIAction) (PassportCard, error) {
 
 // executePassportCardConfirmation executes the transactional mutation confirmed by the physical OK button
 func (s *Server) executePassportCardConfirmation(ctx context.Context, principal *PassportPrincipal, runID, planHash, actionID, expectedPlanHash string, action nativeAIAction, expiry time.Time) (string, error) {
+	if !time.Now().Before(principal.ExpiresAt) {
+		return "", apiError(401, "INVALID_PASSPORT_TOKEN", "Passport token is expired")
+	}
 	if time.Now().After(expiry) {
 		return "", apiError(409, "CONCURRENCY_CONFLICT", "Plan expired")
 	}
@@ -159,6 +165,9 @@ func (s *Server) executePassportCardConfirmation(ctx context.Context, principal 
 	if err != nil {
 		return "", err
 	}
+	if scope.FamilyID != principal.FamilyID {
+		return "", apiError(403, "BABY_SCOPE_MISMATCH", "Device baby scope has changed")
+	}
 
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
@@ -167,6 +176,21 @@ func (s *Server) executePassportCardConfirmation(ctx context.Context, principal 
 	defer rollback(tx)
 
 	if _, err = lockFamily(ctx, tx, scope.FamilyID); err != nil {
+		return "", err
+	}
+
+	// A WebSocket may outlive device revocation or reassignment. Revalidate
+	// its canonical scope under a row lock held until this write commits, so
+	// revocation and confirmation have a definite order at the database.
+	var authorizedDeviceID string
+	err = tx.QueryRow(ctx, `SELECT id FROM passport_devices
+		WHERE id = $1 AND owner_user_id = $2 AND family_id = $3 AND baby_id = $4
+		AND revoked_at IS NULL FOR SHARE`, principal.DeviceID, principal.OwnerUserID,
+		principal.FamilyID, principal.BabyID).Scan(&authorizedDeviceID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", apiError(403, "DEVICE_ACCESS_REVOKED", "Device access has been revoked or its scope has changed")
+	}
+	if err != nil {
 		return "", err
 	}
 
