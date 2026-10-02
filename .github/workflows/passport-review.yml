@@ -15,25 +15,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Package the public system formatter and its runtime libraries
+      - name: Capture the public Redis test binary and its runtime libraries
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p formatter/lib
-          tool="$(command -v clang-format)"
-          test -x "$tool"
-          cp -L "$tool" formatter/clang-format
-          ldd "$tool" | awk '/=> \/.*\(/ { print $3 }' | while read -r library; do
-            case "$(basename "$library")" in
-              libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*) continue ;;
-            esac
-            cp -L "$library" formatter/lib/
-          done
-          "$tool" --version > formatter/VERSION
-          tar -czf passport-formatter.tar.gz formatter
+          mkdir -p redis-tools/lib
+          docker run --rm -v "$PWD/redis-tools:/out" debian:bookworm bash -euc '
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq redis-server
+            cp -L /usr/bin/redis-server /out/redis-server
+            ldd /usr/bin/redis-server | awk '\''/=> \/.*\(/ { print $3 }'\'' | while read -r library; do
+              case "$(basename "$library")" in libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*) continue ;; esac
+              cp -L "$library" /out/lib/
+            done
+          '
+          tar -czf passport-redis.tar.gz redis-tools
       - uses: actions/upload-artifact@v4
         with:
-          name: passport-formatter-${{ github.run_id }}
-          path: passport-formatter.tar.gz
+          name: passport-redis-${{ github.run_id }}
+          path: passport-redis.tar.gz
           retention-days: 1
           if-no-files-found: error
