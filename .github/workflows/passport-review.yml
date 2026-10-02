@@ -1,51 +1,39 @@
 name: Passport review
-
 on:
   pull_request:
     paths:
       - 'internal/backend/passport*'
       - '.github/workflows/passport-review.yml'
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: passport-review-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  review-inputs:
+  review-tools:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-          path: server
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24.11.1'
-      - name: Capture public build dependencies only
+      - name: Package the public system formatter and its runtime libraries
         shell: bash
         run: |
           set -euo pipefail
-          mkdir review-inputs font-tools
-          (cd server && npm ci --ignore-scripts)
-          (cd font-tools && npm install --ignore-scripts --save-exact lv_font_conv@1.5.3)
-          tar -czf review-inputs/server-node-modules.tar.gz -C server node_modules
-          tar -czf review-inputs/font-tools.tar.gz -C font-tools .
-          cp "$(command -v node)" review-inputs/node
-          docker run --rm -v "$PWD/review-inputs:/out" debian:bookworm bash -euc '
-            apt-get update -qq
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-15 redis-server
-            tar -hczf /out/native-test-libraries.tar.gz -C / usr/lib/x86_64-linux-gnu/libldap-2.5.so.0 usr/lib/x86_64-linux-gnu/liblber-2.5.so.0 usr/lib/x86_64-linux-gnu/libicui18n.so.72 usr/lib/x86_64-linux-gnu/libicuuc.so.72 usr/lib/x86_64-linux-gnu/libicudata.so.72
-          '
-          sha256sum review-inputs/* > review-inputs/SHA256SUMS
+          mkdir -p formatter/lib
+          tool="$(command -v clang-format)"
+          test -x "$tool"
+          cp -L "$tool" formatter/clang-format
+          ldd "$tool" | awk '/=> \/.*\(/ { print $3 }' | while read -r library; do
+            case "$(basename "$library")" in
+              libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*) continue ;;
+            esac
+            cp -L "$library" formatter/lib/
+          done
+          "$tool" --version > formatter/VERSION
+          tar -czf passport-formatter.tar.gz formatter
       - uses: actions/upload-artifact@v4
         with:
-          name: passport-review-inputs-${{ github.run_id }}
-          path: review-inputs/
+          name: passport-formatter-${{ github.run_id }}
+          path: passport-formatter.tar.gz
           retention-days: 1
           if-no-files-found: error
