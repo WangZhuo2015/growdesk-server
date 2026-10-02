@@ -1,0 +1,56 @@
+name: Passport review
+
+on:
+  pull_request:
+    paths:
+      - 'internal/backend/passport*'
+      - '.github/workflows/passport-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: passport-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: WangZhuo2015/growdesk-iot
+          ref: f02493a6e693354b31c89a13f4a6571fdb68f4ae
+          persist-credentials: false
+          path: iot
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: false
+      - name: Capture tracked source and public build dependencies only
+        shell: bash
+        env:
+          GOMODCACHE: ${{ runner.temp }}/passport-modcache
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          mkdir review-inputs
+          git -C server archive --format=tar HEAD > review-inputs/server-source.tar
+          git -C iot archive --format=tar HEAD > review-inputs/iot-source.tar
+          (cd server && go mod download)
+          tar -czf review-inputs/go-toolchain.tar.gz -C "$(go env GOROOT)" .
+          tar -czf review-inputs/go-modules.tar.gz -C "$GOMODCACHE" .
+          sha256sum review-inputs/* > review-inputs/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: passport-review-inputs-${{ github.run_id }}
+          path: review-inputs/
+          retention-days: 1
+          if-no-files-found: error
