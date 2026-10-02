@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "real DB pairing/claim/one-time credential/auth PASS",
+    "idle WebSocket closes at JWT expiry PASS",
+    "invalid/missing/empty/duplicate/nonstring action selections reject without DB writes PASS",
+    "real WS receipt entityType and newer proposal surviving older blocked confirmation PASS",
+    "replayed confirmation cannot duplicate records PASS",
+    "revoked device cannot mutate through an already-open WebSocket PASS",
+    "revoked device cannot start a new voice turn on an existing connection PASS"
+  ],
+  "database": "fresh owned PostgreSQL18; no production data",
+  "provider": "loopback-only ASR/LLM fixture; no billable external call"
+}

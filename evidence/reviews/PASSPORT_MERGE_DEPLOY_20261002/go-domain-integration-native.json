@@ -1,0 +1,990 @@
+{
+  "scope": "families/babies/feeding/sleep/diaper/timeline; not whole-backend parity",
+  "commit": "4393837ef8a7f06b64d5c0241bc0430f491d644c",
+  "status": "PASS",
+  "runtimes": {
+    "go": {
+      "httpAssertions": 99,
+      "observations": [
+        {
+          "case": "registration default family",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "createdAt": "<generated-time>",
+                "id": "<default_family>",
+                "name": "Test owner的家庭",
+                "timeZone": "Asia/Shanghai",
+                "updatedAt": "<generated-time>"
+              }
+            ]
+          }
+        },
+        {
+          "case": "create family",
+          "status": 201,
+          "body": {
+            "data": {
+              "createdAt": "<generated-time>",
+              "id": "<family>",
+              "name": "Test Family",
+              "timeZone": "Asia/Tokyo",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "get family",
+          "status": 200,
+          "body": {
+            "data": {
+              "createdAt": "<generated-time>",
+              "id": "<family>",
+              "name": "Test Family",
+              "timeZone": "Asia/Tokyo",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "update family",
+          "status": 200,
+          "body": {
+            "data": {
+              "createdAt": "<generated-time>",
+              "id": "<family>",
+              "name": "Test Family Updated",
+              "timeZone": "Asia/Tokyo",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "hide other family",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "FAMILY_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "preview invite",
+          "status": 200,
+          "body": {
+            "data": {
+              "expiresAt": "<generated-time>",
+              "familyName": "Test Family Updated",
+              "inviterName": "Test owner"
+            }
+          }
+        },
+        {
+          "case": "join family",
+          "status": 200,
+          "body": {
+            "data": {
+              "family": {
+                "createdAt": "<generated-time>",
+                "id": "<family>",
+                "name": "Test Family Updated",
+                "timeZone": "Asia/Tokyo",
+                "updatedAt": "<generated-time>"
+              },
+              "role": "member"
+            }
+          }
+        },
+        {
+          "case": "single use invite",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "INVITE_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "list family members",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "displayName": "Test owner",
+                "familyId": "<family>",
+                "id": "<membership_owner>",
+                "joinedAt": "<generated-time>",
+                "relation": "parent",
+                "role": "admin",
+                "userId": "<owner>",
+                "username": "test_go_domain_owner"
+              },
+              {
+                "displayName": "Test caregiver",
+                "familyId": "<family>",
+                "id": "<membership_caregiver>",
+                "joinedAt": "<generated-time>",
+                "relation": "parent",
+                "role": "member",
+                "userId": "<caregiver>",
+                "username": "test_go_domain_caregiver"
+              }
+            ]
+          }
+        },
+        {
+          "case": "promote family member",
+          "status": 200,
+          "body": {
+            "data": {
+              "success": true
+            }
+          }
+        },
+        {
+          "case": "demote family member",
+          "status": 200,
+          "body": {
+            "data": {
+              "success": true
+            }
+          }
+        },
+        {
+          "case": "create baby",
+          "status": 201,
+          "body": {
+            "data": {
+              "avatarUrl": null,
+              "birthDate": "2026-01-02",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "gender": "girl",
+              "gestationalDays": 3,
+              "gestationalWeeks": 36,
+              "id": "<baby>",
+              "name": "Test Baby",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "family membership does not grant baby access",
+          "status": 200,
+          "body": {
+            "data": []
+          }
+        },
+        {
+          "case": "baby hidden until explicit membership",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "BABY_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "grant caregiver",
+          "status": 201,
+          "body": {
+            "data": {
+              "success": true
+            }
+          }
+        },
+        {
+          "case": "caregiver reads baby",
+          "status": 200,
+          "body": {
+            "data": {
+              "avatarUrl": null,
+              "birthDate": "2026-01-02",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "gender": "girl",
+              "gestationalDays": 3,
+              "gestationalWeeks": 36,
+              "id": "<baby>",
+              "name": "Test Baby",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "partial baby update",
+          "status": 200,
+          "body": {
+            "data": {
+              "avatarUrl": null,
+              "birthDate": "2026-01-02",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "gender": "girl",
+              "gestationalDays": 5,
+              "gestationalWeeks": 36,
+              "id": "<baby>",
+              "name": "Test Baby",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "list baby members",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "babyId": "<baby>",
+                "displayName": "Test owner",
+                "familyId": "<family>",
+                "joinedAt": "<generated-time>",
+                "role": "admin",
+                "userId": "<owner>"
+              },
+              {
+                "babyId": "<baby>",
+                "displayName": "Test caregiver",
+                "familyId": "<family>",
+                "joinedAt": "<generated-time>",
+                "role": "member",
+                "userId": "<caregiver>"
+              }
+            ]
+          }
+        },
+        {
+          "case": "last baby admin protection",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "LAST_BABY_ADMIN_PROTECTION"
+            }
+          }
+        },
+        {
+          "case": "last family admin protection",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "LAST_FAMILY_ADMIN_PROTECTION"
+            }
+          }
+        },
+        {
+          "case": "target must belong to family",
+          "status": 400,
+          "body": {
+            "error": {
+              "code": "TARGET_NOT_IN_FAMILY"
+            }
+          }
+        },
+        {
+          "case": "feeding empty page",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "feeding create",
+          "status": 201,
+          "body": {
+            "data": {
+              "amountMl": "120",
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "feedingType": "formula",
+              "formulaProductId": null,
+              "id": "<feeding>",
+              "leftMinutes": 0,
+              "notes": "test 记录 line <&>\\u2028",
+              "occurredAt": "2026-05-02T03:04:05.000Z",
+              "recordedByUserId": "<owner>",
+              "rightMinutes": null,
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "spitUp": false,
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "feeding conflicting create replay",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "IDEMPOTENCY_KEY_REUSED"
+            }
+          }
+        },
+        {
+          "case": "feeding read",
+          "status": 200,
+          "body": {
+            "data": {
+              "amountMl": "120",
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "feedingType": "formula",
+              "formulaProductId": null,
+              "id": "<feeding>",
+              "leftMinutes": 0,
+              "notes": "test 记录 line <&>\\u2028",
+              "occurredAt": "2026-05-02T03:04:05.000Z",
+              "recordedByUserId": "<owner>",
+              "rightMinutes": null,
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "spitUp": false,
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "feeding cross-family denied",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "FAMILY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "feeding update",
+          "status": 200,
+          "body": {
+            "data": {
+              "amountMl": "0",
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "feedingType": "formula",
+              "formulaProductId": null,
+              "id": "<feeding>",
+              "leftMinutes": 0,
+              "notes": null,
+              "occurredAt": "2026-05-02T03:04:05.000Z",
+              "recordedByUserId": "<owner>",
+              "rightMinutes": null,
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "spitUp": false,
+              "updatedAt": "<generated-time>",
+              "version": "2"
+            }
+          }
+        },
+        {
+          "case": "feeding stale version",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "feeding stale delete",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "feeding timeline",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "babyId": "<baby>",
+                "entityId": "<feeding>",
+                "entityType": "feeding",
+                "id": "<feeding_timeline>",
+                "occurredAt": "2026-05-02T03:04:05.000Z",
+                "summary": "Updated feeding: formula 0ml",
+                "version": "2"
+              }
+            ],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "feeding delete",
+          "status": 200,
+          "body": {
+            "data": {
+              "deleted": true,
+              "id": "<feeding>"
+            }
+          }
+        },
+        {
+          "case": "feeding deleted invisible",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "RECORD_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "feeding deleted timeline invisible",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "sleep empty page",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "sleep create",
+          "status": 201,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "endedAt": "2026-05-02T05:00:00.000Z",
+              "familyId": "<family>",
+              "id": "<sleep>",
+              "nightWakingCount": 0,
+              "notes": null,
+              "recordedByUserId": "<owner>",
+              "sleepType": "nap",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "startedAt": "2026-05-02T04:00:00.000Z",
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "sleep conflicting create replay",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "IDEMPOTENCY_KEY_REUSED"
+            }
+          }
+        },
+        {
+          "case": "sleep read",
+          "status": 200,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "endedAt": "2026-05-02T05:00:00.000Z",
+              "familyId": "<family>",
+              "id": "<sleep>",
+              "nightWakingCount": 0,
+              "notes": null,
+              "recordedByUserId": "<owner>",
+              "sleepType": "nap",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "startedAt": "2026-05-02T04:00:00.000Z",
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "sleep cross-family denied",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "FAMILY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "sleep update",
+          "status": 200,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "endedAt": "2026-05-02T05:00:00.000Z",
+              "familyId": "<family>",
+              "id": "<sleep>",
+              "nightWakingCount": 0,
+              "notes": null,
+              "recordedByUserId": "<owner>",
+              "sleepType": "nap",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "startedAt": "2026-05-02T04:00:00.000Z",
+              "updatedAt": "<generated-time>",
+              "version": "2"
+            }
+          }
+        },
+        {
+          "case": "sleep stale version",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "sleep stale delete",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "sleep timeline",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "babyId": "<baby>",
+                "entityId": "<sleep>",
+                "entityType": "sleep",
+                "id": "<sleep_timeline>",
+                "occurredAt": "2026-05-02T04:00:00.000Z",
+                "summary": "Updated sleep: nap (finished)",
+                "version": "2"
+              }
+            ],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "sleep delete",
+          "status": 200,
+          "body": {
+            "data": {
+              "deleted": true,
+              "id": "<sleep>"
+            }
+          }
+        },
+        {
+          "case": "sleep deleted invisible",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "RECORD_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "sleep deleted timeline invisible",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "diaper empty page",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "diaper create",
+          "status": 201,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "diaperType": "both",
+              "familyId": "<family>",
+              "id": "<diaper>",
+              "notes": null,
+              "occurredAt": "2026-05-02T06:00:00.000Z",
+              "poopColor": "yellow",
+              "poopConsistency": "soft",
+              "recordedByUserId": "<owner>",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "diaper conflicting create replay",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "IDEMPOTENCY_KEY_REUSED"
+            }
+          }
+        },
+        {
+          "case": "diaper read",
+          "status": 200,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "diaperType": "both",
+              "familyId": "<family>",
+              "id": "<diaper>",
+              "notes": null,
+              "occurredAt": "2026-05-02T06:00:00.000Z",
+              "poopColor": "yellow",
+              "poopConsistency": "soft",
+              "recordedByUserId": "<owner>",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "updatedAt": "<generated-time>",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "diaper cross-family denied",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "FAMILY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "diaper update",
+          "status": 200,
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "diaperType": "both",
+              "familyId": "<family>",
+              "id": "<diaper>",
+              "notes": null,
+              "occurredAt": "2026-05-02T06:00:00.000Z",
+              "poopColor": "yellow",
+              "poopConsistency": "soft",
+              "recordedByUserId": "<owner>",
+              "source": "ui_manual",
+              "sourceAgent": null,
+              "updatedAt": "<generated-time>",
+              "version": "2"
+            }
+          }
+        },
+        {
+          "case": "diaper stale version",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "diaper stale delete",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "CONCURRENCY_CONFLICT"
+            }
+          }
+        },
+        {
+          "case": "diaper timeline",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "babyId": "<baby>",
+                "entityId": "<diaper>",
+                "entityType": "diaper",
+                "id": "<diaper_timeline>",
+                "occurredAt": "2026-05-02T06:00:00.000Z",
+                "summary": "Updated diaper: both",
+                "version": "2"
+              }
+            ],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "diaper delete",
+          "status": 200,
+          "body": {
+            "data": {
+              "deleted": true,
+              "id": "<diaper>"
+            }
+          }
+        },
+        {
+          "case": "diaper deleted invisible",
+          "status": 404,
+          "body": {
+            "error": {
+              "code": "RECORD_NOT_FOUND"
+            }
+          }
+        },
+        {
+          "case": "diaper deleted timeline invisible",
+          "status": 200,
+          "body": {
+            "data": [],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "keyset first page",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "amountMl": "100",
+                "babyId": "<baby>",
+                "createdAt": "<generated-time>",
+                "familyId": "<family>",
+                "feedingType": "formula",
+                "formulaProductId": null,
+                "id": "<page_feeding>",
+                "leftMinutes": null,
+                "notes": null,
+                "occurredAt": "2026-05-02T08:00:00.000Z",
+                "recordedByUserId": "<owner>",
+                "rightMinutes": null,
+                "source": "ui_manual",
+                "sourceAgent": null,
+                "spitUp": false,
+                "updatedAt": "<generated-time>",
+                "version": "1"
+              }
+            ],
+            "page": {
+              "nextCursor": "2026-05-02T08:00:00.000Z|<page_feeding>"
+            }
+          }
+        },
+        {
+          "case": "keyset second page",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "amountMl": "100",
+                "babyId": "<baby>",
+                "createdAt": "<generated-time>",
+                "familyId": "<family>",
+                "feedingType": "formula",
+                "formulaProductId": null,
+                "id": "<concurrent_feeding>",
+                "leftMinutes": null,
+                "notes": null,
+                "occurredAt": "2026-05-02T07:00:00.000Z",
+                "recordedByUserId": "<owner>",
+                "rightMinutes": null,
+                "source": "ui_manual",
+                "sourceAgent": null,
+                "spitUp": false,
+                "updatedAt": "<generated-time>",
+                "version": "1"
+              }
+            ],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "malformed cursor follows reference fallback",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "amountMl": "100",
+                "babyId": "<baby>",
+                "createdAt": "<generated-time>",
+                "familyId": "<family>",
+                "feedingType": "formula",
+                "formulaProductId": null,
+                "id": "<page_feeding>",
+                "leftMinutes": null,
+                "notes": null,
+                "occurredAt": "2026-05-02T08:00:00.000Z",
+                "recordedByUserId": "<owner>",
+                "rightMinutes": null,
+                "source": "ui_manual",
+                "sourceAgent": null,
+                "spitUp": false,
+                "updatedAt": "<generated-time>",
+                "version": "1"
+              },
+              {
+                "amountMl": "100",
+                "babyId": "<baby>",
+                "createdAt": "<generated-time>",
+                "familyId": "<family>",
+                "feedingType": "formula",
+                "formulaProductId": null,
+                "id": "<concurrent_feeding>",
+                "leftMinutes": null,
+                "notes": null,
+                "occurredAt": "2026-05-02T07:00:00.000Z",
+                "recordedByUserId": "<owner>",
+                "rightMinutes": null,
+                "source": "ui_manual",
+                "sourceAgent": null,
+                "spitUp": false,
+                "updatedAt": "<generated-time>",
+                "version": "1"
+              }
+            ],
+            "page": {
+              "nextCursor": null
+            }
+          }
+        },
+        {
+          "case": "negative sleep interval",
+          "status": 400,
+          "body": {
+            "error": {
+              "code": "INVALID_SLEEP_INTERVAL"
+            }
+          }
+        },
+        {
+          "case": "cannot reopen second active sleep",
+          "status": 409,
+          "body": {
+            "error": {
+              "code": "ACTIVE_SLEEP_EXISTS"
+            }
+          }
+        },
+        {
+          "case": "baby viewer cannot write",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_WRITE_DENIED"
+            }
+          }
+        },
+        {
+          "case": "family viewer cannot write",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "FAMILY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "revoke baby caregiver",
+          "status": 200,
+          "body": {
+            "data": {
+              "removed": true
+            }
+          }
+        },
+        {
+          "case": "revoked token cannot read baby records",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "revoked token cannot write baby records",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "remove family member cascades",
+          "status": 200,
+          "body": {
+            "data": {
+              "removed": true
+            }
+          }
+        },
+        {
+          "case": "removed family rejects old token",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "FAMILY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "revoked principal cannot replay receipt",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "final durable state",
+          "state": {
+            "sleep": 3,
+            "cursor": "15",
+            "diaper": 1,
+            "changes": 15,
+            "feeding": 4,
+            "receipts": 15,
+            "timeline": 8
+          }
+        }
+      ]
+    }
+  }
+}

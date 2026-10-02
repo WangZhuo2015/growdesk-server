@@ -67,6 +67,13 @@ func (s *Server) handlePassportWebSocket(ctx context.Context, r *Request) (Resul
 }
 
 func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.Conn, principal *PassportPrincipal) error {
+	ctx, cancel := context.WithDeadline(ctx, principal.ExpiresAt)
+	defer cancel()
+	// Closing the socket also wakes an idle ReadMessage at token expiration.
+	go func() {
+		<-ctx.Done()
+		_ = conn.Close()
+	}()
 	var writeMu sync.Mutex
 	sendJSON := func(v any) error {
 		writeMu.Lock()
@@ -77,6 +84,14 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 		writeMu.Lock()
 		defer writeMu.Unlock()
 		return conn.WriteMessage(websocket.BinaryMessage, data)
+	}
+	sendAccessError := func(err error) {
+		code, message := "AUTHORIZATION_FAILED", "Unable to verify current device access"
+		var appErr *APIError
+		if errors.As(err, &appErr) {
+			code, message = appErr.Code, appErr.Message
+		}
+		_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": message})
 	}
 
 	// 1. Load baby name from DB
@@ -166,6 +181,10 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 			})
 
 		case "audio.start":
+			if err := s.requirePassportTurnAccess(ctx, principal); err != nil {
+				sendAccessError(err)
+				return err
+			}
 			// User pressed OK button to start talking
 			stopTTS() // PTT immediately interrupts any playing TTS
 			turnID := text(frame["turnId"])
@@ -185,6 +204,10 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 			// User released OK button
 			if !isRecording {
 				continue
+			}
+			if err := s.requirePassportTurnAccess(ctx, principal); err != nil {
+				sendAccessError(err)
+				return err
 			}
 			isRecording = false
 			turnID := text(frame["turnId"])

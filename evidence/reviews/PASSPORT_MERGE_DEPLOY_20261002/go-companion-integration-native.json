@@ -1,0 +1,1389 @@
+{
+  "passed": true,
+  "referenceRequested": false,
+  "sourceGitSha": "4393837ef8a7f06b64d5c0241bc0430f491d644c",
+  "native": {
+    "calls": 101,
+    "observations": [
+      {
+        "case": "family management does not accept viewer role mutation",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "FST_ERR_VALIDATION"
+          }
+        }
+      },
+      {
+        "case": "empty notifications",
+        "status": 200,
+        "body": {
+          "data": [],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "notifications require auth",
+        "status": 401,
+        "body": {
+          "error": {
+            "code": "UNAUTHORIZED"
+          }
+        }
+      },
+      {
+        "case": "notification first keyset page",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "body": "test_body",
+              "createdAt": "<generated-time>",
+              "data": {
+                "count": 0,
+                "type": "test"
+              },
+              "eventKey": "test_event",
+              "id": "<notification_3>",
+              "readAt": null,
+              "title": "Test notification",
+              "userId": "<owner>"
+            },
+            {
+              "body": "test_body",
+              "createdAt": "<generated-time>",
+              "data": {},
+              "eventKey": "test_event",
+              "id": "<notification_2>",
+              "readAt": null,
+              "title": "Test notification",
+              "userId": "<owner>"
+            }
+          ],
+          "page": {
+            "nextCursor": "2026-08-01T00:00:00.000Z|<notification_2>"
+          }
+        }
+      },
+      {
+        "case": "notification second keyset page",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "body": "test_body",
+              "createdAt": "<generated-time>",
+              "eventKey": "test_event",
+              "id": "<notification_1>",
+              "readAt": null,
+              "title": "Test notification",
+              "userId": "<owner>"
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "notification invalid cursor",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "INVALID_NOTIFICATION_CURSOR"
+          }
+        }
+      },
+      {
+        "case": "notification cross-user read denied",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "notification mark read",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "notification repeated mark read",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "notification readAt projection",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "body": "test_body",
+              "createdAt": "<generated-time>",
+              "data": {
+                "count": 0,
+                "type": "test"
+              },
+              "eventKey": "test_event",
+              "id": "<notification_3>",
+              "readAt": "<generated-time>",
+              "title": "Test notification",
+              "userId": "<owner>"
+            }
+          ],
+          "page": {
+            "nextCursor": "2026-08-01T00:00:00.000Z|<notification_3>"
+          }
+        }
+      },
+      {
+        "case": "notification missing read",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "register push device",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "replace push device",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "unregister push device",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "repeat unregister push device",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "empty voice page",
+        "status": 200,
+        "body": {
+          "data": [],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "empty unread voice is null",
+        "status": 200,
+        "body": {
+          "data": null
+        }
+      },
+      {
+        "case": "create synchronous voice",
+        "status": 201,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<voice_sync>",
+            "isAsync": false,
+            "isFastPath": false,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "get own voice",
+        "status": 200,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<voice_sync>",
+            "isAsync": false,
+            "isFastPath": false,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "cross-user voice hidden",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "cross-user voice acknowledgement denied",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "create asynchronous voice",
+        "status": 201,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<voice_async>",
+            "isAsync": true,
+            "isFastPath": true,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "unread voice returns object",
+        "status": 200,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<voice_async>",
+            "isAsync": true,
+            "isFastPath": true,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "acknowledge voice",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "acknowledged voice excluded",
+        "status": 200,
+        "body": {
+          "data": null
+        }
+      },
+      {
+        "case": "unacknowledge voice",
+        "status": 200,
+        "body": {
+          "data": {
+            "success": true
+          }
+        }
+      },
+      {
+        "case": "expired unread window",
+        "status": 200,
+        "body": {
+          "data": null
+        }
+      },
+      {
+        "case": "voice bounded page",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "acknowledged": false,
+              "baby": {
+                "gender": "female",
+                "id": "<baby>",
+                "nickname": "Test Companion Baby"
+              },
+              "babyId": "<baby>",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<voice_async>",
+              "isAsync": true,
+              "isFastPath": true,
+              "prompt": "test_prompt 中文",
+              "reply": "test_reply",
+              "userId": "<owner>"
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "voice limit validation",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "FST_ERR_VALIDATION"
+          }
+        }
+      },
+      {
+        "case": "viewer may save private voice history",
+        "status": 201,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<viewer_voice>",
+            "isAsync": true,
+            "isFastPath": false,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<viewer>"
+          }
+        }
+      },
+      {
+        "case": "unrelated voice create denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "NOT_A_MEMBER"
+          }
+        }
+      },
+      {
+        "case": "empty formula catalog",
+        "status": 200,
+        "body": {
+          "data": [],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "create decimal formula",
+        "status": 201,
+        "body": {
+          "data": {
+            "brand": "test_brand",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<formula_one>",
+            "isActive": true,
+            "isArchived": false,
+            "isDefault": false,
+            "name": "test_formula",
+            "notes": null,
+            "nutrientsJson": null,
+            "reconstitutionRatio": null,
+            "scoopGrams": "4.5",
+            "servingSizeUnit": "per_100g",
+            "stage": "1",
+            "updatedAt": "<generated-time>",
+            "waterMlPerScoop": "30"
+          }
+        }
+      },
+      {
+        "case": "create minimal formula with nulls",
+        "status": 201,
+        "body": {
+          "data": {
+            "brand": "test_brand",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<formula_two>",
+            "isActive": true,
+            "isArchived": false,
+            "isDefault": false,
+            "name": "test_minimal",
+            "notes": null,
+            "nutrientsJson": null,
+            "reconstitutionRatio": null,
+            "scoopGrams": null,
+            "servingSizeUnit": "per_100g",
+            "stage": null,
+            "updatedAt": "<generated-time>",
+            "waterMlPerScoop": null
+          }
+        }
+      },
+      {
+        "case": "formula first page",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_two>",
+              "isActive": true,
+              "isArchived": false,
+              "isDefault": false,
+              "name": "test_minimal",
+              "notes": null,
+              "nutrientsJson": null,
+              "reconstitutionRatio": null,
+              "scoopGrams": null,
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            }
+          ],
+          "page": {
+            "nextCursor": "2026-08-02T00:00:00.000Z|<formula_two>"
+          }
+        }
+      },
+      {
+        "case": "formula second page",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_one>",
+              "isActive": true,
+              "isArchived": false,
+              "isDefault": false,
+              "name": "test_formula",
+              "notes": null,
+              "nutrientsJson": null,
+              "reconstitutionRatio": null,
+              "scoopGrams": "4.5",
+              "servingSizeUnit": "per_100g",
+              "stage": "1",
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": "30"
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "formula invalid cursor",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "INVALID_CURSOR"
+          }
+        }
+      },
+      {
+        "case": "formula zero versus null patch",
+        "status": 200,
+        "body": {
+          "data": {
+            "brand": "test_brand",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<formula_one>",
+            "isActive": true,
+            "isArchived": false,
+            "isDefault": false,
+            "name": "test_formula",
+            "notes": null,
+            "nutrientsJson": null,
+            "reconstitutionRatio": null,
+            "scoopGrams": "0",
+            "servingSizeUnit": "per_100g",
+            "stage": null,
+            "updatedAt": "<generated-time>",
+            "waterMlPerScoop": null
+          }
+        }
+      },
+      {
+        "case": "formula empty patch preserves fields",
+        "status": 200,
+        "body": {
+          "data": {
+            "brand": "test_brand",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<formula_one>",
+            "isActive": true,
+            "isArchived": false,
+            "isDefault": false,
+            "name": "test_formula",
+            "notes": null,
+            "nutrientsJson": null,
+            "reconstitutionRatio": null,
+            "scoopGrams": "0",
+            "servingSizeUnit": "per_100g",
+            "stage": null,
+            "updatedAt": "<generated-time>",
+            "waterMlPerScoop": null
+          }
+        }
+      },
+      {
+        "case": "archive formula",
+        "status": 200,
+        "body": {
+          "data": {
+            "brand": "test_brand",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<formula_one>",
+            "isActive": true,
+            "isArchived": true,
+            "isDefault": false,
+            "name": "test_formula",
+            "notes": null,
+            "nutrientsJson": null,
+            "reconstitutionRatio": null,
+            "scoopGrams": "0",
+            "servingSizeUnit": "per_100g",
+            "stage": null,
+            "updatedAt": "<generated-time>",
+            "waterMlPerScoop": null
+          }
+        }
+      },
+      {
+        "case": "viewer reads active formula catalog",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_two>",
+              "isActive": true,
+              "isArchived": false,
+              "isDefault": false,
+              "name": "test_minimal",
+              "notes": null,
+              "nutrientsJson": null,
+              "reconstitutionRatio": null,
+              "scoopGrams": null,
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "include archived formula",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_two>",
+              "isActive": true,
+              "isArchived": false,
+              "isDefault": false,
+              "name": "test_minimal",
+              "notes": null,
+              "nutrientsJson": null,
+              "reconstitutionRatio": null,
+              "scoopGrams": null,
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            },
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_one>",
+              "isActive": true,
+              "isArchived": true,
+              "isDefault": false,
+              "name": "test_formula",
+              "notes": null,
+              "nutrientsJson": null,
+              "reconstitutionRatio": null,
+              "scoopGrams": "0",
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "viewer formula write denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "FAMILY_ACCESS_DENIED"
+          }
+        }
+      },
+      {
+        "case": "formula cross-family list denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "FAMILY_ACCESS_DENIED"
+          }
+        }
+      },
+      {
+        "case": "formula cross-family update denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "FAMILY_ACCESS_DENIED"
+          }
+        }
+      },
+      {
+        "case": "delete formula",
+        "status": 200,
+        "body": {
+          "data": {
+            "deleted": true,
+            "id": "<formula_two>"
+          }
+        }
+      },
+      {
+        "case": "repeat formula delete not found",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "deleted formula cannot be edited",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "RECORD_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "read historical formula metadata",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_one>",
+              "isActive": true,
+              "isArchived": true,
+              "isDefault": false,
+              "name": "test_formula",
+              "notes": "test_historical_metadata",
+              "nutrientsJson": {
+                "iron": 1.2
+              },
+              "reconstitutionRatio": "13",
+              "scoopGrams": "0",
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "empty conversation page",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [],
+            "total": 0
+          }
+        }
+      },
+      {
+        "case": "create private conversation",
+        "status": 201,
+        "body": {
+          "data": {
+            "babyId": null,
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_private>",
+            "lastMessage": null,
+            "messageCount": 0,
+            "messages": [],
+            "title": "test_conversation",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "get empty conversation",
+        "status": 200,
+        "body": {
+          "data": {
+            "babyId": null,
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_private>",
+            "lastMessage": null,
+            "messageCount": 0,
+            "messages": [],
+            "title": "test_conversation",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "GET conversation cross-user hidden",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "SESSION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "PATCH conversation cross-user hidden",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "SESSION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "DELETE conversation cross-user hidden",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "SESSION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "create baby conversation defaults",
+        "status": 201,
+        "body": {
+          "data": {
+            "babyId": "<baby>",
+            "contextType": "test_baby",
+            "createdAt": "<generated-time>",
+            "id": "<session_baby>",
+            "lastMessage": null,
+            "messageCount": 0,
+            "messages": [],
+            "title": "新对话",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "conversation unrelated baby denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "BABY_ACCESS_DENIED"
+          }
+        }
+      },
+      {
+        "case": "viewer saves own conversation",
+        "status": 201,
+        "body": {
+          "data": {
+            "babyId": "<baby>",
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_viewer>",
+            "lastMessage": null,
+            "messageCount": 0,
+            "messages": [],
+            "title": "新对话",
+            "updatedAt": "<generated-time>",
+            "userId": "<viewer>"
+          }
+        }
+      },
+      {
+        "case": "append conversation message",
+        "status": 201,
+        "body": {
+          "data": {
+            "content": "test 中文 😀 <&>",
+            "createdAt": "<generated-time>",
+            "id": "<message_one>",
+            "image": null,
+            "role": "user",
+            "sessionId": "<session_private>",
+            "toolsJson": "{}"
+          }
+        }
+      },
+      {
+        "case": "replay identical conversation message",
+        "status": 201,
+        "body": {
+          "data": {
+            "content": "test 中文 😀 <&>",
+            "createdAt": "<generated-time>",
+            "id": "<message_one>",
+            "image": null,
+            "role": "user",
+            "sessionId": "<session_private>",
+            "toolsJson": "{}"
+          }
+        }
+      },
+      {
+        "case": "changed message ID conflicts",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "MESSAGE_ID_REUSED"
+          }
+        }
+      },
+      {
+        "case": "message ID belongs to one session",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "MESSAGE_ID_REUSED"
+          }
+        }
+      },
+      {
+        "case": "message cross-user append denied",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "SESSION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "complete conversation history",
+        "status": 200,
+        "body": {
+          "data": {
+            "babyId": null,
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_private>",
+            "lastMessage": {
+              "content": "测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测",
+              "createdAt": "<generated-time>",
+              "id": "<message_long>",
+              "image": "data:image/png;base64,dGVzdA==",
+              "role": "assistant",
+              "sessionId": "<session_private>",
+              "toolsJson": "{\"test\":true}"
+            },
+            "messageCount": 2,
+            "messages": [
+              {
+                "content": "test 中文 😀 <&>",
+                "createdAt": "<generated-time>",
+                "id": "<message_one>",
+                "image": null,
+                "role": "user",
+                "sessionId": "<session_private>",
+                "toolsJson": "{}"
+              },
+              {
+                "content": "测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测",
+                "createdAt": "<generated-time>",
+                "id": "<message_long>",
+                "image": "data:image/png;base64,dGVzdA==",
+                "role": "assistant",
+                "sessionId": "<session_private>",
+                "toolsJson": "{\"test\":true}"
+              }
+            ],
+            "title": "test_conversation",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "bounded conversation summary",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [
+              {
+                "babyId": null,
+                "contextType": "general",
+                "createdAt": "<generated-time>",
+                "id": "<session_private>",
+                "lastMessage": {
+                  "content": "测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测",
+                  "createdAt": "<generated-time>",
+                  "id": "<message_long>",
+                  "image": null,
+                  "role": "assistant",
+                  "sessionId": "<session_private>",
+                  "toolsJson": null
+                },
+                "messageCount": 2,
+                "messages": [],
+                "title": "test_conversation",
+                "updatedAt": "<generated-time>",
+                "userId": "<owner>"
+              }
+            ],
+            "total": 2
+          }
+        }
+      },
+      {
+        "case": "conversation offset page",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [
+              {
+                "babyId": "<baby>",
+                "contextType": "test_baby",
+                "createdAt": "<generated-time>",
+                "id": "<session_baby>",
+                "lastMessage": null,
+                "messageCount": 0,
+                "messages": [],
+                "title": "新对话",
+                "updatedAt": "<generated-time>",
+                "userId": "<owner>"
+              }
+            ],
+            "total": 2
+          }
+        }
+      },
+      {
+        "case": "conversation baby filter",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [
+              {
+                "babyId": "<baby>",
+                "contextType": "test_baby",
+                "createdAt": "<generated-time>",
+                "id": "<session_baby>",
+                "lastMessage": null,
+                "messageCount": 0,
+                "messages": [],
+                "title": "新对话",
+                "updatedAt": "<generated-time>",
+                "userId": "<owner>"
+              }
+            ],
+            "total": 1
+          }
+        }
+      },
+      {
+        "case": "conversation context filter",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [
+              {
+                "babyId": null,
+                "contextType": "general",
+                "createdAt": "<generated-time>",
+                "id": "<session_private>",
+                "lastMessage": {
+                  "content": "测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测",
+                  "createdAt": "<generated-time>",
+                  "id": "<message_long>",
+                  "image": null,
+                  "role": "assistant",
+                  "sessionId": "<session_private>",
+                  "toolsJson": null
+                },
+                "messageCount": 2,
+                "messages": [],
+                "title": "test_conversation",
+                "updatedAt": "<generated-time>",
+                "userId": "<owner>"
+              }
+            ],
+            "total": 1
+          }
+        }
+      },
+      {
+        "case": "conversation limit validation",
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "FST_ERR_VALIDATION"
+          }
+        }
+      },
+      {
+        "case": "rename metadata does not return history",
+        "status": 200,
+        "body": {
+          "data": {
+            "babyId": null,
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_private>",
+            "lastMessage": null,
+            "messageCount": 0,
+            "messages": [],
+            "title": "test_renamed",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "missing protected AI image denied",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "AI_IMAGE_ATTACHMENT_INVALID"
+          }
+        }
+      },
+      {
+        "case": "protected image wrong conversation scope denied",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "AI_IMAGE_ATTACHMENT_INVALID"
+          }
+        }
+      },
+      {
+        "case": "authorized protected image reference",
+        "status": 201,
+        "body": {
+          "data": {
+            "content": "test_image",
+            "createdAt": "<generated-time>",
+            "id": "<message_image>",
+            "image": "/api/attachments/a0000000-0000-4000-8000-000000000060",
+            "role": "user",
+            "sessionId": "<session_baby>",
+            "toolsJson": null
+          }
+        }
+      },
+      {
+        "case": "append after rollback recovers cleanly",
+        "status": 201,
+        "body": {
+          "data": {
+            "content": "test_atomic",
+            "createdAt": "<generated-time>",
+            "id": "<message_atomic>",
+            "image": null,
+            "role": "user",
+            "sessionId": "<session_private>",
+            "toolsJson": null
+          }
+        }
+      },
+      {
+        "case": "active AI run blocks conversation deletion",
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "SESSION_RUN_ACTIVE"
+          }
+        }
+      },
+      {
+        "case": "inactive conversation deletion",
+        "status": 200,
+        "body": {
+          "data": {
+            "deleted": true
+          }
+        }
+      },
+      {
+        "case": "deleted conversation hidden",
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "SESSION_NOT_FOUND"
+          }
+        }
+      },
+      {
+        "case": "message count limit fails without truncation",
+        "status": 413,
+        "body": {
+          "error": {
+            "code": "CONVERSATION_TOO_LARGE"
+          }
+        }
+      },
+      {
+        "case": "oversized history is not truncated",
+        "status": 413,
+        "body": {
+          "error": {
+            "code": "CONVERSATION_TOO_LARGE"
+          }
+        }
+      },
+      {
+        "case": "voice survives process restart",
+        "status": 200,
+        "body": {
+          "data": {
+            "acknowledged": false,
+            "baby": {
+              "gender": "female",
+              "id": "<baby>",
+              "nickname": "Test Companion Baby"
+            },
+            "babyId": "<baby>",
+            "createdAt": "<generated-time>",
+            "familyId": "<family>",
+            "id": "<voice_sync>",
+            "isAsync": false,
+            "isFastPath": false,
+            "prompt": "test_prompt 中文",
+            "reply": "test_reply",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "conversation survives process restart",
+        "status": 200,
+        "body": {
+          "data": {
+            "babyId": null,
+            "contextType": "general",
+            "createdAt": "<generated-time>",
+            "id": "<session_private>",
+            "lastMessage": {
+              "content": "test_atomic",
+              "createdAt": "<generated-time>",
+              "id": "<message_atomic>",
+              "image": null,
+              "role": "user",
+              "sessionId": "<session_private>",
+              "toolsJson": null
+            },
+            "messageCount": 3,
+            "messages": [
+              {
+                "content": "test 中文 😀 <&>",
+                "createdAt": "<generated-time>",
+                "id": "<message_one>",
+                "image": null,
+                "role": "user",
+                "sessionId": "<session_private>",
+                "toolsJson": "{}"
+              },
+              {
+                "content": "测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测测",
+                "createdAt": "<generated-time>",
+                "id": "<message_long>",
+                "image": "data:image/png;base64,dGVzdA==",
+                "role": "assistant",
+                "sessionId": "<session_private>",
+                "toolsJson": "{\"test\":true}"
+              },
+              {
+                "content": "test_atomic",
+                "createdAt": "<generated-time>",
+                "id": "<message_atomic>",
+                "image": null,
+                "role": "user",
+                "sessionId": "<session_private>",
+                "toolsJson": null
+              }
+            ],
+            "title": "test_renamed",
+            "updatedAt": "<generated-time>",
+            "userId": "<owner>"
+          }
+        }
+      },
+      {
+        "case": "formula survives process restart",
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "brand": "test_brand",
+              "createdAt": "<generated-time>",
+              "familyId": "<family>",
+              "id": "<formula_one>",
+              "isActive": true,
+              "isArchived": true,
+              "isDefault": false,
+              "name": "test_formula",
+              "notes": "test_historical_metadata",
+              "nutrientsJson": {
+                "iron": 1.2
+              },
+              "reconstitutionRatio": "13",
+              "scoopGrams": "0",
+              "servingSizeUnit": "per_100g",
+              "stage": null,
+              "updatedAt": "<generated-time>",
+              "waterMlPerScoop": null
+            }
+          ],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "voice hidden after caregiver revocation",
+        "status": 200,
+        "body": {
+          "data": [],
+          "page": {
+            "nextCursor": null
+          }
+        }
+      },
+      {
+        "case": "conversation hidden after caregiver revocation",
+        "status": 200,
+        "body": {
+          "data": {
+            "sessions": [],
+            "total": 0
+          }
+        }
+      },
+      {
+        "case": "revoked voice create denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "NOT_A_MEMBER"
+          }
+        }
+      },
+      {
+        "case": "revoked conversation create denied",
+        "status": 403,
+        "body": {
+          "error": {
+            "code": "BABY_ACCESS_DENIED"
+          }
+        }
+      }
+    ],
+    "durableChecks": [
+      "device upsert/delete isolated by user and notification first read preserved",
+      "voice unread window, ownership and acknowledgement persisted",
+      "formula decimal/null, archive, soft-delete and reference version semantics",
+      "concurrent message replay creates one row",
+      "parent update failure rolls back message insert",
+      "history limit preserves stored messages",
+      "active task blocks conversation deletion",
+      "fresh process reads committed state with existing credentials",
+      "revocation enforced for previously issued bearer tokens"
+    ]
+  }
+}
