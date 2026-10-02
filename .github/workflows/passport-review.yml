@@ -30,6 +30,18 @@ jobs:
           ref: f02493a6e693354b31c89a13f4a6571fdb68f4ae
           persist-credentials: false
           path: iot
+      - uses: actions/checkout@v4
+        with:
+          repository: lvgl/lvgl
+          ref: v9.5.0
+          persist-credentials: false
+          path: lvgl
+      - uses: actions/checkout@v4
+        with:
+          repository: DaveGamble/cJSON
+          ref: v1.7.19
+          persist-credentials: false
+          path: cjson
       - uses: actions/setup-go@v6
         with:
           go-version: '1.27.1'
@@ -44,9 +56,18 @@ jobs:
           mkdir review-inputs
           git -C server archive --format=tar HEAD > review-inputs/server-source.tar
           git -C iot archive --format=tar HEAD > review-inputs/iot-source.tar
+          git -C lvgl archive --format=tar HEAD > review-inputs/lvgl-source.tar
+          git -C cjson archive --format=tar HEAD > review-inputs/cjson-source.tar
           (cd server && go mod download)
           tar -czf review-inputs/go-toolchain.tar.gz -C "$(go env GOROOT)" .
           tar -czf review-inputs/go-modules.tar.gz -C "$GOMODCACHE" .
+          actionlint="$(cd iot && ./tools/install-actionlint.sh)"
+          cp "$actionlint" review-inputs/actionlint
+          docker run --rm -v "$PWD/review-inputs:/out" debian:bookworm bash -euc '
+            apt-get update -qq
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-15 redis-server
+            tar -czf /out/native-test-tools.tar.gz -C / usr/lib/postgresql/15 usr/share/postgresql/15 usr/bin/redis-server
+          '
           sha256sum review-inputs/* > review-inputs/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
