@@ -1,0 +1,12 @@
+
+> growdesk-server@0.1.0 backend:typecheck
+> tsc -p tsconfig.backend.json --noEmit
+
+packages/contracts/tests/contracts.test.ts(302,30): error TS2345: Argument of type 'TSchema | undefined' is not assignable to parameter of type 'TSchema'.
+  Type 'undefined' is not assignable to type 'TSchema'.
+packages/contracts/tests/contracts.test.ts(303,30): error TS2345: Argument of type 'TSchema | undefined' is not assignable to parameter of type 'TSchema'.
+  Type 'undefined' is not assignable to type 'TSchema'.
+packages/contracts/tests/contracts.test.ts(304,30): error TS2345: Argument of type 'TSchema | undefined' is not assignable to parameter of type 'TSchema'.
+  Type 'undefined' is not assignable to type 'TSchema'.
+packages/contracts/tests/contracts.test.ts(305,30): error TS2345: Argument of type 'TSchema | undefined' is not assignable to parameter of type 'TSchema'.
+  Type 'undefined' is not assignable to type 'TSchema'.

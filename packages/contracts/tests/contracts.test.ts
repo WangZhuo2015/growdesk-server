@@ -299,10 +299,12 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(header.maxLength, 200);
     assert.equal(route.headers?.required?.includes("Idempotency-Key") ?? false, false);
     assert.ok(Object.hasOwn(route.responses, 503));
-    assert.equal(Value.Check(route.headers, {}), true);
-    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "test_key" }), true);
-    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "" }), false);
-    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "k".repeat(201) }), false);
+    const headers = route.headers;
+    assert.ok(headers);
+    assert.equal(Value.Check(headers, {}), true);
+    assert.equal(Value.Check(headers, { "Idempotency-Key": "test_key" }), true);
+    assert.equal(Value.Check(headers, { "Idempotency-Key": "" }), false);
+    assert.equal(Value.Check(headers, { "Idempotency-Key": "k".repeat(201) }), false);
 
     const generated = await generateCanonicalOpenApi();
     const operation = (generated.paths as Record<string, Record<string, unknown>>)["/api/v1/medical/ocr-runs"]?.post as {

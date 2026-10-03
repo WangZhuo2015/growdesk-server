@@ -1684,7 +1684,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "updateFoodLibraryItem",
     summary: "Update a custom family food nutrient profile with optimistic locking",
     tags: ["Nutrition"],
-    implementationStatus: "PLANNED_SH04FO",
+    implementationStatus: "READY",
     params: Type.Object({
       familyId: UuidString,
       id: Type.String({ minLength: 1, maxLength: 64 }),

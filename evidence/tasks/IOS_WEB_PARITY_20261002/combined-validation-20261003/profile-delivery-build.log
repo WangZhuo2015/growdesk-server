@@ -1,0 +1,26 @@
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+src/food-repository.ts(485,23): error TS2339: Property 'version' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; familyId: string | null; legacyMetadata: JsonValue; category: string; allergenRisk: string; recommendedAgeMonths: number; isCustom: boolean; }'.
+src/food-repository.ts(512,11): error TS2353: Object literal may only specify known properties, and 'version' does not exist in type 'Without<FoodLibraryItemCreateInput, FoodLibraryItemUncheckedCreateInput> & FoodLibraryItemUncheckedCreateInput & object'.
+src/food-repository.ts(538,27): error TS2339: Property 'version' does not exist on type '{ id: string; name: string; createdAt: Date; updatedAt: Date; familyId: string | null; legacyMetadata: JsonValue; category: string; allergenRisk: string; recommendedAgeMonths: number; isCustom: boolean; }'.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path /private/tmp/growdesk-server-vaccine-edit-20261002/packages/database
+npm error workspace @growdesk/database@0.1.0
+npm error location /private/tmp/growdesk-server-vaccine-edit-20261002/packages/database
+npm error command failed
+npm error command sh -c tsc -p tsconfig.json
