@@ -490,11 +490,23 @@ func (s *Server) ReconcileNativeTasks(ctx context.Context) (int64, error) {
 		WHERE expires_at<clock_timestamp() AND manifest ? 'nativeVersion'`); err != nil {
 		return 0, err
 	}
+	expiredExports, err := tx.Exec(ctx, `WITH expired AS (
+		SELECT id FROM task_executions
+		WHERE kind='user_data_export' AND status='succeeded'
+		  AND result_expires_at<=clock_timestamp() AND result_ref ? 'payload'
+		ORDER BY result_expires_at,id LIMIT 100 FOR UPDATE SKIP LOCKED
+	)
+	UPDATE task_executions t
+	SET result_ref=jsonb_build_object('payloadPurged',true),updated_at=clock_timestamp()
+	FROM expired e WHERE t.id=e.id`)
+	if err != nil {
+		return 0, err
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return 0, err
 	}
 	cleaned, err := s.ReconcileNativeObjects(ctx)
-	return int64(len(rows)) + cleaned, err
+	return int64(len(rows)) + expiredExports.RowsAffected() + cleaned, err
 }
 func (s *Server) RunScheduler(ctx context.Context) error {
 	for ctx.Err() == nil {

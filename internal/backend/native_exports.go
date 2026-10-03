@@ -2,7 +2,10 @@ package backend
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -34,9 +37,11 @@ func nativeExportRequestHash(body Object) (string, error) {
 }
 
 type nativeExportFamily struct {
-	ID                string `json:"id"`
-	Epoch             string `json:"epoch"`
-	PermissionVersion int64  `json:"permissionVersion"`
+	ID                string   `json:"id"`
+	Epoch             string   `json:"epoch"`
+	HighWater         string   `json:"highWater"`
+	PermissionVersion int64    `json:"permissionVersion"`
+	BabyIDs           []string `json:"babyIds"`
 }
 
 // Export public projections, never credential rows. Every family is bound to
@@ -74,7 +79,14 @@ func (s *Server) executeNativeExport(ctx context.Context, lease nativeTaskLease)
 			return apiError(413, "EXPORT_TOO_LARGE", "Account export exceeds its byte budget")
 		}
 		pages = append(pages, page)
-		scopes = append(scopes, nativeExportFamily{ID: fid, Epoch: content.Epoch, PermissionVersion: content.PermissionVersion})
+		babyIDs, e := nativeExportBabyIDs(content.Pages)
+		if e != nil {
+			return e
+		}
+		scopes = append(scopes, nativeExportFamily{
+			ID: fid, Epoch: content.Epoch, HighWater: strconv.FormatInt(content.HighWater, 10),
+			PermissionVersion: content.PermissionVersion, BabyIDs: babyIDs,
+		})
 	}
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
@@ -119,23 +131,112 @@ func (s *Server) executeNativeExport(ctx context.Context, lease nativeTaskLease)
 	if err != nil {
 		return err
 	}
+	fileDigest := sha256.Sum256(raw)
+	expiresAt := time.Now().UTC().Add(time.Hour)
 	result := Object{"schemaVersion": 1, "payload": normalized, "hash": digest, "families": scopes,
-		"expiresAt": iso(time.Now().Add(time.Hour)), "downloadPath": "/api/v1/me/exports/" + lease.ID}
+		"fileSha256": hex.EncodeToString(fileDigest[:]), "expiresAt": iso(expiresAt), "downloadPath": "/api/v1/me/exports/" + lease.ID}
 	if err = terminalNativeTask(ctx, tx, lease, "succeeded", result); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `UPDATE task_executions SET result_expires_at=$2 WHERE id=$1 AND kind='user_data_export' AND status='succeeded'`, lease.ID, expiresAt); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
+func nativeExportBabyIDs(pages []nativeSnapshotPage) ([]string, error) {
+	babies := []string{}
+	for _, page := range pages {
+		if page.EntityType != "baby" {
+			continue
+		}
+		for _, baby := range page.Data {
+			id := text(baby["id"])
+			if !actionUUID.MatchString(id) {
+				return nil, apiError(409, "EXPORT_INVALID", "Export baby scope is invalid")
+			}
+			babies = append(babies, id)
+		}
+	}
+	return babies, nil
+}
+
+func nativeExportPayloadScopes(payload Object) ([]nativeExportFamily, error) {
+	families, ok := payload["families"].([]any)
+	if !ok || len(families) > 32 {
+		return nil, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+	}
+	scopes := make([]nativeExportFamily, 0, len(families))
+	for _, value := range families {
+		family := obj(value)
+		if family == nil {
+			return nil, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+		}
+		pagesValue, ok := family["pages"].([]any)
+		if !ok {
+			return nil, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+		}
+		pagesRaw, err := jsonBytes(pagesValue)
+		if err != nil {
+			return nil, err
+		}
+		var pages []nativeSnapshotPage
+		if err = decodeJSON(pagesRaw, &pages); err != nil {
+			return nil, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+		}
+		babyIDs, err := nativeExportBabyIDs(pages)
+		if err != nil {
+			return nil, err
+		}
+		familyID := text(family["familyId"])
+		epoch := text(family["epoch"])
+		highWater := text(family["highWater"])
+		if !actionUUID.MatchString(familyID) || !actionUUID.MatchString(epoch) || !validExportHighWater(highWater) {
+			return nil, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+		}
+		scopes = append(scopes, nativeExportFamily{ID: familyID, Epoch: epoch, HighWater: highWater, BabyIDs: babyIDs})
+	}
+	return scopes, nil
+}
+
+func sameIDs(left, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for index := range left {
+		if left[index] != right[index] {
+			return false
+		}
+	}
+	return true
+}
+
+func validExportHighWater(value string) bool {
+	position, err := strconv.ParseInt(value, 10, 64)
+	return err == nil && position >= 0
+}
+
 func validateExportFamilies(ctx context.Context, q Querier, user string, scopes []nativeExportFamily) error {
+	currentFamilies, err := many(ctx, q, `SELECT jsonb_build_object('id',fm.family_id) FROM family_members fm
+		JOIN families f ON f.id=fm.family_id AND f.deleted_at IS NULL
+		WHERE fm.user_id=$1 AND fm.status='active' AND fm.deleted_at IS NULL ORDER BY fm.family_id`, user)
+	if err != nil {
+		return err
+	}
+	if len(currentFamilies) != len(scopes) {
+		return apiError(410, "EXPORT_SCOPE_CHANGED", "Account access changed; request a fresh export")
+	}
 	seen := map[string]bool{}
-	for _, scope := range scopes {
-		if !actionUUID.MatchString(scope.ID) || seen[scope.ID] || scope.Epoch == "" || scope.PermissionVersion < 1 {
+	for index, scope := range scopes {
+		if !actionUUID.MatchString(scope.ID) || seen[scope.ID] || !actionUUID.MatchString(scope.Epoch) || !validExportHighWater(scope.HighWater) || scope.PermissionVersion < 1 || scope.BabyIDs == nil {
 			return apiError(409, "EXPORT_INVALID", "Export scope is invalid")
+		}
+		if text(currentFamilies[index]["id"]) != scope.ID {
+			return apiError(410, "EXPORT_SCOPE_CHANGED", "Account access changed; request a fresh export")
 		}
 		seen[scope.ID] = true
 		if _, err := familyRole(ctx, q, user, scope.ID); err != nil {
-			return err
+			return apiError(410, "EXPORT_SCOPE_CHANGED", "Family access changed; request a fresh export")
 		}
 		var epoch string
 		var permission int64
@@ -144,6 +245,22 @@ func validateExportFamilies(ctx context.Context, q Querier, user string, scopes 
 		}
 		if epoch != scope.Epoch || permission != scope.PermissionVersion {
 			return apiError(410, "EXPORT_SCOPE_CHANGED", "Permissions changed; request a fresh export")
+		}
+		currentBabies, err := many(ctx, q, `SELECT jsonb_build_object('id',b.id) FROM babies b
+			JOIN baby_members bm ON bm.baby_id=b.id AND bm.family_id=b.family_id
+			WHERE b.family_id=$1 AND bm.user_id=$2 AND b.deleted_at IS NULL
+			AND bm.status='active' AND bm.deleted_at IS NULL AND bm.role IN ('admin','member','viewer')
+			ORDER BY b.id`, scope.ID, user)
+		if err != nil {
+			return err
+		}
+		if len(currentBabies) != len(scope.BabyIDs) {
+			return apiError(410, "EXPORT_SCOPE_CHANGED", "Baby access changed; request a fresh export")
+		}
+		for index, baby := range currentBabies {
+			if !actionUUID.MatchString(scope.BabyIDs[index]) || text(baby["id"]) != scope.BabyIDs[index] {
+				return apiError(410, "EXPORT_SCOPE_CHANGED", "Baby access changed; request a fresh export")
+			}
 		}
 	}
 	return nil
@@ -232,8 +349,11 @@ func (s *Server) downloadNativeUserExport(ctx context.Context, r *Request) (Resu
 			return Result{}, apiError(409, "EXPORT_NOT_READY", "Export has not completed")
 		}
 		result := obj(row["result_ref"])
-		expires, err := asTime(result["expiresAt"])
+		expires, err := asTime(row["result_expires_at"])
 		if err != nil || !expires.After(time.Now()) {
+			return Result{}, apiError(410, "EXPORT_EXPIRED", "Request a fresh export")
+		}
+		if result == nil || result["payload"] == nil {
 			return Result{}, apiError(410, "EXPORT_EXPIRED", "Request a fresh export")
 		}
 		raw, err := jsonBytes(result["families"])
@@ -244,10 +364,30 @@ func (s *Server) downloadNativeUserExport(ctx context.Context, r *Request) (Resu
 		if err = decodeJSON(raw, &scopes); err != nil || scopes == nil || len(scopes) > 32 {
 			return Result{}, apiError(409, "EXPORT_INVALID", "Export metadata is invalid")
 		}
+		payload := obj(result["payload"])
+		if payload == nil {
+			return Result{}, apiError(409, "EXPORT_INVALID", "Export content is missing")
+		}
+		// Results created before explicit baby scope metadata was introduced can
+		// derive it from their immutable, already-hashed page content.
+		payloadScopes, scopeErr := nativeExportPayloadScopes(payload)
+		if scopeErr != nil || len(payloadScopes) != len(scopes) {
+			return Result{}, apiError(409, "EXPORT_INVALID", "Export family content is invalid")
+		}
+		for index, scope := range scopes {
+			if scope.BabyIDs == nil { // legacy result from before explicit baby scope metadata
+				scopes[index].BabyIDs = payloadScopes[index].BabyIDs
+			}
+			if scope.HighWater == "" { // legacy result from before explicit highWater metadata
+				scopes[index].HighWater = payloadScopes[index].HighWater
+			}
+			if scope.ID != payloadScopes[index].ID || scope.Epoch != payloadScopes[index].Epoch || scope.HighWater != payloadScopes[index].HighWater || !sameIDs(scope.BabyIDs, payloadScopes[index].BabyIDs) {
+				return Result{}, apiError(409, "EXPORT_INVALID", "Export scope does not match its file content")
+			}
+		}
 		if err = validateExportFamilies(ctx, q, r.Principal.UserID, scopes); err != nil {
 			return Result{}, err
 		}
-		payload := obj(result["payload"])
 		if text(obj(payload["user"])["id"]) != r.Principal.UserID {
 			return Result{}, apiError(409, "EXPORT_INVALID", "Export owner does not match")
 		}
@@ -265,10 +405,73 @@ func (s *Server) downloadNativeUserExport(ctx context.Context, r *Request) (Resu
 		if len(data) > nativeExportMaxBytes {
 			return Result{}, errors.New("persisted export exceeds byte budget")
 		}
-		return ok(payload)
+		fileDigest := sha256.Sum256(data)
+		fileHash := hex.EncodeToString(fileDigest[:])
+		if fileHash != text(result["fileSha256"]) {
+			return Result{}, apiError(409, "EXPORT_INVALID", "Export file integrity check failed")
+		}
+		filename := "growdesk-account-export-" + r.Params["id"] + ".json"
+		headers := make(http.Header)
+		headers.Set("Content-Type", "application/json")
+		headers.Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+		headers.Set("Content-Length", strconv.Itoa(len(data)))
+		headers.Set("X-Content-SHA256", fileHash)
+		return Result{
+			Status:  200,
+			Headers: headers,
+			Stream: func(w http.ResponseWriter) error {
+				w.WriteHeader(http.StatusOK)
+				if r.HTTP.Method == http.MethodHead {
+					return nil
+				}
+				written, writeErr := w.Write(data)
+				if writeErr != nil {
+					return writeErr
+				}
+				if written != len(data) {
+					return errors.New("short export response write")
+				}
+				return nil
+			},
+		}, nil
+	})
+}
+
+func safeNativeExportErrorCode(row Object) string {
+	code := text(obj(row["error_details"])["code"])
+	switch code {
+	case "EXPORT_TOO_LARGE", "EXPORT_SCOPE_CHANGED", "EXPORT_INVALID", "TASK_INPUT_INVALID", "ATTEMPTS_EXHAUSTED", "TASK_CANCELLED":
+		return code
+	default:
+		return "EXPORT_FAILED"
+	}
+}
+
+func (s *Server) getNativeUserExportStatus(ctx context.Context, r *Request) (Result, error) {
+	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
+		row, _, err := s.readOwnedNativeTask(ctx, q, r.Principal.UserID, r.Params["id"])
+		if err != nil {
+			return Result{}, err
+		}
+		if text(row["kind"]) != "user_data_export" {
+			return Result{}, notFound("Export", r.Params["id"])
+		}
+		status := Object{
+			"taskId": r.Params["id"], "status": row["status"], "attempt": integer(row["attempt"]),
+			"createdAt": isoValue(row["created_at"]), "updatedAt": isoValue(row["updated_at"]),
+		}
+		if row["result_expires_at"] != nil {
+			status["expiresAt"] = isoValue(row["result_expires_at"])
+		}
+		if text(row["status"]) == "failed" {
+			status["errorCode"] = safeNativeExportErrorCode(row)
+		}
+		return ok(status)
 	})
 }
 
 func (s *Server) registerNativeExports() {
 	s.Register("exportUserData", false, s.exportNativeUserData)
+	s.Register("getUserExportStatus", false, s.getNativeUserExportStatus)
+	s.Register("downloadUserExport", false, s.downloadNativeUserExport)
 }

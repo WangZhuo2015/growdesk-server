@@ -30,6 +30,8 @@ import {
   CurrentUserResponseSchema,
   UpdateUserProfileRequestSchema,
   ExportUserDataResponseSchema,
+  UserExportTaskStatusResponseSchema,
+  UserExportFileSchema,
   DeleteUserResponseSchema,
 } from "./user.js";
 import {
@@ -236,6 +238,7 @@ export interface RouteDefinition {
   querystring?: TSchema;
   headers?: TSchema;
   responses: Record<number, TSchema>;
+  responseHeaders?: Partial<Record<number, Record<string, TSchema>>>;
   /** Override Swagger's JSON default for responses whose wire body is not JSON. */
   responseContentTypes?: Partial<Record<number, readonly string[]>>;
 }
@@ -409,7 +412,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "exportUserData",
     summary: "Queue asynchronous user data export task",
     tags: ["User"],
-    implementationStatus: "PLANNED_SH03",
+    implementationStatus: "READY",
     headers: Type.Object({
       "Idempotency-Key": Type.Optional(Type.String({
         minLength: 1,
@@ -418,6 +421,45 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
       })),
     }, { additionalProperties: true }),
     responses: { 202: ExportUserDataResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef, 429: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/me/exports/:id/status",
+    operationId: "getUserExportStatus",
+    summary: "Read the authenticated user's export task status without its private result",
+    tags: ["User"],
+    implementationStatus: "READY",
+    params: IdParam,
+    responses: {
+      200: UserExportTaskStatusResponseSchema,
+      401: ApiErrorRef,
+      404: ApiErrorRef,
+    },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/me/exports/:id",
+    operationId: "downloadUserExport",
+    summary: "Download the authenticated user's unexpired, authorized JSON export",
+    tags: ["User"],
+    implementationStatus: "READY",
+    params: IdParam,
+    responseContentTypes: { 200: ["application/json"] },
+    responseHeaders: {
+      200: {
+        "Content-Disposition": Type.String({ description: "Attachment filename for the versioned export JSON" }),
+        "Content-Length": Type.String({ pattern: "^\\d+$" }),
+        "X-Content-SHA256": Type.String({ pattern: "^[a-f0-9]{64}$", description: "SHA-256 of the exact downloaded response bytes" }),
+      },
+    },
+    responses: {
+      200: UserExportFileSchema,
+      401: ApiErrorRef,
+      404: ApiErrorRef,
+      409: ApiErrorRef,
+      410: ApiErrorRef,
+      413: ApiErrorRef,
+    },
   },
   {
     method: "DELETE",

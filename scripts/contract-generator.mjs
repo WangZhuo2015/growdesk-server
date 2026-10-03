@@ -172,6 +172,8 @@ export async function buildContractApp() {
     contracts.OAuthProtectedResourceMetadataSchema,
     contracts.McpRpcRequestSchema,
     contracts.McpRpcResponseSchema,
+    contracts.UserExportFileSchema,
+    contracts.UserExportTaskStatusResponseSchema,
   ];
 
   for (const schema of sharedSchemas) {
@@ -187,12 +189,15 @@ export async function buildContractApp() {
     const response = Object.fromEntries(
       Object.entries(route.responses).map(([status, responseSchema]) => {
         const mediaTypes = route.responseContentTypes?.[Number(status)];
-        if (!mediaTypes) return [status, responseSchema];
+        const headers = route.responseHeaders?.[Number(status)];
+        if (!mediaTypes && !headers) return [status, responseSchema];
+        if (!mediaTypes) return [status, { ...responseSchema, headers }];
         if (mediaTypes.length === 0 || mediaTypes.some((mediaType) => typeof mediaType !== "string" || mediaType.length === 0)) {
           throw new Error(`Route ${route.operationId} has invalid response content types for ${status}`);
         }
         return [status, {
           ...(typeof responseSchema.description === "string" ? { description: responseSchema.description } : {}),
+          ...(headers ? { headers } : {}),
           content: Object.fromEntries(mediaTypes.map((mediaType) => [mediaType, { schema: responseSchema }])),
         }];
       }),

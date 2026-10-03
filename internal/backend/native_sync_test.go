@@ -29,7 +29,7 @@ func TestNativeSyncAndRecoveryRegistration(t *testing.T) {
 		"createAiRun", "confirmAiRun", "cancelAiRun", "retryAiRun",
 		"createVoiceRun", "createDailySummaryRun", "createMedicalOcrRun",
 		"createFamilySnapshot", "getFamilySnapshot", "getFamilySnapshotPage",
-		"executeSyncCommands",
+		"executeSyncCommands", "exportUserData", "getUserExportStatus", "downloadUserExport",
 	}
 	for _, id := range ops {
 		if s.Handlers[id] == nil {

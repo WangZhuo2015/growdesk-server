@@ -5693,6 +5693,215 @@
             }
           }
         }
+      },
+      "UserExportFile": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "user",
+          "families",
+          "generatedAt"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "user": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "username",
+              "displayName",
+              "createdAt",
+              "updatedAt"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "username": {
+                "minLength": 3,
+                "maxLength": 50,
+                "type": "string"
+              },
+              "displayName": {
+                "minLength": 1,
+                "maxLength": 50,
+                "type": "string"
+              },
+              "createdAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              }
+            }
+          },
+          "families": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "familyId",
+                "epoch",
+                "highWater",
+                "pages"
+              ],
+              "properties": {
+                "familyId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "epoch": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "highWater": {
+                  "pattern": "^\\d+$",
+                  "type": "string"
+                },
+                "pages": {
+                  "type": "array",
+                  "items": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "entityType",
+                      "data"
+                    ],
+                    "properties": {
+                      "entityType": {
+                        "minLength": 1,
+                        "maxLength": 64,
+                        "type": "string"
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "generatedAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          }
+        }
+      },
+      "UserExportTaskStatusResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "taskId",
+              "status",
+              "attempt",
+              "createdAt",
+              "updatedAt"
+            ],
+            "properties": {
+              "taskId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "queued"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "running"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "succeeded"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "failed"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "cancelling"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "cancelled"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "awaiting_confirmation"
+                    ]
+                  }
+                ]
+              },
+              "attempt": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "errorCode": {
+                "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+                "type": "string"
+              },
+              "createdAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "expiresAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -7169,7 +7378,7 @@
             "required": false
           }
         ],
-        "x-implementation-status": "PLANNED_SH03",
+        "x-implementation-status": "READY",
         "responses": {
           "202": {
             "description": "Default Response",
@@ -7249,6 +7458,368 @@
             }
           },
           "429": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/exports/{id}/status": {
+      "get": {
+        "operationId": "getUserExportStatus",
+        "summary": "Read the authenticated user's export task status without its private result",
+        "tags": [
+          "User"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "taskId",
+                        "status",
+                        "attempt",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "taskId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "queued"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "running"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "succeeded"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "failed"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "cancelling"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "cancelled"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "awaiting_confirmation"
+                              ]
+                            }
+                          ]
+                        },
+                        "attempt": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "errorCode": {
+                          "pattern": "^[A-Z][A-Z0-9_]{0,63}$",
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "expiresAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/exports/{id}": {
+      "get": {
+        "operationId": "downloadUserExport",
+        "summary": "Download the authenticated user's unexpired, authorized JSON export",
+        "tags": [
+          "User"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename for the versioned export JSON"
+              },
+              "Content-Length": {
+                "schema": {
+                  "pattern": "^\\d+$",
+                  "type": "string"
+                }
+              },
+              "X-Content-SHA256": {
+                "schema": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "description": "SHA-256 of the exact downloaded response bytes"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "schemaVersion",
+                    "user",
+                    "families",
+                    "generatedAt"
+                  ],
+                  "properties": {
+                    "schemaVersion": {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    "user": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "username",
+                        "displayName",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "username": {
+                          "minLength": 3,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "displayName": {
+                          "minLength": 1,
+                          "maxLength": 50,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "families": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "familyId",
+                          "epoch",
+                          "highWater",
+                          "pages"
+                        ],
+                        "properties": {
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "epoch": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "highWater": {
+                            "pattern": "^\\d+$",
+                            "type": "string"
+                          },
+                          "pages": {
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "entityType",
+                                "data"
+                              ],
+                              "properties": {
+                                "entityType": {
+                                  "minLength": 1,
+                                  "maxLength": 64,
+                                  "type": "string"
+                                },
+                                "data": {
+                                  "type": "array",
+                                  "items": {}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "generatedAt": {
+                      "format": "date-time",
+                      "description": "RFC3339 UTC timestamp",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

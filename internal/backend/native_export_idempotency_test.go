@@ -69,3 +69,64 @@ func TestNativeExportRequestHashIncludesFutureBody(t *testing.T) {
 		t.Fatal("changed export body reused the previous request hash")
 	}
 }
+
+func TestNativeExportBabyScopeAndSanitizedFailure(t *testing.T) {
+	pages := []nativeSnapshotPage{
+		{EntityType: "baby", Data: []Object{{"id": "44444444-4444-4444-8444-444444444444"}}},
+		{EntityType: "feeding", Data: []Object{{"id": "55555555-5555-4555-8555-555555555555"}}},
+	}
+	babies, err := nativeExportBabyIDs(pages)
+	if err != nil || len(babies) != 1 || babies[0] != "44444444-4444-4444-8444-444444444444" {
+		t.Fatalf("authorized baby projection was not extracted: babies=%v err=%v", babies, err)
+	}
+	empty, err := nativeExportBabyIDs([]nativeSnapshotPage{{EntityType: "baby", Data: []Object{}}})
+	if err != nil || empty == nil || len(empty) != 0 {
+		t.Fatalf("empty baby scope must be an explicit empty list: babies=%v err=%v", empty, err)
+	}
+	if _, err = nativeExportBabyIDs([]nativeSnapshotPage{{EntityType: "baby", Data: []Object{{"id": "not-a-uuid"}}}}); err == nil {
+		t.Fatal("invalid baby id must fail closed")
+	}
+	if got := safeNativeExportErrorCode(Object{"error_details": Object{"code": "EXPORT_TOO_LARGE", "message": "safe"}}); got != "EXPORT_TOO_LARGE" {
+		t.Fatalf("known public export error was not retained: %q", got)
+	}
+	if got := safeNativeExportErrorCode(Object{"error_details": Object{"code": "DATABASE_PASSWORD", "message": "never expose this"}}); got != "EXPORT_FAILED" {
+		t.Fatalf("unknown/internal failure was not sanitized: %q", got)
+	}
+}
+
+func TestNativeExportPayloadScopesMatchVersionedFile(t *testing.T) {
+	payload := Object{
+		"schemaVersion": 1,
+		"families": []any{Object{
+			"familyId":  "66666666-6666-4666-8666-666666666666",
+			"epoch":     "77777777-7777-4777-8777-777777777777",
+			"highWater": "12",
+			"pages":     []any{Object{"entityType": "baby", "data": []any{Object{"id": "88888888-8888-4888-8888-888888888888"}}}},
+		}},
+	}
+	scopes, err := nativeExportPayloadScopes(payload)
+	if err != nil || len(scopes) != 1 {
+		t.Fatalf("failed to derive private access scope from export file: scopes=%+v err=%v", scopes, err)
+	}
+	want := nativeExportFamily{
+		ID: "66666666-6666-4666-8666-666666666666", Epoch: "77777777-7777-4777-8777-777777777777",
+		HighWater: "12", BabyIDs: []string{"88888888-8888-4888-8888-888888888888"},
+	}
+	if scopes[0].ID != want.ID || scopes[0].Epoch != want.Epoch || scopes[0].HighWater != want.HighWater || !sameIDs(scopes[0].BabyIDs, want.BabyIDs) {
+		t.Fatalf("unexpected extracted scopes: %+v", scopes[0])
+	}
+	for _, invalid := range []string{"-1", "not-a-position"} {
+		bad := Object{
+			"schemaVersion": 1,
+			"families": []any{Object{
+				"familyId":  "66666666-6666-4666-8666-666666666666",
+				"epoch":     "77777777-7777-4777-8777-777777777777",
+				"highWater": invalid,
+				"pages":     []any{},
+			}},
+		}
+		if _, err = nativeExportPayloadScopes(bad); err == nil {
+			t.Fatalf("invalid highWater %q must fail closed", invalid)
+		}
+	}
+}

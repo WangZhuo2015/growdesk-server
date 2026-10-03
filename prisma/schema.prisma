@@ -482,6 +482,7 @@ model TaskExecution {
   cancelRequestedAt DateTime? @map("cancel_requested_at") @db.Timestamptz(3)
   progress          Json?     @db.JsonB
   resultRef         Json?     @map("result_ref") @db.JsonB
+  resultExpiresAt   DateTime? @map("result_expires_at") @db.Timestamptz(3)
   errorDetails      Json?     @map("error_details") @db.JsonB
   nextEventSeq      Int       @default(0) @map("next_event_seq")
   createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)

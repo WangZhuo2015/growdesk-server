@@ -1,0 +1,278 @@
+{
+  "scope": "BE_USER_EXPORT_DOWNLOAD real owner-scoped queue, worker, typed status, private JSON download, scope recheck, and TTL cleanup",
+  "status": "PASS",
+  "baseRevision": "263d0107f07ea2732f08747f5d1d37c4bd291a6e",
+  "apiBinarySHA256": "1e9969e03046a4f137b0efd7d32f5321dd39b40b3af2092f5f7910e8fb23339e",
+  "workerBinarySHA256": "6250690d701863a4fc61f5227df63d5f456c02408b70ca0ae360eda75044f947",
+  "schedulerBinarySHA256": "5d63ddaaf829d7ecdef106e19750bb47864d25cb447fd533e5160bbe24fbd9e9",
+  "sourceSHA256": {
+    "packages/contracts/src/user.ts": "1d1cd22f6f11991a0146373527d70aa639d775dd8fc5b6031fccd1a2dae88471",
+    "packages/contracts/src/routes.ts": "8aeb347a3423c681aef72c465c56dcc63d87daced1f89eadb7f2414663a3244b",
+    "packages/contracts/tests/contracts.test.ts": "fb5aa1c4f7a5b1c1611dde6536fb0b2bce01a7d38fd3810b416a8a18d279e1d7",
+    "scripts/contract-generator.mjs": "04a492408abb140c5853f410042ee7ab334c39e1a8b06bc29224a464345b807f",
+    "scripts/go-user-export-download-integration.py": "30c1c3dbf2f298acc6b0e8b9eda5babecdf99e6834f29fa809ba7d26d912400a",
+    "contracts/openapi.json": "5d539388ff8450b8d574445a8335be4ca20ca6bbc6aa4ca629b492f0e8f01349",
+    "prisma/schema.prisma": "e559c616f54332faf72e9c7b75462087ba2bfdb071121a6b4ee66204708e91d5",
+    "prisma/migrations/202610030031_user_export_payload_expiry/migration.sql": "04637e9d3d6abcd9a2313dd221c8d21e5102c28db82f0b7f3311ad10fdd2880c",
+    "internal/backend/native_exports.go": "7a66eeaa646388b4c6fa2bd0dcd10484182ce8ee39eaa7346d1eaafd3b25c2d8",
+    "internal/backend/native_tasks.go": "15d9116c1d94f917713b8d273f60a14c955e1344e12811c66fb6c20e729503b0",
+    "internal/backend/native_snapshots.go": "3d390944720242427d3801445e8616fc7a572fa5d88fd496ac72e86ccc6dd779",
+    "internal/backend/read_snapshot.go": "c00a226e139dc5ffb65f0b3186bca78dca6f80af2b3cc9864b3eea133a5893ab",
+    "internal/backend/native_export_idempotency_test.go": "05189713a2c7b71e6e7438b672b1040f2343d8f95355177bc7ca0a28418fac5b",
+    "internal/backend/native_sync_test.go": "09ed5b36dcfb2b212797d29a847bed16d8825ee867c428e7dfe55981aa6391c2",
+    "internal/backend/foundation_test.go": "ad287153fc9502a053edbde2578fe63d08e4f3a6bc07787d4afcbbabef804986"
+  },
+  "ownedEnvironment": {
+    "postgresHost": "127.0.0.1",
+    "postgresPort": 64443,
+    "databasePrefix": "test_",
+    "rolePrefix": "test_",
+    "roleIsNonSuperuser": true,
+    "redisHost": "127.0.0.1",
+    "redisPort": 64444,
+    "apiHost": "127.0.0.1",
+    "aiProvider": "fixture-only",
+    "pushCredentialsPresent": false,
+    "objectStorage": "not used by account export; result bytes stay in owned PostgreSQL",
+    "workerModelOrOCRProviderCall": false
+  },
+  "runtime": {
+    "httpAssertions": 53,
+    "boundedExportWorkerRuns": 5,
+    "boundedSchedulerRuns": 1,
+    "testPrincipalsCreated": 3,
+    "allUsernamesUseTestPrefix": true,
+    "familiesCreatedThroughHTTP": 2,
+    "registrationCreatedTestFamilies": 2,
+    "babiesCreatedThroughHTTP": 3,
+    "growthRecordsCreatedThroughHTTP": 2,
+    "exportTasks": 5,
+    "observations": [
+      {
+        "case": "register isolated test_ principal owner",
+        "status": 201
+      },
+      {
+        "case": "fresh login for export principal owner",
+        "status": 200
+      },
+      {
+        "case": "register isolated test_ principal collaborator",
+        "status": 201
+      },
+      {
+        "case": "fresh login for export principal collaborator",
+        "status": 200
+      },
+      {
+        "case": "register isolated test_ principal outsider",
+        "status": 201
+      },
+      {
+        "case": "fresh login for export principal outsider",
+        "status": 200
+      },
+      {
+        "case": "read owner's registration-created test family",
+        "status": 200
+      },
+      {
+        "case": "read collaborator's registration-created test family",
+        "status": 200
+      },
+      {
+        "case": "create test family a",
+        "status": 201
+      },
+      {
+        "case": "create test family b",
+        "status": 201
+      },
+      {
+        "case": "read all owner families before export",
+        "status": 200
+      },
+      {
+        "case": "create test baby a1",
+        "status": 201
+      },
+      {
+        "case": "create test baby a2",
+        "status": 201
+      },
+      {
+        "case": "create test baby b1",
+        "status": 201
+      },
+      {
+        "case": "create test growth record a1",
+        "status": 201
+      },
+      {
+        "case": "create test growth record b1",
+        "status": 201
+      },
+      {
+        "case": "create test-only family invitation",
+        "status": 201
+      },
+      {
+        "case": "collaborator joins only family A",
+        "status": 200
+      },
+      {
+        "case": "read collaborator families after joining test family A",
+        "status": 200
+      },
+      {
+        "case": "family member initially has no baby grants",
+        "status": 200
+      },
+      {
+        "case": "owner export queued with key",
+        "status": 202
+      },
+      {
+        "case": "unauthenticated principal cannot read export status",
+        "status": 401
+      },
+      {
+        "case": "read owner export task status queued",
+        "status": 200
+      },
+      {
+        "case": "queued export is not falsely downloadable",
+        "status": 409
+      },
+      {
+        "case": "queued export idempotency replay",
+        "status": 202
+      },
+      {
+        "case": "read owner export task status succeeded",
+        "status": 200
+      },
+      {
+        "case": "owner downloaded exact-hashed versioned JSON file",
+        "status": 200
+      },
+      {
+        "case": "completed export replay remains same task",
+        "status": 202
+      },
+      {
+        "case": "collaborator export without BabyMember grant",
+        "status": 202
+      },
+      {
+        "case": "foreign principal cannot read export status",
+        "status": 404
+      },
+      {
+        "case": "foreign principal cannot download export",
+        "status": 404
+      },
+      {
+        "case": "read owner export task status queued",
+        "status": 200
+      },
+      {
+        "case": "collaborator queued export is not downloadable",
+        "status": 409
+      },
+      {
+        "case": "owner downloaded exact-hashed versioned JSON file",
+        "status": 200
+      },
+      {
+        "case": "grant collaborator access to baby A1 only",
+        "status": 201
+      },
+      {
+        "case": "authorized subset export queued",
+        "status": 202
+      },
+      {
+        "case": "owner downloaded exact-hashed versioned JSON file",
+        "status": 200
+      },
+      {
+        "case": "revoke collaborator BabyMember grant",
+        "status": 200
+      },
+      {
+        "case": "revoked baby permission prevents a stale export download",
+        "status": 410
+      },
+      {
+        "case": "read owner export task status succeeded",
+        "status": 200
+      },
+      {
+        "case": "revoke collaborator family membership",
+        "status": 200
+      },
+      {
+        "case": "revoked family membership prevents an old export download",
+        "status": 410
+      },
+      {
+        "case": "queue task for worker failure status",
+        "status": 202
+      },
+      {
+        "case": "real worker failure is queryable without internal error details",
+        "status": 200
+      },
+      {
+        "case": "queue export for TTL cleanup",
+        "status": 202
+      },
+      {
+        "case": "expired export is rejected before the scheduler clears bytes",
+        "status": 410
+      },
+      {
+        "case": "read owner export task status succeeded",
+        "status": 200
+      },
+      {
+        "case": "purged task retains status but cannot download expired bytes",
+        "status": 410
+      }
+    ],
+    "results": {
+      "ownerFamilies": 3,
+      "ownerAuthorizedBabies": 3,
+      "ownerAuthorizedGrowthRecords": 2,
+      "familyMembershipWithoutBabyGrantReturnsEmptyBabyPage": true,
+      "singleBabyGrantExcludesSiblingBabyAndRecord": true,
+      "sameKeyReplayTaskIDStableBeforeAndAfterWorker": true,
+      "foreignStatusAndDownloadReturn404": true,
+      "revokedBabyAndFamilyScopesBlockOldDownload": true,
+      "workerFailureStatusContainsOnlyAllowlistedCode": "EXPORT_FAILED",
+      "expiredPayloadPurgedByBoundedScheduler": true,
+      "downloadHeadersValidated": [
+        "Content-Type",
+        "Content-Disposition",
+        "Content-Length",
+        "X-Content-SHA256"
+      ]
+    },
+    "notes": [
+      "registration, family, baby, record, export submission, status, and download all used the real Go HTTP API",
+      "test-only SQL changed only one export task input for worker-failure proof and one result_expires_at for TTL proof",
+      "export JSON contains only the authenticated user's current family and explicitly authorized baby projections",
+      "no model provider, external billing, push credential, old Web database, or old Web service was used"
+    ]
+  },
+  "cleanup": {
+    "apiProcessesStopped": true,
+    "redisProcessStopped": true,
+    "postgresStopped": true,
+    "temporaryDirectoryRemoved": true,
+    "noContainerResourcesCreated": true,
+    "liveAPIProcesses": 0,
+    "privateBuildDirectoryRemoved": true
+  }
+}

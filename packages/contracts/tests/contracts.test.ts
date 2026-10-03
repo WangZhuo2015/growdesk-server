@@ -287,6 +287,60 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(forbidden.schema.$ref, "#/components/schemas/ApiErrorEnvelope");
   });
 
+  test("account export declares typed status, JSON download, and integrity headers", async () => {
+    const statusRoute = contracts.ROUTE_DEFINITIONS.find(
+      (item) => item.operationId === "getUserExportStatus"
+    );
+    const downloadRoute = contracts.ROUTE_DEFINITIONS.find(
+      (item) => item.operationId === "downloadUserExport"
+    );
+    assert.ok(statusRoute);
+    assert.ok(downloadRoute);
+    assert.equal(statusRoute.method, "GET");
+    assert.equal(statusRoute.path, "/api/v1/me/exports/:id/status");
+    assert.ok(Object.hasOwn(statusRoute.responses, 404));
+    assert.equal(downloadRoute.method, "GET");
+    assert.equal(downloadRoute.path, "/api/v1/me/exports/:id");
+    assert.deepEqual(downloadRoute.responseContentTypes?.[200], ["application/json"]);
+    assert.ok(downloadRoute.responseHeaders?.[200]?.["Content-Disposition"]);
+    assert.ok(downloadRoute.responseHeaders?.[200]?.["X-Content-SHA256"]);
+
+    const generated = await generateCanonicalOpenApi();
+    const paths = generated.paths as Record<string, Record<string, {
+      responses?: Record<string, {
+        headers?: Record<string, { schema?: { pattern?: string } }>;
+        content?: Record<string, { schema?: {
+          $ref?: string;
+          type?: string;
+          required?: string[];
+          properties?: Record<string, { enum?: number[] }>;
+        } }>;
+      }>;
+    }>>;
+    const download = paths["/api/v1/me/exports/{id}"]?.get;
+    assert.ok(download);
+    const success = download.responses?.["200"];
+    assert.ok(success);
+    const fileSchema = success.content?.["application/json"]?.schema;
+    assert.equal(fileSchema?.type, "object");
+    assert.ok(fileSchema?.required?.includes("schemaVersion"));
+    assert.deepEqual(fileSchema?.properties?.schemaVersion?.enum, [1]);
+    assert.equal(success.headers?.["X-Content-SHA256"]?.schema?.pattern, "^[a-f0-9]{64}$");
+    assert.ok(success.headers?.["Content-Disposition"]?.schema);
+    assert.ok(paths["/api/v1/me/exports/{id}/status"]?.get?.responses?.["200"]);
+
+    assert.equal(Value.Check(contracts.UserExportTaskStatusResponseSchema, {
+      data: {
+        taskId: "123e4567-e89b-12d3-a456-426614174001",
+        status: "succeeded",
+        attempt: 1,
+        createdAt: "2026-10-03T10:00:00.000Z",
+        updatedAt: "2026-10-03T10:01:00.000Z",
+        expiresAt: "2026-10-03T11:01:00.000Z",
+      },
+    }), true);
+  });
+
   test("medical OCR contract documents the optional idempotency key and provider failure", async () => {
     const route = contracts.ROUTE_DEFINITIONS.find((item) => item.operationId === "createMedicalOcrRun");
     assert.ok(route);
