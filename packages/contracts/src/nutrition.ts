@@ -2,10 +2,12 @@ import { Type, type Static } from "@sinclair/typebox";
 import {
   Nullable,
   DateTimeString,
+  DateString,
   DecimalString,
   UuidString,
   BigIntString,
   PaginatedEnvelope,
+  SuccessEnvelope,
 } from "./common.js";
 
 // ==========================================
@@ -369,3 +371,194 @@ export const FoodPlanResponseSchema = Type.Object(
 );
 
 export type FoodPlanResponse = Static<typeof FoodPlanResponseSchema>;
+
+// ==========================================
+// 4. Server-calculated nutrition analysis
+// ==========================================
+
+export const NutritionAnalysisQuerySchema = Type.Object(
+  {
+    date: DateString,
+    datasetVersion: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+  },
+  { $id: "NutritionAnalysisQuery", additionalProperties: false },
+);
+
+export const NutritionTrendsQuerySchema = Type.Object(
+  {
+    from: DateString,
+    to: DateString,
+    datasetVersion: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+  },
+  { $id: "NutritionTrendsQuery", additionalProperties: false },
+);
+
+const NutritionCategorySchema = Type.Union([
+  Type.Literal("macro"),
+  Type.Literal("vitamin"),
+  Type.Literal("mineral"),
+  Type.Literal("fatty_acid"),
+  Type.Literal("other"),
+]);
+
+const NutritionCoverageStatusSchema = Type.Union([
+  Type.Literal("no_logged_source"),
+  Type.Literal("calculated"),
+  Type.Literal("estimated"),
+  Type.Literal("partial"),
+  Type.Literal("unknown"),
+]);
+
+const NutritionSourceContributionSchema = Type.Object(
+  {
+    sourceId: Type.String({ minLength: 1, maxLength: 256 }),
+    sourceName: Type.String({ maxLength: 512 }),
+    sourceType: Type.Union([
+      Type.Literal("formula"),
+      Type.Literal("supplement"),
+      Type.Literal("breastmilk"),
+      Type.Literal("food"),
+    ]),
+    amount: DecimalString,
+    unit: Type.String({ minLength: 1, maxLength: 32 }),
+    basis: Type.Union([Type.Literal("product_calculation"), Type.Literal("legacy_estimate")]),
+    assumptions: Type.Array(Type.String({ maxLength: 255 })),
+  },
+  { $id: "NutritionSourceContribution", additionalProperties: false },
+);
+
+export const NutritionNutrientValueSchema = Type.Object(
+  {
+    nutrientId: Type.String({ minLength: 1, maxLength: 64 }),
+    name: Type.String({ minLength: 1, maxLength: 100 }),
+    unit: Type.String({ minLength: 1, maxLength: 32 }),
+    category: NutritionCategorySchema,
+    formulaCalculatedAmount: DecimalString,
+    supplementCalculatedAmount: DecimalString,
+    breastmilkEstimatedAmount: DecimalString,
+    foodEstimatedAmount: DecimalString,
+    calculatedAmount: DecimalString,
+    estimatedAmount: DecimalString,
+    knownSubtotalAmount: DecimalString,
+    targetAmount: Nullable(DecimalString),
+    targetType: Nullable(Type.Union([Type.Literal("RNI"), Type.Literal("AI")])),
+    ulAmount: Nullable(DecimalString),
+    knownSubtotalAchievementRate: Nullable(DecimalString),
+    knownProductAmountExceedsUL: Nullable(Type.Boolean()),
+    sources: Type.Array(NutritionSourceContributionSchema),
+    coverage: Type.Object(
+      {
+        status: NutritionCoverageStatusSchema,
+        calculatedSourceCount: Type.Integer({ minimum: 0 }),
+        estimatedSourceCount: Type.Integer({ minimum: 0 }),
+        unknownSourceCount: Type.Integer({ minimum: 0 }),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "NutritionNutrientValue", additionalProperties: false },
+);
+
+export const NutritionAnalysisDataSchema = Type.Object(
+  {
+    babyId: UuidString,
+    familyId: UuidString,
+    date: DateString,
+    timeZone: Type.String({ minLength: 1, maxLength: 100 }),
+    localDayStartAt: DateTimeString,
+    localDayEndExclusiveAt: DateTimeString,
+    ageMonths: Nullable(Type.Integer({ minimum: 0 })),
+    ageGroup: Type.Union([
+      Type.Literal("unknown_age"),
+      Type.Literal("0-6m"),
+      Type.Literal("6-12m"),
+      Type.Literal("1-3y"),
+      Type.Literal("unsupported_over_36m"),
+    ]),
+    referenceDataset: Type.Object(
+      {
+        version: Type.String(),
+        sha256: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+        validationStatus: Type.Literal("legacy_values_not_independently_cross_checked"),
+        driSource: Type.String(),
+        foodSource: Type.String(),
+        breastmilkSource: Type.String(),
+      },
+      { additionalProperties: false },
+    ),
+    summary: Type.Object(
+      {
+        formulaMl: DecimalString,
+        breastmilkRecordedMl: DecimalString,
+        breastmilkEstimatedMl: DecimalString,
+        knownMilkSubtotalMl: DecimalString,
+        supplementRecordCount: Type.Integer({ minimum: 0 }),
+        foodRecordCount: Type.Integer({ minimum: 0 }),
+        foodsLogged: Type.Array(Type.String({ maxLength: 255 })),
+      },
+      { additionalProperties: false },
+    ),
+    coverage: Type.Object(
+      {
+        feedingRecordCount: Type.Integer({ minimum: 0 }),
+        supplementRecordCount: Type.Integer({ minimum: 0 }),
+        foodRecordCount: Type.Integer({ minimum: 0 }),
+        calculatedSourceCount: Type.Integer({ minimum: 0 }),
+        estimatedSourceCount: Type.Integer({ minimum: 0 }),
+        unknownSourceCount: Type.Integer({ minimum: 0 }),
+        unsupportedUnitCount: Type.Integer({ minimum: 0 }),
+        unsupportedFoodCount: Type.Integer({ minimum: 0 }),
+        logCompleteness: Type.Literal("unverified"),
+        notes: Type.Array(Type.String({ maxLength: 500 })),
+      },
+      { additionalProperties: false },
+    ),
+    nutrients: Type.Array(NutritionNutrientValueSchema),
+  },
+  { $id: "NutritionAnalysisData", additionalProperties: false },
+);
+
+export const NutritionAnalysisResponseSchema = SuccessEnvelope(NutritionAnalysisDataSchema, {
+  $id: "NutritionAnalysisResponse",
+});
+
+export const NutritionTrendAverageSchema = Type.Object(
+  {
+    nutrientId: Type.String({ minLength: 1, maxLength: 64 }),
+    calculatedAmountPerDay: DecimalString,
+    estimatedAmountPerDay: DecimalString,
+    knownSubtotalPerDay: DecimalString,
+    averageTargetAmount: Nullable(DecimalString),
+    targetDaysCount: Type.Integer({ minimum: 0, maximum: 90 }),
+    targetCoverageRatio: DecimalString,
+    averageKnownSubtotalAchievementRate: Nullable(DecimalString),
+    unit: Type.String({ minLength: 1, maxLength: 32 }),
+  },
+  { $id: "NutritionTrendAverage", additionalProperties: false },
+);
+
+export const NutritionTrendsDataSchema = Type.Object(
+  {
+    babyId: UuidString,
+    familyId: UuidString,
+    from: DateString,
+    to: DateString,
+    daysCount: Type.Integer({ minimum: 1, maximum: 90 }),
+    timeZone: Type.String({ minLength: 1, maxLength: 100 }),
+    referenceDataset: NutritionAnalysisDataSchema.properties.referenceDataset,
+    daily: Type.Array(NutritionAnalysisDataSchema),
+    averages: Type.Array(NutritionTrendAverageSchema),
+    coverage: Type.Object(
+      {
+        logCompleteness: Type.Literal("unverified"),
+        notes: Type.Array(Type.String({ maxLength: 500 })),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "NutritionTrendsData", additionalProperties: false },
+);
+
+export const NutritionTrendsResponseSchema = SuccessEnvelope(NutritionTrendsDataSchema, {
+  $id: "NutritionTrendsResponse",
+});

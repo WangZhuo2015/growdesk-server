@@ -25771,6 +25771,1472 @@
         }
       }
     },
+    "/api/v1/babies/{babyId}/nutrition/analysis": {
+      "get": {
+        "operationId": "getNutritionAnalysis",
+        "summary": "Calculate recorded daily nutrition with explicit estimates and coverage",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "date",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "description": "YYYY-MM-DD calendar date"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "datasetVersion",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "babyId",
+                        "familyId",
+                        "date",
+                        "timeZone",
+                        "localDayStartAt",
+                        "localDayEndExclusiveAt",
+                        "ageMonths",
+                        "ageGroup",
+                        "referenceDataset",
+                        "summary",
+                        "coverage",
+                        "nutrients"
+                      ],
+                      "properties": {
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "date": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string"
+                        },
+                        "timeZone": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "localDayStartAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "localDayEndExclusiveAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "ageMonths": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "ageGroup": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "unknown_age"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "0-6m"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "6-12m"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "1-3y"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "unsupported_over_36m"
+                              ]
+                            }
+                          ]
+                        },
+                        "referenceDataset": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "sha256",
+                            "validationStatus",
+                            "driSource",
+                            "foodSource",
+                            "breastmilkSource"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "string"
+                            },
+                            "sha256": {
+                              "pattern": "^[a-f0-9]{64}$",
+                              "type": "string"
+                            },
+                            "validationStatus": {
+                              "type": "string",
+                              "enum": [
+                                "legacy_values_not_independently_cross_checked"
+                              ]
+                            },
+                            "driSource": {
+                              "type": "string"
+                            },
+                            "foodSource": {
+                              "type": "string"
+                            },
+                            "breastmilkSource": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "summary": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "formulaMl",
+                            "breastmilkRecordedMl",
+                            "breastmilkEstimatedMl",
+                            "knownMilkSubtotalMl",
+                            "supplementRecordCount",
+                            "foodRecordCount",
+                            "foodsLogged"
+                          ],
+                          "properties": {
+                            "formulaMl": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "breastmilkRecordedMl": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "breastmilkEstimatedMl": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "knownMilkSubtotalMl": {
+                              "pattern": "^-?\\d+(\\.\\d+)?$",
+                              "description": "Arbitrary-precision decimal represented as string",
+                              "type": "string"
+                            },
+                            "supplementRecordCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "foodRecordCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "foodsLogged": {
+                              "type": "array",
+                              "items": {
+                                "maxLength": 255,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "coverage": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "feedingRecordCount",
+                            "supplementRecordCount",
+                            "foodRecordCount",
+                            "calculatedSourceCount",
+                            "estimatedSourceCount",
+                            "unknownSourceCount",
+                            "unsupportedUnitCount",
+                            "unsupportedFoodCount",
+                            "logCompleteness",
+                            "notes"
+                          ],
+                          "properties": {
+                            "feedingRecordCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "supplementRecordCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "foodRecordCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "calculatedSourceCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "estimatedSourceCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "unknownSourceCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "unsupportedUnitCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "unsupportedFoodCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "logCompleteness": {
+                              "type": "string",
+                              "enum": [
+                                "unverified"
+                              ]
+                            },
+                            "notes": {
+                              "type": "array",
+                              "items": {
+                                "maxLength": 500,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "nutrients": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "nutrientId",
+                              "name",
+                              "unit",
+                              "category",
+                              "formulaCalculatedAmount",
+                              "supplementCalculatedAmount",
+                              "breastmilkEstimatedAmount",
+                              "foodEstimatedAmount",
+                              "calculatedAmount",
+                              "estimatedAmount",
+                              "knownSubtotalAmount",
+                              "targetAmount",
+                              "targetType",
+                              "ulAmount",
+                              "knownSubtotalAchievementRate",
+                              "knownProductAmountExceedsUL",
+                              "sources",
+                              "coverage"
+                            ],
+                            "properties": {
+                              "nutrientId": {
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "type": "string"
+                              },
+                              "name": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "unit": {
+                                "minLength": 1,
+                                "maxLength": 32,
+                                "type": "string"
+                              },
+                              "category": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "macro"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "vitamin"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "mineral"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "fatty_acid"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "other"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "formulaCalculatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "supplementCalculatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "breastmilkEstimatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "foodEstimatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "calculatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "estimatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "knownSubtotalAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "targetAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "targetType": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "RNI"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "AI"
+                                    ]
+                                  }
+                                ],
+                                "nullable": true
+                              },
+                              "ulAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "knownSubtotalAchievementRate": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "knownProductAmountExceedsUL": {
+                                "type": "boolean",
+                                "nullable": true
+                              },
+                              "sources": {
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "sourceId",
+                                    "sourceName",
+                                    "sourceType",
+                                    "amount",
+                                    "unit",
+                                    "basis",
+                                    "assumptions"
+                                  ],
+                                  "properties": {
+                                    "sourceId": {
+                                      "minLength": 1,
+                                      "maxLength": 256,
+                                      "type": "string"
+                                    },
+                                    "sourceName": {
+                                      "maxLength": 512,
+                                      "type": "string"
+                                    },
+                                    "sourceType": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "formula"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "supplement"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "breastmilk"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "food"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "amount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "unit": {
+                                      "minLength": 1,
+                                      "maxLength": 32,
+                                      "type": "string"
+                                    },
+                                    "basis": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "product_calculation"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "legacy_estimate"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "assumptions": {
+                                      "type": "array",
+                                      "items": {
+                                        "maxLength": 255,
+                                        "type": "string"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "coverage": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "status",
+                                  "calculatedSourceCount",
+                                  "estimatedSourceCount",
+                                  "unknownSourceCount"
+                                ],
+                                "properties": {
+                                  "status": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "no_logged_source"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "calculated"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "estimated"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "partial"
+                                        ]
+                                      },
+                                      {
+                                        "type": "string",
+                                        "enum": [
+                                          "unknown"
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  "calculatedSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "estimatedSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "unknownSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/babies/{babyId}/nutrition/trends": {
+      "get": {
+        "operationId": "getNutritionTrends",
+        "summary": "Calculate local-day nutrition trends for up to 90 days",
+        "tags": [
+          "Nutrition"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "date",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "description": "YYYY-MM-DD calendar date"
+          },
+          {
+            "schema": {
+              "format": "date",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "description": "YYYY-MM-DD calendar date"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 100,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "datasetVersion",
+            "required": false
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "babyId",
+                        "familyId",
+                        "from",
+                        "to",
+                        "daysCount",
+                        "timeZone",
+                        "referenceDataset",
+                        "daily",
+                        "averages",
+                        "coverage"
+                      ],
+                      "properties": {
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "from": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string"
+                        },
+                        "to": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string"
+                        },
+                        "daysCount": {
+                          "minimum": 1,
+                          "maximum": 90,
+                          "type": "integer"
+                        },
+                        "timeZone": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "referenceDataset": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "version",
+                            "sha256",
+                            "validationStatus",
+                            "driSource",
+                            "foodSource",
+                            "breastmilkSource"
+                          ],
+                          "properties": {
+                            "version": {
+                              "type": "string"
+                            },
+                            "sha256": {
+                              "pattern": "^[a-f0-9]{64}$",
+                              "type": "string"
+                            },
+                            "validationStatus": {
+                              "type": "string",
+                              "enum": [
+                                "legacy_values_not_independently_cross_checked"
+                              ]
+                            },
+                            "driSource": {
+                              "type": "string"
+                            },
+                            "foodSource": {
+                              "type": "string"
+                            },
+                            "breastmilkSource": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "daily": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "babyId",
+                              "familyId",
+                              "date",
+                              "timeZone",
+                              "localDayStartAt",
+                              "localDayEndExclusiveAt",
+                              "ageMonths",
+                              "ageGroup",
+                              "referenceDataset",
+                              "summary",
+                              "coverage",
+                              "nutrients"
+                            ],
+                            "properties": {
+                              "babyId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "familyId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "date": {
+                                "format": "date",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "description": "YYYY-MM-DD calendar date",
+                                "type": "string"
+                              },
+                              "timeZone": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "localDayStartAt": {
+                                "format": "date-time",
+                                "description": "RFC3339 UTC timestamp",
+                                "type": "string"
+                              },
+                              "localDayEndExclusiveAt": {
+                                "format": "date-time",
+                                "description": "RFC3339 UTC timestamp",
+                                "type": "string"
+                              },
+                              "ageMonths": {
+                                "minimum": 0,
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "ageGroup": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "unknown_age"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "0-6m"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "6-12m"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "1-3y"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "unsupported_over_36m"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "referenceDataset": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "version",
+                                  "sha256",
+                                  "validationStatus",
+                                  "driSource",
+                                  "foodSource",
+                                  "breastmilkSource"
+                                ],
+                                "properties": {
+                                  "version": {
+                                    "type": "string"
+                                  },
+                                  "sha256": {
+                                    "pattern": "^[a-f0-9]{64}$",
+                                    "type": "string"
+                                  },
+                                  "validationStatus": {
+                                    "type": "string",
+                                    "enum": [
+                                      "legacy_values_not_independently_cross_checked"
+                                    ]
+                                  },
+                                  "driSource": {
+                                    "type": "string"
+                                  },
+                                  "foodSource": {
+                                    "type": "string"
+                                  },
+                                  "breastmilkSource": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "summary": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "formulaMl",
+                                  "breastmilkRecordedMl",
+                                  "breastmilkEstimatedMl",
+                                  "knownMilkSubtotalMl",
+                                  "supplementRecordCount",
+                                  "foodRecordCount",
+                                  "foodsLogged"
+                                ],
+                                "properties": {
+                                  "formulaMl": {
+                                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                                    "description": "Arbitrary-precision decimal represented as string",
+                                    "type": "string"
+                                  },
+                                  "breastmilkRecordedMl": {
+                                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                                    "description": "Arbitrary-precision decimal represented as string",
+                                    "type": "string"
+                                  },
+                                  "breastmilkEstimatedMl": {
+                                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                                    "description": "Arbitrary-precision decimal represented as string",
+                                    "type": "string"
+                                  },
+                                  "knownMilkSubtotalMl": {
+                                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                                    "description": "Arbitrary-precision decimal represented as string",
+                                    "type": "string"
+                                  },
+                                  "supplementRecordCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "foodRecordCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "foodsLogged": {
+                                    "type": "array",
+                                    "items": {
+                                      "maxLength": 255,
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "coverage": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "feedingRecordCount",
+                                  "supplementRecordCount",
+                                  "foodRecordCount",
+                                  "calculatedSourceCount",
+                                  "estimatedSourceCount",
+                                  "unknownSourceCount",
+                                  "unsupportedUnitCount",
+                                  "unsupportedFoodCount",
+                                  "logCompleteness",
+                                  "notes"
+                                ],
+                                "properties": {
+                                  "feedingRecordCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "supplementRecordCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "foodRecordCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "calculatedSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "estimatedSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "unknownSourceCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "unsupportedUnitCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "unsupportedFoodCount": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
+                                  "logCompleteness": {
+                                    "type": "string",
+                                    "enum": [
+                                      "unverified"
+                                    ]
+                                  },
+                                  "notes": {
+                                    "type": "array",
+                                    "items": {
+                                      "maxLength": 500,
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "nutrients": {
+                                "type": "array",
+                                "items": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "nutrientId",
+                                    "name",
+                                    "unit",
+                                    "category",
+                                    "formulaCalculatedAmount",
+                                    "supplementCalculatedAmount",
+                                    "breastmilkEstimatedAmount",
+                                    "foodEstimatedAmount",
+                                    "calculatedAmount",
+                                    "estimatedAmount",
+                                    "knownSubtotalAmount",
+                                    "targetAmount",
+                                    "targetType",
+                                    "ulAmount",
+                                    "knownSubtotalAchievementRate",
+                                    "knownProductAmountExceedsUL",
+                                    "sources",
+                                    "coverage"
+                                  ],
+                                  "properties": {
+                                    "nutrientId": {
+                                      "minLength": 1,
+                                      "maxLength": 64,
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "minLength": 1,
+                                      "maxLength": 100,
+                                      "type": "string"
+                                    },
+                                    "unit": {
+                                      "minLength": 1,
+                                      "maxLength": 32,
+                                      "type": "string"
+                                    },
+                                    "category": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "macro"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "vitamin"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "mineral"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "fatty_acid"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "other"
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    "formulaCalculatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "supplementCalculatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "breastmilkEstimatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "foodEstimatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "calculatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "estimatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "knownSubtotalAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "targetAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "targetType": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "RNI"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "AI"
+                                          ]
+                                        }
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "ulAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "knownSubtotalAchievementRate": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "knownProductAmountExceedsUL": {
+                                      "type": "boolean",
+                                      "nullable": true
+                                    },
+                                    "sources": {
+                                      "type": "array",
+                                      "items": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "sourceId",
+                                          "sourceName",
+                                          "sourceType",
+                                          "amount",
+                                          "unit",
+                                          "basis",
+                                          "assumptions"
+                                        ],
+                                        "properties": {
+                                          "sourceId": {
+                                            "minLength": 1,
+                                            "maxLength": 256,
+                                            "type": "string"
+                                          },
+                                          "sourceName": {
+                                            "maxLength": 512,
+                                            "type": "string"
+                                          },
+                                          "sourceType": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "formula"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "supplement"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "breastmilk"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "food"
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          "amount": {
+                                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                                            "description": "Arbitrary-precision decimal represented as string",
+                                            "type": "string"
+                                          },
+                                          "unit": {
+                                            "minLength": 1,
+                                            "maxLength": 32,
+                                            "type": "string"
+                                          },
+                                          "basis": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "product_calculation"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "legacy_estimate"
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          "assumptions": {
+                                            "type": "array",
+                                            "items": {
+                                              "maxLength": 255,
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "coverage": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "status",
+                                        "calculatedSourceCount",
+                                        "estimatedSourceCount",
+                                        "unknownSourceCount"
+                                      ],
+                                      "properties": {
+                                        "status": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "no_logged_source"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "calculated"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "estimated"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "partial"
+                                              ]
+                                            },
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "unknown"
+                                              ]
+                                            }
+                                          ]
+                                        },
+                                        "calculatedSourceCount": {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "estimatedSourceCount": {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        },
+                                        "unknownSourceCount": {
+                                          "minimum": 0,
+                                          "type": "integer"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "averages": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "nutrientId",
+                              "calculatedAmountPerDay",
+                              "estimatedAmountPerDay",
+                              "knownSubtotalPerDay",
+                              "averageTargetAmount",
+                              "targetDaysCount",
+                              "targetCoverageRatio",
+                              "averageKnownSubtotalAchievementRate",
+                              "unit"
+                            ],
+                            "properties": {
+                              "nutrientId": {
+                                "minLength": 1,
+                                "maxLength": 64,
+                                "type": "string"
+                              },
+                              "calculatedAmountPerDay": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "estimatedAmountPerDay": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "knownSubtotalPerDay": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "averageTargetAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "targetDaysCount": {
+                                "minimum": 0,
+                                "maximum": 90,
+                                "type": "integer"
+                              },
+                              "targetCoverageRatio": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "averageKnownSubtotalAchievementRate": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "unit": {
+                                "minLength": 1,
+                                "maxLength": 32,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "coverage": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "logCompleteness",
+                            "notes"
+                          ],
+                          "properties": {
+                            "logCompleteness": {
+                              "type": "string",
+                              "enum": [
+                                "unverified"
+                              ]
+                            },
+                            "notes": {
+                              "type": "array",
+                              "items": {
+                                "maxLength": 500,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/development/milestones": {
       "get": {
         "operationId": "listMilestones",

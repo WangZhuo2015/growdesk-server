@@ -1,0 +1,239 @@
+{
+  "scope": "server-authoritative nutrition analysis and trends",
+  "status": "PASS",
+  "sourceRevision": "5437b6a6cd99eda72bc231f71bd38831b729d97c",
+  "sourceFileHashes": {
+    "packages/contracts/src/nutrition.ts": "9ae207a38a58e41f6f879cb1c42bc00236bab3fa5e3efb890293cf79c335140a",
+    "packages/contracts/src/routes.ts": "f6edf0b273cf0793eb14dd9a161754ef149569bb63b0f0ee05c4e76234058fc4",
+    "contracts/openapi.json": "fb953c3511c78bf59180eca69462c6912c650eab5e456954f69206dcad9cff74",
+    "internal/backend/register.go": "3e48543ee2840bbafc61d7258605a6f32f28155893afc2d77209a488de1aee80",
+    "internal/backend/nutrition_analysis.go": "524549163402be50044e09b3d5f309632688decde78038dfdcc23327cbbf800b",
+    "internal/backend/nutrition_analysis_calc.go": "b445b9ed4303761a54d95ef7192e5514b225bf0af945bd70763b38741509f570",
+    "internal/backend/nutrition_analysis_test.go": "5ff485c3b63cbe1ed20b959600ccd3bb5b58ccd8c5d08b149390cbd5b726e61d",
+    "internal/backend/nutrition_reference_legacy_v1.json": "c727dbebf1682a0e73b7e06a306db0d745bf1939254cbb0efb1c04f8525ec6ee",
+    "scripts/go-nutrition-analysis-integration.py": "c52e94142d7f32ca9921498c53d28537021e666469405bf4275a1a349a51c1fa"
+  },
+  "result": {
+    "checkCount": 25,
+    "httpChecks": [
+      {
+        "case": "register isolated owner",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "register foreign tenant",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test family with family timezone",
+        "method": "POST",
+        "path": "/api/v1/families",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby with a valid future birth date",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read a valid day before baby birth date",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby for unsupported-age target boundary",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read trend across supported-age boundary",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "analysis requires an authenticated session",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 401,
+        "errorCode": "UNAUTHORIZED"
+      },
+      {
+        "case": "create family formula through API",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record formula across local midnight",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record direct breastfeeding estimate",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "refresh after feeding write",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create supplement nutrient profile through API",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/supplement-products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record exact supplement dose",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/supplement",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record reference food item",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/food",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read empty local calendar day",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read breast milk day",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "refresh after food and supplement writes",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read three-day local trend",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "accept 90 local calendar days",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject 91 local calendar days",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "reject unavailable reference dataset",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 409,
+        "errorCode": "NUTRITION_DATASET_VERSION_UNSUPPORTED"
+      },
+      {
+        "case": "reject invalid calendar date",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "deny foreign tenant nutrition read",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      }
+    ],
+    "owner": "test_…",
+    "family": "test_family_…",
+    "baby": "test_baby_…",
+    "timeZone": "Asia/Shanghai",
+    "foreignTenantStatus": 403,
+    "golden": {
+      "dayCount": 3,
+      "ageMonthsByLocalDay": [
+        5,
+        5,
+        6
+      ],
+      "breastmilkEstimatedMl": "40",
+      "vitaminDCalculatedIU": "200",
+      "proteinFoodEstimateG": "3.15",
+      "proteinEstimatedAverageGPerDay": "1.197",
+      "proteinTrendTargetDaysCount": 3,
+      "proteinTrendTargetCoverageRatio": "1",
+      "partialBoundaryTargetDaysCount": 1,
+      "partialBoundaryTargetCoverageRatio": "0.5",
+      "referenceValidationStatus": "legacy_values_not_independently_cross_checked"
+    },
+    "formulaProfileBoundary": "formula product nutrientsJson is not writable through the pinned create/update contract; HTTP result remains unknown, no SQL seeding"
+  },
+  "cleanup": {
+    "apiStopped": true,
+    "redisAndMinioStopped": true,
+    "postgresStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "tenantDataRemovedWithOwnedDatabase": true
+  },
+  "ownedEnvironment": {
+    "postgresHost": "127.0.0.1",
+    "redisHost": "127.0.0.1",
+    "objectStorageHost": "127.0.0.1",
+    "database": "test_…",
+    "role": "test_…",
+    "prismaMigrationCount": 25,
+    "aiProvider": "fixture",
+    "workerStarted": false,
+    "pushCredentialsPresent": false,
+    "usedProductionSecretsOrLegacyDatabase": false
+  },
+  "databaseDiagnostics": []
+}

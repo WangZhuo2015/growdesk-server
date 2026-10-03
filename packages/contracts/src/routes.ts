@@ -185,6 +185,10 @@ import {
   SupplementScheduleListResponseSchema,
   SupplementScheduleListQuerySchema,
   CreateSupplementScheduleRequestSchema,
+  NutritionAnalysisQuerySchema,
+  NutritionAnalysisResponseSchema,
+  NutritionTrendsQuerySchema,
+  NutritionTrendsResponseSchema,
 } from "./nutrition.js";
 import {
   MilestoneListResponseSchema,
@@ -1701,6 +1705,28 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     params: BabyIdParam,
     body: SaveFoodPlanRequestSchema,
     responses: { 200: FoodPlanResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/babies/:babyId/nutrition/analysis",
+    operationId: "getNutritionAnalysis",
+    summary: "Calculate recorded daily nutrition with explicit estimates and coverage",
+    tags: ["Nutrition"],
+    implementationStatus: "READY",
+    params: BabyIdParam,
+    querystring: NutritionAnalysisQuerySchema,
+    responses: { 200: NutritionAnalysisResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/babies/:babyId/nutrition/trends",
+    operationId: "getNutritionTrends",
+    summary: "Calculate local-day nutrition trends for up to 90 days",
+    tags: ["Nutrition"],
+    implementationStatus: "READY",
+    params: BabyIdParam,
+    querystring: NutritionTrendsQuerySchema,
+    responses: { 200: NutritionTrendsResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 18. Knowledge & Development (SH-08)
