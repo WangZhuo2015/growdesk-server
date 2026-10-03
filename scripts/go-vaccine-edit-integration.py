@@ -694,8 +694,8 @@ def exercise(stack: OwnedStack) -> dict[str, object]:
     if receipt_count != "3":
         raise AssertionError("only successful edit commands should persist receipts")
     final_state = json.loads(stack.sql(
-        f"SELECT jsonb_build_array(cursor::text,(SELECT count(*) FROM family_changes WHERE family_id='{family_id}' AND entity_type='vaccine' AND entity_id='{record_id}')," 
-        f"(SELECT count(*) FROM vaccine_records WHERE id='{record_id}' AND deleted_at IS NOT NULL)," 
+        f"SELECT jsonb_build_array(cursor::text,(SELECT count(*) FROM family_changes WHERE family_id='{family_id}' AND entity_type='vaccine' AND entity_id='{record_id}'),"
+        f"(SELECT count(*) FROM vaccine_records WHERE id='{record_id}' AND deleted_at IS NOT NULL),"
         f"(SELECT count(*) FROM timeline_entries WHERE id=(SELECT id FROM timeline_entries WHERE entity_id='{record_id}' AND entity_type='vaccine') AND deleted_at IS NULL)) "
         f"FROM family_sync_states WHERE family_id='{family_id}';"
     ))
