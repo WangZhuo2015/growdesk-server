@@ -147,7 +147,7 @@ func TestNativeFullOperationCoverage(t *testing.T) {
 	s.registerHealth()
 	s.RegisterBusinessHandlers()
 
-	// Verify all 151 operations are registered
+	// Verify all declared operations are registered
 	var missing []string
 	for _, route := range contract.Routes {
 		if s.Handlers[route.OperationID] == nil {
@@ -237,4 +237,3 @@ func TestNativeOAuthAndSamplesHTTP(t *testing.T) {
 		}
 	}
 }
-

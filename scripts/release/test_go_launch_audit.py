@@ -79,14 +79,14 @@ class SourceAuditTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.server, self.web = self.root / "server", self.root / "web"
         self.server.mkdir()
         self.web.mkdir()
         self.identity = {"commit": "a" * 40, "tree": "b" * 40, "dirty": False}
         self.binary = self.root / "test-api"
         self.binary.write_bytes(b"test binary, never executed")
-        self.contract, self.inventory = fixture(151)
+        self.contract, self.inventory = fixture(160)
         self.write(self.server, "contracts/openapi.json", json.dumps(self.contract))
         self.write(self.server, "internal/backend/config.go", "// production configuration placeholder for unit test")
         self.write(self.server, "Dockerfile", 'ENTRYPOINT ["node", "apps/api/dist/server.js"]')

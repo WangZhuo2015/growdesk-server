@@ -1,0 +1,46 @@
+{
+  "scope": "Go vaccine-record PATCH and fixed OpenAPI contract",
+  "status": "FAIL",
+  "sourceRevision": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "sourceFileHashes": {
+    "packages/contracts/src/medical.ts": "3f8705ea08d15936f721cdd4b703234e827341ed430667a6763e7f4ad46891c1",
+    "packages/contracts/src/routes.ts": "abfb4fa75e6e5b86c11763fc35ce5891aa85db8aa0388ac49983502bd2184b6d",
+    "contracts/openapi.json": "d704d090ab2a986e71ce8be2633fc841cbc4f9cef19f08433fb12be365ddc15b",
+    "internal/backend/vaccine_records.go": "2ace8ba974d5bf6375331f954671d352203f2ccfa0d10a17d763f830530c6dbf",
+    "internal/backend/contract.go": "459a77a21a432e21ae68ab024c4721b750fff0349bb0e44bcee88125caf1dee3",
+    "internal/backend/vaccine_records_test.go": "8d13f6173aeb9874276100e9027754cbbc5aab7a3d31c2083581c4d10c972848",
+    "scripts/go-vaccine-edit-integration.py": "bf60d68e7ba9fcfdbb92701041df6ef53ceeab5a5a9091af2bc73feec86aa1ba",
+    "internal/backend/ai_run_commands.go": "0254462b6e3bf6c4f6b5d5096048b9bffeb1d96c0088d5dd0cb5da08cb4fccdf",
+    "internal/backend/ai_run_commands_test.go": "0548ab0a7647b3978ff0901564ee06c8078e759e172ddea45db016188fc8e19b"
+  },
+  "result": null,
+  "cleanup": {
+    "apiStopped": true,
+    "redisAndMinioStopped": true,
+    "postgresStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "tenantDataRemovedWithOwnedDatabase": true
+  },
+  "ownedEnvironment": {
+    "database": "test_…",
+    "role": "test_…",
+    "postgresHost": "127.0.0.1",
+    "redisHost": "127.0.0.1",
+    "objectStorageHost": "127.0.0.1",
+    "prismaMigrationCount": 25,
+    "aiProvider": "fixture",
+    "workerStarted": false,
+    "pushCredentialsPresent": false
+  },
+  "failureType": "AssertionError",
+  "failure": "complete and edit vaccine record: expected HTTP 200, got 500 (INTERNAL_ERROR, requestId=9d9b2792-1f3b-4a6c-b9ef-855d70034510)",
+  "databaseDiagnostics": [],
+  "apiDiagnostics": [
+    {
+      "errorClass": "other",
+      "requestId": "9d9b2792-1f3b-4a6c-b9ef-855d70034510",
+      "errorType": "*errors.errorString",
+      "diagnosticMessage": "EOF"
+    }
+  ]
+}

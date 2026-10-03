@@ -237,6 +237,16 @@ func (r *Route) Validate(req *http.Request, params map[string]string, body Objec
 				return apiError(400, "FST_ERR_VALIDATION", "Request body is required")
 			}
 			if body != nil {
+				// Vaccine edits are an explicit online PATCH contract. Do not
+				// silently discard misspelled writable fields for this operation:
+				// callers must see contract drift before any mutation is attempted.
+				if r.OperationID == "updateVaccineRecord" {
+					for key := range body {
+						if _, known := media.Schema.Value.Properties[key]; !known {
+							return apiError(400, "FST_ERR_VALIDATION", "Request body contains an unknown vaccine record field")
+						}
+					}
+				}
 				if err := normalizeBody(media.Schema.Value, body); err != nil {
 					return err
 				}

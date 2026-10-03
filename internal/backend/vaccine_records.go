@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"errors"
+	"math"
 	"strconv"
 	"time"
 
@@ -14,6 +15,7 @@ func (s *Server) registerVaccines() {
 	s.Register("getVaccineCatalog", false, s.getVaccineCatalog)
 	s.Register("listVaccineRecords", false, s.listVaccineRecords)
 	s.Register("createVaccineRecord", false, s.createVaccineRecord)
+	s.Register("updateVaccineRecord", false, s.updateVaccineRecord)
 	s.Register("deleteVaccineRecord", false, s.deleteVaccineRecord)
 	s.Register("listVaccineSelections", false, s.listVaccineSelections)
 	s.Register("upsertVaccineSelection", false, s.upsertVaccineSelection)
@@ -21,7 +23,9 @@ func (s *Server) registerVaccines() {
 
 func vaccineRecordDTO(row Object) Object {
 	scheduled := dateValue(row["scheduled_date"])
-	if scheduled == nil { scheduled = dateValue(row["administered_date"]) }
+	if scheduled == nil {
+		scheduled = dateValue(row["administered_date"])
+	}
 	return Object{"id": row["id"], "familyId": row["family_id"], "babyId": row["baby_id"], "vaccineCode": row["vaccine_code"],
 		"vaccineId": row["vaccine_id"], "doseNumber": row["dose_number"], "legacyName": row["legacy_name"], "legacyDose": row["legacy_dose"],
 		"administeredDate": dateValue(row["administered_date"]), "scheduledDate": scheduled, "completedDate": dateValue(row["completed_date"]),
@@ -38,18 +42,26 @@ func vaccineSelectionDTO(row Object) Object {
 func (s *Server) listVaccineRecords(ctx context.Context, r *Request) (Result, error) {
 	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
 		scope, err := medicalScope(ctx, q, r.Principal.UserID, r.Params["babyId"], false)
-		if err != nil { return Result{}, err }
+		if err != nil {
+			return Result{}, err
+		}
 		rows, err := many(ctx, q, "SELECT to_jsonb(v) FROM vaccine_records v WHERE family_id=$1 AND baby_id=$2 AND deleted_at IS NULL ORDER BY administered_date DESC,id DESC", scope.FamilyID, scope.BabyID)
-		if err != nil { return Result{}, err }
+		if err != nil {
+			return Result{}, err
+		}
 		data := make([]Object, 0, len(rows))
-		for _, row := range rows { data = append(data, vaccineRecordDTO(row)) }
+		for _, row := range rows {
+			data = append(data, vaccineRecordDTO(row))
+		}
 		return ok(data)
 	})
 }
 
 func vaccineProjection(ctx context.Context, tx pgx.Tx, scope Scope, record Object, occurred time.Time, details Object, now time.Time) error {
 	raw, err := jsonText(details)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	_, err = tx.Exec(ctx, `INSERT INTO timeline_entries(id,family_id,baby_id,entity_type,entity_id,occurred_at,summary,details,source,version,created_at,updated_at)
 		VALUES($1,$2,$3,'vaccine',$4,$5,$6,$7::jsonb,'ui_manual',1,$8,$8)
 		ON CONFLICT(family_id,baby_id,entity_type,entity_id) DO UPDATE SET occurred_at=EXCLUDED.occurred_at,
@@ -63,45 +75,68 @@ func (s *Server) createVaccineRecord(ctx context.Context, r *Request) (Result, e
 	if key != "" {
 		var err error
 		hash, err = documentBodyHash(r)
-		if err != nil { return Result{}, err }
+		if err != nil {
+			return Result{}, err
+		}
 	}
 	return s.clinicalTransaction(ctx, r, func(tx pgx.Tx, scope Scope) (Result, bool, error) {
 		if key != "" {
 			receipt, err := one(ctx, tx, "SELECT to_jsonb(i) FROM idempotency_receipts i WHERE actor_id=$1 AND scope_id=$2 AND command_id=$3", r.Principal.UserID, scope.FamilyID, key)
 			if err == nil {
-				if text(receipt["request_hash"]) != hash { return Result{}, false, reusedKey(key) }
+				if text(receipt["request_hash"]) != hash {
+					return Result{}, false, reusedKey(key)
+				}
 				row, err := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccine_records v WHERE id=$1 AND family_id=$2 AND baby_id=$3 AND deleted_at IS NULL", obj(receipt["response_body"])["id"], scope.FamilyID, scope.BabyID)
-				if err != nil { return Result{}, false, reusedKey(key) }
-				result, err := created(vaccineRecordDTO(row)); return result, false, err
+				if err != nil {
+					return Result{}, false, reusedKey(key)
+				}
+				result, err := created(vaccineRecordDTO(row))
+				return result, false, err
 			}
-			if !errors.Is(err, pgx.ErrNoRows) { return Result{}, false, err }
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return Result{}, false, err
+			}
 		}
 		vaccineID, code := text(r.Body["vaccineId"]), text(r.Body["vaccineCode"])
 		var vaccine Object
 		var err error
-		if vaccineID != "" { vaccine, err = one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE id=$1", vaccineID) } else {
+		if vaccineID != "" {
+			vaccine, err = one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE id=$1", vaccineID)
+		} else {
 			vaccine, err = one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE vaccine_code=$1", code)
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
-			if vaccineID != "" { return Result{}, false, notFound("vaccine", vaccineID) }
+			if vaccineID != "" {
+				return Result{}, false, notFound("vaccine", vaccineID)
+			}
 			vaccine, err = nil, nil
 		}
-		if err != nil { return Result{}, false, err }
+		if err != nil {
+			return Result{}, false, err
+		}
 		day, err := time.Parse("2006-01-02", text(r.Body["administeredDate"]))
-		if err != nil { return Result{}, false, invalid("Invalid administered date") }
+		if err != nil {
+			return Result{}, false, invalid("Invalid administered date")
+		}
 		scheduled := day
 		if date := text(r.Body["scheduledDate"]); date != "" {
 			scheduled, err = time.Parse("2006-01-02", date)
-			if err != nil { return Result{}, false, invalid("Invalid scheduled date") }
+			if err != nil {
+				return Result{}, false, invalid("Invalid scheduled date")
+			}
 		}
 		complete := true
-		if value, supplied := r.Body["isCompleted"]; supplied { complete = boolean(value) }
+		if value, supplied := r.Body["isCompleted"]; supplied {
+			complete = boolean(value)
+		}
 		var completed any
 		if complete {
 			completed = day
 			if date := text(r.Body["completedDate"]); date != "" {
 				completed, err = time.Parse("2006-01-02", date)
-				if err != nil { return Result{}, false, invalid("Invalid completion date") }
+				if err != nil {
+					return Result{}, false, invalid("Invalid completion date")
+				}
 			}
 		}
 		now, id := time.Now().UTC().Truncate(time.Millisecond), newID()
@@ -109,19 +144,340 @@ func (s *Server) createVaccineRecord(ctx context.Context, r *Request) (Result, e
 			"vaccine_code": code, "vaccine_id": nil, "dose_number": r.Body["doseNumber"], "legacy_name": r.Body["legacyName"], "legacy_dose": r.Body["legacyDose"],
 			"administered_date": day, "scheduled_date": scheduled, "completed_date": completed, "is_completed": complete,
 			"clinic": r.Body["clinic"], "batch_number": r.Body["batchNumber"], "notes": r.Body["notes"], "version": 1, "created_at": now, "updated_at": now}
-		if values["dose_number"] != nil { values["dose_number"] = integer(values["dose_number"]) }
-		if vaccine != nil { values["vaccine_code"], values["vaccine_id"] = vaccine["vaccine_code"], vaccine["id"] }
+		if values["dose_number"] != nil {
+			values["dose_number"] = integer(values["dose_number"])
+		}
+		if vaccine != nil {
+			values["vaccine_code"], values["vaccine_id"] = vaccine["vaccine_code"], vaccine["id"]
+		}
 		row, err := insertObject(ctx, tx, "vaccine_records", values)
-		if err != nil { return Result{}, false, err }
+		if err != nil {
+			return Result{}, false, err
+		}
 		if complete {
-			if err = vaccineProjection(ctx, tx, scope, row, day, Object{"clinic": row["clinic"], "batchNumber": row["batch_number"]}, now); err != nil { return Result{}, false, err }
+			if err = vaccineProjection(ctx, tx, scope, row, day, Object{"clinic": row["clinic"], "batchNumber": row["batch_number"]}, now); err != nil {
+				return Result{}, false, err
+			}
 		}
 		if key != "" {
 			body, err := jsonText(Object{"id": id})
-			if err != nil { return Result{}, false, err }
-			if _, err = tx.Exec(ctx, "INSERT INTO idempotency_receipts(actor_id,scope_id,command_id,request_hash,result_code,response_body,completed_at) VALUES($1,$2,$3,$4,200,$5::jsonb,$6)", r.Principal.UserID, scope.FamilyID, key, hash, body, now); err != nil { return Result{}, false, err }
+			if err != nil {
+				return Result{}, false, err
+			}
+			if _, err = tx.Exec(ctx, "INSERT INTO idempotency_receipts(actor_id,scope_id,command_id,request_hash,result_code,response_body,completed_at) VALUES($1,$2,$3,$4,200,$5::jsonb,$6)", r.Principal.UserID, scope.FamilyID, key, hash, body, now); err != nil {
+				return Result{}, false, err
+			}
 		}
-		result, err := created(vaccineRecordDTO(row)); return result, true, err
+		result, err := created(vaccineRecordDTO(row))
+		return result, true, err
+	})
+}
+
+func vaccineDateInput(value any, field string) (time.Time, error) {
+	parsed, err := time.Parse("2006-01-02", text(value))
+	if err != nil {
+		return time.Time{}, invalid("Invalid " + field)
+	}
+	return parsed, nil
+}
+
+type vaccineSelectionKey struct {
+	vaccineID string
+	dose      int64
+	valid     bool
+}
+
+func vaccineSelectionKeyFor(record Object) vaccineSelectionKey {
+	vaccineID, dose := text(record["vaccine_id"]), integer(record["dose_number"])
+	return vaccineSelectionKey{vaccineID: vaccineID, dose: dose, valid: vaccineID != "" && dose > 0}
+}
+
+func syncVaccineSelection(ctx context.Context, tx pgx.Tx, scope Scope, old, updated Object, completed bool, now time.Time) error {
+	oldKey, newKey := vaccineSelectionKeyFor(old), vaccineSelectionKeyFor(updated)
+	if oldKey.valid && oldKey != newKey {
+		previous, err := one(ctx, tx, `SELECT to_jsonb(v) FROM vaccine_selections v
+			WHERE family_id=$1 AND baby_id=$2 AND vaccine_id=$3 AND dose_number=$4 FOR UPDATE`,
+			scope.FamilyID, scope.BabyID, oldKey.vaccineID, oldKey.dose)
+		if !errors.Is(err, pgx.ErrNoRows) && err != nil {
+			return err
+		}
+		if err == nil && boolean(previous["completed"]) {
+			version := integer(previous["version"])
+			if version >= math.MaxInt32 {
+				return apiError(409, "CONCURRENCY_CONFLICT", "Vaccine selection version range exhausted")
+			}
+			if _, err = updateColumns(ctx, tx, "vaccine_selections", text(previous["id"]), Object{
+				"completed": false, "version": version + 1, "updated_at": now,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	if !newKey.valid {
+		return nil
+	}
+	selection, err := one(ctx, tx, `SELECT to_jsonb(v) FROM vaccine_selections v
+		WHERE family_id=$1 AND baby_id=$2 AND vaccine_id=$3 AND dose_number=$4 FOR UPDATE`,
+		scope.FamilyID, scope.BabyID, newKey.vaccineID, newKey.dose)
+	if errors.Is(err, pgx.ErrNoRows) {
+		_, err = insertObject(ctx, tx, "vaccine_selections", Object{
+			"id": newID(), "family_id": scope.FamilyID, "baby_id": scope.BabyID,
+			"vaccine_id": newKey.vaccineID, "dose_number": newKey.dose,
+			"selected": true, "completed": completed, "version": 1,
+			"created_at": now, "updated_at": now,
+		})
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	if boolean(selection["completed"]) == completed {
+		return nil
+	}
+	version := integer(selection["version"])
+	if version >= math.MaxInt32 {
+		return apiError(409, "CONCURRENCY_CONFLICT", "Vaccine selection version range exhausted")
+	}
+	_, err = updateColumns(ctx, tx, "vaccine_selections", text(selection["id"]), Object{
+		"completed": completed, "version": version + 1, "updated_at": now,
+	})
+	return err
+}
+
+func (s *Server) updateVaccineRecord(ctx context.Context, r *Request) (Result, error) {
+	key := r.HTTP.Header.Get("Idempotency-Key")
+	if key == "" {
+		return Result{}, invalid("Idempotency-Key is required")
+	}
+	baseVersion, err := parseWireVersion(text(r.Body["baseVersion"]))
+	if err != nil {
+		return Result{}, err
+	}
+	if len(r.Body) == 1 {
+		return Result{}, invalid("At least one vaccine record field must be updated")
+	}
+	bodyHash, err := documentBodyHash(r)
+	if err != nil {
+		return Result{}, err
+	}
+	requestHash, err := orderedHash("operation", "updateVaccineRecord", "babyId", r.Params["babyId"], "id", r.Params["id"], "bodyHash", bodyHash)
+	if err != nil {
+		return Result{}, err
+	}
+	commandID := "vaccine-record-update:" + key
+
+	return s.clinicalTransactionWithCursor(ctx, r, func(tx pgx.Tx, scope Scope, cursor int64) (Result, bool, error) {
+		receipt, receiptErr := one(ctx, tx, `SELECT to_jsonb(i) FROM idempotency_receipts i
+			WHERE actor_id=$1 AND scope_id=$2 AND command_id=$3`, r.Principal.UserID, scope.FamilyID, commandID)
+		if receiptErr == nil {
+			if text(receipt["request_hash"]) != requestHash {
+				return Result{}, false, reusedKey(key)
+			}
+			response := obj(receipt["response_body"])
+			if response == nil || obj(response["data"]) == nil {
+				return Result{}, false, reusedKey(key)
+			}
+			return Result{Status: 200, Body: response}, false, nil
+		}
+		if !errors.Is(receiptErr, pgx.ErrNoRows) {
+			return Result{}, false, receiptErr
+		}
+
+		id := r.Params["id"]
+		existing, err := one(ctx, tx, `SELECT to_jsonb(v) FROM vaccine_records v
+			WHERE id=$1 AND family_id=$2 AND baby_id=$3 AND deleted_at IS NULL FOR UPDATE`, id, scope.FamilyID, scope.BabyID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Result{}, false, notFound("VaccineRecord", id)
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
+		currentVersion := integer(existing["version"])
+		if currentVersion != baseVersion || currentVersion >= math.MaxInt32 {
+			return Result{}, false, apiError(409, "CONCURRENCY_CONFLICT", "Vaccine record changed; reload before writing")
+		}
+
+		values := Object{"version": baseVersion + 1, "updated_at": time.Now().UTC().Truncate(time.Millisecond)}
+		for _, field := range []struct{ wire, column string }{
+			{"legacyName", "legacy_name"}, {"legacyDose", "legacy_dose"},
+			{"clinic", "clinic"}, {"batchNumber", "batch_number"}, {"notes", "notes"},
+		} {
+			if value, supplied := r.Body[field.wire]; supplied {
+				values[field.column] = value
+			}
+		}
+
+		vaccineID, vaccineCode := existing["vaccine_id"], text(existing["vaccine_code"])
+		vaccineIDSupplied, vaccineCodeSupplied := false, false
+		if value, supplied := r.Body["vaccineId"]; supplied {
+			vaccineIDSupplied = true
+			if value == nil {
+				vaccineID = nil
+			} else {
+				vaccine, queryErr := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE id=$1", text(value))
+				if errors.Is(queryErr, pgx.ErrNoRows) {
+					return Result{}, false, notFound("vaccine", text(value))
+				}
+				if queryErr != nil {
+					return Result{}, false, queryErr
+				}
+				vaccineID, vaccineCode = vaccine["id"], text(vaccine["vaccine_code"])
+			}
+		}
+		if value, supplied := r.Body["vaccineCode"]; supplied {
+			vaccineCodeSupplied = true
+			requestedCode := text(value)
+			if vaccineIDSupplied && vaccineID != nil && requestedCode != vaccineCode {
+				return Result{}, false, invalid("vaccineCode must match vaccineId")
+			}
+			if !vaccineIDSupplied || vaccineID == nil {
+				vaccine, queryErr := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE vaccine_code=$1", requestedCode)
+				if errors.Is(queryErr, pgx.ErrNoRows) {
+					vaccineID = nil
+					vaccineCode = requestedCode
+				} else if queryErr != nil {
+					return Result{}, false, queryErr
+				} else {
+					vaccineID, vaccineCode = vaccine["id"], text(vaccine["vaccine_code"])
+				}
+			}
+		}
+		if vaccineIDSupplied || vaccineCodeSupplied {
+			values["vaccine_id"], values["vaccine_code"] = vaccineID, vaccineCode
+		}
+		if value, supplied := r.Body["doseNumber"]; supplied {
+			if value == nil {
+				values["dose_number"] = nil
+			} else {
+				values["dose_number"] = integer(value)
+			}
+		}
+
+		administeredDate := existing["administered_date"]
+		scheduledDate := existing["scheduled_date"]
+		completedDate := existing["completed_date"]
+		completed := boolean(existing["is_completed"])
+		administeredSupplied, completedSupplied := false, false
+		if value, supplied := r.Body["administeredDate"]; supplied {
+			parsed, parseErr := vaccineDateInput(value, "administeredDate")
+			if parseErr != nil {
+				return Result{}, false, parseErr
+			}
+			administeredDate, administeredSupplied = parsed, true
+		}
+		if value, supplied := r.Body["scheduledDate"]; supplied {
+			if value == nil {
+				scheduledDate = nil
+			} else {
+				parsed, parseErr := vaccineDateInput(value, "scheduledDate")
+				if parseErr != nil {
+					return Result{}, false, parseErr
+				}
+				scheduledDate = parsed
+			}
+		}
+		if value, supplied := r.Body["completedDate"]; supplied {
+			completedSupplied = true
+			if value == nil {
+				completedDate = nil
+			} else {
+				parsed, parseErr := vaccineDateInput(value, "completedDate")
+				if parseErr != nil {
+					return Result{}, false, parseErr
+				}
+				completedDate = parsed
+			}
+		}
+		if value, supplied := r.Body["isCompleted"]; supplied {
+			completed = boolean(value)
+		} else if completedSupplied && completedDate == nil {
+			completed = false
+		} else if completedSupplied && completedDate != nil {
+			completed = true
+		}
+		if !completed && completedSupplied && completedDate != nil {
+			return Result{}, false, invalid("completedDate must be null when isCompleted is false")
+		}
+		if completed {
+			switch {
+			case completedSupplied && completedDate != nil:
+				// Keep the explicit completion date.
+			case administeredSupplied:
+				completedDate = administeredDate
+			case existing["completed_date"] != nil && boolean(existing["is_completed"]):
+				completedDate = existing["completed_date"]
+			case scheduledDate != nil:
+				completedDate = scheduledDate
+			default:
+				completedDate = administeredDate
+			}
+			if !administeredSupplied {
+				administeredDate = completedDate
+			}
+		} else {
+			completedDate = nil
+			if !administeredSupplied && scheduledDate != nil {
+				administeredDate = scheduledDate
+			}
+		}
+		values["administered_date"], values["scheduled_date"] = administeredDate, scheduledDate
+		values["completed_date"], values["is_completed"] = completedDate, completed
+
+		row, err := updateColumns(ctx, tx, "vaccine_records", id, values)
+		if err != nil {
+			return Result{}, false, err
+		}
+		now := values["updated_at"].(time.Time)
+		if err = syncVaccineSelection(ctx, tx, scope, existing, row, completed, now); err != nil {
+			return Result{}, false, err
+		}
+		if completed {
+			occurredAt, parseErr := vaccineDateInput(row["completed_date"], "completedDate")
+			if parseErr != nil {
+				return Result{}, false, parseErr
+			}
+			if err = vaccineProjection(ctx, tx, scope, row, occurredAt, Object{
+				"clinic": row["clinic"], "batchNumber": row["batch_number"],
+			}, now); err != nil {
+				return Result{}, false, err
+			}
+		} else {
+			if _, err = tx.Exec(ctx, `UPDATE timeline_entries SET deleted_at=$4,updated_at=$4,version=version+1
+				WHERE entity_type='vaccine' AND entity_id=$1 AND family_id=$2 AND baby_id=$3 AND deleted_at IS NULL`,
+				id, scope.FamilyID, scope.BabyID, now); err != nil {
+				return Result{}, false, err
+			}
+		}
+
+		if cursor == math.MaxInt64 {
+			return Result{}, false, apiError(409, "CONCURRENCY_CONFLICT", "Family cursor range exhausted")
+		}
+		payload, err := jsonText(vaccineRecordDTO(row))
+		if err != nil {
+			return Result{}, false, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO family_changes
+			(family_id,cursor,entity_type,entity_id,version,op,payload,schema_version,created_at)
+			VALUES($1,$2,'vaccine',$3,$4,'upsert',$5::jsonb,1,$6)`,
+			scope.FamilyID, cursor+1, id, integer(row["version"]), payload, now); err != nil {
+			return Result{}, false, err
+		}
+
+		dto := vaccineRecordDTO(row)
+		result, err := ok(dto)
+		if err != nil {
+			return Result{}, false, err
+		}
+		response, err := jsonText(result.Body)
+		if err != nil {
+			return Result{}, false, err
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO idempotency_receipts
+			(actor_id,scope_id,command_id,request_hash,result_code,response_body,completed_at)
+			VALUES($1,$2,$3,$4,200,$5::jsonb,$6)`, r.Principal.UserID, scope.FamilyID, commandID, requestHash, response, now); err != nil {
+			return Result{}, false, err
+		}
+		return result, true, nil
 	})
 }
 
@@ -129,23 +485,38 @@ func (s *Server) deleteVaccineRecord(ctx context.Context, r *Request) (Result, e
 	return s.clinicalTransaction(ctx, r, func(tx pgx.Tx, scope Scope) (Result, bool, error) {
 		id := r.Params["id"]
 		_, err := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccine_records v WHERE id=$1 AND family_id=$2 AND baby_id=$3 AND deleted_at IS NULL FOR UPDATE", id, scope.FamilyID, scope.BabyID)
-		if errors.Is(err, pgx.ErrNoRows) { return Result{}, false, notFound("VaccineRecord", id) }
-		if err != nil { return Result{}, false, err }
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Result{}, false, notFound("VaccineRecord", id)
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
 		now := time.Now().UTC().Truncate(time.Millisecond)
-		if _, err = tx.Exec(ctx, "UPDATE vaccine_records SET deleted_at=$4,updated_at=$4 WHERE id=$1 AND family_id=$2 AND baby_id=$3", id, scope.FamilyID, scope.BabyID, now); err != nil { return Result{}, false, err }
-		if _, err = tx.Exec(ctx, "UPDATE timeline_entries SET deleted_at=$4,updated_at=$4 WHERE entity_type='vaccine' AND entity_id=$1 AND family_id=$2 AND baby_id=$3", id, scope.FamilyID, scope.BabyID, now); err != nil { return Result{}, false, err }
-		result, err := ok(Object{"id": id, "deleted": true}); return result, true, err
+		if _, err = tx.Exec(ctx, "UPDATE vaccine_records SET deleted_at=$4,updated_at=$4 WHERE id=$1 AND family_id=$2 AND baby_id=$3", id, scope.FamilyID, scope.BabyID, now); err != nil {
+			return Result{}, false, err
+		}
+		if _, err = tx.Exec(ctx, "UPDATE timeline_entries SET deleted_at=$4,updated_at=$4 WHERE entity_type='vaccine' AND entity_id=$1 AND family_id=$2 AND baby_id=$3", id, scope.FamilyID, scope.BabyID, now); err != nil {
+			return Result{}, false, err
+		}
+		result, err := ok(Object{"id": id, "deleted": true})
+		return result, true, err
 	})
 }
 
 func (s *Server) listVaccineSelections(ctx context.Context, r *Request) (Result, error) {
 	return s.readSnapshot(ctx, func(q Querier) (Result, error) {
 		scope, err := medicalScope(ctx, q, r.Principal.UserID, r.Params["babyId"], false)
-		if err != nil { return Result{}, err }
+		if err != nil {
+			return Result{}, err
+		}
 		rows, err := many(ctx, q, "SELECT to_jsonb(v) FROM vaccine_selections v WHERE family_id=$1 AND baby_id=$2 ORDER BY vaccine_id,dose_number", scope.FamilyID, scope.BabyID)
-		if err != nil { return Result{}, err }
+		if err != nil {
+			return Result{}, err
+		}
 		data := make([]Object, 0, len(rows))
-		for _, row := range rows { data = append(data, vaccineSelectionDTO(row)) }
+		for _, row := range rows {
+			data = append(data, vaccineSelectionDTO(row))
+		}
 		return ok(data)
 	})
 }
@@ -154,31 +525,53 @@ func (s *Server) upsertVaccineSelection(ctx context.Context, r *Request) (Result
 	return s.clinicalTransaction(ctx, r, func(tx pgx.Tx, scope Scope) (Result, bool, error) {
 		requested, dose := text(r.Body["vaccineId"]), integer(r.Body["doseNumber"])
 		vaccine, err := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccines v WHERE id=$1 OR vaccine_code=$1 ORDER BY (id=$1) DESC LIMIT 1", requested)
-		if errors.Is(err, pgx.ErrNoRows) { return Result{}, false, notFound("vaccine", requested) }
-		if err != nil { return Result{}, false, err }
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Result{}, false, notFound("vaccine", requested)
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
 		existing, err := one(ctx, tx, "SELECT to_jsonb(s) FROM vaccine_selections s WHERE family_id=$1 AND baby_id=$2 AND vaccine_id=$3 AND dose_number=$4 FOR UPDATE", scope.FamilyID, scope.BabyID, vaccine["id"], dose)
-		if errors.Is(err, pgx.ErrNoRows) { existing, err = nil, nil }
-		if err != nil { return Result{}, false, err }
+		if errors.Is(err, pgx.ErrNoRows) {
+			existing, err = nil, nil
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
 		version, id := int64(1), newID()
 		selected, complete := true, false
 		if existing != nil {
 			id, selected, complete = text(existing["id"]), boolean(existing["selected"]), boolean(existing["completed"])
 			version, err = nextCatalogVersion(existing, r.Body)
-			if err != nil { return Result{}, false, err }
+			if err != nil {
+				return Result{}, false, err
+			}
 		}
-		if value, supplied := r.Body["selected"]; supplied { selected = boolean(value) }
-		if value, supplied := r.Body["completed"]; supplied { complete = boolean(value) }
+		if value, supplied := r.Body["selected"]; supplied {
+			selected = boolean(value)
+		}
+		if value, supplied := r.Body["completed"]; supplied {
+			complete = boolean(value)
+		}
 		now := time.Now().UTC().Truncate(time.Millisecond)
 		values := Object{"selected": selected, "completed": complete, "version": version, "updated_at": now}
 		var selection Object
 		if existing == nil {
 			values["id"], values["family_id"], values["baby_id"], values["vaccine_id"], values["dose_number"], values["created_at"] = id, scope.FamilyID, scope.BabyID, vaccine["id"], dose, now
 			selection, err = insertObject(ctx, tx, "vaccine_selections", values)
-		} else { selection, err = updateColumns(ctx, tx, "vaccine_selections", id, values) }
-		if err != nil { return Result{}, false, err }
+		} else {
+			selection, err = updateColumns(ctx, tx, "vaccine_selections", id, values)
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
 		record, err := one(ctx, tx, "SELECT to_jsonb(v) FROM vaccine_records v WHERE family_id=$1 AND baby_id=$2 AND vaccine_id=$3 AND dose_number=$4 AND deleted_at IS NULL ORDER BY id LIMIT 1 FOR UPDATE", scope.FamilyID, scope.BabyID, vaccine["id"], dose)
-		if errors.Is(err, pgx.ErrNoRows) { record, err = nil, nil }
-		if err != nil { return Result{}, false, err }
+		if errors.Is(err, pgx.ErrNoRows) {
+			record, err = nil, nil
+		}
+		if err != nil {
+			return Result{}, false, err
+		}
 		if complete {
 			day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 			label := "第" + strconv.FormatInt(dose, 10) + "剂"
@@ -189,19 +582,36 @@ func (s *Server) upsertVaccineSelection(ctx context.Context, r *Request) (Result
 				record, err = insertObject(ctx, tx, "vaccine_records", values)
 			} else {
 				version, versionErr := nextCatalogVersion(record, nil)
-				if versionErr != nil { return Result{}, false, versionErr }
+				if versionErr != nil {
+					return Result{}, false, versionErr
+				}
 				values["version"] = version
-				if record["scheduled_date"] == nil { values["scheduled_date"] = day }
-				if record["legacy_name"] == nil { values["legacy_name"] = vaccine["name"] }
-				if record["legacy_dose"] == nil { values["legacy_dose"] = label }
+				if record["scheduled_date"] == nil {
+					values["scheduled_date"] = day
+				}
+				if record["legacy_name"] == nil {
+					values["legacy_name"] = vaccine["name"]
+				}
+				if record["legacy_dose"] == nil {
+					values["legacy_dose"] = label
+				}
 				record, err = updateColumns(ctx, tx, "vaccine_records", text(record["id"]), values)
 			}
-			if err != nil { return Result{}, false, err }
-			if err = vaccineProjection(ctx, tx, scope, record, now, Object{"doseNumber": dose}, now); err != nil { return Result{}, false, err }
+			if err != nil {
+				return Result{}, false, err
+			}
+			if err = vaccineProjection(ctx, tx, scope, record, now, Object{"doseNumber": dose}, now); err != nil {
+				return Result{}, false, err
+			}
 		} else if record != nil && boolean(record["is_completed"]) {
-			if _, err = tx.Exec(ctx, "UPDATE vaccine_records SET deleted_at=$2,updated_at=$2,version=version+1 WHERE id=$1", record["id"], now); err != nil { return Result{}, false, err }
-			if _, err = tx.Exec(ctx, "UPDATE timeline_entries SET deleted_at=$4,updated_at=$4,version=version+1 WHERE family_id=$1 AND baby_id=$2 AND entity_type='vaccine' AND entity_id=$3 AND deleted_at IS NULL", scope.FamilyID, scope.BabyID, record["id"], now); err != nil { return Result{}, false, err }
+			if _, err = tx.Exec(ctx, "UPDATE vaccine_records SET deleted_at=$2,updated_at=$2,version=version+1 WHERE id=$1", record["id"], now); err != nil {
+				return Result{}, false, err
+			}
+			if _, err = tx.Exec(ctx, "UPDATE timeline_entries SET deleted_at=$4,updated_at=$4,version=version+1 WHERE family_id=$1 AND baby_id=$2 AND entity_type='vaccine' AND entity_id=$3 AND deleted_at IS NULL", scope.FamilyID, scope.BabyID, record["id"], now); err != nil {
+				return Result{}, false, err
+			}
 		}
-		result, err := ok(vaccineSelectionDTO(selection)); return result, true, err
+		result, err := ok(vaccineSelectionDTO(selection))
+		return result, true, err
 	})
 }

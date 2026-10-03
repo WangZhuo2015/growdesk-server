@@ -117,6 +117,17 @@ func stringList(value any) ([]string, error) {
 	}
 	return out, nil
 }
+
+// Empty attachment lists are semantically identical whether they came from
+// an omitted persisted field (decoded as nil) or an explicit request array.
+// Keep non-empty IDs untouched so attachment changes continue to conflict.
+func canonicalReplayAttachmentIDs(ids []string) []string {
+	if ids == nil {
+		return []string{}
+	}
+	return ids
+}
+
 func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, error) {
 	session, err := ownedCoreAISession(ctx, s.DB, r.Principal.UserID, r.Params["id"], false)
 	if err != nil {
@@ -172,11 +183,11 @@ func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, err
 		if e != nil {
 			return Result{}, e
 		}
-		oldHash, e := snapshotHash(old.AttachmentIDs)
+		oldHash, e := snapshotHash(canonicalReplayAttachmentIDs(old.AttachmentIDs))
 		if e != nil {
 			return Result{}, e
 		}
-		newHash, e := snapshotHash(input.AttachmentIDs)
+		newHash, e := snapshotHash(canonicalReplayAttachmentIDs(input.AttachmentIDs))
 		if e != nil {
 			return Result{}, e
 		}

@@ -195,6 +195,27 @@ export const CreateVaccineRecordRequestSchema = Type.Object(
 
 export type CreateVaccineRecordRequest = Static<typeof CreateVaccineRecordRequestSchema>;
 
+export const UpdateVaccineRecordRequestSchema = Type.Object(
+  {
+    baseVersion: BigIntString,
+    vaccineCode: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+    vaccineId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
+    doseNumber: Type.Optional(Nullable(Type.Integer({ minimum: 1, maximum: 12 }))),
+    legacyName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    legacyDose: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    administeredDate: Type.Optional(DateString),
+    scheduledDate: Type.Optional(Nullable(DateString)),
+    completedDate: Type.Optional(Nullable(DateString)),
+    isCompleted: Type.Optional(Type.Boolean()),
+    clinic: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    batchNumber: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
+  },
+  { $id: "UpdateVaccineRecordRequest", additionalProperties: false }
+);
+
+export type UpdateVaccineRecordRequest = Static<typeof UpdateVaccineRecordRequestSchema>;
+
 export const VaccineRecordResponseSchema = Type.Object(
   {
     data: VaccineRecordSchema,

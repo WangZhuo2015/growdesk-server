@@ -14,7 +14,7 @@ env:
   GOFLAGS: -mod=readonly
 jobs:
   complete-operation-coverage:
-    name: All 151 operations must have native implementations
+    name: All 160 operations must have native implementations
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

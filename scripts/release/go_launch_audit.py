@@ -154,8 +154,8 @@ def audit(server: Path, web: Path, binary: Path) -> dict[str, Any]:
     if hashlib.sha256(binary.read_bytes()).hexdigest() != binary_hash:
         raise ValueError("Binary changed during metadata inspection")
     summary = inventory_summary(json.loads(source(server, "contracts/openapi.json")), inventory)
-    if summary["declared"] != 151:
-        raise ValueError("Frozen 151-operation contract changed; review the rebaseline")
+    if summary["declared"] != 160:
+        raise ValueError("Frozen 160-operation contract changed; review the rebaseline")
     blockers = known_source_blockers(server, web)
     for name, identity in (("server", server_identity), ("web", web_identity)):
         if identity["dirty"]:

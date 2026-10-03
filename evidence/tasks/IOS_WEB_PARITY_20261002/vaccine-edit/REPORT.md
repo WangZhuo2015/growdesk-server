@@ -1,0 +1,32 @@
+# Vaccine record online editing — implementation report
+
+Status: **IMPLEMENTED_NOT_REVIEWED**. This work is isolated in `/private/tmp/growdesk-server-vaccine-edit-20261002` on `codex/vaccine-record-edit-20261002`, based on `516371a5959e11db865969cd0b2f9aa42be9bfa2`. No commit was created, no iOS fixed SDK snapshot was edited, and the pre-existing dirty Passport files in the main server checkout were not touched.
+
+## Change scope
+
+- Added the canonical TypeBox `updateVaccineRecord` request and `PATCH /api/v1/babies/{babyId}/vaccines/records/{id}` route, then regenerated `contracts/openapi.json` through the normal contract exporter.
+- Implemented server-side principal/family/baby authorization, positive `baseVersion` compare-and-swap, required idempotency keys and replay receipts, vaccine field/date validation, completion/revocation updates, selection synchronization, timeline tombstone/restore behavior, and one family cursor advance per successful mutation.
+- Fixed the reviewed sync-feed gap: `updateVaccineRecord` now publishes one `family_changes` upsert at the same locked `cursor + 1` inside the mutation transaction. The generic clinical transaction path retains its prior cursor-only behavior; only this PATCH uses the cursor-aware variant. A completed record becoming incomplete remains an upsert because the vaccine record is still live, while its timeline projection is tombstoned. The isolated second family member now observes completion, revocation, and re-completion; same-key replays produce neither another event nor cursor advancement.
+- Added route-local unknown writable-field rejection for `updateVaccineRecord`. The pre-existing legacy `normalizeBody` behavior for other routes still silently drops unknown keys; it was not globally changed.
+- Added `updateVaccineRecord` to the existing raw-body capture allowlist in `internal/backend/server.go`. Without the exact-body bytes, the first real PATCH returned HTTP 500/EOF while computing its idempotency receipt. That failure is retained in `first-patch-failure.json`.
+- Carried only the separately authorized Go AI empty-attachments replay fix and its test from this task’s main-workspace delta; empty `nil` and `[]` attachment lists now canonicalize identically, while changed non-empty attachments remain conflicts.
+- Added isolated HTTP coverage through the persisted `createNativeAIRun` handler: the first request omits attachments, the same `clientMessageId` replay sends `attachmentIds: []` and must return the existing run without duplicate rows, and a replay with changed non-empty attachment IDs must return 409. The changed-attachment branch seeds one synthetic ready attachment row directly in the disposable test database; this proves handler replay semantics but does not exercise upload/storage or a worker.
+- Updated operation-count assertions from 159 to 160, and generalized an old `151` comment in native sync coverage. The release audit test now resolves its temporary root before checking generated file paths; on macOS `/var` resolves through `/private`, which otherwise caused three unrelated path-containment test failures. The fixed iOS snapshot remains at 151: the base server already has eight Passport operations beyond that snapshot, and this change adds one vaccine operation (151 + 8 + 1 = 160). No Passport operation was removed.
+
+## Verification
+
+- `GOTOOLCHAIN=auto go test ./...` — passed.
+- `node scripts/check-contracts.mjs` — passed; 112 paths, 160 operations.
+- `python3 scripts/go-coverage.py /tmp/growdesk-vaccine-edit-operations.json --require-complete` — passed; native registrations 160/160.
+- `python3 -m unittest scripts.release.test_go_launch_audit` — passed; 14 tests.
+- `python3 -m py_compile scripts/go-vaccine-edit-integration.py scripts/go-coverage.py scripts/release/go_launch_audit.py scripts/release/test_go_launch_audit.py` — passed.
+- `GOTOOLCHAIN=auto go build -trimpath -ldflags=-X=main.revision=516371a5959e11db865969cd0b2f9aa42be9bfa2 -o /tmp/growdesk-vaccine-edit-coverage ./cmd/growdesk-api` — passed.
+- `/tmp/growdesk-vaccine-edit-coverage --contract-inventory` — passed and generated the inventory used by the coverage check.
+- `python3 scripts/go-vaccine-edit-integration.py` — passed against a fresh disposable local PostgreSQL/Redis/MinIO stack with 26 real HTTP checks. In addition to registration, independent principals, family/baby setup, vaccine edit/CAS/idempotency/authorization/error cases, and timeline tombstone/restore, a second authorized family member reads the actual sync feed after completion, revocation, and re-completion. The final database state has 3 vaccine feed events and 3 successful update receipts; identical and late replays add no feed event or high-water cursor. The same run exercised persisted AI run replay as described above. Database diagnostics were empty.
+- `git diff --check` — passed.
+
+The latest HTTP evidence is `http-result.json`; it records only `127.0.0.1`, test-prefixed tenant identifiers, response status/error codes, source hashes, and cleanup state. The first PATCH failure evidence is preserved separately. The runner applies 25 Prisma migrations plus native migrations, uses only a newly created `test_` role/database and local service endpoints, sets the AI provider to a virtual fixture, starts no worker, provides no push credentials, and removes the owned database and private temporary directory. The API, PostgreSQL, Redis, and MinIO were all stopped after the run; the evidence confirms all cleanup flags and contains no database diagnostics. The existing 60756 API was not restarted or modified. No Xcode command was run.
+
+## Review handoff
+
+Please perform a second independent read-only review before integration. Focus on `internal/backend/vaccine_records.go`, `internal/backend/clinical_transaction.go`, `internal/backend/contract.go`, `internal/backend/server.go`, `packages/contracts/src/medical.ts`, `packages/contracts/src/routes.ts`, `contracts/openapi.json`, operation-count updates, and the AI replay carry-over (`internal/backend/ai_run_commands.go` plus its test). In particular, verify the atomic family feed event/cursor behavior, route-local strict body validation, authorization/CAS on idempotent replay, and timeline/selection version semantics. This report and HTTP evidence are implementation evidence only; they do not establish independent acceptance, fixed-snapshot integration, deployment, or production behavior.

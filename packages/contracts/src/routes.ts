@@ -107,6 +107,7 @@ import {
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
   CreateVaccineRecordRequestSchema,
+  UpdateVaccineRecordRequestSchema,
   VaccineSelectionSchema,
   VaccineSelectionListResponseSchema,
   UpsertVaccineSelectionRequestSchema,
@@ -1049,6 +1050,20 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     params: BabyIdParam,
     body: CreateVaccineRecordRequestSchema,
     responses: { 201: VaccineRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
+  },
+  {
+    method: "PATCH",
+    path: "/api/v1/babies/:babyId/vaccines/records/:id",
+    operationId: "updateVaccineRecord",
+    summary: "Update vaccine completion, dates, and notes with version and idempotency checks",
+    tags: ["Medical"],
+    implementationStatus: "PLANNED_SH06",
+    params: BabyAndIdParam,
+    headers: Type.Object({
+      "Idempotency-Key": Type.String({ minLength: 1, maxLength: 128 }),
+    }, { additionalProperties: true }),
+    body: UpdateVaccineRecordRequestSchema,
+    responses: { 200: VaccineRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
   {
     method: "DELETE",

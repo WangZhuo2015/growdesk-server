@@ -1,0 +1,252 @@
+{
+  "scope": "Go vaccine-record PATCH and fixed OpenAPI contract",
+  "status": "PASS",
+  "sourceRevision": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "sourceFileHashes": {
+    "packages/contracts/src/medical.ts": "3f8705ea08d15936f721cdd4b703234e827341ed430667a6763e7f4ad46891c1",
+    "packages/contracts/src/routes.ts": "abfb4fa75e6e5b86c11763fc35ce5891aa85db8aa0388ac49983502bd2184b6d",
+    "contracts/openapi.json": "d704d090ab2a986e71ce8be2633fc841cbc4f9cef19f08433fb12be365ddc15b",
+    "internal/backend/vaccine_records.go": "b6f3371e7f8cf366bb4db5216e427dfa876f764b6d522445f4964d2a8dabf4e5",
+    "internal/backend/contract.go": "459a77a21a432e21ae68ab024c4721b750fff0349bb0e44bcee88125caf1dee3",
+    "internal/backend/server.go": "b4ddc9880d42582e64bfd32a5eefa38f3fed318d93ca4e0f8e6a952a78fcaa6a",
+    "internal/backend/clinical_transaction.go": "0cac0e9ee2c326322b6c11c4bd934abbf867512f4a94141321810e74769fb420",
+    "internal/backend/vaccine_records_test.go": "8d13f6173aeb9874276100e9027754cbbc5aab7a3d31c2083581c4d10c972848",
+    "scripts/go-vaccine-edit-integration.py": "5e2e2f066cc9ad8249f6526050d7afead2499e8d358a174962605089f871ca52",
+    "internal/backend/ai_run_commands.go": "0254462b6e3bf6c4f6b5d5096048b9bffeb1d96c0088d5dd0cb5da08cb4fccdf",
+    "internal/backend/ai_run_commands_test.go": "0548ab0a7647b3978ff0901564ee06c8078e759e172ddea45db016188fc8e19b"
+  },
+  "result": {
+    "status": "PASS",
+    "tenant": {
+      "usernamePrefix": "test_vaccine_edit_",
+      "babyPrefix": "test_baby_vaccine_edit_",
+      "freshDatabase": true
+    },
+    "api": {
+      "scheme": "http",
+      "host": "127.0.0.1",
+      "port": 62986
+    },
+    "checks": [
+      {
+        "case": "register test_vaccine_edit_59f3a2d4c77a54_owner",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "register test_vaccine_edit_59f3a2d4c77a54_outsider",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "register test_vaccine_edit_59f3a2d4c77a54_stranger",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test family",
+        "method": "POST",
+        "path": "/api/v1/families",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby",
+        "method": "POST",
+        "path": "/api/v1/families/75db3767-80ae-422c-a491-fe937fbbdc86/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create pending vaccine record",
+        "method": "POST",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "collaborator reads initial family feed",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "complete and edit vaccine record",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "collaborator receives vaccine completion change",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "replay identical vaccine edit",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "identical replay creates no collaborator feed event",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject changed-body idempotency replay",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 409,
+        "errorCode": "IDEMPOTENCY_KEY_REUSED"
+      },
+      {
+        "case": "deny foreign principal vaccine edit",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 403,
+        "errorCode": "BABY_ACCESS_DENIED"
+      },
+      {
+        "case": "reject stale baseVersion",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "reject unknown editable field",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "reject invalid calendar date",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "revoke vaccine completion",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "collaborator receives vaccine completion revocation",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "re-complete and restore vaccine projection",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "collaborator receives vaccine re-completion change",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "replay earlier edit after later versions",
+        "method": "PATCH",
+        "path": "/api/v1/babies/43d4e9e9-135f-49e0-ac77-e057a547ea5e/vaccines/records/f2f64108-77f8-4908-8d4b-a9d2a38dcc35",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "late replay creates no collaborator feed event",
+        "method": "GET",
+        "path": "/api/v1/sync/families/75db3767-80ae-422c-a491-fe937fbbdc86/changes",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create isolated AI replay session",
+        "method": "POST",
+        "path": "/api/v1/ai/sessions",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create AI run with omitted empty attachments",
+        "method": "POST",
+        "path": "/api/v1/ai/sessions/2e7859cc-9505-4f64-9b35-4f7f3c10dd55/runs",
+        "status": 202,
+        "errorCode": null
+      },
+      {
+        "case": "replay AI run with explicit empty attachments",
+        "method": "POST",
+        "path": "/api/v1/ai/sessions/2e7859cc-9505-4f64-9b35-4f7f3c10dd55/runs",
+        "status": 202,
+        "errorCode": null
+      },
+      {
+        "case": "reject replay with changed nonempty attachments",
+        "method": "POST",
+        "path": "/api/v1/ai/sessions/2e7859cc-9505-4f64-9b35-4f7f3c10dd55/runs",
+        "status": 409,
+        "errorCode": "CLIENT_MESSAGE_CONFLICT"
+      }
+    ],
+    "checkCount": 26,
+    "persistentState": {
+      "successfulUpdateReceipts": 3,
+      "recordTombstonedByEdit": false,
+      "familyCursor": "4",
+      "vaccineFamilyChangeRows": 3,
+      "activeTimelineRows": 1,
+      "timelineReactivated": true
+    },
+    "migrations": {
+      "prismaCount": 25,
+      "nativeMigrationsApplied": true
+    },
+    "providerIsolation": {
+      "ai": "fixture-only",
+      "workerStarted": false,
+      "pushCredentialsPresent": false
+    }
+  },
+  "cleanup": {
+    "apiStopped": true,
+    "redisAndMinioStopped": true,
+    "postgresStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "tenantDataRemovedWithOwnedDatabase": true
+  },
+  "ownedEnvironment": {
+    "database": "test_…",
+    "role": "test_…",
+    "postgresHost": "127.0.0.1",
+    "redisHost": "127.0.0.1",
+    "objectStorageHost": "127.0.0.1",
+    "prismaMigrationCount": 25,
+    "aiProvider": "fixture",
+    "workerStarted": false,
+    "pushCredentialsPresent": false
+  },
+  "databaseDiagnostics": []
+}
