@@ -1,0 +1,14 @@
+✔ formula create accepts a typed label profile and supported basis (0.921875ms)
+✔ formula profile update requires a version field when supplied by caller (0.127583ms)
+✔ formula product reads preserve legacy JSON while writes remain typed (0.262083ms)
+✔ food create and versioned profile update preserve clear semantics (0.104291ms)
+✔ measured food records carry an explicit decimal gram quantity (0.212042ms)
+✔ nutrition profile amounts reject negative and malformed nutrient entries (0.122833ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 189.592667

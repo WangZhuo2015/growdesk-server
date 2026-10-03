@@ -18,6 +18,7 @@ var nutritionRecordSpecs = []careSpec{
 		{Wire: "mealType", Column: "meal_type", Type: "text"},
 		{Wire: "occurredAt", Column: "occurred_at", Type: "time"},
 		{Wire: "foodItemIds", Column: "food_item_ids", Type: "strings", Default: []string{}},
+		{Wire: "foodAmountGrams", Column: "food_amount_grams", Type: "decimal"},
 		{Wire: "portionDescription", Column: "portion_description", Type: "text"},
 		{Wire: "reaction", Column: "reaction", Type: "text"},
 		{Wire: "notes", Column: "notes", Type: "text"},
@@ -49,6 +50,8 @@ func nutritionRecordEntity(d careSpec, row Object) Object {
 	entity := careEntity(d, row)
 	if d.Kind == "supplement" {
 		entity["dose"] = decimalValue(row["dose"])
+	} else if d.Kind == "food" {
+		entity["foodAmountGrams"] = decimalValue(row["food_amount_grams"])
 	}
 	return entity
 }
@@ -146,6 +149,21 @@ func (s *Server) getNutritionRecord(ctx context.Context, r *Request, d careSpec)
 }
 
 func nutritionRecordHashes(d careSpec, op string, scope Scope, id string, version int64, body Object) (string, string, error) {
+	if d.Kind == "food" && op == "create" {
+		if grams, supplied := body["foodAmountGrams"]; !supplied || grams == nil {
+			// Preserve idempotency for legacy clients whose create hash predates
+			// the optional measured-mass field.
+			legacy := d
+			legacy.Fields = make([]careField, 0, len(d.Fields)-1)
+			for _, field := range d.Fields {
+				if field.Wire != "foodAmountGrams" {
+					legacy.Fields = append(legacy.Fields, field)
+				}
+			}
+			hash, err := careRequestHash(legacy, op, scope, id, version, body)
+			return hash, hash, err
+		}
+	}
 	strictHash, err := careRequestHash(d, op, scope, id, version, body)
 	if err != nil {
 		return "", "", err
@@ -166,6 +184,16 @@ func nutritionRecordHashes(d careSpec, op string, scope Scope, id string, versio
 }
 
 func nutritionRecordValues(d careSpec, body Object, create bool) (Object, error) {
+	if d.Kind == "food" {
+		if raw, exists := body["foodAmountGrams"]; exists && raw != nil {
+			amount, ok := nutritionRat(raw)
+			wire := text(raw)
+			parts := strings.Split(wire, ".")
+			if !ok || amount.Sign() <= 0 || len(parts) > 2 || len(parts[0]) > 7 || (len(parts) == 2 && len(parts[1]) > 5) {
+				return nil, invalid("foodAmountGrams must be positive and fit at most five decimal places")
+			}
+		}
+	}
 	values, err := careValues(d, body, create)
 	if err != nil {
 		return nil, err
@@ -188,6 +216,12 @@ func nutritionRecordValues(d careSpec, body Object, create bool) (Object, error)
 			return nil, invalid("foodItemIds must be an array")
 		}
 	}
+	if d.Kind == "food" && values["food_amount_grams"] != nil {
+		items, ok := values["food_item_ids"].([]string)
+		if ok && len(items) != 1 {
+			return nil, invalid("foodAmountGrams requires exactly one foodItemId")
+		}
+	}
 	return values, nil
 }
 
@@ -205,7 +239,7 @@ func nutritionRecordChange(d careSpec, op string, entity Object) (recordChange, 
 		payload["deleted"] = true
 		return recordChange{Entity: entity, Payload: payload, Summary: "Deleted " + d.Kind + ": " + text(entity["id"]), OccurredAt: occurred}, nil
 	}
-	fields := []string{"recordDate", "mealType", "occurredAt", "foodItemIds", "portionDescription", "reaction"}
+	fields := []string{"recordDate", "mealType", "occurredAt", "foodItemIds", "foodAmountGrams", "portionDescription", "reaction"}
 	name, label := text(entity["mealType"]), "Food"
 	if d.Kind == "supplement" {
 		fields = []string{"supplementName", "productId", "occurredAt", "amount", "dose", "unitName"}
@@ -252,7 +286,12 @@ func (s *Server) mutateNutritionRecord(ctx context.Context, r *Request, d careSp
 	}
 	entity, err := s.executeRecordCommand(ctx, r, recordCommand{
 		Scope: scope, Kind: d.Kind, ID: id, Operation: op, Key: key, RequestHash: hash, PayloadHash: digest, BaseVersion: version,
-		Apply: func(ctx context.Context, tx pgx.Tx, _ Object, nextVersion int64) (recordChange, error) {
+		Apply: func(ctx context.Context, tx pgx.Tx, existing Object, nextVersion int64) (recordChange, error) {
+			if d.Kind == "food" && op != "delete" {
+				if err := validateFoodMeasuredAmount(ctx, tx, scope.FamilyID, op, values, existing); err != nil {
+					return recordChange{}, err
+				}
+			}
 			now := time.Now().UTC()
 			values["version"], values["updated_at"] = nextVersion, now
 			var row Object
@@ -285,4 +324,88 @@ func (s *Server) mutateNutritionRecord(ctx context.Context, r *Request, d careSp
 		return created(nutritionRecordDTO(d, entity))
 	}
 	return ok(nutritionRecordDTO(d, entity))
+}
+
+func asStringSlice(raw any) []string {
+	switch value := raw.(type) {
+	case []string:
+		return value
+	case []any:
+		result := make([]string, len(value))
+		for index, item := range value {
+			result[index] = text(item)
+		}
+		return result
+	default:
+		return nil
+	}
+}
+
+func requireFamilyFoodProfile(ctx context.Context, tx pgx.Tx, familyID, foodID string) error {
+	var exists int
+	err := tx.QueryRow(ctx, `SELECT 1 FROM food_library_items
+		WHERE id=$1 AND family_id=$2 AND is_custom=true AND nutrients_json IS NOT NULL
+		FOR SHARE`, foodID, familyID).Scan(&exists)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return invalid("foodAmountGrams requires a custom family food with a per-100g nutrient profile")
+	}
+	return err
+}
+
+// validateFoodMeasuredAmount is shared by REST and native sync writes. It
+// checks the family-owned profile in the same transaction that writes a
+// measured food record, so the command path cannot bypass the REST guard.
+func validateFoodMeasuredAmount(ctx context.Context, tx pgx.Tx, familyID, operation string, values, existing Object) error {
+	if operation == "delete" {
+		return nil
+	}
+	foodIDs := values["food_item_ids"]
+	foodAmount := values["food_amount_grams"]
+	validateProfile := operation == "create"
+	if operation == "update" {
+		if _, supplied := values["food_item_ids"]; !supplied && existing != nil {
+			foodIDs = existing["food_item_ids"]
+		}
+		if _, supplied := values["food_amount_grams"]; !supplied && existing != nil {
+			foodAmount = existing["food_amount_grams"]
+		} else if foodAmount != nil {
+			validateProfile = true
+		}
+		if _, supplied := values["food_item_ids"]; supplied && foodAmount != nil {
+			oldIDs, newIDs := asStringSlice(existing["food_item_ids"]), asStringSlice(values["food_item_ids"])
+			if len(oldIDs) != 1 || len(newIDs) != 1 || oldIDs[0] != newIDs[0] {
+				validateProfile = true
+			}
+		}
+	}
+	if operation == "restore" && existing != nil {
+		foodIDs = existing["food_item_ids"]
+		foodAmount = existing["food_amount_grams"]
+		// Restore exposes an already accepted historical record. The family may
+		// have cleared its current nutrition profile since that record was made;
+		// in that case keep the grams but let analysis report the profile unknown.
+		validateProfile = false
+	}
+	if foodAmount == nil {
+		return nil
+	}
+	ids := asStringSlice(foodIDs)
+	if len(ids) != 1 {
+		return invalid("foodAmountGrams requires exactly one foodItemId")
+	}
+	if validateProfile {
+		return requireFamilyFoodProfile(ctx, tx, familyID, ids[0])
+	}
+	return nil
+}
+
+func foodItemCount(raw any) int {
+	switch value := raw.(type) {
+	case []any:
+		return len(value)
+	case []string:
+		return len(value)
+	default:
+		return -1
+	}
 }

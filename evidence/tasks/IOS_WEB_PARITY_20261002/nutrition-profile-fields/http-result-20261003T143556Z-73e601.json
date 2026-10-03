@@ -1,0 +1,817 @@
+{
+  "scope": "formula reconstitution CAS, measured food sync guards, and historical formula profile read compatibility",
+  "status": "PASS",
+  "sourceFileHashes": {
+    "packages/contracts/src/nutrition.ts": "2d52619d3736c9cd0811757940e6c3dc409f85361171ddbfd3d2f7935dfe27d7",
+    "packages/contracts/src/routes.ts": "384809d10c5c15457c43f73d11d783bfd04ffbfcd8014592e2894ebd809b44c2",
+    "contracts/openapi.json": "e2f3e5d44697346a25a4206ffc92001d78db7cef028969d55b4db70540300c77",
+    "packages/contracts/src/records.ts": "dbefc8dddf2512a6bbaf161f8cdecf98d57154dc913b55da0598235cbc27456c",
+    "packages/contracts/tests/nutrition-profile.test.ts": "ae3130d7d0b07d2a73cf7a5e19fda8be1f505a85b6a973b97a433fc0c10c88ca",
+    "apps/api/src/services/formula-product-service.ts": "ef03dfac47d315db79a04f35aa5af2b895dc6514a4649d4af3acb580f34d794e",
+    "packages/database/src/food-repository.ts": "3930cb466a374e7f076bc666129d672099af92f5ad0d3eefc7e1d962852779b6",
+    "internal/backend/register.go": "3e48543ee2840bbafc61d7258605a6f32f28155893afc2d77209a488de1aee80",
+    "internal/backend/formula_products.go": "fcd3c367e55885b4dbf7f4c379b81d257a430f8394f3499d3c5a7f63fdb92c75",
+    "internal/backend/formula_products_test.go": "bff6909d57c645c9fbca292c1b27e899fb139a1187a35ae251f58bfe0bb3b758",
+    "internal/backend/food_library.go": "18c90dae05a965b4ba320975310f554927050709cccf2329a2e2c061339550c1",
+    "internal/backend/sync_commands.go": "b8c34c935f105b0be602f4b2e84c1ab3f4222b575fa3b44277e8db70aba59b45",
+    "internal/backend/food_library_test.go": "c682a5541723d7e29fc048896ff68eab4c4ba3545374b7d023c48f210539dd39",
+    "internal/backend/companion_test.go": "bfb5f16abd56595d282bee93e12ed049db6c8e26e36bebe10cae75b5f2df0542",
+    "internal/backend/foundation_test.go": "2cbf80bfb02e78dd9aa5d8ec19948d2f932d8e87c711d83636b2ad86ae6b46b2",
+    "internal/backend/nutrition_profile.go": "4afb96704fea1d719247f012560d001349b3a84b4cdc06a751e91c2c8bb79bf9",
+    "internal/backend/nutrition_profile_test.go": "e795c009f3d5750768db2ae3abef600d400f01df735eda7b5a5fd54ba4cbfaad",
+    "internal/backend/nutrition_analysis.go": "ecfe6de58db6b91ad2e453a815f86873fb960dafc7deecfec0710adb53715940",
+    "internal/backend/nutrition_analysis_calc.go": "1ddab1e5290c76a18acd44f6404cbbbdc4b87e9e3ed8588bcebbed3a691a14fb",
+    "internal/backend/nutrition_analysis_test.go": "374d586c5efb76f0b5925e0264c7219389d052633692ce97d8d9f2b2c46df147",
+    "internal/backend/nutrition_records.go": "74da1b2c7328f8a3ef48ac5d1b6323ee3347bd55adf41b7014f5687624253e15",
+    "internal/backend/nutrition_records_test.go": "c9edcfbab5b0a8a54cc57ef5724bb225e77079371dbef9874045651abd289046",
+    "prisma/schema.prisma": "ba3c6d3a54a8aa459092cf9fb57dcc34d1e5e4fa9e40601b9f6ad73f5f4b702b",
+    "prisma/migrations/202610030026_food_nutrition_profiles/migration.sql": "5c21b2fa49c9be2019f2bec2194ab63f0031ed8529a6529a44a35d06bcc5330b",
+    "prisma/migrations/202610030027_food_record_measured_grams/migration.sql": "5c8ea6db170b08620c934ddeeda5a26eaad3155119eb60f3d15160740e930ca5",
+    "internal/backend/nutrition_reference_legacy_v1.json": "c727dbebf1682a0e73b7e06a306db0d745bf1939254cbb0efb1c04f8525ec6ee",
+    "scripts/go-nutrition-analysis-integration.py": "2a61c6fb77059acbd10919b7a6bb809d27a83a0c3756d23f9bcfa4c9221bdbbd"
+  },
+  "result": {
+    "checkCount": 98,
+    "httpChecks": [
+      {
+        "case": "register isolated owner",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "register foreign tenant",
+        "method": "POST",
+        "path": "/api/v1/auth/register",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test family with family timezone",
+        "method": "POST",
+        "path": "/api/v1/families",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby with a valid future birth date",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read a valid day before baby birth date",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby for unsupported-age target boundary",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read trend across supported-age boundary",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "analysis requires an authenticated session",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 401,
+        "errorCode": "UNAUTHORIZED"
+      },
+      {
+        "case": "create family formula profile through typed API",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record formula across local midnight",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "calculate exact formula profile created by API",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "update formula profile with compare-and-swap",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "calculate updated formula profile",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject stale formula profile version",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "reject unsupported formula nutrient unit",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "reject negative formula nutrient amount",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "clear formula nutrient profile",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create formula without a nutrient profile for legacy edit compatibility",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "preserve no-profile legacy formula edits without a version token",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create formula profile with ratio-based serving",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record formula for ratio profile calculation",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "calculate formula from scoop and water ratio",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "require base version for profiled water reconstitution change",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "BASE_VERSION_REQUIRED"
+      },
+      {
+        "case": "reject stale reconstitution profile version",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "update profiled reconstitution ratio with compare-and-swap",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "recalculate formula after versioned reconstitution change",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "require base version for profiled scoop weight change",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "BASE_VERSION_REQUIRED"
+      },
+      {
+        "case": "reject stale scoop weight version",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "update profiled scoop weight with compare-and-swap",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "recalculate formula after versioned scoop weight change",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "require base version when clearing formula nutrient input",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "BASE_VERSION_REQUIRED"
+      },
+      {
+        "case": "reject stale formula nutrient profile clear",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "clear formula nutrient input with matching version",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "report unknown after CAS-protected formula profile clear",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create test baby for Web per-100kJ formula basis",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "accept Web per-100kJ formula label basis",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record formula without consumed-kilojoule measurement",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "report unsupported formula calculation basis as unknown",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "record direct breastfeeding estimate",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "refresh after feeding write",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create supplement nutrient profile through API",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/supplement-products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record exact supplement dose",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/supplement",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "record reference food item",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/food",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create custom food nutrient profile through API",
+        "method": "POST",
+        "path": "/api/v1/food/items",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read custom food profile through family catalog",
+        "method": "GET",
+        "path": "/api/v1/food/items",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "create measured food through native sync command",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read back measured food written through sync",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "calculate measured food written through sync",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject sync update moving measured mass to non-profile food",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "verify rejected sync food reassignment preserves record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject sync update assigning measured mass to multiple foods",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "update measured food through native sync command",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read back updated sync food record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "recalculate updated sync food record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject measured food sync without family profile",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "verify rejected profile-less sync did not persist a record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 404,
+        "errorCode": "RECORD_NOT_FOUND"
+      },
+      {
+        "case": "reject measured multi-food sync command",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "verify rejected multi-food sync did not persist a record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 404,
+        "errorCode": "RECORD_NOT_FOUND"
+      },
+      {
+        "case": "deny foreign tenant measured-food sync command",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "verify foreign sync denial did not persist a record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 404,
+        "errorCode": "RECORD_NOT_FOUND"
+      },
+      {
+        "case": "reject negative measured food mass",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/food",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "reject measured grams for multiple food items",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/food",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "record custom food measured grams",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/food",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "calculate initial per-100g food profile",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "update custom food profile with compare-and-swap",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "calculate updated custom food profile",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "explicitly clear measured food amount",
+        "method": "PATCH",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "do not estimate per-100g profile without measured mass",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "restore measured grams with CAS",
+        "method": "PATCH",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "calculate restored measured grams",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject stale measured food record version",
+        "method": "PATCH",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "reject stale custom food profile version",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "deny foreign principal custom food profile write",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "reject unsupported custom food nutrient unit",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "reject negative custom food nutrient amount",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "clear custom food nutrient profile",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/food/items/custom_{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "report unknown custom food after profile clear",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "soft-delete measured food through native sync",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "restore measured historical food after current profile clear",
+        "method": "POST",
+        "path": "/api/v1/sync/commands",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read restored measured food record",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/records/food/{test-id}",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "keep restored historical record visibly unknown after profile clear",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read empty local calendar day",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read breast milk day",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "refresh after food and supplement writes",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "read three-day local trend",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "accept 90 local calendar days",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject 91 local calendar days",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/trends",
+        "status": 400,
+        "errorCode": "BAD_REQUEST"
+      },
+      {
+        "case": "reject unavailable reference dataset",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 409,
+        "errorCode": "NUTRITION_DATASET_VERSION_UNSUPPORTED"
+      },
+      {
+        "case": "reject invalid calendar date",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "deny foreign tenant nutrition read",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "create isolated baby for historical profile read compatibility",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/babies",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create valid product before historical fixture injection",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "create formula feeding for historical profile analysis",
+        "method": "POST",
+        "path": "/api/v1/babies/{test-id}/records/feeding",
+        "status": 201,
+        "errorCode": null
+      },
+      {
+        "case": "read test-owned historical profile through real formula product list",
+        "method": "GET",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 200,
+        "errorCode": null
+      },
+      {
+        "case": "reject malformed legacy-shaped profile on typed formula create",
+        "method": "POST",
+        "path": "/api/v1/families/{test-id}/nutrition/products",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "reject malformed legacy-shaped profile on typed formula update",
+        "method": "PATCH",
+        "path": "/api/v1/families/{test-id}/nutrition/products/{test-id}",
+        "status": 400,
+        "errorCode": "FST_ERR_VALIDATION"
+      },
+      {
+        "case": "analyze mixed valid and malformed historical formula profile",
+        "method": "GET",
+        "path": "/api/v1/babies/{test-id}/nutrition/analysis",
+        "status": 200,
+        "errorCode": null
+      }
+    ],
+    "owner": "test_…",
+    "family": "test_family_…",
+    "baby": "test_baby_…",
+    "timeZone": "Asia/Shanghai",
+    "foreignTenantStatus": 403,
+    "legacyProfileReadCompatibility": {
+      "fixtureSource": "direct UPDATE of an API-created row in this run's owned test PostgreSQL only; not a public write path",
+      "rawListReadbackPreserved": true,
+      "invalidCreateStatus": "FST_ERR_VALIDATION",
+      "invalidUpdateStatus": "FST_ERR_VALIDATION",
+      "analysisHTTPStatus": 200,
+      "malformedProteinCoverage": "unknown",
+      "scalarIronCoverage": "unknown",
+      "validVitaminDCalculatedIU": "20"
+    },
+    "golden": {
+      "dayCount": 3,
+      "ageMonthsByLocalDay": [
+        5,
+        5,
+        6
+      ],
+      "breastmilkEstimatedMl": "40",
+      "vitaminDCalculatedIU": "200",
+      "proteinFoodEstimateG": "3.15",
+      "proteinEstimatedAverageGPerDay": "1.197",
+      "proteinTrendTargetDaysCount": 3,
+      "proteinTrendTargetCoverageRatio": "1",
+      "partialBoundaryTargetDaysCount": 1,
+      "partialBoundaryTargetCoverageRatio": "0.5",
+      "referenceValidationStatus": "legacy_values_not_independently_cross_checked"
+    },
+    "profileFlow": "formula and custom food profiles created, updated by CAS, explicitly cleared, and analyzed through real HTTP; custom food profiles use per-100g basis and exact calculations require measured grams, while legacy portion multipliers remain estimates",
+    "formulaProfileVersionAfterClear": 3,
+    "formulaProteinBeforeUpdateG": "1.125",
+    "formulaProteinAfterUpdateG": "1.8",
+    "profileCASFlow": {
+      "legacyNoProfileEditVersion": 2,
+      "versionAfterWaterRatioUpdate": 2,
+      "proteinBeforeReconstitutionChangeG": "1.2",
+      "proteinAfterWaterChangeG": "2.4",
+      "versionAfterScoopWeightUpdate": 3,
+      "proteinAfterScoopWeightChangeG": "4.8",
+      "versionAfterProfileClear": 4,
+      "coverageAfterProfileClear": "unknown",
+      "missingVersionError": "BASE_VERSION_REQUIRED",
+      "staleVersionError": "CONCURRENCY_CONFLICT",
+      "missingClearVersionError": "BASE_VERSION_REQUIRED",
+      "staleClearVersionError": "CONCURRENCY_CONFLICT"
+    },
+    "foodSyncFlow": {
+      "createStatus": "applied",
+      "createVersion": "1",
+      "createReadbackGrams": "25",
+      "createProteinG": "1.063",
+      "updateStatus": "applied",
+      "updateVersion": "2",
+      "updateReadbackGrams": "30",
+      "updatedProteinG": "1.275",
+      "profilelessCreateError": "BAD_REQUEST",
+      "multiFoodCreateError": "BAD_REQUEST",
+      "profilelessUpdateError": "BAD_REQUEST",
+      "multiFoodUpdateError": "BAD_REQUEST",
+      "foreignPrincipalError": "FAMILY_ACCESS_DENIED",
+      "deleteStatus": "applied",
+      "restoreStatus": "applied",
+      "restoredGrams": "30",
+      "coverageAfterProfileClearAndRestore": "unknown"
+    },
+    "customFoodProfileVersionAfterClear": 3,
+    "customFoodProteinAt50gG": "3.25",
+    "customFoodProteinAt60gG": "3.9",
+    "customFoodUnknownSourceCountAfterClear": 1
+  },
+  "cleanup": {
+    "apiStopped": true,
+    "redisAndMinioStopped": true,
+    "postgresStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "tenantDataRemovedWithOwnedDatabase": true
+  },
+  "ownedEnvironment": {
+    "postgresHost": "127.0.0.1",
+    "redisHost": "127.0.0.1",
+    "objectStorageHost": "127.0.0.1",
+    "database": "test_…",
+    "role": "test_…",
+    "prismaMigrationCount": 27,
+    "aiProvider": "fixture",
+    "workerStarted": false,
+    "pushCredentialsPresent": false,
+    "usedProductionSecretsOrLegacyDatabase": false
+  },
+  "databaseDiagnostics": []
+}

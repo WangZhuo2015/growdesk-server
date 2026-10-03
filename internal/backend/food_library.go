@@ -3,7 +3,9 @@ package backend
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -21,6 +23,9 @@ type foodLibraryItem struct {
 	Category             string             `json:"category"`
 	AllergenRisk         string             `json:"allergenRisk"`
 	RecommendedAgeMonths int64              `json:"recommendedAgeMonths"`
+	NutritionBasis       any                `json:"nutritionBasis"`
+	NutrientsJson        any                `json:"nutrientsJson"`
+	Version              int64              `json:"version"`
 	FamilyStatus         *foodLibraryStatus `json:"familyStatus,omitempty"`
 }
 
@@ -76,6 +81,7 @@ func foodLibraryFamily(ctx context.Context, q Querier, userID, requested string)
 func (s *Server) registerFoodLibrary() {
 	s.Register("listFoodLibraryItems", false, foodLibraryErrorBoundary(s.listFoodLibraryItems))
 	s.Register("createFoodLibraryItem", false, foodLibraryErrorBoundary(s.createFoodLibraryItem))
+	s.Register("updateFoodLibraryItem", false, foodLibraryErrorBoundary(s.updateFoodLibraryItem))
 	s.Register("getFoodGuidelines", false, func(_ context.Context, _ *Request) (Result, error) {
 		return ok(foodGuidelines())
 	})
@@ -93,7 +99,9 @@ func (s *Server) listFoodLibraryItems(ctx context.Context, r *Request) (Result, 
 	err = s.DB.QueryRow(ctx, `SELECT COALESCE((
 		SELECT jsonb_agg(jsonb_build_object(
 			'id',i.id,'name',i.name,'category',i.category,'allergenRisk',i.allergen_risk,
-			'recommendedAgeMonths',i.recommended_age_months)
+			'recommendedAgeMonths',i.recommended_age_months,
+			'nutritionBasis',CASE WHEN i.nutrients_json IS NULL THEN NULL ELSE 'per_100g' END,
+			'nutrientsJson',i.nutrients_json,'version',i.version)
 			|| CASE WHEN fs.id IS NULL THEN '{}'::jsonb ELSE jsonb_build_object(
 				'familyStatus',jsonb_build_object('tried',fs.tried,'reaction',fs.reaction)) END
 			ORDER BY i.recommended_age_months ASC,i.name ASC)
@@ -142,11 +150,24 @@ func (s *Server) createFoodLibraryItem(ctx context.Context, r *Request) (Result,
 	item := foodLibraryItem{
 		ID: "custom_" + newID(), Name: text(r.Body["name"]), Category: text(r.Body["category"]),
 		AllergenRisk: text(r.Body["allergenRisk"]), RecommendedAgeMonths: integer(r.Body["recommendedAgeMonths"]),
+		Version: 1,
+	}
+	item.NutrientsJson, err = nutritionProfileJSON(r.Body["nutrientsJson"])
+	if err != nil {
+		return Result{}, err
+	}
+	if basis := r.Body["nutritionBasis"]; basis != nil && text(basis) != "per_100g" {
+		return Result{}, invalid("nutritionBasis must be per_100g")
+	}
+	if item.NutrientsJson != nil {
+		item.NutritionBasis = "per_100g"
+	} else if r.Body["nutritionBasis"] != nil {
+		return Result{}, invalid("nutritionBasis requires nutrientsJson")
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO food_library_items
-		(id,name,category,allergen_risk,recommended_age_months,is_custom,family_id,created_at,updated_at)
-		VALUES($1,$2,$3,$4,$5,true,$6,NOW(),NOW())`, item.ID, item.Name, item.Category,
-		item.AllergenRisk, item.RecommendedAgeMonths, familyID)
+		(id,name,category,allergen_risk,recommended_age_months,is_custom,family_id,nutrients_json,version,created_at,updated_at)
+		VALUES($1,$2,$3,$4,$5,true,$6,$7,1,NOW(),NOW())`, item.ID, item.Name, item.Category,
+		item.AllergenRisk, item.RecommendedAgeMonths, familyID, item.NutrientsJson)
 	if err != nil {
 		return Result{}, err
 	}
@@ -162,10 +183,71 @@ func (s *Server) createFoodLibraryItem(ctx context.Context, r *Request) (Result,
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}
-	// The real frozen Fastify route returns this DTO without a data envelope.
-	// Its generated OpenAPI disagrees; see the explicit drift regression and
-	// real-HTTP differential suite. This operation has no idempotency protocol.
+	// Preserve the direct DTO response expected by the existing Web compatibility
+	// route. Catalog create has no idempotency protocol in this API.
 	return Result{Status: http.StatusCreated, Body: item}, nil
+}
+
+func (s *Server) updateFoodLibraryItem(ctx context.Context, r *Request) (Result, error) {
+	familyID, id := r.Params["familyId"], r.Params["id"]
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	defer rollback(tx)
+	var role string
+	err = tx.QueryRow(ctx, `SELECT fm.role FROM family_members fm
+		JOIN families f ON f.id=fm.family_id AND f.deleted_at IS NULL
+		WHERE fm.family_id=$1 AND fm.user_id=$2 AND fm.status='active' AND fm.deleted_at IS NULL
+		FOR SHARE OF fm,f`, familyID, r.Principal.UserID).Scan(&role)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && role != "admin" && role != "member" && role != "viewer") {
+		return Result{}, apiError(403, "FAMILY_ACCESS_DENIED", "Access denied to family: "+familyID)
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	if role == "viewer" {
+		return Result{}, apiError(403, "FAMILY_ACCESS_DENIED", "Family write access denied")
+	}
+	current, err := one(ctx, tx, `SELECT to_jsonb(i) FROM food_library_items i
+		WHERE i.id=$1 AND i.family_id=$2 AND i.is_custom=true FOR UPDATE`, id, familyID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Result{}, notFound("food_library_item", id)
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	version := integer(current["version"])
+	if version < 1 || version >= math.MaxInt32 {
+		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Food item version range exhausted")
+	}
+	if integer(r.Body["baseVersion"]) != version {
+		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Food item changed; reload before saving")
+	}
+	profile, err := nutritionProfileJSON(r.Body["nutrientsJson"])
+	if err != nil {
+		return Result{}, err
+	}
+	now := time.Now().UTC().Truncate(time.Millisecond)
+	updated, err := updateColumns(ctx, tx, "food_library_items", id, Object{
+		"nutrients_json": profile, "version": version + 1, "updated_at": now,
+	})
+	if err != nil {
+		return Result{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return Result{}, err
+	}
+	basis := any(nil)
+	if updated["nutrients_json"] != nil {
+		basis = "per_100g"
+	}
+	return Result{Status: http.StatusOK, Body: foodLibraryItem{
+		ID: text(updated["id"]), Name: text(updated["name"]), Category: text(updated["category"]),
+		AllergenRisk: text(updated["allergen_risk"]), RecommendedAgeMonths: integer(updated["recommended_age_months"]),
+		NutrientsJson: updated["nutrients_json"], Version: integer(updated["version"]),
+		NutritionBasis: basis,
+	}}, nil
 }
 
 type foodGuideline struct {

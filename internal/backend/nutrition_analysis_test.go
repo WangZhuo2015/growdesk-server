@@ -144,6 +144,91 @@ func TestNutritionDaySeparatesCalculatedEstimatedAndUnknown(t *testing.T) {
 	}
 }
 
+func TestFormulaNutritionKeepsValidEntriesWhenLegacyMeasurementIsMalformed(t *testing.T) {
+	day := time.Date(2026, 10, 2, 0, 0, 0, 0, time.UTC)
+	dateRange, err := makeNutritionDateRange(day, day, "UTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := nutritionInputs{
+		familyID: "test_family_legacy_profile", babyID: "test_baby_legacy_profile",
+		birthDate: "2026-01-01", timeZone: "UTC",
+		feedings: []Object{{
+			"id": "test_legacy_formula_record", "feeding_type": "formula", "amount_ml": "100",
+			"occurred_at": day, "formula_product_id": "test_legacy_formula",
+		}},
+		formulas: []Object{{
+			"id": "test_legacy_formula", "family_id": "test_family_legacy_profile",
+			"name": "test legacy formula", "serving_size_unit": "per_100ml",
+			"nutrients_json": Object{
+				"protein":   Object{"amount": "2", "unit": "g", "source": "legacy_label"},
+				"iron":      18,
+				"vitamin_d": Object{"amount": "0.5", "unit": "mcg"},
+			},
+		}},
+		foodPlan: Object{"plan_data": Object{}},
+	}
+
+	result := buildNutritionDay(inputs, "2026-10-02", dateRange, nutritionReferenceVersion)
+	protein := nutritionByID(t, result, "protein")
+	if obj(protein["coverage"])["status"] != "unknown" || integer(obj(protein["coverage"])["unknownSourceCount"]) != 1 {
+		t.Fatalf("legacy extra measurement field must remain visible as unknown: %#v", protein)
+	}
+	if len(protein["sources"].([]Object)) != 0 {
+		t.Fatalf("malformed protein entry must not be calculated: %#v", protein["sources"])
+	}
+	iron := nutritionByID(t, result, "iron")
+	if obj(iron["coverage"])["status"] != "unknown" {
+		t.Fatalf("legacy scalar iron entry must remain visible as unknown: %#v", iron)
+	}
+	vitaminD := nutritionByID(t, result, "vitamin_d")
+	assertNutritionDecimal(t, vitaminD["formulaCalculatedAmount"], "20")
+	if obj(vitaminD["coverage"])["status"] != "calculated" {
+		t.Fatalf("valid nutrient in the same legacy profile must still calculate: %#v", vitaminD)
+	}
+}
+
+func TestFamilyFoodProfileUsesMeasuredGramsAndSeparatesLegacyEstimate(t *testing.T) {
+	date := "2026-07-31"
+	dayTime := time.Date(2026, 7, 31, 0, 0, 0, 0, time.UTC)
+	dateRange, err := makeNutritionDateRange(dayTime, dayTime, "UTC")
+	if err != nil {
+		t.Fatal(err)
+	}
+	profile := Object{"protein": Object{"amount": "4.25", "unit": "g"}}
+	inputs := nutritionInputs{
+		familyID: "test_family_profile", babyID: "test_baby_profile", birthDate: "2026-01-31", timeZone: "UTC",
+		foods:        []Object{{"id": "test_food_record", "record_date": date, "food_item_ids": []any{"custom_test_food"}, "food_amount_grams": "50"}},
+		foodNames:    map[string]string{"custom_test_food": "Test Food"},
+		foodProfiles: map[string]any{"custom_test_food": profile},
+	}
+	day := buildNutritionDay(inputs, date, dateRange, nutritionReferenceVersion)
+	protein := nutritionByID(t, day, "protein")
+	assertNutritionDecimal(t, protein["foodCalculatedAmount"], "2.125")
+	assertNutritionDecimal(t, protein["foodEstimatedAmount"], "0")
+	assertNutritionDecimal(t, protein["calculatedAmount"], "2.125")
+	source := protein["sources"].([]Object)[0]
+	if source["basis"] != "product_calculation" {
+		t.Fatalf("measured per-100g calculation was not surfaced as calculated: %#v", source)
+	}
+
+	inputs.foods = []Object{{"id": "test_unmeasured_food", "record_date": date, "food_item_ids": []any{"custom_test_food"}, "portion_description": "all"}}
+	unmeasured := nutritionByID(t, buildNutritionDay(inputs, date, dateRange, nutritionReferenceVersion), "protein")
+	assertNutritionDecimal(t, unmeasured["foodCalculatedAmount"], "0")
+	assertNutritionDecimal(t, unmeasured["foodEstimatedAmount"], "0")
+	if integer(obj(unmeasured["coverage"])["unknownSourceCount"]) == 0 {
+		t.Fatal("portion text must not be multiplied by a per-100g family profile without measured mass")
+	}
+
+	inputs.foods = []Object{{"id": "test_cleared_profile_food", "record_date": date, "food_item_ids": []any{"custom_test_food"}, "food_amount_grams": "50"}}
+	inputs.foodProfiles["custom_test_food"] = nil
+	cleared := nutritionByID(t, buildNutritionDay(inputs, date, dateRange, nutritionReferenceVersion), "protein")
+	assertNutritionDecimal(t, cleared["foodCalculatedAmount"], "0")
+	if integer(obj(cleared["coverage"])["unknownSourceCount"]) == 0 {
+		t.Fatal("cleared family profile must not reuse stale nutrient values")
+	}
+}
+
 func TestNutritionTrendsIncludeEmptyDaysAndEnforceCalendarDayLimit(t *testing.T) {
 	from, _ := time.Parse("2006-01-02", "2026-03-07")
 	to, _ := time.Parse("2006-01-02", "2026-03-09")

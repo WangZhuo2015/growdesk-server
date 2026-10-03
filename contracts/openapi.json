@@ -789,6 +789,12 @@
               "type": "string"
             }
           },
+          "foodAmountGrams": {
+            "pattern": "^-?\\d+(\\.\\d+)?$",
+            "description": "Arbitrary-precision decimal represented as string",
+            "type": "string",
+            "nullable": true
+          },
           "portionDescription": {
             "type": "string",
             "nullable": true
@@ -3008,6 +3014,7 @@
           "isActive",
           "isDefault",
           "isArchived",
+          "version",
           "createdAt",
           "updatedAt"
         ],
@@ -3077,6 +3084,10 @@
           "isArchived": {
             "type": "boolean"
           },
+          "version": {
+            "minimum": 1,
+            "type": "integer"
+          },
           "createdAt": {
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
@@ -3097,7 +3108,8 @@
           "name",
           "category",
           "allergenRisk",
-          "recommendedAgeMonths"
+          "recommendedAgeMonths",
+          "version"
         ],
         "properties": {
           "id": {
@@ -3139,6 +3151,51 @@
             "minimum": 0,
             "type": "integer"
           },
+          "nutritionBasis": {
+            "type": "string",
+            "enum": [
+              "per_100g"
+            ],
+            "nullable": true
+          },
+          "nutrientsJson": {
+            "maxProperties": 64,
+            "type": "object",
+            "additionalProperties": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "amount",
+                "unit"
+              ],
+              "properties": {
+                "amount": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "maximum": 1000000000000,
+                      "type": "number"
+                    },
+                    {
+                      "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                      "maxLength": 40,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "unit": {
+                  "minLength": 1,
+                  "maxLength": 24,
+                  "type": "string"
+                }
+              }
+            },
+            "nullable": true
+          },
+          "version": {
+            "minimum": 1,
+            "type": "integer"
+          },
           "familyStatus": {
             "additionalProperties": false,
             "type": "object",
@@ -3155,6 +3212,68 @@
                 "nullable": true
               }
             }
+          }
+        }
+      },
+      "NutritionProfile": {
+        "maxProperties": 64,
+        "type": "object",
+        "additionalProperties": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "amount",
+            "unit"
+          ],
+          "properties": {
+            "amount": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "maximum": 1000000000000,
+                  "type": "number"
+                },
+                {
+                  "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                  "maxLength": 40,
+                  "type": "string"
+                }
+              ]
+            },
+            "unit": {
+              "minLength": 1,
+              "maxLength": 24,
+              "type": "string"
+            }
+          }
+        }
+      },
+      "NutritionProfileMeasurement": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "amount",
+          "unit"
+        ],
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "maximum": 1000000000000,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                "maxLength": 40,
+                "type": "string"
+              }
+            ]
+          },
+          "unit": {
+            "minLength": 1,
+            "maxLength": 24,
+            "type": "string"
           }
         }
       },
@@ -10610,6 +10729,12 @@
                               "type": "string"
                             }
                           },
+                          "foodAmountGrams": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
                           "portionDescription": {
                             "type": "string",
                             "nullable": true
@@ -10766,6 +10891,12 @@
                       "type": "string"
                     }
                   },
+                  "foodAmountGrams": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
                   "portionDescription": {
                     "type": "string",
                     "nullable": true
@@ -10907,6 +11038,12 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "foodAmountGrams": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
                         },
                         "portionDescription": {
                           "type": "string",
@@ -11127,6 +11264,12 @@
                             "type": "string"
                           }
                         },
+                        "foodAmountGrams": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
                         "portionDescription": {
                           "type": "string",
                           "nullable": true
@@ -11281,6 +11424,12 @@
                       "type": "string"
                     }
                   },
+                  "foodAmountGrams": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
                   "portionDescription": {
                     "type": "string",
                     "nullable": true
@@ -11432,6 +11581,12 @@
                           "items": {
                             "type": "string"
                           }
+                        },
+                        "foodAmountGrams": {
+                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                          "description": "Arbitrary-precision decimal represented as string",
+                          "type": "string",
+                          "nullable": true
                         },
                         "portionDescription": {
                           "type": "string",
@@ -22848,6 +23003,7 @@
                           "isActive",
                           "isDefault",
                           "isArchived",
+                          "version",
                           "createdAt",
                           "updatedAt"
                         ],
@@ -22916,6 +23072,10 @@
                           },
                           "isArchived": {
                             "type": "boolean"
+                          },
+                          "version": {
+                            "minimum": 1,
+                            "type": "integer"
                           },
                           "createdAt": {
                             "format": "date-time",
@@ -23015,6 +23175,68 @@
                     "description": "Arbitrary-precision decimal represented as string",
                     "type": "string",
                     "nullable": true
+                  },
+                  "reconstitutionRatio": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "servingSizeUnit": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100g"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100ml"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100kJ"
+                        ]
+                      }
+                    ]
+                  },
+                  "nutrientsJson": {
+                    "maxProperties": 64,
+                    "type": "object",
+                    "additionalProperties": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "amount",
+                        "unit"
+                      ],
+                      "properties": {
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 1000000000000,
+                              "type": "number"
+                            },
+                            {
+                              "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                              "maxLength": 40,
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "nullable": true
                   }
                 }
               }
@@ -23064,6 +23286,7 @@
                         "isActive",
                         "isDefault",
                         "isArchived",
+                        "version",
                         "createdAt",
                         "updatedAt"
                       ],
@@ -23132,6 +23355,10 @@
                         },
                         "isArchived": {
                           "type": "boolean"
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
                         },
                         "createdAt": {
                           "format": "date-time",
@@ -23227,6 +23454,73 @@
                   },
                   "isArchived": {
                     "type": "boolean"
+                  },
+                  "reconstitutionRatio": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "servingSizeUnit": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100g"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100ml"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "per_100kJ"
+                        ]
+                      }
+                    ]
+                  },
+                  "nutrientsJson": {
+                    "maxProperties": 64,
+                    "type": "object",
+                    "additionalProperties": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "amount",
+                        "unit"
+                      ],
+                      "properties": {
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 1000000000000,
+                              "type": "number"
+                            },
+                            {
+                              "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                              "maxLength": 40,
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "nullable": true
+                  },
+                  "baseVersion": {
+                    "minimum": 1,
+                    "description": "Required when changing nutrient profile/serving basis, or changing scoop/water reconstitution inputs while a profile exists.",
+                    "type": "integer"
                   }
                 }
               }
@@ -23286,6 +23580,7 @@
                         "isActive",
                         "isDefault",
                         "isArchived",
+                        "version",
                         "createdAt",
                         "updatedAt"
                       ],
@@ -23355,6 +23650,10 @@
                         "isArchived": {
                           "type": "boolean"
                         },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
                         "createdAt": {
                           "format": "date-time",
                           "description": "RFC3339 UTC timestamp",
@@ -23403,6 +23702,16 @@
             }
           },
           "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -25171,7 +25480,8 @@
                           "name",
                           "category",
                           "allergenRisk",
-                          "recommendedAgeMonths"
+                          "recommendedAgeMonths",
+                          "version"
                         ],
                         "properties": {
                           "id": {
@@ -25211,6 +25521,51 @@
                           },
                           "recommendedAgeMonths": {
                             "minimum": 0,
+                            "type": "integer"
+                          },
+                          "nutritionBasis": {
+                            "type": "string",
+                            "enum": [
+                              "per_100g"
+                            ],
+                            "nullable": true
+                          },
+                          "nutrientsJson": {
+                            "maxProperties": 64,
+                            "type": "object",
+                            "additionalProperties": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "amount",
+                                "unit"
+                              ],
+                              "properties": {
+                                "amount": {
+                                  "anyOf": [
+                                    {
+                                      "minimum": 0,
+                                      "maximum": 1000000000000,
+                                      "type": "number"
+                                    },
+                                    {
+                                      "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                                      "maxLength": 40,
+                                      "type": "string"
+                                    }
+                                  ]
+                                },
+                                "unit": {
+                                  "minLength": 1,
+                                  "maxLength": 24,
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "nullable": true
+                          },
+                          "version": {
+                            "minimum": 1,
                             "type": "integer"
                           },
                           "familyStatus": {
@@ -25333,6 +25688,46 @@
                   "recommendedAgeMonths": {
                     "minimum": 0,
                     "type": "integer"
+                  },
+                  "nutritionBasis": {
+                    "type": "string",
+                    "enum": [
+                      "per_100g"
+                    ]
+                  },
+                  "nutrientsJson": {
+                    "maxProperties": 64,
+                    "type": "object",
+                    "additionalProperties": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "amount",
+                        "unit"
+                      ],
+                      "properties": {
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 1000000000000,
+                              "type": "number"
+                            },
+                            {
+                              "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                              "maxLength": 40,
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "nullable": true
                   }
                 }
               }
@@ -25346,77 +25741,115 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "data"
+                    "id",
+                    "name",
+                    "category",
+                    "allergenRisk",
+                    "recommendedAgeMonths",
+                    "version"
                   ],
                   "properties": {
-                    "data": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "type": "string"
+                    },
+                    "category": {
+                      "minLength": 1,
+                      "maxLength": 50,
+                      "type": "string"
+                    },
+                    "allergenRisk": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "low"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "medium"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "high"
+                          ]
+                        }
+                      ]
+                    },
+                    "recommendedAgeMonths": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "nutritionBasis": {
+                      "type": "string",
+                      "enum": [
+                        "per_100g"
+                      ],
+                      "nullable": true
+                    },
+                    "nutrientsJson": {
+                      "maxProperties": 64,
+                      "type": "object",
+                      "additionalProperties": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "amount",
+                          "unit"
+                        ],
+                        "properties": {
+                          "amount": {
+                            "anyOf": [
+                              {
+                                "minimum": 0,
+                                "maximum": 1000000000000,
+                                "type": "number"
+                              },
+                              {
+                                "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                                "maxLength": 40,
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "unit": {
+                            "minLength": 1,
+                            "maxLength": 24,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "nullable": true
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "familyStatus": {
                       "additionalProperties": false,
                       "type": "object",
                       "required": [
-                        "id",
-                        "name",
-                        "category",
-                        "allergenRisk",
-                        "recommendedAgeMonths"
+                        "tried",
+                        "reaction"
                       ],
                       "properties": {
-                        "id": {
-                          "type": "string"
+                        "tried": {
+                          "type": "boolean"
                         },
-                        "name": {
-                          "minLength": 1,
-                          "maxLength": 100,
-                          "type": "string"
-                        },
-                        "category": {
-                          "minLength": 1,
-                          "maxLength": 50,
-                          "type": "string"
-                        },
-                        "allergenRisk": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "enum": [
-                                "low"
-                              ]
-                            },
-                            {
-                              "type": "string",
-                              "enum": [
-                                "medium"
-                              ]
-                            },
-                            {
-                              "type": "string",
-                              "enum": [
-                                "high"
-                              ]
-                            }
-                          ]
-                        },
-                        "recommendedAgeMonths": {
-                          "minimum": 0,
-                          "type": "integer"
-                        },
-                        "familyStatus": {
-                          "additionalProperties": false,
-                          "type": "object",
-                          "required": [
-                            "tried",
-                            "reaction"
-                          ],
-                          "properties": {
-                            "tried": {
-                              "type": "boolean"
-                            },
-                            "reaction": {
-                              "type": "string",
-                              "nullable": true
-                            }
-                          }
+                        "reaction": {
+                          "type": "string",
+                          "nullable": true
                         }
                       }
                     }
@@ -25436,6 +25869,277 @@
             }
           },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/food/items/{id}": {
+      "patch": {
+        "operationId": "updateFoodLibraryItem",
+        "summary": "Update a custom family food nutrient profile with optimistic locking",
+        "tags": [
+          "Nutrition"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "nutrientsJson",
+                  "baseVersion"
+                ],
+                "properties": {
+                  "nutrientsJson": {
+                    "maxProperties": 64,
+                    "type": "object",
+                    "additionalProperties": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "amount",
+                        "unit"
+                      ],
+                      "properties": {
+                        "amount": {
+                          "anyOf": [
+                            {
+                              "minimum": 0,
+                              "maximum": 1000000000000,
+                              "type": "number"
+                            },
+                            {
+                              "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                              "maxLength": 40,
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "minLength": 1,
+                          "maxLength": 24,
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "nullable": true
+                  },
+                  "baseVersion": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH04FO",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "category",
+                    "allergenRisk",
+                    "recommendedAgeMonths",
+                    "version"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "minLength": 1,
+                      "maxLength": 100,
+                      "type": "string"
+                    },
+                    "category": {
+                      "minLength": 1,
+                      "maxLength": 50,
+                      "type": "string"
+                    },
+                    "allergenRisk": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "low"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "medium"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "high"
+                          ]
+                        }
+                      ]
+                    },
+                    "recommendedAgeMonths": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "nutritionBasis": {
+                      "type": "string",
+                      "enum": [
+                        "per_100g"
+                      ],
+                      "nullable": true
+                    },
+                    "nutrientsJson": {
+                      "maxProperties": 64,
+                      "type": "object",
+                      "additionalProperties": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "amount",
+                          "unit"
+                        ],
+                        "properties": {
+                          "amount": {
+                            "anyOf": [
+                              {
+                                "minimum": 0,
+                                "maximum": 1000000000000,
+                                "type": "number"
+                              },
+                              {
+                                "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                                "maxLength": 40,
+                                "type": "string"
+                              }
+                            ]
+                          },
+                          "unit": {
+                            "minLength": 1,
+                            "maxLength": 24,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "nullable": true
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "familyStatus": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "tried",
+                        "reaction"
+                      ],
+                      "properties": {
+                        "tried": {
+                          "type": "boolean"
+                        },
+                        "reaction": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -26074,6 +26778,7 @@
                               "formulaCalculatedAmount",
                               "supplementCalculatedAmount",
                               "breastmilkEstimatedAmount",
+                              "foodCalculatedAmount",
                               "foodEstimatedAmount",
                               "calculatedAmount",
                               "estimatedAmount",
@@ -26147,6 +26852,11 @@
                                 "type": "string"
                               },
                               "breastmilkEstimatedAmount": {
+                                "pattern": "^-?\\d+(\\.\\d+)?$",
+                                "description": "Arbitrary-precision decimal represented as string",
+                                "type": "string"
+                              },
+                              "foodCalculatedAmount": {
                                 "pattern": "^-?\\d+(\\.\\d+)?$",
                                 "description": "Arbitrary-precision decimal represented as string",
                                 "type": "string"
@@ -26809,6 +27519,7 @@
                                     "formulaCalculatedAmount",
                                     "supplementCalculatedAmount",
                                     "breastmilkEstimatedAmount",
+                                    "foodCalculatedAmount",
                                     "foodEstimatedAmount",
                                     "calculatedAmount",
                                     "estimatedAmount",
@@ -26882,6 +27593,11 @@
                                       "type": "string"
                                     },
                                     "breastmilkEstimatedAmount": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string"
+                                    },
+                                    "foodCalculatedAmount": {
                                       "pattern": "^-?\\d+(\\.\\d+)?$",
                                       "description": "Arbitrary-precision decimal represented as string",
                                       "type": "string"

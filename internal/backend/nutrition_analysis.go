@@ -36,17 +36,18 @@ func init() {
 }
 
 type nutritionInputs struct {
-	familyID  string
-	babyID    string
-	birthDate string
-	timeZone  string
-	feedings  []Object
-	supps     []Object
-	foods     []Object
-	formulas  []Object
-	products  []Object
-	foodNames map[string]string
-	foodPlan  Object
+	familyID     string
+	babyID       string
+	birthDate    string
+	timeZone     string
+	feedings     []Object
+	supps        []Object
+	foods        []Object
+	formulas     []Object
+	products     []Object
+	foodNames    map[string]string
+	foodProfiles map[string]any
+	foodPlan     Object
 }
 
 type nutritionDateRange struct {
@@ -227,13 +228,16 @@ func loadNutritionInputs(ctx context.Context, q Querier, familyID, babyID string
 		return nutritionInputs{}, nutritionDateRange{}, legacyQueryFailure(err)
 	}
 	foodNames := make(map[string]string, len(foodLibraryRows))
+	foodProfiles := make(map[string]any, len(foodLibraryRows))
 	for _, row := range foodLibraryRows {
-		foodNames[text(row["id"])] = text(row["name"])
+		id := text(row["id"])
+		foodNames[id] = text(row["name"])
+		foodProfiles[id] = row["nutrients_json"]
 	}
 	return nutritionInputs{
 		familyID: familyID, babyID: babyID, birthDate: text(meta["birthDate"]), timeZone: zone,
 		feedings: feedings, supps: supps, foods: foods, formulas: formulas, products: products,
-		foodNames: foodNames, foodPlan: foodPlan,
+		foodNames: foodNames, foodProfiles: foodProfiles, foodPlan: foodPlan,
 	}, dateRange, nil
 }
 

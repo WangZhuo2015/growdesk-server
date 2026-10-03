@@ -14,6 +14,35 @@ import {
 // 1. Formula Products
 // ==========================================
 
+/** A nutrient value as declared on a product label; amounts are per declared basis. */
+export const NutritionProfileMeasurementSchema = Type.Object(
+  {
+    amount: Type.Union([
+      Type.Number({ minimum: 0, maximum: 1000000000000 }),
+      Type.String({ pattern: "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$", maxLength: 40 }),
+    ]),
+    unit: Type.String({ minLength: 1, maxLength: 24 }),
+  },
+  { $id: "NutritionProfileMeasurement", additionalProperties: false }
+);
+
+/**
+ * The IDs are extensible so clients can preserve label nutrients that this
+ * pinned calculator does not yet evaluate. The server calculates only its
+ * versioned reference IDs and reports all other values as outside coverage.
+ */
+export const NutritionProfileSchema = Type.Record(
+  Type.String({ minLength: 1, maxLength: 64, pattern: "^[A-Za-z][A-Za-z0-9 _-]*$" }),
+  NutritionProfileMeasurementSchema,
+  { $id: "NutritionProfile", maxProperties: 64 }
+);
+
+export const FormulaServingSizeUnitSchema = Type.Union([
+  Type.Literal("per_100g"),
+  Type.Literal("per_100ml"),
+  Type.Literal("per_100kJ"),
+]);
+
 export const FormulaProductSchema = Type.Object(
   {
     id: UuidString,
@@ -33,6 +62,7 @@ export const FormulaProductSchema = Type.Object(
     isActive: Type.Boolean(),
     isDefault: Type.Boolean(),
     isArchived: Type.Boolean(),
+    version: Type.Integer({ minimum: 1 }),
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
   },
@@ -59,6 +89,9 @@ export const CreateFormulaProductRequestSchema = Type.Object(
     stage: Type.Optional(Nullable(Type.String({ maxLength: 50 }))),
     scoopGrams: Type.Optional(Nullable(DecimalString)),
     waterMlPerScoop: Type.Optional(Nullable(DecimalString)),
+    reconstitutionRatio: Type.Optional(Nullable(DecimalString)),
+    servingSizeUnit: Type.Optional(FormulaServingSizeUnitSchema),
+    nutrientsJson: Type.Optional(Nullable(NutritionProfileSchema)),
   },
   { $id: "CreateFormulaProductRequest", additionalProperties: false }
 );
@@ -73,6 +106,13 @@ export const UpdateFormulaProductRequestSchema = Type.Object(
     scoopGrams: Type.Optional(Nullable(DecimalString)),
     waterMlPerScoop: Type.Optional(Nullable(DecimalString)),
     isArchived: Type.Optional(Type.Boolean()),
+    reconstitutionRatio: Type.Optional(Nullable(DecimalString)),
+    servingSizeUnit: Type.Optional(FormulaServingSizeUnitSchema),
+    nutrientsJson: Type.Optional(Nullable(NutritionProfileSchema)),
+    baseVersion: Type.Optional(Type.Integer({
+      minimum: 1,
+      description: "Required when changing nutrient profile/serving basis, or changing scoop/water reconstitution inputs while a profile exists.",
+    })),
   },
   { $id: "UpdateFormulaProductRequest", additionalProperties: false }
 );
@@ -275,6 +315,10 @@ export const FoodLibraryItemSchema = Type.Object(
     category: Type.String({ minLength: 1, maxLength: 50 }),
     allergenRisk: FoodAllergenRiskSchema,
     recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+    /** Custom numeric profiles use values per 100 g; legacy descriptive nutritionJson remains separate. */
+    nutritionBasis: Type.Optional(Nullable(Type.Literal("per_100g"))),
+    nutrientsJson: Type.Optional(Nullable(NutritionProfileSchema)),
+    version: Type.Integer({ minimum: 1 }),
     familyStatus: Type.Optional(
       Type.Object(
         {
@@ -299,11 +343,24 @@ export const CreateFoodLibraryItemRequestSchema = Type.Object(
     category: Type.String({ minLength: 1, maxLength: 50 }),
     allergenRisk: FoodAllergenRiskSchema,
     recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+    nutritionBasis: Type.Optional(Type.Literal("per_100g")),
+    nutrientsJson: Type.Optional(Nullable(NutritionProfileSchema)),
   },
   { $id: "CreateFoodLibraryItemRequest", additionalProperties: false }
 );
 
 export type CreateFoodLibraryItemRequest = Static<typeof CreateFoodLibraryItemRequestSchema>;
+
+export const UpdateFoodLibraryItemRequestSchema = Type.Object(
+  {
+    /** Null clears the custom family's numeric nutrient profile. */
+    nutrientsJson: Nullable(NutritionProfileSchema),
+    baseVersion: Type.Integer({ minimum: 1 }),
+  },
+  { $id: "UpdateFoodLibraryItemRequest", additionalProperties: false }
+);
+
+export type UpdateFoodLibraryItemRequest = Static<typeof UpdateFoodLibraryItemRequestSchema>;
 
 export const FoodLibraryItemListResponseSchema = Type.Object(
   {
@@ -436,6 +493,7 @@ export const NutritionNutrientValueSchema = Type.Object(
     formulaCalculatedAmount: DecimalString,
     supplementCalculatedAmount: DecimalString,
     breastmilkEstimatedAmount: DecimalString,
+    foodCalculatedAmount: DecimalString,
     foodEstimatedAmount: DecimalString,
     calculatedAmount: DecimalString,
     estimatedAmount: DecimalString,

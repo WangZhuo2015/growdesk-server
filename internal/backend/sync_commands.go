@@ -117,6 +117,11 @@ func (s *Server) prepareRecordCommand(principal Principal, scope Scope, kind, id
 				}
 			}
 		}
+		if kind == "food" && operation != "delete" {
+			if err := validateFoodMeasuredAmount(ctx, tx, scope.FamilyID, operation, values, existing); err != nil {
+				return recordChange{}, err
+			}
+		}
 		if operation != "delete" {
 			if kind == "growth" {
 				attachment, provided := values["attachment_id"]

@@ -24,11 +24,14 @@ export function mapEntityToFormulaProduct(entity: FormulaProductEntity): Formula
     waterMlPerScoop: entity.waterPerScoopMl,
     reconstitutionRatio: entity.reconstitutionRatio,
     servingSizeUnit: entity.servingSizeUnit,
-    nutrientsJson: entity.nutrientsJson,
+    // New writes are narrowed by the shared request contract. Keep legacy
+    // JSONB values in the projection instead of silently dropping them.
+    nutrientsJson: entity.nutrientsJson as FormulaProduct["nutrientsJson"],
     notes: entity.notes,
     isActive: entity.isActive,
     isDefault: entity.isDefault,
     isArchived: entity.isArchived,
+    version: entity.version,
     createdAt: entity.createdAt.toISOString(),
     updatedAt: entity.updatedAt.toISOString(),
   };

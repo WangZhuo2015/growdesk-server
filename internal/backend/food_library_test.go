@@ -63,7 +63,7 @@ func TestFoodLibraryWireContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	item := foodLibraryItem{ID: "custom_00000000-0000-4000-8000-000000000001", Name: "test_food", Category: "fruit", AllergenRisk: "low"}
+	item := foodLibraryItem{ID: "custom_00000000-0000-4000-8000-000000000001", Name: "test_food", Category: "fruit", AllergenRisk: "low", Version: 1}
 	for _, tc := range []struct {
 		name   string
 		status *foodLibraryStatus
@@ -90,11 +90,7 @@ func TestFoodLibraryWireContract(t *testing.T) {
 					t.Fatalf("status=%#v", status)
 				}
 			}
-			// The frozen OpenAPI wraps this item in data, but the actual
-			// Fastify route returns FoodLibraryItemSchema directly. Validate
-			// the DTO here; the discrepancy and real HTTP wire have separate tests.
-			schema := c.ByID["createFoodLibraryItem"].Operation.Responses.Status(201).Value.Content.Get("application/json").Schema.Value.Properties["data"].Value
-			if err := schema.VisitJSON(wire, wireFormats...); err != nil {
+			if err := c.ByID["createFoodLibraryItem"].ValidateResponse(context.Background(), 201, wire); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -108,24 +104,6 @@ func TestFoodLibraryWireContract(t *testing.T) {
 	}
 }
 
-// Track the existing spec/runtime disagreement explicitly. Do not change the
-// reference artifact or silently claim whole-envelope OpenAPI compatibility.
-// scripts/go-food-library-integration.py compares the actual Fastify response.
-func TestFoodLibraryKnownOpenAPIEnvelopeDrift(t *testing.T) {
-	c, err := LoadContract()
-	if err != nil {
-		t.Fatal(err)
-	}
-	item := foodLibraryWire(t, foodLibraryItem{ID: "test_food", Name: "test_food", Category: "fruit", AllergenRisk: "low", RecommendedAgeMonths: 6})
-	route := c.ByID["createFoodLibraryItem"]
-	if err := route.ValidateResponse(context.Background(), 201, item); err == nil {
-		t.Fatal("frozen OpenAPI envelope changed: review and remove the documented compatibility exception")
-	}
-	if err := route.ValidateResponse(context.Background(), 201, envelope(item)); err != nil {
-		t.Fatalf("unexpected drift beyond the known data envelope: %v", err)
-	}
-}
-
 func TestFoodLibraryRegistrationAndGuidelines(t *testing.T) {
 	c, err := LoadContract()
 	if err != nil {
@@ -133,7 +111,7 @@ func TestFoodLibraryRegistrationAndGuidelines(t *testing.T) {
 	}
 	s := &Server{Contract: c, Handlers: map[string]Handler{}, Public: map[string]bool{}}
 	s.registerFoodLibrary()
-	for _, id := range []string{"listFoodLibraryItems", "createFoodLibraryItem", "getFoodGuidelines"} {
+	for _, id := range []string{"listFoodLibraryItems", "createFoodLibraryItem", "updateFoodLibraryItem", "getFoodGuidelines"} {
 		if s.Handlers[id] == nil || s.Public[id] {
 			t.Fatalf("%s must have an authenticated native handler", id)
 		}
@@ -162,6 +140,8 @@ func TestFoodLibraryRejectsMalformedRequests(t *testing.T) {
 		{"name": ""}, {"category": ""}, {"allergenRisk": "unknown"},
 		{"recommendedAgeMonths": -1}, {"recommendedAgeMonths": 1.5},
 		{"familyId": "not-a-uuid"},
+		{"nutrientsJson": Object{"protein": Object{"amount": -1, "unit": "g"}}},
+		{"nutrientsJson": Object{"protein": Object{"amount": "-1", "unit": "g"}}},
 	} {
 		body := Object{"name": "test_food", "category": "fruit", "allergenRisk": "low", "recommendedAgeMonths": 6}
 		for key, value := range patch {

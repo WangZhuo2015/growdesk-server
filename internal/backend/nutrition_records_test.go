@@ -61,10 +61,41 @@ func TestFoodEventFallbackAndArrayBinding(t *testing.T) {
 	if _, err := nutritionRecordValues(d, Object{"foodItemIds": []any{false}}, false); err == nil {
 		t.Fatal("non-string array item accepted")
 	}
+	measured, err := nutritionRecordValues(d, Object{"foodItemIds": []any{"custom_test_food"}, "foodAmountGrams": "12.5"}, true)
+	if err != nil || measured["food_amount_grams"] == nil {
+		t.Fatalf("positive measured grams were not retained: %#v, %v", measured, err)
+	}
+	for _, body := range []Object{
+		{"foodItemIds": []any{"custom_test_food", "food_egg"}, "foodAmountGrams": "12.5"},
+		{"foodItemIds": []any{"custom_test_food"}, "foodAmountGrams": "0"},
+		{"foodItemIds": []any{"custom_test_food"}, "foodAmountGrams": "-1"},
+		{"foodItemIds": []any{"custom_test_food"}, "foodAmountGrams": "12.123456"},
+	} {
+		if _, err := nutritionRecordValues(d, body, true); err == nil {
+			t.Fatalf("invalid measured food amount was accepted: %#v", body)
+		}
+	}
 	cursor := encodeNutritionCursor(d, "2026-05-02", "test-id")
 	date, id, valid := decodeNutritionCursor(d, cursor)
 	if !valid || date != "2026-05-02" || id != "test-id" {
 		t.Fatal("food cursor lost date-only semantics")
+	}
+}
+
+func TestMeasuredFoodCreateKeepsLegacyIdempotencyHash(t *testing.T) {
+	d := nutritionRecordSpecs[0]
+	scope := Scope{FamilyID: "family", BabyID: "baby"}
+	body := Object{"recordDate": "2026-05-02", "mealType": "lunch", "foodItemIds": []any{"food_rice"}}
+	want := hashText(`{"operation":"create","entityType":"food","familyId":"family","babyId":"baby","recordDate":"2026-05-02","mealType":"lunch","occurredAt":null,"foodItemIds":["food_rice"],"portionDescription":null,"reaction":null,"notes":null}`)
+	legacy, _, err := nutritionRecordHashes(d, "create", scope, "generated", 0, body)
+	if err != nil || legacy != want {
+		t.Fatalf("old create request hash changed when measured grams are omitted: %s (%v)", legacy, err)
+	}
+	measured, _, err := nutritionRecordHashes(d, "create", scope, "generated", 0, Object{
+		"recordDate": "2026-05-02", "mealType": "lunch", "foodItemIds": []any{"food_rice"}, "foodAmountGrams": "12.5",
+	})
+	if err != nil || measured == legacy {
+		t.Fatalf("explicit measured grams were not included in the create idempotency hash: %s (%v)", measured, err)
 	}
 }
 

@@ -58,7 +58,7 @@ func TestCompanionResponseContracts(t *testing.T) {
 	message := webAIMessageDTO(Object{"id": testUUID, "session_id": testUUID, "role": "user", "content": "", "created_at": testTime})
 	formula := formulaProductDTO(Object{"id": testUUID, "family_id": testUUID, "brand": "test_brand", "name": "test_formula",
 		"scoop_weight_g": json.Number("0.00000"), "water_per_scoop_ml": json.Number("30.00000"),
-		"serving_size_unit": "per_100g", "is_active": true, "is_default": false, "is_archived": false,
+		"serving_size_unit": "per_100g", "is_active": true, "is_default": false, "is_archived": false, "version": 1,
 		"created_at": testTime, "updated_at": testTime})
 	for _, tc := range []struct {
 		method, path string
@@ -110,12 +110,12 @@ func TestCompanionNullAndDecimalSemantics(t *testing.T) {
 	if s["messages"] == nil || !reflect.DeepEqual(s["messages"], []Object{}) || s["lastMessage"] != nil {
 		t.Fatal("session collections must use [] and lastMessage:null")
 	}
-	f := formulaProductDTO(Object{"scoop_weight_g": json.Number("0.00000"), "water_per_scoop_ml": json.Number("30.50000")})
+	f := formulaProductDTO(Object{"scoop_weight_g": json.Number("0.00000"), "water_per_scoop_ml": json.Number("30.50000"), "version": 2})
 	if f["scoopGrams"] != "0" || f["waterMlPerScoop"] != "30.5" || f["reconstitutionRatio"] != nil {
 		t.Fatal("decimal zero and null must remain distinct")
 	}
-	if _, exists := f["version"]; exists {
-		t.Fatal("do not add version metadata to the legacy formula DTO")
+	if f["version"] != 2 {
+		t.Fatal("formula version is required for nutrition profile compare-and-swap")
 	}
 }
 
@@ -155,7 +155,7 @@ func TestWebAIMessageReplay(t *testing.T) {
 }
 
 func TestFormulaFieldAllowlistAndPatch(t *testing.T) {
-	values, err := formulaProductValues(Object{"stage": nil, "isArchived": true, "familyId": "attacker", "version": 99, "notes": "ignored by reference"}, false)
+	values, err := formulaProductValues(Object{"stage": nil, "isArchived": true, "familyId": "attacker", "version": 99, "notes": "not in the writable contract"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

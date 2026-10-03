@@ -3,12 +3,12 @@ package backend
 import (
 	"context"
 	"errors"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func (s *Server) registerFormulaProducts() {
@@ -33,35 +33,67 @@ func formulaProductDTO(row Object) Object {
 		"reconstitutionRatio": decimalValue(row["reconstitution_ratio"]),
 		"servingSizeUnit":     row["serving_size_unit"], "nutrientsJson": row["nutrients_json"], "notes": row["notes"],
 		"isActive": row["is_active"], "isDefault": row["is_default"], "isArchived": row["is_archived"],
+		"version":   row["version"],
 		"createdAt": isoValue(row["created_at"]), "updatedAt": isoValue(row["updated_at"]),
 	}
 }
 
 func formulaProductValues(body Object, create bool) (Object, error) {
 	values := Object{}
-	// These fields are intentionally identical to FormulaProductService's
-	// allowlist. Metadata/notes/default-selection writes are not invented here.
 	for _, field := range []struct{ wire, column string }{
 		{"brand", "brand"}, {"name", "name"}, {"stage", "stage"},
 		{"scoopGrams", "scoop_weight_g"}, {"waterMlPerScoop", "water_per_scoop_ml"},
+		{"reconstitutionRatio", "reconstitution_ratio"}, {"servingSizeUnit", "serving_size_unit"},
 	} {
 		value, present := body[field.wire]
-		if !present && !create {
-			continue
+		if !present {
+			if !create || field.wire == "servingSizeUnit" || field.wire == "reconstitutionRatio" {
+				continue
+			}
 		}
-		if value != nil && (field.wire == "scoopGrams" || field.wire == "waterMlPerScoop") {
-			var decimal pgtype.Numeric
-			if err := decimal.Scan(text(value)); err != nil {
+		if value != nil && (field.wire == "scoopGrams" || field.wire == "waterMlPerScoop" || field.wire == "reconstitutionRatio") {
+			decimal, err := catalogDecimal(value)
+			if err != nil {
 				return nil, invalid("Invalid decimal " + field.wire)
+			}
+			if field.wire == "reconstitutionRatio" && decimal.Int.Sign() <= 0 {
+				return nil, invalid("reconstitutionRatio must be greater than zero")
 			}
 			value = decimal
 		}
 		values[field.column] = value
 	}
+	if value, present := body["nutrientsJson"]; present {
+		profile, err := nutritionProfileJSON(value)
+		if err != nil {
+			return nil, err
+		}
+		values["nutrients_json"] = profile
+	}
 	if value, present := body["isArchived"]; present && !create {
 		values["is_archived"] = value
 	}
 	return values, nil
+}
+
+// A legacy formula product may be edited without a baseVersion when it has no
+// nutrient profile. Once a profile exists, the scoop/water ratio is part of
+// the calculation input and must be guarded by the same compare-and-swap as
+// the profile itself.
+func formulaUpdateRequiresBaseVersion(current, body Object) bool {
+	for _, field := range []string{"nutrientsJson", "servingSizeUnit", "reconstitutionRatio"} {
+		if _, present := body[field]; present {
+			return true
+		}
+	}
+	if current["nutrients_json"] != nil {
+		for _, field := range []string{"scoopGrams", "waterMlPerScoop"} {
+			if _, present := body[field]; present {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (s *Server) listFormulaProducts(ctx context.Context, r *Request) (Result, error) {
@@ -125,8 +157,9 @@ func (s *Server) mutateFormulaProduct(ctx context.Context, r *Request, operation
 		return Result{}, err
 	}
 	id := r.Params["id"]
+	var current Object
 	if operation != "create" {
-		_, err = one(ctx, tx, `SELECT to_jsonb(p) FROM formula_products p
+		current, err = one(ctx, tx, `SELECT to_jsonb(p) FROM formula_products p
 			WHERE id=$1 AND family_id=$2 AND deleted_at IS NULL FOR UPDATE`, id, familyID)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Result{}, notFound("formula_product", id)
@@ -141,6 +174,21 @@ func (s *Server) mutateFormulaProduct(ctx context.Context, r *Request, operation
 	}
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	values["updated_at"] = now
+	if operation == "update" {
+		if formulaUpdateRequiresBaseVersion(current, r.Body) {
+			if _, supplied := r.Body["baseVersion"]; !supplied {
+				return Result{}, apiError(400, "BASE_VERSION_REQUIRED", "baseVersion is required when changing nutrition profile or reconstitution inputs")
+			}
+		}
+		version := integer(current["version"])
+		if version < 1 || version >= math.MaxInt32 {
+			return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Formula product version range exhausted")
+		}
+		if supplied, exists := r.Body["baseVersion"]; exists && integer(supplied) != version {
+			return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Formula product changed; reload before saving")
+		}
+		values["version"] = version + 1
+	}
 	var row Object
 	switch operation {
 	case "create":

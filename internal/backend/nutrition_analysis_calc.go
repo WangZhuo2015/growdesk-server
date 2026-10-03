@@ -25,11 +25,11 @@ type nutritionSource struct {
 }
 
 type nutritionNutrientSum struct {
-	formula, supplement, breastmilk, food *big.Rat
-	calculatedSources                     map[string]bool
-	estimatedSources                      map[string]bool
-	unknownSources                        map[string]bool
-	sources                               []nutritionSource
+	formula, supplement, breastmilk, foodCalculated, foodEstimated *big.Rat
+	calculatedSources                                              map[string]bool
+	estimatedSources                                               map[string]bool
+	unknownSources                                                 map[string]bool
+	sources                                                        []nutritionSource
 }
 
 type nutritionDayCoverage struct {
@@ -53,7 +53,8 @@ func newNutritionDaySummary() *nutritionDaySummary {
 	values := make(map[string]*nutritionNutrientSum)
 	for _, id := range referenceNutrientIDs() {
 		values[id] = &nutritionNutrientSum{
-			formula: new(big.Rat), supplement: new(big.Rat), breastmilk: new(big.Rat), food: new(big.Rat),
+			formula: new(big.Rat), supplement: new(big.Rat), breastmilk: new(big.Rat),
+			foodCalculated: new(big.Rat), foodEstimated: new(big.Rat),
 			calculatedSources: map[string]bool{}, estimatedSources: map[string]bool{}, unknownSources: map[string]bool{},
 		}
 	}
@@ -82,6 +83,8 @@ func (d *nutritionDaySummary) add(nutrientID, sourceID, sourceName, sourceType s
 			target = value.formula
 		case "supplement":
 			target = value.supplement
+		case "food":
+			target = value.foodCalculated
 		}
 	} else {
 		value.estimatedSources[sourceID] = true
@@ -90,7 +93,7 @@ func (d *nutritionDaySummary) add(nutrientID, sourceID, sourceName, sourceType s
 		case "breastmilk":
 			target = value.breastmilk
 		case "food":
-			target = value.food
+			target = value.foodEstimated
 		}
 	}
 	if target != nil {
@@ -293,7 +296,12 @@ func buildNutritionDay(inputs nutritionInputs, date string, dateRange nutritionD
 		if !ok || len(items) == 0 {
 			continue
 		}
-		portion, multiplier, assumptions, portionOK := foodPortion(record["portion_description"])
+		measuredGrams, measured := nutritionRat(record["food_amount_grams"])
+		if measured && (measuredGrams.Sign() <= 0 || len(items) != 1) {
+			d.unknownAll(recordID, "A measured food amount needs one food item and a positive gram quantity.")
+			continue
+		}
+		portion, portionMultiplier, portionAssumptions, portionOK := foodPortion(record["portion_description"])
 		for index, rawItem := range items {
 			foodID := strings.TrimSpace(text(rawItem))
 			if foodID == "" {
@@ -305,40 +313,68 @@ func buildNutritionDay(inputs nutritionInputs, date string, dateRange nutritionD
 			}
 			d.foodsLogged[foodName] = true
 			sourceID := recordID + ":" + strconv.Itoa(index) + ":" + foodID
-			if !portionOK {
+			profileRaw := legacyObject(nutritionReference["foods"])[foodID]
+			familyProfile, hasFamilyProfile := inputs.foodProfiles[foodID]
+			if measured {
+				if !hasFamilyProfile || familyProfile == nil {
+					d.unknownAll(sourceID, "Measured grams require a current family food profile with a per-100g basis.")
+					continue
+				}
+				profileRaw = familyProfile
+			} else if hasFamilyProfile && familyProfile != nil {
+				d.unknownAll(sourceID, "This family profile is per 100 g; add a measured foodAmountGrams value before calculating intake.")
+				continue
+			}
+			profile, invalidIDs, profileOK := parseNutritionProfile(profileRaw)
+			if !profileOK {
+				d.unknownAll(sourceID, "A food-library item has no usable nutrient profile.")
+				d.unsupportedFood(sourceID)
+				continue
+			}
+			if !measured && !portionOK {
 				d.unknownAll(sourceID, "A food record's portion description is not a supported serving estimate.")
 				d.unsupportedFood(sourceID)
 				continue
 			}
-			profile := legacyObject(legacyObject(nutritionReference["foods"])[foodID])
-			if len(profile) == 0 {
-				d.unknownAll(sourceID, "A food-library item has no nutrient profile in the legacy reference dataset.")
-				d.unsupportedFood(sourceID)
-				continue
+			multiplier, assumptions, basis := portionMultiplier, portionAssumptions, "legacy_estimate"
+			if measured {
+				multiplier = new(big.Rat).Quo(measuredGrams, big.NewRat(100, 1))
+				basis = "product_calculation"
+				assumptions = []string{
+					"Family-declared nutrient values are per 100 g and were scaled by the explicitly recorded foodAmountGrams.",
+					"The numeric label profile and edible-mass measurement were not independently verified.",
+				}
 			}
 			for _, nutrientID := range referenceNutrientIDs() {
-				measurementObj := legacyObject(profile[nutrientID])
-				if len(measurementObj) == 0 {
-					d.unknown(nutrientID, sourceID, "The legacy food profile does not declare this nutrient.")
+				measurement, present := profile[nutrientID]
+				if !present {
+					d.unknown(nutrientID, sourceID, "The food profile does not declare this nutrient.")
 					continue
 				}
-				amount, amountOK := nutritionRat(measurementObj["amount"])
-				unit := text(measurementObj["unit"])
-				if !amountOK || amount.Sign() < 0 || unit == "" {
-					d.unknown(nutrientID, sourceID, "The legacy food nutrient value or unit is invalid.")
+				if invalidIDs[nutrientID] {
+					d.unknown(nutrientID, sourceID, "The food nutrient value or unit is invalid.")
 					d.unsupportedUnit(sourceID, nutrientID)
 					continue
 				}
 				expected := nutritionCanonicalUnit(nutrientID, group)
-				converted, convertedOK := convertNutritionUnit(nutrientID, amount, unit, expected)
+				converted, convertedOK := convertNutritionUnit(nutrientID, measurement.amount, measurement.unit, expected)
 				if !convertedOK {
-					d.unknown(nutrientID, sourceID, "The legacy food nutrient unit is not supported for conversion.")
+					d.unknown(nutrientID, sourceID, "The food nutrient unit is not supported for conversion.")
 					d.unsupportedUnit(sourceID, nutrientID)
 					continue
 				}
 				value := new(big.Rat).Mul(converted, multiplier)
-				sourceAssumptions := append(append([]string{}, assumptions...), nutritionConversionAssumptions(nutrientID, unit, expected)...)
-				d.add(nutrientID, sourceID, "Food: "+foodName+" ("+portion+")", "food", value, expected, "legacy_estimate", sourceAssumptions)
+				sourceAssumptions := append(append([]string{}, assumptions...), nutritionConversionAssumptions(nutrientID, measurement.unit, expected)...)
+				sourceName := "Food: " + foodName
+				if measured {
+					sourceName += " (" + ratDecimal(measuredGrams, 3) + " g)"
+				} else {
+					sourceName += " (" + portion + " serving estimate)"
+				}
+				d.add(nutrientID, sourceID, sourceName, "food", value, expected, basis, sourceAssumptions)
+			}
+			for nutrientID := range invalidIDs {
+				d.unsupportedUnit(sourceID, nutrientID)
 			}
 		}
 	}
@@ -405,8 +441,8 @@ func nutritionNutrientDTOs(d *nutritionDaySummary, group string) []Object {
 		if category == "" {
 			category = "other"
 		}
-		calculated := new(big.Rat).Add(value.formula, value.supplement)
-		estimated := new(big.Rat).Add(value.breastmilk, value.food)
+		calculated := new(big.Rat).Add(new(big.Rat).Add(value.formula, value.supplement), value.foodCalculated)
+		estimated := new(big.Rat).Add(value.breastmilk, value.foodEstimated)
 		subtotal := new(big.Rat).Add(calculated, estimated)
 		def := nutritionDRIDefinition(id, group)
 		target, targetType := nutritionTarget(def)
@@ -444,7 +480,8 @@ func nutritionNutrientDTOs(d *nutritionDaySummary, group string) []Object {
 		result = append(result, Object{
 			"nutrientId": id, "name": name, "unit": unit, "category": category,
 			"formulaCalculatedAmount": ratDecimal(value.formula, 3), "supplementCalculatedAmount": ratDecimal(value.supplement, 3),
-			"breastmilkEstimatedAmount": ratDecimal(value.breastmilk, 3), "foodEstimatedAmount": ratDecimal(value.food, 3),
+			"breastmilkEstimatedAmount": ratDecimal(value.breastmilk, 3),
+			"foodCalculatedAmount":      ratDecimal(value.foodCalculated, 3), "foodEstimatedAmount": ratDecimal(value.foodEstimated, 3),
 			"calculatedAmount": ratDecimal(calculated, 3), "estimatedAmount": ratDecimal(estimated, 3),
 			"knownSubtotalAmount": ratDecimal(subtotal, 3), "targetAmount": nutritionNullableAmount(target), "targetType": targetType,
 			"ulAmount": ul, "knownSubtotalAchievementRate": achievement, "knownProductAmountExceedsUL": calcUL,
@@ -773,7 +810,7 @@ func parseNutritionProfile(raw any) (map[string]nutritionMeasurement, map[string
 		value := legacyObject(rawValue)
 		amount, amountOK := nutritionRat(value["amount"])
 		unit := strings.TrimSpace(text(value["unit"]))
-		if len(value) == 0 || !amountOK || amount.Sign() < 0 || unit == "" {
+		if len(value) != 2 || !amountOK || amount.Sign() < 0 || unit == "" {
 			invalidIDs[id] = true
 			continue
 		}

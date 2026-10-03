@@ -71,6 +71,7 @@ export interface FoodLibraryItemEntity {
   readonly category: string;
   readonly allergenRisk: "low" | "medium" | "high";
   readonly recommendedAgeMonths: number;
+  readonly version: number;
   readonly familyStatus?: {
     readonly tried: boolean;
     readonly reaction: string | null;
@@ -481,6 +482,7 @@ export class FoodLibraryRepository {
         category: item.category,
         allergenRisk: item.allergenRisk as "low" | "medium" | "high",
         recommendedAgeMonths: item.recommendedAgeMonths,
+        version: item.version,
         familyStatus: st ? { tried: st.tried, reaction: st.reaction } : undefined,
       };
     });
@@ -507,6 +509,7 @@ export class FoodLibraryRepository {
           category: input.category,
           allergenRisk: input.allergenRisk,
           recommendedAgeMonths: input.recommendedAgeMonths,
+          version: 1,
           isCustom: true,
           familyId,
         },
@@ -532,6 +535,7 @@ export class FoodLibraryRepository {
       category: result.row.category,
       allergenRisk: result.row.allergenRisk as "low" | "medium" | "high",
       recommendedAgeMonths: result.row.recommendedAgeMonths,
+      version: result.row.version,
       ...(result.familyStatus ? {
         familyStatus: {
           tried: result.familyStatus.tried,

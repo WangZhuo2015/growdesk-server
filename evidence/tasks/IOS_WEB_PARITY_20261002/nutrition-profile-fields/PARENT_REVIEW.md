@@ -1,0 +1,9 @@
+# Parent nutrition profile review
+
+Status: REVIEWED_IMPLEMENTATION_NOT_DEPLOYED. Full iOS parity and production acceptance remain unfinished.
+
+The parent independently reviewed family ownership, membership locks and product/food row locks, formula CAS coverage (including existing-profile scoop/water changes), explicit-null clearing, the shared REST/sync measured-food invariant, numeric food profiles and five-decimal mass, and malformed historical read compatibility. Writes stay strict; raw legacy formula read JSON remains permissive; invalid measurements are unknown without discarding valid siblings. No product portion text is converted to grams. Restore retains historical measured mass after the current profile is cleared; analysis remains unknown.
+
+The final HTTP result is 98 actual checks, SHA-256 fd02aaefaeeb5610d582c9a55c1f8cf25b321fe1edfcef2e2dac570bec35e492. All 27 tested source hashes were independently matched to the files staged for delivery, all five cleanup flags were true, and database diagnostics were empty. Parent reran focused Go nutrition/food/formula tests, six TypeBox tests and normal contract consistency (116 paths / 164 operations); all passed. Earlier 55/91 passing results and two reported failed attempts are preserved by the implementer. The historical malformed-row fixture was injected only into its owned test PostgreSQL product row after HTTP creation; it is read-compatibility evidence, not a supported write or substitute for authorization/CAS tests.
+
+The review found two material issues before final integration: missing formula scoop/water CAS and typed response incompatibility. Both were corrected and their real HTTP regressions are in the final result. No production secrets, databases, legacy SQLite, provider billing or real push were used. No runtime deployment or App Store delivery is established by this review.
