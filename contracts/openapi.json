@@ -15744,6 +15744,18 @@
             }
           }
         },
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
+          }
+        ],
         "x-implementation-status": "PLANNED_SH07",
         "responses": {
           "202": {
@@ -15794,6 +15806,36 @@
             }
           },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

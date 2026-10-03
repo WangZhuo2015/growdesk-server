@@ -1,0 +1,5 @@
+# Parent integration review after independent review follow-up
+
+The independent REVIEW.md found no P1 authorization or transaction blocker and requested contract/error and pending/MIME coverage follow-up. The reviewed follow-up now declares the optional 1–200 character Idempotency-Key and 503. Real HTTP reservation of an unready PNG, completed medical audio MIME fixture, growth-photo purpose, and foreign scope all reject without task/outbox/run/event/receipt increments. Valid private MinIO PNG/PDF and exact replay retain one durable group. Changed-body replay remains 409. All four source SHA256 entries match the frozen files; the actual API binary hash and owned isolated cleanup are recorded in purpose-followup-fe21735cb18b.json.
+
+This bounded patch has no remaining blocking finding in the parent review. Normal TypeBox and OpenAPI generation remain the only contract path. The combined backend and fixed iOS SDK still need integration checks. Provider-disabled 503 is documented from the handler, not a model quality test. Audio bytes are a MIME fixture, not decoding evidence. No deployment or ACCEPTED status is claimed.

@@ -1026,7 +1026,17 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["Medical"],
     implementationStatus: "PLANNED_SH07",
     body: CreateMedicalOcrRunRequestSchema,
-    responses: { 202: MedicalOcrRunResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef },
+    headers: Type.Object({
+      "Idempotency-Key": Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    }, { additionalProperties: true }),
+    responses: {
+      202: MedicalOcrRunResponseSchema,
+      400: ApiErrorRef,
+      401: ApiErrorRef,
+      404: ApiErrorRef,
+      409: ApiErrorRef,
+      503: ApiErrorRef,
+    },
   },
   {
     method: "GET",

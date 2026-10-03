@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "runId": "fe21735cb18b",
+  "sourceRevision": "47b4a1c41d598133161d35936bda511fbdcdf588",
+  "worktree": "/private/tmp/growdesk-server-medical-ocr-purpose-20261003",
+  "sourceHashesSha256": {
+    "internal/backend/ai_run_commands.go": "17da3005023d0b58a895a520ff2b3fc70b403dd10aaf7f915bf64760965ce595",
+    "packages/contracts/src/routes.ts": "843f9490c1c2d0522341c51a426a13e6ab4d3eb977691d1f925ebe830f9b0bf5",
+    "contracts/openapi.json": "c1a9457a206d343772ef3421e394af73523b6e929aee4c4dc13b30281dc0677a",
+    "scripts/go-medical-ocr-purpose-live-integration.py": "cbb867ea860eb923e1ec8b62cd1141693a5b298f064c6b1eaea3f64360383f8b"
+  },
+  "apiBinarySha256": "ca71b9fbac59af1ac501c33fd16c1822a1a64588410b8ab1941377cf8751ba18",
+  "apiBinaryWasBuiltAndServedByOwnedStack": true,
+  "runnerEvidence": "/private/tmp/growdesk-server-medical-ocr-purpose-20261003/evidence/medical-ocr-purpose-20261003/purpose-live-followup-fe21735cb18b.json",
+  "runnerResult": {
+    "status": "PASS",
+    "apiHost": "127.0.0.1",
+    "medicalReportReadyPng": "202 queued",
+    "growthPhotoReadyPngSameMime": "400 BAD_REQUEST",
+    "medicalReportPendingPng": "400 ATTACHMENT_NOT_READY before upload or complete",
+    "medicalReportReadyAudioM4A": "400 BAD_REQUEST after real upload and complete",
+    "foreignPrincipalAttachment": "404",
+    "purposePendingMimeAndForeignRejectionsWriteNoTaskOrReceipt": true,
+    "sameKeyReplayReturnsSameRunWithoutNewRows": true,
+    "changedAttachmentUnderSameKey": "409 with no additional rows",
+    "medicalReportReadyPDF": "202 queued",
+    "successDelta": {
+      "tasks": 1,
+      "outbox": 1,
+      "sessions": 1,
+      "messages": 1,
+      "runs": 1,
+      "events": 1,
+      "receipts": 1
+    },
+    "pdfSuccessDelta": {
+      "tasks": 1,
+      "outbox": 1,
+      "sessions": 1,
+      "messages": 1,
+      "runs": 1,
+      "events": 1,
+      "receipts": 1
+    },
+    "realMinIOUploadAndComplete": true,
+    "pendingAttachmentWasReservedByHTTPAndNotUploadedOrCompleted": true,
+    "audioAttachmentUsedRealHTTPUploadAndComplete": true,
+    "audioPayloadIsMIMEFixtureOnlyNotMediaDecodingEvidence": true,
+    "credentialsOrUploadCapabilityRecorded": false,
+    "databaseGuard": {
+      "database": "test_growdesk_fe21735cb18b",
+      "applicationRole": "test_app_fe21735cb18b",
+      "superuser": false,
+      "host": "127.0.0.1"
+    },
+    "workerStarted": false,
+    "externalProviderCalls": false,
+    "sourceHashes": {
+      "internal/backend/ai_run_commands.go": "17da3005023d0b58a895a520ff2b3fc70b403dd10aaf7f915bf64760965ce595",
+      "packages/contracts/src/routes.ts": "843f9490c1c2d0522341c51a426a13e6ab4d3eb977691d1f925ebe830f9b0bf5",
+      "contracts/openapi.json": "c1a9457a206d343772ef3421e394af73523b6e929aee4c4dc13b30281dc0677a",
+      "scripts/go-medical-ocr-purpose-live-integration.py": "cbb867ea860eb923e1ec8b62cd1141693a5b298f064c6b1eaea3f64360383f8b"
+    },
+    "apiBinarySha256": "ca71b9fbac59af1ac501c33fd16c1822a1a64588410b8ab1941377cf8751ba18",
+    "apiRevision": "47b4a1c41d598133161d35936bda511fbdcdf588"
+  },
+  "ownedStack": {
+    "database": "test_growdesk_fe21735cb18b",
+    "applicationRole": "test_app_fe21735cb18b",
+    "ports": {
+      "api": 49685,
+      "postgres": 49681,
+      "redis": 49682,
+      "minio": 49683
+    },
+    "loopbackOnly": true,
+    "workerStarted": false,
+    "externalProviderCalls": false,
+    "providerMode": "local fixture",
+    "cleanup": {
+      "apiStopped": true,
+      "redisAndMinioStopped": true,
+      "postgresStopped": true,
+      "privateTempDirectoryRemoved": true,
+      "tenantDataRemovedWithOwnedDatabase": true
+    }
+  },
+  "processExitCode": 0,
+  "failure": null,
+  "secretsRecorded": false
+}

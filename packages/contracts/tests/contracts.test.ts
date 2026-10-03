@@ -287,6 +287,37 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(forbidden.schema.$ref, "#/components/schemas/ApiErrorEnvelope");
   });
 
+  test("medical OCR contract documents the optional idempotency key and provider failure", async () => {
+    const route = contracts.ROUTE_DEFINITIONS.find((item) => item.operationId === "createMedicalOcrRun");
+    assert.ok(route);
+    const header = route.headers?.properties?.["Idempotency-Key"] as {
+      minLength?: number;
+      maxLength?: number;
+    } | undefined;
+    assert.ok(header);
+    assert.equal(header.minLength, 1);
+    assert.equal(header.maxLength, 200);
+    assert.equal(route.headers?.required?.includes("Idempotency-Key") ?? false, false);
+    assert.ok(Object.hasOwn(route.responses, 503));
+    assert.equal(Value.Check(route.headers, {}), true);
+    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "test_key" }), true);
+    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "" }), false);
+    assert.equal(Value.Check(route.headers, { "Idempotency-Key": "k".repeat(201) }), false);
+
+    const generated = await generateCanonicalOpenApi();
+    const operation = (generated.paths as Record<string, Record<string, unknown>>)["/api/v1/medical/ocr-runs"]?.post as {
+      parameters?: Array<{ name?: string; in?: string; required?: boolean; schema?: { minLength?: number; maxLength?: number } }>;
+      responses?: Record<string, unknown>;
+    } | undefined;
+    assert.ok(operation);
+    const idempotencyHeader = operation.parameters?.find((item) => item.name === "Idempotency-Key" && item.in === "header");
+    assert.ok(idempotencyHeader);
+    assert.equal(idempotencyHeader.required, false);
+    assert.equal(idempotencyHeader.schema?.minLength, 1);
+    assert.equal(idempotencyHeader.schema?.maxLength, 200);
+    assert.ok(operation.responses?.["503"]);
+  });
+
   test("Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff", async () => {
     const generated = await generateCanonicalOpenApi();
     const diskPath = path.join(root, "contracts", "openapi.json");

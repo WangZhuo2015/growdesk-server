@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "apiHost": "127.0.0.1",
+  "medicalReportReadyPng": "202 queued",
+  "growthPhotoReadyPngSameMime": "400 BAD_REQUEST",
+  "foreignPrincipalAttachment": "404",
+  "purposeAndForeignRejectionsWriteNoTaskOrReceipt": true,
+  "sameKeyReplayReturnsSameRunWithoutNewRows": true,
+  "changedAttachmentUnderSameKey": "409 with no additional rows",
+  "medicalReportReadyPDF": "202 queued",
+  "successDelta": {
+    "tasks": 1,
+    "outbox": 1,
+    "sessions": 1,
+    "messages": 1,
+    "runs": 1,
+    "events": 1,
+    "receipts": 1
+  },
+  "pdfSuccessDelta": {
+    "tasks": 1,
+    "outbox": 1,
+    "sessions": 1,
+    "messages": 1,
+    "runs": 1,
+    "events": 1,
+    "receipts": 1
+  },
+  "realMinIOUploadAndComplete": true,
+  "credentialsOrUploadCapabilityRecorded": false,
+  "databaseGuard": {
+    "database": "test_growdesk_886d3de34e3f",
+    "applicationRole": "test_app_886d3de34e3f",
+    "superuser": false,
+    "host": "127.0.0.1"
+  },
+  "workerStarted": false,
+  "externalProviderCalls": false
+}

@@ -1,0 +1,29 @@
+{
+  "runId": "11f679616dc8",
+  "serverHead": "47b4a1c41d598133161d35936bda511fbdcdf588",
+  "stack": "owned test_ PostgreSQL + Redis + MinIO + loopback Go API",
+  "externalProviders": "disabled",
+  "workerStarted": false,
+  "apiPort": 61142,
+  "databaseGuard": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_11f679616dc8",
+    "applicationRole": "test_app_11f679616dc8",
+    "superuser": false
+  },
+  "nativeMigrations": "official growdesk-migrate applied using owned non-superuser app role",
+  "baselineHTTPAssertions": 124,
+  "status": "RED_REPRODUCED",
+  "failure": "POST /api/v1/medical/ocr-runs: expected 400, received 202, code=none",
+  "stateAfterRejectedPurposeAttempt": {
+    "tasks": 1,
+    "outbox": 1,
+    "sessions": 1,
+    "messages": 1,
+    "runs": 1,
+    "events": 1,
+    "receipts": 21
+  },
+  "cleanup": "cleaned",
+  "secretsRecorded": false
+}

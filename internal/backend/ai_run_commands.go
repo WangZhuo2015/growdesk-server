@@ -64,6 +64,9 @@ func taskAttachments(ctx context.Context, q Querier, input nativeTaskInput, kind
 				return nil, invalid("Voice tasks require an audio attachment")
 			}
 		case "medical_ocr":
+			if text(row["purpose"]) != "medical_report" {
+				return nil, invalid("Medical OCR requires a medical_report attachment")
+			}
 			if !strings.HasPrefix(mime, "image/") && mime != "application/pdf" {
 				return nil, invalid("OCR requires an image or PDF attachment")
 			}
@@ -241,9 +244,13 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	if baby == "" {
 		baby = text(r.Body["babyId"])
 	}
+	attachmentID := text(r.Body["attachmentId"])
 	if kind == "medical_ocr" {
-		row, err := s.readNativeAttachment(ctx, r.Principal.UserID, text(r.Body["attachmentId"]), false, false)
+		row, err := s.readNativeAttachment(ctx, r.Principal.UserID, attachmentID, false, false)
 		if err != nil {
+			if normalizedError(err).Status == http.StatusForbidden {
+				return Result{}, notFound("Attachment", attachmentID)
+			}
 			return Result{}, err
 		}
 		baby = text(row["baby_id"])
@@ -253,7 +260,21 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	}
 	input, err := nativeSubmissionScope(ctx, s.DB, r.Principal.UserID, baby)
 	if err != nil {
+		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+			return Result{}, notFound("Attachment", attachmentID)
+		}
 		return Result{}, err
+	}
+	if kind == "medical_ocr" {
+		input.AttachmentIDs = []string{attachmentID}
+		// Validate before checking provider configuration: a malformed request
+		// should remain a 400 even when the OCR provider is unavailable.
+		if _, err = taskAttachments(ctx, s.DB, input, kind); err != nil {
+			if normalizedError(err).Status == http.StatusForbidden {
+				return Result{}, notFound("Attachment", attachmentID)
+			}
+			return Result{}, err
+		}
 	}
 	if _, err = nativeProviderConfiguration(); err != nil {
 		return Result{}, err
@@ -261,7 +282,9 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	if kind == "daily_summary_synthesis" {
 		input.TargetDate = text(r.Body["targetDate"])
 	} else {
-		input.AttachmentIDs = []string{text(r.Body["attachmentId"])}
+		if kind != "medical_ocr" {
+			input.AttachmentIDs = []string{attachmentID}
+		}
 		if _, err = requireObjectStore(s); err != nil {
 			return Result{}, err
 		}
@@ -272,9 +295,15 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	}
 	defer rollback(tx)
 	if err = lockSubmissionScope(ctx, tx, input); err != nil {
+		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+			return Result{}, notFound("Attachment", attachmentID)
+		}
 		return Result{}, err
 	}
 	if _, err = taskAttachments(ctx, tx, input, kind); err != nil {
+		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+			return Result{}, notFound("Attachment", attachmentID)
+		}
 		return Result{}, err
 	}
 	key := r.HTTP.Header.Get("Idempotency-Key")
