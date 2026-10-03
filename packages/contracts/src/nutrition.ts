@@ -308,13 +308,59 @@ export const FoodLibraryItemsQuerySchema = Type.Object(
 
 export type FoodLibraryItemsQuery = Static<typeof FoodLibraryItemsQuerySchema>;
 
+export const FamilyFoodStatusValueSchema = Type.Union([
+  Type.Literal("tried"),
+  Type.Literal("to_try"),
+]);
+
+export type FamilyFoodStatusValue = Static<typeof FamilyFoodStatusValueSchema>;
+
+export const FoodTextureByAgeSchema = Type.Object(
+  {
+    ageMinMonths: Nullable(Type.Integer({ minimum: 0, maximum: 120 })),
+    ageMaxMonths: Nullable(Type.Integer({ minimum: 0, maximum: 120 })),
+    texture: Type.String({ minLength: 1, maxLength: 500 }),
+  },
+  { $id: "FoodTextureByAge", additionalProperties: false },
+);
+
+export const FoodDataSourceSchema = Type.Object(
+  {
+    asOf: DateString,
+    scope: Type.String({ minLength: 1, maxLength: 32 }),
+    evidenceConflict: Type.Boolean(),
+  },
+  { $id: "FoodDataSource", additionalProperties: false },
+);
+
 export const FoodLibraryItemSchema = Type.Object(
   {
     id: Type.String(),
     name: Type.String({ minLength: 1, maxLength: 100 }),
+    icon: Type.String({ minLength: 1, maxLength: 32 }),
     category: Type.String({ minLength: 1, maxLength: 50 }),
+    foodGroup: Nullable(Type.String({ maxLength: 50 })),
+    status: FamilyFoodStatusValueSchema,
+    firstAddedDate: Nullable(DateString),
+    acceptance: Type.Integer({ minimum: 0, maximum: 5 }),
     allergenRisk: FoodAllergenRiskSchema,
     recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+    recommendedFromMonth: Nullable(Type.Integer({ minimum: 0, maximum: 120 })),
+    recommendedToMonth: Nullable(Type.Integer({ minimum: 0, maximum: 120 })),
+    exactMonthEvidence: Type.Boolean(),
+    guidance: Nullable(Type.String({ maxLength: 2000 })),
+    isCommonAllergen: Nullable(Type.Boolean()),
+    allergenIntroductionGuidance: Nullable(Type.String({ maxLength: 2000 })),
+    highRiskInfantNeedsMedicalAdvice: Nullable(Type.Boolean()),
+    chokingRisk: Type.Boolean(),
+    chokingNotes: Nullable(Type.String({ maxLength: 2000 })),
+    preparation: Type.Array(Type.String({ maxLength: 1000 }), { maxItems: 30 }),
+    avoidBeforeMonths: Nullable(Type.Integer({ minimum: 0, maximum: 120 })),
+    nutrition: Type.Array(Type.String({ maxLength: 200 }), { maxItems: 32 }),
+    textureByAge: Type.Array(FoodTextureByAgeSchema, { maxItems: 32 }),
+    notes: Nullable(Type.String({ maxLength: 2000 })),
+    sourceRefs: Type.Array(Type.String({ minLength: 1, maxLength: 128 }), { maxItems: 32 }),
+    dataSource: Type.Optional(FoodDataSourceSchema),
     /** Custom numeric profiles use values per 100 g; legacy descriptive nutritionJson remains separate. */
     nutritionBasis: Type.Optional(Nullable(Type.Literal("per_100g"))),
     nutrientsJson: Type.Optional(Nullable(NutritionProfileSchema)),
@@ -323,7 +369,11 @@ export const FoodLibraryItemSchema = Type.Object(
       Type.Object(
         {
           tried: Type.Boolean(),
-          reaction: Nullable(Type.String()),
+          status: FamilyFoodStatusValueSchema,
+          firstAddedDate: Nullable(DateString),
+          acceptance: Type.Integer({ minimum: 0, maximum: 5 }),
+          reaction: Nullable(Type.String({ maxLength: 32 })),
+          version: Type.Integer({ minimum: 1 }),
         },
         { additionalProperties: false }
       )
@@ -339,7 +389,11 @@ export const CreateFoodLibraryItemRequestSchema = Type.Object(
     familyId: Type.Optional(UuidString),
     /** Legacy create-as-tried flow; persisted as the family-scoped status row. */
     tried: Type.Optional(Type.Boolean()),
+    status: Type.Optional(FamilyFoodStatusValueSchema),
+    firstAddedDate: Type.Optional(Nullable(DateString)),
+    acceptance: Type.Optional(Type.Integer({ minimum: 0, maximum: 5 })),
     name: Type.String({ minLength: 1, maxLength: 100 }),
+    icon: Type.Optional(Type.String({ minLength: 1, maxLength: 32 })),
     category: Type.String({ minLength: 1, maxLength: 50 }),
     allergenRisk: FoodAllergenRiskSchema,
     recommendedAgeMonths: Type.Integer({ minimum: 0 }),
@@ -361,6 +415,40 @@ export const UpdateFoodLibraryItemRequestSchema = Type.Object(
 );
 
 export type UpdateFoodLibraryItemRequest = Static<typeof UpdateFoodLibraryItemRequestSchema>;
+
+export const UpdateFamilyFoodStatusRequestSchema = Type.Object(
+  {
+    status: FamilyFoodStatusValueSchema,
+    firstAddedDate: Nullable(DateString),
+    acceptance: Type.Integer({ minimum: 0, maximum: 5 }),
+    reaction: Type.Optional(Nullable(Type.String({ maxLength: 32 }))),
+    baseVersion: Type.Integer({ minimum: 0 }),
+  },
+  { $id: "UpdateFamilyFoodStatusRequest", additionalProperties: false },
+);
+
+export type UpdateFamilyFoodStatusRequest = Static<typeof UpdateFamilyFoodStatusRequestSchema>;
+
+export const FamilyFoodStatusResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        id: Type.String({ minLength: 1, maxLength: 128 }),
+        familyId: UuidString,
+        foodId: Type.String({ minLength: 1, maxLength: 64 }),
+        tried: Type.Boolean(),
+        status: FamilyFoodStatusValueSchema,
+        firstAddedDate: Nullable(DateString),
+        acceptance: Type.Integer({ minimum: 0, maximum: 5 }),
+        reaction: Nullable(Type.String({ maxLength: 32 })),
+        version: Type.Integer({ minimum: 1 }),
+        updatedAt: DateTimeString,
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "FamilyFoodStatusResponse", additionalProperties: false },
+);
 
 export const FoodLibraryItemListResponseSchema = Type.Object(
   {

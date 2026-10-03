@@ -4162,15 +4162,88 @@
           }
         }
       },
+      "FoodTextureByAge": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ageMinMonths",
+          "ageMaxMonths",
+          "texture"
+        ],
+        "properties": {
+          "ageMinMonths": {
+            "minimum": 0,
+            "maximum": 120,
+            "type": "integer",
+            "nullable": true
+          },
+          "ageMaxMonths": {
+            "minimum": 0,
+            "maximum": 120,
+            "type": "integer",
+            "nullable": true
+          },
+          "texture": {
+            "minLength": 1,
+            "maxLength": 500,
+            "type": "string"
+          }
+        }
+      },
+      "FoodDataSource": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "asOf",
+          "scope",
+          "evidenceConflict"
+        ],
+        "properties": {
+          "asOf": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string"
+          },
+          "scope": {
+            "minLength": 1,
+            "maxLength": 32,
+            "type": "string"
+          },
+          "evidenceConflict": {
+            "type": "boolean"
+          }
+        }
+      },
       "FoodLibraryItem": {
         "additionalProperties": false,
         "type": "object",
         "required": [
           "id",
           "name",
+          "icon",
           "category",
+          "foodGroup",
+          "status",
+          "firstAddedDate",
+          "acceptance",
           "allergenRisk",
           "recommendedAgeMonths",
+          "recommendedFromMonth",
+          "recommendedToMonth",
+          "exactMonthEvidence",
+          "guidance",
+          "isCommonAllergen",
+          "allergenIntroductionGuidance",
+          "highRiskInfantNeedsMedicalAdvice",
+          "chokingRisk",
+          "chokingNotes",
+          "preparation",
+          "avoidBeforeMonths",
+          "nutrition",
+          "textureByAge",
+          "notes",
+          "sourceRefs",
           "version"
         ],
         "properties": {
@@ -4182,10 +4255,48 @@
             "maxLength": 100,
             "type": "string"
           },
+          "icon": {
+            "minLength": 1,
+            "maxLength": 32,
+            "type": "string"
+          },
           "category": {
             "minLength": 1,
             "maxLength": 50,
             "type": "string"
+          },
+          "foodGroup": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "tried"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "to_try"
+                ]
+              }
+            ]
+          },
+          "firstAddedDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "acceptance": {
+            "minimum": 0,
+            "maximum": 5,
+            "type": "integer"
           },
           "allergenRisk": {
             "anyOf": [
@@ -4212,6 +4323,140 @@
           "recommendedAgeMonths": {
             "minimum": 0,
             "type": "integer"
+          },
+          "recommendedFromMonth": {
+            "minimum": 0,
+            "maximum": 120,
+            "type": "integer",
+            "nullable": true
+          },
+          "recommendedToMonth": {
+            "minimum": 0,
+            "maximum": 120,
+            "type": "integer",
+            "nullable": true
+          },
+          "exactMonthEvidence": {
+            "type": "boolean"
+          },
+          "guidance": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          },
+          "isCommonAllergen": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "allergenIntroductionGuidance": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          },
+          "highRiskInfantNeedsMedicalAdvice": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "chokingRisk": {
+            "type": "boolean"
+          },
+          "chokingNotes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          },
+          "preparation": {
+            "maxItems": 30,
+            "type": "array",
+            "items": {
+              "maxLength": 1000,
+              "type": "string"
+            }
+          },
+          "avoidBeforeMonths": {
+            "minimum": 0,
+            "maximum": 120,
+            "type": "integer",
+            "nullable": true
+          },
+          "nutrition": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          "textureByAge": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "ageMinMonths",
+                "ageMaxMonths",
+                "texture"
+              ],
+              "properties": {
+                "ageMinMonths": {
+                  "minimum": 0,
+                  "maximum": 120,
+                  "type": "integer",
+                  "nullable": true
+                },
+                "ageMaxMonths": {
+                  "minimum": 0,
+                  "maximum": 120,
+                  "type": "integer",
+                  "nullable": true
+                },
+                "texture": {
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "notes": {
+            "maxLength": 2000,
+            "type": "string",
+            "nullable": true
+          },
+          "sourceRefs": {
+            "maxItems": 32,
+            "type": "array",
+            "items": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            }
+          },
+          "dataSource": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "asOf",
+              "scope",
+              "evidenceConflict"
+            ],
+            "properties": {
+              "asOf": {
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "YYYY-MM-DD calendar date",
+                "type": "string"
+              },
+              "scope": {
+                "minLength": 1,
+                "maxLength": 32,
+                "type": "string"
+              },
+              "evidenceConflict": {
+                "type": "boolean"
+              }
+            }
           },
           "nutritionBasis": {
             "type": "string",
@@ -4263,15 +4508,52 @@
             "type": "object",
             "required": [
               "tried",
-              "reaction"
+              "status",
+              "firstAddedDate",
+              "acceptance",
+              "reaction",
+              "version"
             ],
             "properties": {
               "tried": {
                 "type": "boolean"
               },
-              "reaction": {
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "tried"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "to_try"
+                    ]
+                  }
+                ]
+              },
+              "firstAddedDate": {
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "YYYY-MM-DD calendar date",
                 "type": "string",
                 "nullable": true
+              },
+              "acceptance": {
+                "minimum": 0,
+                "maximum": 5,
+                "type": "integer"
+              },
+              "reaction": {
+                "maxLength": 32,
+                "type": "string",
+                "nullable": true
+              },
+              "version": {
+                "minimum": 1,
+                "type": "integer"
               }
             }
           }
@@ -4336,6 +4618,675 @@
             "minLength": 1,
             "maxLength": 24,
             "type": "string"
+          }
+        }
+      },
+      "FoodLibraryItemListResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "icon",
+                "category",
+                "foodGroup",
+                "status",
+                "firstAddedDate",
+                "acceptance",
+                "allergenRisk",
+                "recommendedAgeMonths",
+                "recommendedFromMonth",
+                "recommendedToMonth",
+                "exactMonthEvidence",
+                "guidance",
+                "isCommonAllergen",
+                "allergenIntroductionGuidance",
+                "highRiskInfantNeedsMedicalAdvice",
+                "chokingRisk",
+                "chokingNotes",
+                "preparation",
+                "avoidBeforeMonths",
+                "nutrition",
+                "textureByAge",
+                "notes",
+                "sourceRefs",
+                "version"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                "icon": {
+                  "minLength": 1,
+                  "maxLength": 32,
+                  "type": "string"
+                },
+                "category": {
+                  "minLength": 1,
+                  "maxLength": 50,
+                  "type": "string"
+                },
+                "foodGroup": {
+                  "maxLength": 50,
+                  "type": "string",
+                  "nullable": true
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "tried"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "to_try"
+                      ]
+                    }
+                  ]
+                },
+                "firstAddedDate": {
+                  "format": "date",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "description": "YYYY-MM-DD calendar date",
+                  "type": "string",
+                  "nullable": true
+                },
+                "acceptance": {
+                  "minimum": 0,
+                  "maximum": 5,
+                  "type": "integer"
+                },
+                "allergenRisk": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "low"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "medium"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "high"
+                      ]
+                    }
+                  ]
+                },
+                "recommendedAgeMonths": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "recommendedFromMonth": {
+                  "minimum": 0,
+                  "maximum": 120,
+                  "type": "integer",
+                  "nullable": true
+                },
+                "recommendedToMonth": {
+                  "minimum": 0,
+                  "maximum": 120,
+                  "type": "integer",
+                  "nullable": true
+                },
+                "exactMonthEvidence": {
+                  "type": "boolean"
+                },
+                "guidance": {
+                  "maxLength": 2000,
+                  "type": "string",
+                  "nullable": true
+                },
+                "isCommonAllergen": {
+                  "type": "boolean",
+                  "nullable": true
+                },
+                "allergenIntroductionGuidance": {
+                  "maxLength": 2000,
+                  "type": "string",
+                  "nullable": true
+                },
+                "highRiskInfantNeedsMedicalAdvice": {
+                  "type": "boolean",
+                  "nullable": true
+                },
+                "chokingRisk": {
+                  "type": "boolean"
+                },
+                "chokingNotes": {
+                  "maxLength": 2000,
+                  "type": "string",
+                  "nullable": true
+                },
+                "preparation": {
+                  "maxItems": 30,
+                  "type": "array",
+                  "items": {
+                    "maxLength": 1000,
+                    "type": "string"
+                  }
+                },
+                "avoidBeforeMonths": {
+                  "minimum": 0,
+                  "maximum": 120,
+                  "type": "integer",
+                  "nullable": true
+                },
+                "nutrition": {
+                  "maxItems": 32,
+                  "type": "array",
+                  "items": {
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                },
+                "textureByAge": {
+                  "maxItems": 32,
+                  "type": "array",
+                  "items": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "ageMinMonths",
+                      "ageMaxMonths",
+                      "texture"
+                    ],
+                    "properties": {
+                      "ageMinMonths": {
+                        "minimum": 0,
+                        "maximum": 120,
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "ageMaxMonths": {
+                        "minimum": 0,
+                        "maximum": 120,
+                        "type": "integer",
+                        "nullable": true
+                      },
+                      "texture": {
+                        "minLength": 1,
+                        "maxLength": 500,
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "notes": {
+                  "maxLength": 2000,
+                  "type": "string",
+                  "nullable": true
+                },
+                "sourceRefs": {
+                  "maxItems": 32,
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  }
+                },
+                "dataSource": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "asOf",
+                    "scope",
+                    "evidenceConflict"
+                  ],
+                  "properties": {
+                    "asOf": {
+                      "format": "date",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "description": "YYYY-MM-DD calendar date",
+                      "type": "string"
+                    },
+                    "scope": {
+                      "minLength": 1,
+                      "maxLength": 32,
+                      "type": "string"
+                    },
+                    "evidenceConflict": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "nutritionBasis": {
+                  "type": "string",
+                  "enum": [
+                    "per_100g"
+                  ],
+                  "nullable": true
+                },
+                "nutrientsJson": {
+                  "maxProperties": 64,
+                  "type": "object",
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "amount",
+                      "unit"
+                    ],
+                    "properties": {
+                      "amount": {
+                        "anyOf": [
+                          {
+                            "minimum": 0,
+                            "maximum": 1000000000000,
+                            "type": "number"
+                          },
+                          {
+                            "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                            "maxLength": 40,
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "unit": {
+                        "minLength": 1,
+                        "maxLength": 24,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "nullable": true
+                },
+                "version": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "familyStatus": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "tried",
+                    "status",
+                    "firstAddedDate",
+                    "acceptance",
+                    "reaction",
+                    "version"
+                  ],
+                  "properties": {
+                    "tried": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tried"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "to_try"
+                          ]
+                        }
+                      ]
+                    },
+                    "firstAddedDate": {
+                      "format": "date",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "description": "YYYY-MM-DD calendar date",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "acceptance": {
+                      "minimum": 0,
+                      "maximum": 5,
+                      "type": "integer"
+                    },
+                    "reaction": {
+                      "maxLength": 32,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateFoodLibraryItemRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "category",
+          "allergenRisk",
+          "recommendedAgeMonths"
+        ],
+        "properties": {
+          "familyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "tried": {
+            "type": "boolean"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "tried"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "to_try"
+                ]
+              }
+            ]
+          },
+          "firstAddedDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "acceptance": {
+            "minimum": 0,
+            "maximum": 5,
+            "type": "integer"
+          },
+          "name": {
+            "minLength": 1,
+            "maxLength": 100,
+            "type": "string"
+          },
+          "icon": {
+            "minLength": 1,
+            "maxLength": 32,
+            "type": "string"
+          },
+          "category": {
+            "minLength": 1,
+            "maxLength": 50,
+            "type": "string"
+          },
+          "allergenRisk": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "low"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "medium"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "high"
+                ]
+              }
+            ]
+          },
+          "recommendedAgeMonths": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "nutritionBasis": {
+            "type": "string",
+            "enum": [
+              "per_100g"
+            ]
+          },
+          "nutrientsJson": {
+            "maxProperties": 64,
+            "type": "object",
+            "additionalProperties": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "amount",
+                "unit"
+              ],
+              "properties": {
+                "amount": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "maximum": 1000000000000,
+                      "type": "number"
+                    },
+                    {
+                      "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                      "maxLength": 40,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "unit": {
+                  "minLength": 1,
+                  "maxLength": 24,
+                  "type": "string"
+                }
+              }
+            },
+            "nullable": true
+          }
+        }
+      },
+      "UpdateFoodLibraryItemRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nutrientsJson",
+          "baseVersion"
+        ],
+        "properties": {
+          "nutrientsJson": {
+            "maxProperties": 64,
+            "type": "object",
+            "additionalProperties": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "amount",
+                "unit"
+              ],
+              "properties": {
+                "amount": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "maximum": 1000000000000,
+                      "type": "number"
+                    },
+                    {
+                      "pattern": "^(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+                      "maxLength": 40,
+                      "type": "string"
+                    }
+                  ]
+                },
+                "unit": {
+                  "minLength": 1,
+                  "maxLength": 24,
+                  "type": "string"
+                }
+              }
+            },
+            "nullable": true
+          },
+          "baseVersion": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        }
+      },
+      "UpdateFamilyFoodStatusRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "firstAddedDate",
+          "acceptance",
+          "baseVersion"
+        ],
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "tried"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "to_try"
+                ]
+              }
+            ]
+          },
+          "firstAddedDate": {
+            "format": "date",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "YYYY-MM-DD calendar date",
+            "type": "string",
+            "nullable": true
+          },
+          "acceptance": {
+            "minimum": 0,
+            "maximum": 5,
+            "type": "integer"
+          },
+          "reaction": {
+            "maxLength": 32,
+            "type": "string",
+            "nullable": true
+          },
+          "baseVersion": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        }
+      },
+      "FamilyFoodStatusResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "familyId",
+              "foodId",
+              "tried",
+              "status",
+              "firstAddedDate",
+              "acceptance",
+              "reaction",
+              "version",
+              "updatedAt"
+            ],
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "familyId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "foodId": {
+                "minLength": 1,
+                "maxLength": 64,
+                "type": "string"
+              },
+              "tried": {
+                "type": "boolean"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "tried"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "to_try"
+                    ]
+                  }
+                ]
+              },
+              "firstAddedDate": {
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "YYYY-MM-DD calendar date",
+                "type": "string",
+                "nullable": true
+              },
+              "acceptance": {
+                "minimum": 0,
+                "maximum": 5,
+                "type": "integer"
+              },
+              "reaction": {
+                "maxLength": 32,
+                "type": "string",
+                "nullable": true
+              },
+              "version": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -29157,7 +30108,7 @@
             "description": "UUID v4 string"
           }
         ],
-        "x-implementation-status": "PLANNED_SH04FO",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -29178,9 +30129,29 @@
                         "required": [
                           "id",
                           "name",
+                          "icon",
                           "category",
+                          "foodGroup",
+                          "status",
+                          "firstAddedDate",
+                          "acceptance",
                           "allergenRisk",
                           "recommendedAgeMonths",
+                          "recommendedFromMonth",
+                          "recommendedToMonth",
+                          "exactMonthEvidence",
+                          "guidance",
+                          "isCommonAllergen",
+                          "allergenIntroductionGuidance",
+                          "highRiskInfantNeedsMedicalAdvice",
+                          "chokingRisk",
+                          "chokingNotes",
+                          "preparation",
+                          "avoidBeforeMonths",
+                          "nutrition",
+                          "textureByAge",
+                          "notes",
+                          "sourceRefs",
                           "version"
                         ],
                         "properties": {
@@ -29192,10 +30163,48 @@
                             "maxLength": 100,
                             "type": "string"
                           },
+                          "icon": {
+                            "minLength": 1,
+                            "maxLength": 32,
+                            "type": "string"
+                          },
                           "category": {
                             "minLength": 1,
                             "maxLength": 50,
                             "type": "string"
+                          },
+                          "foodGroup": {
+                            "maxLength": 50,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "tried"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "to_try"
+                                ]
+                              }
+                            ]
+                          },
+                          "firstAddedDate": {
+                            "format": "date",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "description": "YYYY-MM-DD calendar date",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "acceptance": {
+                            "minimum": 0,
+                            "maximum": 5,
+                            "type": "integer"
                           },
                           "allergenRisk": {
                             "anyOf": [
@@ -29222,6 +30231,140 @@
                           "recommendedAgeMonths": {
                             "minimum": 0,
                             "type": "integer"
+                          },
+                          "recommendedFromMonth": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "recommendedToMonth": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "exactMonthEvidence": {
+                            "type": "boolean"
+                          },
+                          "guidance": {
+                            "maxLength": 2000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isCommonAllergen": {
+                            "type": "boolean",
+                            "nullable": true
+                          },
+                          "allergenIntroductionGuidance": {
+                            "maxLength": 2000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "highRiskInfantNeedsMedicalAdvice": {
+                            "type": "boolean",
+                            "nullable": true
+                          },
+                          "chokingRisk": {
+                            "type": "boolean"
+                          },
+                          "chokingNotes": {
+                            "maxLength": 2000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "preparation": {
+                            "maxItems": 30,
+                            "type": "array",
+                            "items": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          },
+                          "avoidBeforeMonths": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "nutrition": {
+                            "maxItems": 32,
+                            "type": "array",
+                            "items": {
+                              "maxLength": 200,
+                              "type": "string"
+                            }
+                          },
+                          "textureByAge": {
+                            "maxItems": 32,
+                            "type": "array",
+                            "items": {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "ageMinMonths",
+                                "ageMaxMonths",
+                                "texture"
+                              ],
+                              "properties": {
+                                "ageMinMonths": {
+                                  "minimum": 0,
+                                  "maximum": 120,
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "ageMaxMonths": {
+                                  "minimum": 0,
+                                  "maximum": 120,
+                                  "type": "integer",
+                                  "nullable": true
+                                },
+                                "texture": {
+                                  "minLength": 1,
+                                  "maxLength": 500,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "notes": {
+                            "maxLength": 2000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceRefs": {
+                            "maxItems": 32,
+                            "type": "array",
+                            "items": {
+                              "minLength": 1,
+                              "maxLength": 128,
+                              "type": "string"
+                            }
+                          },
+                          "dataSource": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "asOf",
+                              "scope",
+                              "evidenceConflict"
+                            ],
+                            "properties": {
+                              "asOf": {
+                                "format": "date",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "description": "YYYY-MM-DD calendar date",
+                                "type": "string"
+                              },
+                              "scope": {
+                                "minLength": 1,
+                                "maxLength": 32,
+                                "type": "string"
+                              },
+                              "evidenceConflict": {
+                                "type": "boolean"
+                              }
+                            }
                           },
                           "nutritionBasis": {
                             "type": "string",
@@ -29273,15 +30416,52 @@
                             "type": "object",
                             "required": [
                               "tried",
-                              "reaction"
+                              "status",
+                              "firstAddedDate",
+                              "acceptance",
+                              "reaction",
+                              "version"
                             ],
                             "properties": {
                               "tried": {
                                 "type": "boolean"
                               },
-                              "reaction": {
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "tried"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "to_try"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "firstAddedDate": {
+                                "format": "date",
+                                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                "description": "YYYY-MM-DD calendar date",
                                 "type": "string",
                                 "nullable": true
+                              },
+                              "acceptance": {
+                                "minimum": 0,
+                                "maximum": 5,
+                                "type": "integer"
+                              },
+                              "reaction": {
+                                "maxLength": 32,
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "version": {
+                                "minimum": 1,
+                                "type": "integer"
                               }
                             }
                           }
@@ -29353,9 +30533,42 @@
                   "tried": {
                     "type": "boolean"
                   },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "tried"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "to_try"
+                        ]
+                      }
+                    ]
+                  },
+                  "firstAddedDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "acceptance": {
+                    "minimum": 0,
+                    "maximum": 5,
+                    "type": "integer"
+                  },
                   "name": {
                     "minLength": 1,
                     "maxLength": 100,
+                    "type": "string"
+                  },
+                  "icon": {
+                    "minLength": 1,
+                    "maxLength": 32,
                     "type": "string"
                   },
                   "category": {
@@ -29434,7 +30647,20 @@
             }
           }
         },
-        "x-implementation-status": "PLANNED_SH04FO",
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
+          }
+        ],
+        "x-implementation-status": "READY",
         "responses": {
           "201": {
             "description": "Default Response",
@@ -29446,9 +30672,29 @@
                   "required": [
                     "id",
                     "name",
+                    "icon",
                     "category",
+                    "foodGroup",
+                    "status",
+                    "firstAddedDate",
+                    "acceptance",
                     "allergenRisk",
                     "recommendedAgeMonths",
+                    "recommendedFromMonth",
+                    "recommendedToMonth",
+                    "exactMonthEvidence",
+                    "guidance",
+                    "isCommonAllergen",
+                    "allergenIntroductionGuidance",
+                    "highRiskInfantNeedsMedicalAdvice",
+                    "chokingRisk",
+                    "chokingNotes",
+                    "preparation",
+                    "avoidBeforeMonths",
+                    "nutrition",
+                    "textureByAge",
+                    "notes",
+                    "sourceRefs",
                     "version"
                   ],
                   "properties": {
@@ -29460,10 +30706,48 @@
                       "maxLength": 100,
                       "type": "string"
                     },
+                    "icon": {
+                      "minLength": 1,
+                      "maxLength": 32,
+                      "type": "string"
+                    },
                     "category": {
                       "minLength": 1,
                       "maxLength": 50,
                       "type": "string"
+                    },
+                    "foodGroup": {
+                      "maxLength": 50,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tried"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "to_try"
+                          ]
+                        }
+                      ]
+                    },
+                    "firstAddedDate": {
+                      "format": "date",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "description": "YYYY-MM-DD calendar date",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "acceptance": {
+                      "minimum": 0,
+                      "maximum": 5,
+                      "type": "integer"
                     },
                     "allergenRisk": {
                       "anyOf": [
@@ -29490,6 +30774,140 @@
                     "recommendedAgeMonths": {
                       "minimum": 0,
                       "type": "integer"
+                    },
+                    "recommendedFromMonth": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "recommendedToMonth": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "exactMonthEvidence": {
+                      "type": "boolean"
+                    },
+                    "guidance": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "isCommonAllergen": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "allergenIntroductionGuidance": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "highRiskInfantNeedsMedicalAdvice": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "chokingRisk": {
+                      "type": "boolean"
+                    },
+                    "chokingNotes": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "preparation": {
+                      "maxItems": 30,
+                      "type": "array",
+                      "items": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    },
+                    "avoidBeforeMonths": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "nutrition": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "maxLength": 200,
+                        "type": "string"
+                      }
+                    },
+                    "textureByAge": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "ageMinMonths",
+                          "ageMaxMonths",
+                          "texture"
+                        ],
+                        "properties": {
+                          "ageMinMonths": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "ageMaxMonths": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "texture": {
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "notes": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "sourceRefs": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "type": "string"
+                      }
+                    },
+                    "dataSource": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "asOf",
+                        "scope",
+                        "evidenceConflict"
+                      ],
+                      "properties": {
+                        "asOf": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string"
+                        },
+                        "scope": {
+                          "minLength": 1,
+                          "maxLength": 32,
+                          "type": "string"
+                        },
+                        "evidenceConflict": {
+                          "type": "boolean"
+                        }
+                      }
                     },
                     "nutritionBasis": {
                       "type": "string",
@@ -29541,15 +30959,52 @@
                       "type": "object",
                       "required": [
                         "tried",
-                        "reaction"
+                        "status",
+                        "firstAddedDate",
+                        "acceptance",
+                        "reaction",
+                        "version"
                       ],
                       "properties": {
                         "tried": {
                           "type": "boolean"
                         },
-                        "reaction": {
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "tried"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "to_try"
+                              ]
+                            }
+                          ]
+                        },
+                        "firstAddedDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
                           "type": "string",
                           "nullable": true
+                        },
+                        "acceptance": {
+                          "minimum": 0,
+                          "maximum": 5,
+                          "type": "integer"
+                        },
+                        "reaction": {
+                          "maxLength": 32,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
                         }
                       }
                     }
@@ -29579,6 +31034,16 @@
             }
           },
           "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -29687,9 +31152,29 @@
                   "required": [
                     "id",
                     "name",
+                    "icon",
                     "category",
+                    "foodGroup",
+                    "status",
+                    "firstAddedDate",
+                    "acceptance",
                     "allergenRisk",
                     "recommendedAgeMonths",
+                    "recommendedFromMonth",
+                    "recommendedToMonth",
+                    "exactMonthEvidence",
+                    "guidance",
+                    "isCommonAllergen",
+                    "allergenIntroductionGuidance",
+                    "highRiskInfantNeedsMedicalAdvice",
+                    "chokingRisk",
+                    "chokingNotes",
+                    "preparation",
+                    "avoidBeforeMonths",
+                    "nutrition",
+                    "textureByAge",
+                    "notes",
+                    "sourceRefs",
                     "version"
                   ],
                   "properties": {
@@ -29701,10 +31186,48 @@
                       "maxLength": 100,
                       "type": "string"
                     },
+                    "icon": {
+                      "minLength": 1,
+                      "maxLength": 32,
+                      "type": "string"
+                    },
                     "category": {
                       "minLength": 1,
                       "maxLength": 50,
                       "type": "string"
+                    },
+                    "foodGroup": {
+                      "maxLength": 50,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tried"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "to_try"
+                          ]
+                        }
+                      ]
+                    },
+                    "firstAddedDate": {
+                      "format": "date",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                      "description": "YYYY-MM-DD calendar date",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "acceptance": {
+                      "minimum": 0,
+                      "maximum": 5,
+                      "type": "integer"
                     },
                     "allergenRisk": {
                       "anyOf": [
@@ -29731,6 +31254,140 @@
                     "recommendedAgeMonths": {
                       "minimum": 0,
                       "type": "integer"
+                    },
+                    "recommendedFromMonth": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "recommendedToMonth": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "exactMonthEvidence": {
+                      "type": "boolean"
+                    },
+                    "guidance": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "isCommonAllergen": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "allergenIntroductionGuidance": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "highRiskInfantNeedsMedicalAdvice": {
+                      "type": "boolean",
+                      "nullable": true
+                    },
+                    "chokingRisk": {
+                      "type": "boolean"
+                    },
+                    "chokingNotes": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "preparation": {
+                      "maxItems": 30,
+                      "type": "array",
+                      "items": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    },
+                    "avoidBeforeMonths": {
+                      "minimum": 0,
+                      "maximum": 120,
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "nutrition": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "maxLength": 200,
+                        "type": "string"
+                      }
+                    },
+                    "textureByAge": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "ageMinMonths",
+                          "ageMaxMonths",
+                          "texture"
+                        ],
+                        "properties": {
+                          "ageMinMonths": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "ageMaxMonths": {
+                            "minimum": 0,
+                            "maximum": 120,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "texture": {
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "notes": {
+                      "maxLength": 2000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "sourceRefs": {
+                      "maxItems": 32,
+                      "type": "array",
+                      "items": {
+                        "minLength": 1,
+                        "maxLength": 128,
+                        "type": "string"
+                      }
+                    },
+                    "dataSource": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "asOf",
+                        "scope",
+                        "evidenceConflict"
+                      ],
+                      "properties": {
+                        "asOf": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string"
+                        },
+                        "scope": {
+                          "minLength": 1,
+                          "maxLength": 32,
+                          "type": "string"
+                        },
+                        "evidenceConflict": {
+                          "type": "boolean"
+                        }
+                      }
                     },
                     "nutritionBasis": {
                       "type": "string",
@@ -29782,15 +31439,286 @@
                       "type": "object",
                       "required": [
                         "tried",
-                        "reaction"
+                        "status",
+                        "firstAddedDate",
+                        "acceptance",
+                        "reaction",
+                        "version"
                       ],
                       "properties": {
                         "tried": {
                           "type": "boolean"
                         },
-                        "reaction": {
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "tried"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "to_try"
+                              ]
+                            }
+                          ]
+                        },
+                        "firstAddedDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
                           "type": "string",
                           "nullable": true
+                        },
+                        "acceptance": {
+                          "minimum": 0,
+                          "maximum": 5,
+                          "type": "integer"
+                        },
+                        "reaction": {
+                          "maxLength": 32,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{familyId}/food-status/{foodId}": {
+      "put": {
+        "operationId": "updateFamilyFoodStatus",
+        "summary": "Update family-shared food trial state with optimistic locking",
+        "tags": [
+          "Nutrition"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "status",
+                  "firstAddedDate",
+                  "acceptance",
+                  "baseVersion"
+                ],
+                "properties": {
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "tried"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "to_try"
+                        ]
+                      }
+                    ]
+                  },
+                  "firstAddedDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "acceptance": {
+                    "minimum": 0,
+                    "maximum": 5,
+                    "type": "integer"
+                  },
+                  "reaction": {
+                    "maxLength": 32,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "baseVersion": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 64,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "foodId",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "familyId",
+                        "foodId",
+                        "tried",
+                        "status",
+                        "firstAddedDate",
+                        "acceptance",
+                        "reaction",
+                        "version",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "foodId": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "tried": {
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "tried"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "to_try"
+                              ]
+                            }
+                          ]
+                        },
+                        "firstAddedDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "acceptance": {
+                          "minimum": 0,
+                          "maximum": 5,
+                          "type": "integer"
+                        },
+                        "reaction": {
+                          "maxLength": 32,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
                         }
                       }
                     }
@@ -29859,7 +31787,7 @@
         "tags": [
           "Nutrition"
         ],
-        "x-implementation-status": "PLANNED_SH04FO",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",

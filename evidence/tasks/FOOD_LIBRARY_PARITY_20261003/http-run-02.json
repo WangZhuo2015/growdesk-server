@@ -1,0 +1,27 @@
+{
+  "suite": "Go food-library family/shared-state HTTP parity",
+  "status": "FAIL",
+  "serverHead": "ff967e876616f0a03367c1c5f1d639b211fd7d54",
+  "sourceSha256": {
+    "legacyFoodJson": "89d96cdb829f552982ddb1da76d51b85eb8d2d02a70194386e3b200cff8453d2"
+  },
+  "runtime": {
+    "apiHost": "127.0.0.1",
+    "database": "owned test_ PostgreSQL 18",
+    "redis": "owned test_ Redis 8",
+    "externalProviders": "not configured",
+    "push": "not configured",
+    "objectStorage": "not used by this scope",
+    "apiUrl": "http://127.0.0.1:57918"
+  },
+  "cleanup": {
+    "apiProcessesStopped": true,
+    "redisProcessStopped": true,
+    "postgresStopped": true,
+    "temporaryDirectoryRemoved": true,
+    "noContainerResourcesCreated": true
+  },
+  "failureType": "AssertionError",
+  "failure": "GET /api/v1/families/023a4e54-61ff-4378-926c-7880394f5915/changes: expected 200, got 404; NOT_FOUND",
+  "cleanupVerified": true
+}

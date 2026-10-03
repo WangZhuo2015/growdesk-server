@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { PrismaClient } from "@growdesk/database";
+import { Type } from "@sinclair/typebox";
 import { ConcurrencyConflictError } from "@growdesk/database";
 import {
   ApiErrorEnvelopeSchema,
@@ -11,8 +12,6 @@ import {
   FoodRecordResponseSchema,
   FoodListResponseSchema,
   DeleteRecordResponseSchema,
-  FoodLibraryItemListResponseSchema,
-  FoodLibraryItemSchema,
   CreateFoodLibraryItemRequestSchema,
   FoodLibraryItemsQuerySchema,
   FoodGuidelinesResponseSchema,
@@ -28,6 +27,29 @@ import {
   type SaveFoodPlanRequest,
 } from "@growdesk/contracts";
 import { FoodService } from "../services/food-service.js";
+
+// The retiring TypeScript API keeps its published response shape while the
+// canonical Go contract adds the richer Web food-library projections. This
+// route-local schema prevents a TypeBox response upgrade from breaking the
+// legacy implementation before that adapter is migrated separately.
+const LegacyFoodLibraryItemSchema = Type.Object(
+  {
+    id: Type.String(),
+    name: Type.String(),
+    category: Type.String(),
+    allergenRisk: Type.Union([Type.Literal("low"), Type.Literal("medium"), Type.Literal("high")]),
+    recommendedAgeMonths: Type.Integer({ minimum: 0 }),
+    familyStatus: Type.Optional(Type.Object({
+      tried: Type.Boolean(),
+      reaction: Type.Union([Type.String(), Type.Null()]),
+    }, { additionalProperties: false })),
+  },
+  { $id: "LegacyFoodLibraryItemResponse", additionalProperties: false },
+);
+const LegacyFoodLibraryItemListResponseSchema = Type.Object(
+  { data: Type.Array(LegacyFoodLibraryItemSchema) },
+  { $id: "LegacyFoodLibraryItemListResponse", additionalProperties: false },
+);
 
 export interface FoodRoutesOptions {
   readonly prisma: PrismaClient;
@@ -176,7 +198,7 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
       schema: {
         querystring: FoodLibraryItemsQuerySchema,
         response: {
-          200: FoodLibraryItemListResponseSchema,
+          200: LegacyFoodLibraryItemListResponseSchema,
           401: ApiErrorEnvelopeSchema,
           400: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
@@ -198,7 +220,7 @@ export const foodRoutes: FastifyPluginAsync<FoodRoutesOptions> = async (fastify,
       schema: {
         body: CreateFoodLibraryItemRequestSchema,
         response: {
-          201: FoodLibraryItemSchema,
+          201: LegacyFoodLibraryItemSchema,
           400: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,

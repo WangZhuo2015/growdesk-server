@@ -1,0 +1,6 @@
+?   	github.com/WangZhuo2015/growdesk-server	[no test files]
+ok  	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api	(cached)
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate	[no test files]
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler	[no test files]
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker	[no test files]
+ok  	github.com/WangZhuo2015/growdesk-server/internal/backend	(cached)

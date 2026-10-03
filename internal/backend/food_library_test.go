@@ -63,14 +63,18 @@ func TestFoodLibraryWireContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	item := foodLibraryItem{ID: "custom_00000000-0000-4000-8000-000000000001", Name: "test_food", Category: "fruit", AllergenRisk: "low", Version: 1}
+	item := foodLibraryItem{
+		ID: "custom_00000000-0000-4000-8000-000000000001", Name: "test_food", Icon: "🍎", Category: "fruit",
+		Status: "to_try", Acceptance: 0, AllergenRisk: "low", RecommendedAgeMonths: 0,
+		Preparation: []string{}, Nutrition: []string{}, TextureByAge: []foodLibraryTexture{}, SourceRefs: []string{}, Version: 1,
+	}
 	for _, tc := range []struct {
 		name   string
 		status *foodLibraryStatus
 	}{
 		{"absent", nil},
-		{"explicit false", &foodLibraryStatus{Tried: false}},
-		{"explicit true", &foodLibraryStatus{Tried: true}},
+		{"explicit false", &foodLibraryStatus{ID: "status-id", Tried: false, Status: "to_try", Acceptance: 0, Version: 1}},
+		{"explicit true", &foodLibraryStatus{ID: "status-id", Tried: true, Status: "tried", Acceptance: 0, Version: 1}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			item.FamilyStatus = tc.status
@@ -86,7 +90,10 @@ func TestFoodLibraryWireContract(t *testing.T) {
 				t.Fatal("missing and explicit status must remain distinct")
 			}
 			if tc.status != nil {
-				if !reflect.DeepEqual(status, map[string]any{"tried": tc.status.Tried, "reaction": nil}) {
+				if !reflect.DeepEqual(status, map[string]any{
+					"tried": tc.status.Tried, "status": tc.status.Status, "firstAddedDate": nil,
+					"acceptance": float64(0), "reaction": nil, "version": float64(1),
+				}) {
 					t.Fatalf("status=%#v", status)
 				}
 			}
@@ -111,7 +118,7 @@ func TestFoodLibraryRegistrationAndGuidelines(t *testing.T) {
 	}
 	s := &Server{Contract: c, Handlers: map[string]Handler{}, Public: map[string]bool{}}
 	s.registerFoodLibrary()
-	for _, id := range []string{"listFoodLibraryItems", "createFoodLibraryItem", "updateFoodLibraryItem", "getFoodGuidelines"} {
+	for _, id := range []string{"listFoodLibraryItems", "createFoodLibraryItem", "updateFoodLibraryItem", "updateFamilyFoodStatus", "getFoodGuidelines"} {
 		if s.Handlers[id] == nil || s.Public[id] {
 			t.Fatalf("%s must have an authenticated native handler", id)
 		}
@@ -128,6 +135,12 @@ func TestFoodLibraryRegistrationAndGuidelines(t *testing.T) {
 	}
 	if err := c.ByID["getFoodGuidelines"].ValidateResponse(context.Background(), 200, foodLibraryWire(t, result.Body)); err != nil {
 		t.Fatal(err)
+	}
+	statusRequest := Object{"status": "tried", "firstAddedDate": nil, "acceptance": 0, "baseVersion": 0}
+	if err := c.ByID["updateFamilyFoodStatus"].Validate(httptest.NewRequest("PUT", "/api/v1/families/00000000-0000-4000-8000-000000000001/food-status/food_egg", nil), map[string]string{
+		"familyId": "00000000-0000-4000-8000-000000000001", "foodId": "food_egg",
+	}, statusRequest); err != nil {
+		t.Fatalf("valid initial food status request rejected: %v", err)
 	}
 }
 

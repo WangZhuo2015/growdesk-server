@@ -1,0 +1,6 @@
+
+> growdesk-server@0.1.0 backend:contracts:check
+> node scripts/check-contracts.mjs
+
+Checking canonical OpenAPI specification consistency...
+Contract check passed: /private/tmp/growdesk-server-food-library-20261003/contracts/openapi.json is perfectly in sync (126 paths, 175 operations).

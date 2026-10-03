@@ -719,9 +719,30 @@ model FoodRecord {
 model FoodLibraryItem {
   id                   String    @id @db.VarChar(64)
   name                 String    @db.VarChar(100)
+  icon                 String    @default("🍽️") @db.VarChar(32)
   category             String    @db.VarChar(50)
+  foodGroup            String?   @map("food_group") @db.VarChar(50)
   allergenRisk         String    @map("allergen_risk") @db.VarChar(16)
   recommendedAgeMonths Int       @map("recommended_age_months")
+  recommendedFromMonth Int?      @map("recommended_from_month")
+  recommendedToMonth   Int?      @map("recommended_to_month")
+  exactMonthEvidence   Boolean   @default(false) @map("exact_month_evidence")
+  guidance             String?
+  isCommonAllergen     Boolean?  @map("is_common_allergen")
+  allergenIntroductionGuidance String? @map("allergen_introduction_guidance")
+  highRiskInfantNeedsMedicalAdvice Boolean? @map("high_risk_infant_needs_medical_advice")
+  chokingRisk          Boolean   @default(false) @map("choking_risk")
+  chokingNotes         String?   @map("choking_notes")
+  preparationJson      Json      @default("[]") @map("preparation_json") @db.JsonB
+  avoidBeforeMonths    Int?      @map("avoid_before_months")
+  nutritionHighlightsJson Json   @default("[]") @map("nutrition_highlights_json") @db.JsonB
+  textureByAgeJson     Json      @default("[]") @map("texture_by_age_json") @db.JsonB
+  notes                String?
+  sourceRefsJson       Json      @default("[]") @map("source_refs_json") @db.JsonB
+  dataSourceAsOf       String?   @map("data_source_as_of") @db.VarChar(10)
+  dataSourceScope      String?   @map("data_source_scope") @db.VarChar(32)
+  dataSourceEvidenceConflict Boolean? @map("data_source_evidence_conflict")
+  catalogOrder         Int?      @map("catalog_order")
   isCustom             Boolean   @default(false) @map("is_custom")
   familyId             String?   @map("family_id")
   nutrientsJson        Json?     @map("nutrients_json") @db.JsonB
@@ -742,6 +763,9 @@ model FamilyFoodStatus {
   foodItemId String   @map("food_item_id") @db.VarChar(64)
   tried      Boolean  @default(false)
   reaction   String?  @db.VarChar(32)
+  firstAddedDate String? @map("first_added_date") @db.VarChar(10)
+  acceptance Int      @default(0)
+  version    Int      @default(1)
   legacyStatus         String?  @map("legacy_status") @db.VarChar(16)
   legacyAcceptance     Int?     @map("legacy_acceptance")
   legacyFirstAddedDate String?  @map("legacy_first_added_date") @db.VarChar(10)

@@ -1,0 +1,11 @@
+
+> growdesk-server@0.1.0 backend:db:generate
+> node scripts/db-generate.mjs
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (7.10.0) to ./packages/database/src/generated in 270ms
+
+Database client generation complete.
