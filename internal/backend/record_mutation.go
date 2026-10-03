@@ -25,6 +25,8 @@ type recordCommand struct {
 	Scope                                              Scope
 	Kind, ID, Operation, Key, RequestHash, PayloadHash string
 	BaseVersion                                        int64
+	DeviceSyncBindingID                                string
+	DeviceSyncGeneration                               int64
 	Apply                                              func(context.Context, pgx.Tx, Object, int64) (recordChange, error)
 }
 
@@ -98,6 +100,9 @@ func (s *Server) executeRecordCommandTx(ctx context.Context, tx pgx.Tx, r *Reque
 			return recordOutcome{}, reusedKey(command.Key)
 		}
 		summary := obj(receipt["result_summary"])
+		if command.DeviceSyncBindingID != "" && (text(summary["deviceSyncBindingId"]) != command.DeviceSyncBindingID || integer(summary["deviceSyncGeneration"]) != command.DeviceSyncGeneration) {
+			return recordOutcome{}, apiError(409, "DEVICE_SYNC_RECEIPT_CONTEXT_MISMATCH", "Command receipt belongs to a different device binding generation")
+		}
 		return recordOutcome{Entity: entity, Version: integer(entity["version"]), Cursor: text(summary["familyCursor"]), Replayed: true}, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
@@ -175,6 +180,10 @@ func publishRecordChange(ctx context.Context, tx pgx.Tx, userID string, command 
 	summary := Object{"summary": change.Summary, "familyCursor": strconv.FormatInt(cursor, 10), "version": version}
 	if command.PayloadHash != "" {
 		summary["nativePayloadHash"] = command.PayloadHash
+	}
+	if command.DeviceSyncBindingID != "" {
+		summary["deviceSyncBindingId"] = command.DeviceSyncBindingID
+		summary["deviceSyncGeneration"] = command.DeviceSyncGeneration
 	}
 	summaryJSON, err := jsonText(summary)
 	if err != nil {

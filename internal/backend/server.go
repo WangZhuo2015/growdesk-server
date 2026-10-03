@@ -186,7 +186,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			switch route.OperationID {
-			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord", "updateVaccineRecord", "executeSyncCommands":
+			case "createGrowthMeasurement", "updateGrowthMeasurement", "createMedicalReport", "createVaccineRecord", "updateVaccineRecord", "executeSyncCommands",
+				"createDeviceSyncImportPlan", "applyDeviceSyncImportChunk", "activateDeviceSyncBinding", "pauseDeviceSyncBinding", "resumeDeviceSyncBinding", "revokeDeviceSyncBinding":
 				rawBody = raw
 			}
 		}

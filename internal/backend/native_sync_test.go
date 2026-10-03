@@ -4,11 +4,17 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 )
+
+func setNativeSyncTestContext(req *http.Request) {
+	req.Header.Set(deviceSyncBindingHeader, "44444444-4444-4444-4444-444444444444")
+	req.Header.Set(deviceSyncGenerationHeader, "1")
+}
 
 func TestNativeSyncAndRecoveryRegistration(t *testing.T) {
 	contract, err := LoadContract()
@@ -55,6 +61,7 @@ func TestNativeSyncHTTPRouteAndRawBody(t *testing.T) {
 		validBody := `{"commands":[{"commandId":"11111111-1111-1111-1111-111111111111","familyId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","babyId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","entityType":"feeding","entityId":"22222222-2222-2222-2222-222222222222","operation":"create","baseVersion":null,"clientCreatedAt":"2026-09-24T00:00:00Z","payload":{"amountMl":120}}]}`
 		req := httptest.NewRequest("POST", "/api/v1/sync/commands", strings.NewReader(validBody))
 		req.Header.Set("Content-Type", "application/json")
+		setNativeSyncTestContext(req)
 		rec := httptest.NewRecorder()
 		s.ServeHTTP(rec, req)
 		if rec.Code != 401 {
@@ -76,6 +83,7 @@ func TestNativeSyncHTTPRouteAndRawBody(t *testing.T) {
 		bodyStr := `{"commands":[{"commandId":"11111111-1111-1111-1111-111111111111","familyId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","babyId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","entityType":"feeding","entityId":"22222222-2222-2222-2222-222222222222","operation":"create","baseVersion":null,"clientCreatedAt":"2026-09-24T00:00:00Z","payload":{"amountMl":120}}]}`
 		req := httptest.NewRequest("POST", "/api/v1/sync/commands", strings.NewReader(bodyStr))
 		req.Header.Set("Content-Type", "application/json")
+		setNativeSyncTestContext(req)
 		rec := httptest.NewRecorder()
 		s.ServeHTTP(rec, req)
 
@@ -92,6 +100,7 @@ func TestNativeSyncHTTPRouteAndRawBody(t *testing.T) {
 		bodyStr := `{"commands":[{"commandId":"11111111-1111-1111-1111-111111111111","familyId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","babyId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","entityType":"feeding","entityId":"22222222-2222-2222-2222-222222222222","operation":"create","baseVersion":null,"clientCreatedAt":"2026-09-24T00:00:00Z","payload":{}},{"commandId":"33333333-3333-3333-3333-333333333333","familyId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","babyId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","entityType":"feeding","entityId":"22222222-2222-2222-2222-222222222222","operation":"update","baseVersion":"1","clientCreatedAt":"2026-09-24T00:01:00Z","payload":{}}]}`
 		req := httptest.NewRequest("POST", "/api/v1/sync/commands", strings.NewReader(bodyStr))
 		req.Header.Set("Content-Type", "application/json")
+		setNativeSyncTestContext(req)
 		rec := httptest.NewRecorder()
 		s.ServeHTTP(rec, req)
 		if rec.Code != 422 {
@@ -107,6 +116,7 @@ func TestNativeSyncHTTPRouteAndRawBody(t *testing.T) {
 		bodyStr := `{"commands":[]}`
 		req := httptest.NewRequest("POST", "/api/v1/sync/commands", strings.NewReader(bodyStr))
 		req.Header.Set("Content-Type", "application/json")
+		setNativeSyncTestContext(req)
 		rec := httptest.NewRecorder()
 		s.ServeHTTP(rec, req)
 		if rec.Code != 400 {
@@ -119,6 +129,7 @@ func TestNativeSyncHTTPRouteAndRawBody(t *testing.T) {
 		huge := `{"commands":[{"entityType":"feeding","entityId":"11111111-1111-1111-1111-111111111111","action":"create","payload":{"notes":"` + strings.Repeat("a", 2000) + `"}}]}`
 		req := httptest.NewRequest("POST", "/api/v1/sync/commands", strings.NewReader(huge))
 		req.Header.Set("Content-Type", "application/json")
+		setNativeSyncTestContext(req)
 		rec := httptest.NewRecorder()
 		s.ServeHTTP(rec, req)
 		if rec.Code != 413 {

@@ -43,6 +43,7 @@ model User {
   aiArchiveEntries        AiArchiveEntry[]
   agentVoiceLogs          AgentVoiceLog[]
   recordSnapshots         RecordSnapshot[]
+  deviceSyncBindings      DeviceSyncBinding[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
   @@map("users")
@@ -87,6 +88,7 @@ model Family {
   aiArchiveEntries   AiArchiveEntry[]
   agentVoiceLogs     AgentVoiceLog[]
   recordSnapshots    RecordSnapshot[]
+  deviceSyncBindings DeviceSyncBinding[]
 
   @@index([deletedAt, id], name: "ix_families_deleted_id")
   @@map("families")
@@ -219,6 +221,82 @@ model DeviceSession {
 
   @@index([userId, revokedAt, absoluteExpiresAt], name: "ix_device_sessions_user_valid")
   @@map("device_sessions")
+  @@schema("public")
+}
+
+model DeviceSyncBinding {
+  id             String   @id
+  userId         String   @map("user_id")
+  installationId String   @map("installation_id") @db.VarChar(128)
+  localVaultId   String   @map("local_vault_id") @db.VarChar(128)
+  familyId       String   @map("family_id")
+  status         String   @default("pending") @db.VarChar(16)
+  generation     BigInt   @default(1)
+  consentVersion String   @map("consent_version") @db.VarChar(64)
+  activatedAt    DateTime? @map("activated_at") @db.Timestamptz(3)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  family         Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  importPlans    DeviceSyncImportPlan[]
+  actionReceipts DeviceSyncBindingActionReceipt[]
+
+  @@unique([userId, installationId, localVaultId, familyId], name: "uq_device_sync_bindings_principal_vault_family")
+  @@index([userId, updatedAt, id], name: "ix_device_sync_bindings_user_updated")
+  @@map("device_sync_bindings")
+  @@schema("public")
+}
+
+model DeviceSyncImportPlan {
+  id                  String   @id
+  bindingId           String   @map("binding_id")
+  generation          BigInt
+  consentVersion      String   @map("consent_version") @db.VarChar(64)
+  manifestHash        String   @map("manifest_hash") @db.Char(64)
+  expectedChunkCount  Int      @map("expected_chunk_count")
+  expectedRecordCount Int      @map("expected_record_count")
+  status              String   @default("pending") @db.VarChar(16)
+  activatedGeneration BigInt?  @map("activated_generation")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  activatedAt         DateTime? @map("activated_at") @db.Timestamptz(3)
+  binding             DeviceSyncBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade)
+  chunks              DeviceSyncImportChunk[]
+
+  @@unique([bindingId, generation], name: "uq_device_sync_import_plans_binding_generation")
+  @@index([bindingId, status, createdAt], name: "ix_device_sync_import_plans_binding_status")
+  @@map("device_sync_import_plans")
+  @@schema("public")
+}
+
+model DeviceSyncImportChunk {
+  importId     String   @map("import_id")
+  chunkId      String   @map("chunk_id")
+  chunkIndex   Int      @map("chunk_index")
+  requestHash  String   @map("request_hash") @db.Char(64)
+  itemCount    Int      @map("item_count")
+  status       String   @default("pending") @db.VarChar(16)
+  responseBody Json?    @map("response_body") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  appliedAt    DateTime? @map("applied_at") @db.Timestamptz(3)
+  importPlan   DeviceSyncImportPlan @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  @@id([importId, chunkId], name: "pk_device_sync_import_chunks")
+  @@unique([importId, chunkIndex], name: "uq_device_sync_import_chunks_index")
+  @@map("device_sync_import_chunks")
+  @@schema("public")
+}
+
+model DeviceSyncBindingActionReceipt {
+  userId         String   @map("user_id")
+  bindingId      String   @map("binding_id")
+  idempotencyKey String   @map("idempotency_key") @db.VarChar(128)
+  requestHash    String   @map("request_hash") @db.Char(64)
+  responseBody   Json     @map("response_body") @db.JsonB
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  binding        DeviceSyncBinding @relation(fields: [bindingId], references: [id], onDelete: Cascade)
+
+  @@id([userId, bindingId, idempotencyKey], name: "pk_device_sync_binding_action_receipts")
+  @@map("device_sync_binding_action_receipts")
   @@schema("public")
 }
 

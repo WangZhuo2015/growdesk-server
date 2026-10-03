@@ -2723,6 +2723,1068 @@
           }
         }
       },
+      "DeviceSyncBinding": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "installationId",
+          "localVaultId",
+          "familyId",
+          "status",
+          "generation",
+          "consentVersion",
+          "createdAt",
+          "updatedAt",
+          "activatedAt"
+        ],
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "userId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "installationId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "localVaultId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "familyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pending"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "active"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "paused"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "revoked"
+                ]
+              }
+            ]
+          },
+          "generation": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
+            "type": "string"
+          },
+          "consentVersion": {
+            "minLength": 1,
+            "maxLength": 64,
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          },
+          "activatedAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceSyncBindingEnrollmentRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "installationId",
+          "localVaultId",
+          "familyId",
+          "consentVersion"
+        ],
+        "properties": {
+          "installationId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "localVaultId": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "familyId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "consentVersion": {
+            "minLength": 1,
+            "maxLength": 64,
+            "type": "string"
+          }
+        }
+      },
+      "DeviceSyncBindingResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "userId",
+              "installationId",
+              "localVaultId",
+              "familyId",
+              "status",
+              "generation",
+              "consentVersion",
+              "createdAt",
+              "updatedAt",
+              "activatedAt"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "userId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "installationId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "localVaultId": {
+                "minLength": 1,
+                "maxLength": 128,
+                "type": "string"
+              },
+              "familyId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "pending"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "active"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "paused"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "revoked"
+                    ]
+                  }
+                ]
+              },
+              "generation": {
+                "pattern": "^\\d+$",
+                "description": "64-bit integer represented as string",
+                "type": "string"
+              },
+              "consentVersion": {
+                "minLength": 1,
+                "maxLength": 64,
+                "type": "string"
+              },
+              "createdAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "activatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "DeviceSyncBindingListResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "id",
+                "userId",
+                "installationId",
+                "localVaultId",
+                "familyId",
+                "status",
+                "generation",
+                "consentVersion",
+                "createdAt",
+                "updatedAt",
+                "activatedAt"
+              ],
+              "properties": {
+                "id": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "userId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "installationId": {
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                "localVaultId": {
+                  "minLength": 1,
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                "familyId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "active"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "paused"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "revoked"
+                      ]
+                    }
+                  ]
+                },
+                "generation": {
+                  "pattern": "^\\d+$",
+                  "description": "64-bit integer represented as string",
+                  "type": "string"
+                },
+                "consentVersion": {
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "description": "RFC3339 UTC timestamp",
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "format": "date-time",
+                  "description": "RFC3339 UTC timestamp",
+                  "type": "string"
+                },
+                "activatedAt": {
+                  "format": "date-time",
+                  "description": "RFC3339 UTC timestamp",
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "DeviceSyncBindingGenerationRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "generation"
+        ],
+        "properties": {
+          "generation": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
+            "type": "string"
+          }
+        }
+      },
+      "DeviceSyncImportChunkDescriptor": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunkId",
+          "index",
+          "requestHash",
+          "itemCount"
+        ],
+        "properties": {
+          "chunkId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "index": {
+            "minimum": 0,
+            "maximum": 9999,
+            "type": "integer"
+          },
+          "requestHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "itemCount": {
+            "minimum": 1,
+            "maximum": 50,
+            "type": "integer"
+          }
+        }
+      },
+      "DeviceSyncImportPlanRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "importId",
+          "generation",
+          "consentVersion",
+          "manifestHash",
+          "chunks"
+        ],
+        "properties": {
+          "importId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
+            "type": "string"
+          },
+          "consentVersion": {
+            "minLength": 1,
+            "maxLength": 64,
+            "type": "string"
+          },
+          "manifestHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "chunks": {
+            "maxItems": 10000,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "chunkId",
+                "index",
+                "requestHash",
+                "itemCount"
+              ],
+              "properties": {
+                "chunkId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "index": {
+                  "minimum": 0,
+                  "maximum": 9999,
+                  "type": "integer"
+                },
+                "requestHash": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "itemCount": {
+                  "minimum": 1,
+                  "maximum": 50,
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "DeviceSyncImportChunkRequest": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunkId",
+          "commands"
+        ],
+        "properties": {
+          "chunkId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "commands": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "commandId",
+                "familyId",
+                "babyId",
+                "entityType",
+                "entityId",
+                "operation",
+                "baseVersion",
+                "clientCreatedAt",
+                "payload"
+              ],
+              "properties": {
+                "commandId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "familyId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "babyId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "entityType": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "feeding"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "sleep"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "diaper"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "foodLog"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "supplementRecord"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "growthMeasurement"
+                      ]
+                    }
+                  ]
+                },
+                "entityId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "operation": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "create"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "update"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "delete"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "restore"
+                      ]
+                    }
+                  ]
+                },
+                "baseVersion": {
+                  "pattern": "^\\d+$",
+                  "description": "64-bit integer represented as string",
+                  "type": "string",
+                  "nullable": true
+                },
+                "clientCreatedAt": {
+                  "format": "date-time",
+                  "description": "RFC3339 UTC timestamp",
+                  "type": "string"
+                },
+                "payload": {
+                  "type": "object",
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "DeviceSyncImportChunkState": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "chunkId",
+          "index",
+          "requestHash",
+          "itemCount",
+          "status"
+        ],
+        "properties": {
+          "chunkId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "index": {
+            "minimum": 0,
+            "maximum": 9999,
+            "type": "integer"
+          },
+          "requestHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "itemCount": {
+            "minimum": 1,
+            "maximum": 50,
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pending"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "applied"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "DeviceSyncImportPlan": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "bindingId",
+          "generation",
+          "consentVersion",
+          "manifestHash",
+          "status",
+          "chunks",
+          "createdAt",
+          "activatedAt",
+          "activatedGeneration"
+        ],
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "bindingId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "generation": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
+            "type": "string"
+          },
+          "consentVersion": {
+            "minLength": 1,
+            "maxLength": 64,
+            "type": "string"
+          },
+          "manifestHash": {
+            "pattern": "^[a-f0-9]{64}$",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "pending"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "activated"
+                ]
+              }
+            ]
+          },
+          "chunks": {
+            "maxItems": 10000,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "chunkId",
+                "index",
+                "requestHash",
+                "itemCount",
+                "status"
+              ],
+              "properties": {
+                "chunkId": {
+                  "format": "uuid",
+                  "description": "UUID v4 string",
+                  "type": "string"
+                },
+                "index": {
+                  "minimum": 0,
+                  "maximum": 9999,
+                  "type": "integer"
+                },
+                "requestHash": {
+                  "pattern": "^[a-f0-9]{64}$",
+                  "type": "string"
+                },
+                "itemCount": {
+                  "minimum": 1,
+                  "maximum": 50,
+                  "type": "integer"
+                },
+                "status": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "pending"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "applied"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string"
+          },
+          "activatedAt": {
+            "format": "date-time",
+            "description": "RFC3339 UTC timestamp",
+            "type": "string",
+            "nullable": true
+          },
+          "activatedGeneration": {
+            "pattern": "^\\d+$",
+            "description": "64-bit integer represented as string",
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceSyncImportPlanResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "bindingId",
+              "generation",
+              "consentVersion",
+              "manifestHash",
+              "status",
+              "chunks",
+              "createdAt",
+              "activatedAt",
+              "activatedGeneration"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "bindingId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "generation": {
+                "pattern": "^\\d+$",
+                "description": "64-bit integer represented as string",
+                "type": "string"
+              },
+              "consentVersion": {
+                "minLength": 1,
+                "maxLength": 64,
+                "type": "string"
+              },
+              "manifestHash": {
+                "pattern": "^[a-f0-9]{64}$",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "pending"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "activated"
+                    ]
+                  }
+                ]
+              },
+              "chunks": {
+                "maxItems": 10000,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "chunkId",
+                    "index",
+                    "requestHash",
+                    "itemCount",
+                    "status"
+                  ],
+                  "properties": {
+                    "chunkId": {
+                      "format": "uuid",
+                      "description": "UUID v4 string",
+                      "type": "string"
+                    },
+                    "index": {
+                      "minimum": 0,
+                      "maximum": 9999,
+                      "type": "integer"
+                    },
+                    "requestHash": {
+                      "pattern": "^[a-f0-9]{64}$",
+                      "type": "string"
+                    },
+                    "itemCount": {
+                      "minimum": 1,
+                      "maximum": 50,
+                      "type": "integer"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "pending"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              },
+              "createdAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "activatedAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string",
+                "nullable": true
+              },
+              "activatedGeneration": {
+                "pattern": "^\\d+$",
+                "description": "64-bit integer represented as string",
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "DeviceSyncImportChunkResponse": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "importId",
+              "chunkId",
+              "status",
+              "results"
+            ],
+            "properties": {
+              "importId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "chunkId": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "applied"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "replayed"
+                    ]
+                  }
+                ]
+              },
+              "results": {
+                "minItems": 1,
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "commandId",
+                    "status",
+                    "entityId",
+                    "version",
+                    "familyCursor"
+                  ],
+                  "properties": {
+                    "commandId": {
+                      "format": "uuid",
+                      "description": "UUID v4 string",
+                      "type": "string"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "applied"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "conflict"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "error"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "replayed"
+                          ]
+                        }
+                      ]
+                    },
+                    "entityId": {
+                      "format": "uuid",
+                      "description": "UUID v4 string",
+                      "type": "string"
+                    },
+                    "version": {
+                      "pattern": "^\\d+$",
+                      "description": "64-bit integer represented as string",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "familyCursor": {
+                      "pattern": "^\\d+$",
+                      "description": "64-bit integer represented as string",
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "conflict": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "currentVersion",
+                        "currentEntity",
+                        "reason"
+                      ],
+                      "properties": {
+                        "currentVersion": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "currentEntity": {},
+                        "reason": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "SyncChangeItem": {
         "additionalProperties": false,
         "type": "object",
@@ -20780,10 +21842,2597 @@
         }
       }
     },
+    "/api/v1/sync/device-bindings": {
+      "post": {
+        "operationId": "enrollDeviceSyncBinding",
+        "summary": "Create or read back a pending, principal-scoped device sync binding",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "installationId",
+                  "localVaultId",
+                  "familyId",
+                  "consentVersion"
+                ],
+                "properties": {
+                  "installationId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "localVaultId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "familyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "consentVersion": {
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listDeviceSyncBindings",
+        "summary": "List device sync bindings owned by the authenticated principal",
+        "tags": [
+          "Sync"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "familyId",
+            "required": false,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "maxItems": 500,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "userId",
+                          "installationId",
+                          "localVaultId",
+                          "familyId",
+                          "status",
+                          "generation",
+                          "consentVersion",
+                          "createdAt",
+                          "updatedAt",
+                          "activatedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "userId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "installationId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "localVaultId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "pending"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "active"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "paused"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "revoked"
+                                ]
+                              }
+                            ]
+                          },
+                          "generation": {
+                            "pattern": "^\\d+$",
+                            "description": "64-bit integer represented as string",
+                            "type": "string"
+                          },
+                          "consentVersion": {
+                            "minLength": 1,
+                            "maxLength": 64,
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "activatedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}": {
+      "get": {
+        "operationId": "getDeviceSyncBinding",
+        "summary": "Read back one device sync binding owned by the authenticated principal",
+        "tags": [
+          "Sync"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/import-plans": {
+      "post": {
+        "operationId": "createDeviceSyncImportPlan",
+        "summary": "Persist an approved import manifest before sending any local records",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "importId",
+                  "generation",
+                  "consentVersion",
+                  "manifestHash",
+                  "chunks"
+                ],
+                "properties": {
+                  "importId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "generation": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
+                  },
+                  "consentVersion": {
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "type": "string"
+                  },
+                  "manifestHash": {
+                    "pattern": "^[a-f0-9]{64}$",
+                    "type": "string"
+                  },
+                  "chunks": {
+                    "maxItems": 10000,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "chunkId",
+                        "index",
+                        "requestHash",
+                        "itemCount"
+                      ],
+                      "properties": {
+                        "chunkId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "index": {
+                          "minimum": 0,
+                          "maximum": 9999,
+                          "type": "integer"
+                        },
+                        "requestHash": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string"
+                        },
+                        "itemCount": {
+                          "minimum": 1,
+                          "maximum": 50,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "bindingId",
+                        "generation",
+                        "consentVersion",
+                        "manifestHash",
+                        "status",
+                        "chunks",
+                        "createdAt",
+                        "activatedAt",
+                        "activatedGeneration"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "bindingId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "manifestHash": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "activated"
+                              ]
+                            }
+                          ]
+                        },
+                        "chunks": {
+                          "maxItems": 10000,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "chunkId",
+                              "index",
+                              "requestHash",
+                              "itemCount",
+                              "status"
+                            ],
+                            "properties": {
+                              "chunkId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "index": {
+                                "minimum": 0,
+                                "maximum": 9999,
+                                "type": "integer"
+                              },
+                              "requestHash": {
+                                "pattern": "^[a-f0-9]{64}$",
+                                "type": "string"
+                              },
+                              "itemCount": {
+                                "minimum": 1,
+                                "maximum": 50,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "pending"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "applied"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "activatedGeneration": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "bindingId",
+                        "generation",
+                        "consentVersion",
+                        "manifestHash",
+                        "status",
+                        "chunks",
+                        "createdAt",
+                        "activatedAt",
+                        "activatedGeneration"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "bindingId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "manifestHash": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "activated"
+                              ]
+                            }
+                          ]
+                        },
+                        "chunks": {
+                          "maxItems": 10000,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "chunkId",
+                              "index",
+                              "requestHash",
+                              "itemCount",
+                              "status"
+                            ],
+                            "properties": {
+                              "chunkId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "index": {
+                                "minimum": 0,
+                                "maximum": 9999,
+                                "type": "integer"
+                              },
+                              "requestHash": {
+                                "pattern": "^[a-f0-9]{64}$",
+                                "type": "string"
+                              },
+                              "itemCount": {
+                                "minimum": 1,
+                                "maximum": 50,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "pending"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "applied"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "activatedGeneration": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/import-plans/{importId}": {
+      "get": {
+        "operationId": "getDeviceSyncImportPlan",
+        "summary": "Read back import plan and durable chunk checkpoints",
+        "tags": [
+          "Sync"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "importId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "bindingId",
+                        "generation",
+                        "consentVersion",
+                        "manifestHash",
+                        "status",
+                        "chunks",
+                        "createdAt",
+                        "activatedAt",
+                        "activatedGeneration"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "bindingId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "manifestHash": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "activated"
+                              ]
+                            }
+                          ]
+                        },
+                        "chunks": {
+                          "maxItems": 10000,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "chunkId",
+                              "index",
+                              "requestHash",
+                              "itemCount",
+                              "status"
+                            ],
+                            "properties": {
+                              "chunkId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "index": {
+                                "minimum": 0,
+                                "maximum": 9999,
+                                "type": "integer"
+                              },
+                              "requestHash": {
+                                "pattern": "^[a-f0-9]{64}$",
+                                "type": "string"
+                              },
+                              "itemCount": {
+                                "minimum": 1,
+                                "maximum": 50,
+                                "type": "integer"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "pending"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "applied"
+                                    ]
+                                  }
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "activatedGeneration": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/import-plans/{importId}/chunks": {
+      "post": {
+        "operationId": "applyDeviceSyncImportChunk",
+        "summary": "Atomically validate, apply and checkpoint one approved import chunk",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "chunkId",
+                  "commands"
+                ],
+                "properties": {
+                  "chunkId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "commands": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "commandId",
+                        "familyId",
+                        "babyId",
+                        "entityType",
+                        "entityId",
+                        "operation",
+                        "baseVersion",
+                        "clientCreatedAt",
+                        "payload"
+                      ],
+                      "properties": {
+                        "commandId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "entityType": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "feeding"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "sleep"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "diaper"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "foodLog"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "supplementRecord"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growthMeasurement"
+                              ]
+                            }
+                          ]
+                        },
+                        "entityId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "operation": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "create"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "update"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "delete"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "restore"
+                              ]
+                            }
+                          ]
+                        },
+                        "baseVersion": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "clientCreatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "payload": {
+                          "type": "object",
+                          "additionalProperties": {}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "importId",
+            "required": true,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "importId",
+                        "chunkId",
+                        "status",
+                        "results"
+                      ],
+                      "properties": {
+                        "importId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "chunkId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "applied"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "replayed"
+                              ]
+                            }
+                          ]
+                        },
+                        "results": {
+                          "minItems": 1,
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "commandId",
+                              "status",
+                              "entityId",
+                              "version",
+                              "familyCursor"
+                            ],
+                            "properties": {
+                              "commandId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "status": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "applied"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "conflict"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "error"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "replayed"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "entityId": {
+                                "format": "uuid",
+                                "description": "UUID v4 string",
+                                "type": "string"
+                              },
+                              "version": {
+                                "pattern": "^\\d+$",
+                                "description": "64-bit integer represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "familyCursor": {
+                                "pattern": "^\\d+$",
+                                "description": "64-bit integer represented as string",
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "conflict": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "currentVersion",
+                                  "currentEntity",
+                                  "reason"
+                                ],
+                                "properties": {
+                                  "currentVersion": {
+                                    "pattern": "^\\d+$",
+                                    "description": "64-bit integer represented as string",
+                                    "type": "string"
+                                  },
+                                  "currentEntity": {},
+                                  "reason": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "error": {
+                                "additionalProperties": false,
+                                "type": "object",
+                                "required": [
+                                  "code",
+                                  "message"
+                                ],
+                                "properties": {
+                                  "code": {
+                                    "type": "string"
+                                  },
+                                  "message": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/activate": {
+      "post": {
+        "operationId": "activateDeviceSyncBinding",
+        "summary": "Activate a pending binding after every approved import chunk is committed",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "importId",
+                  "generation"
+                ],
+                "properties": {
+                  "importId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "generation": {
+                    "pattern": "^[0-9]+$",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/pause": {
+      "post": {
+        "operationId": "pauseDeviceSyncBinding",
+        "summary": "Pause a device sync binding and advance its generation",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "generation"
+                ],
+                "properties": {
+                  "generation": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/resume": {
+      "post": {
+        "operationId": "resumeDeviceSyncBinding",
+        "summary": "Resume a paused binding only after renewed consent",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "generation",
+                  "consentVersion"
+                ],
+                "properties": {
+                  "generation": {
+                    "pattern": "^[0-9]+$",
+                    "type": "string"
+                  },
+                  "consentVersion": {
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/device-bindings/{bindingId}/revoke": {
+      "post": {
+        "operationId": "revokeDeviceSyncBinding",
+        "summary": "Revoke a device sync binding and advance its generation",
+        "tags": [
+          "Sync"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "generation"
+                ],
+                "properties": {
+                  "generation": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "bindingId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "userId",
+                        "installationId",
+                        "localVaultId",
+                        "familyId",
+                        "status",
+                        "generation",
+                        "consentVersion",
+                        "createdAt",
+                        "updatedAt",
+                        "activatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "userId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "installationId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "localVaultId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "pending"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "active"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "paused"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "revoked"
+                              ]
+                            }
+                          ]
+                        },
+                        "generation": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "consentVersion": {
+                          "minLength": 1,
+                          "maxLength": 64,
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "activatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/sync/commands": {
       "post": {
         "operationId": "executeSyncCommands",
-        "summary": "Execute offline mutation command batch with per-command status",
+        "summary": "Execute offline mutation command batch with per-command status under a device binding generation",
         "tags": [
           "Sync"
         ],
@@ -20928,6 +24577,27 @@
             }
           }
         },
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "X-Device-Sync-Binding-ID",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "X-Device-Sync-Generation",
+            "required": true
+          }
+        ],
         "x-implementation-status": "READY",
         "responses": {
           "200": {
@@ -21068,6 +24738,36 @@
             }
           },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

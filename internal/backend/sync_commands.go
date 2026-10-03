@@ -268,6 +268,10 @@ func (s *Server) registerSyncCommands() {
 	s.Register("executeSyncCommands", false, s.executeNativeSyncCommands)
 }
 func (s *Server) executeNativeSyncCommands(ctx context.Context, r *Request) (Result, error) {
+	bindingID, generation, err := deviceSyncCommandGeneration(r)
+	if err != nil {
+		return Result{}, err
+	}
 	items, validBatch := r.Body["commands"].([]any)
 	if !validBatch || len(items) == 0 || len(items) > 50 {
 		return Result{}, invalid("Invalid command batch")
@@ -287,6 +291,9 @@ func (s *Server) executeNativeSyncCommands(ctx context.Context, r *Request) (Res
 	}
 	if err := json.Unmarshal(r.RawBody, &raw); err != nil || len(raw.Commands) != len(items) {
 		return Result{}, invalid("Missing command input")
+	}
+	if _, err = validateDeviceSyncAdmission(ctx, s.DB, r.Principal.UserID, bindingID, generation, "", ""); err != nil {
+		return Result{}, err
 	}
 	results := make([]Object, 0, len(items))
 	for i, item := range items {
@@ -333,12 +340,25 @@ func (s *Server) executeNativeSyncCommands(ctx context.Context, r *Request) (Res
 	return ok(Object{"results": results})
 }
 func (s *Server) executeNativeSyncCommand(ctx context.Context, r *Request, cmd Object, raw json.RawMessage) (recordOutcome, error) {
-	scope, err := babyScope(ctx, s.DB, r.Principal.UserID, text(cmd["babyId"]), true)
+	bindingID, generation, err := deviceSyncCommandGeneration(r)
 	if err != nil {
 		return recordOutcome{}, err
 	}
-	if scope.FamilyID != text(cmd["familyId"]) {
-		return recordOutcome{}, apiError(403, "BABY_SCOPE_MISMATCH", "Command family does not own baby")
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return recordOutcome{}, err
+	}
+	defer rollback(tx)
+	binding, err := validateDeviceSyncAdmission(ctx, tx, r.Principal.UserID, bindingID, generation, text(cmd["familyId"]), "SHARE")
+	if err != nil {
+		return recordOutcome{}, err
+	}
+	scope, err := babyScope(ctx, tx, r.Principal.UserID, text(cmd["babyId"]), true)
+	if err != nil {
+		return recordOutcome{}, err
+	}
+	if scope.FamilyID != text(binding["family_id"]) {
+		return recordOutcome{}, apiError(403, "DEVICE_SYNC_BINDING_SCOPE_MISMATCH", "Command baby does not belong to the device sync binding family")
 	}
 	operation, kind := text(cmd["operation"]), commandKind(text(cmd["entityType"]))
 	var hashVersion any
@@ -367,11 +387,7 @@ func (s *Server) executeNativeSyncCommand(ctx context.Context, r *Request, cmd O
 	if err != nil {
 		return recordOutcome{}, err
 	}
-	tx, err := s.DB.Begin(ctx)
-	if err != nil {
-		return recordOutcome{}, err
-	}
-	defer rollback(tx)
+	command.DeviceSyncBindingID, command.DeviceSyncGeneration = bindingID, generation
 	outcome, err := s.executeRecordCommandTx(ctx, tx, r, command)
 	if err != nil {
 		return recordOutcome{}, err

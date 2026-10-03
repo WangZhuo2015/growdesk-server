@@ -111,6 +111,145 @@ export const SyncCommandBatchResponseSchema = Type.Object(
 
 export type SyncCommandBatchResponse = Static<typeof SyncCommandBatchResponseSchema>;
 
+// Device-bound offline sync is opt-in. Enrollment never accepts a client
+// supplied status or generation; both are assigned by the server.
+export const DeviceSyncBindingStatusSchema = Type.Union([
+  Type.Literal("pending"),
+  Type.Literal("active"),
+  Type.Literal("paused"),
+  Type.Literal("revoked"),
+]);
+
+export const DeviceSyncBindingSchema = Type.Object(
+  {
+    id: UuidString,
+    userId: UuidString,
+    installationId: Type.String({ minLength: 1, maxLength: 128 }),
+    localVaultId: Type.String({ minLength: 1, maxLength: 128 }),
+    familyId: UuidString,
+    status: DeviceSyncBindingStatusSchema,
+    generation: BigIntString,
+    consentVersion: Type.String({ minLength: 1, maxLength: 64 }),
+    createdAt: DateTimeString,
+    updatedAt: DateTimeString,
+    activatedAt: Nullable(DateTimeString),
+  },
+  { $id: "DeviceSyncBinding", additionalProperties: false }
+);
+
+export type DeviceSyncBinding = Static<typeof DeviceSyncBindingSchema>;
+
+export const DeviceSyncBindingEnrollmentRequestSchema = Type.Object(
+  {
+    installationId: Type.String({ minLength: 1, maxLength: 128 }),
+    localVaultId: Type.String({ minLength: 1, maxLength: 128 }),
+    familyId: UuidString,
+    consentVersion: Type.String({ minLength: 1, maxLength: 64 }),
+  },
+  { $id: "DeviceSyncBindingEnrollmentRequest", additionalProperties: false }
+);
+
+export type DeviceSyncBindingEnrollmentRequest = Static<typeof DeviceSyncBindingEnrollmentRequestSchema>;
+
+export const DeviceSyncBindingResponseSchema = Type.Object(
+  { data: DeviceSyncBindingSchema },
+  { $id: "DeviceSyncBindingResponse", additionalProperties: false }
+);
+
+export const DeviceSyncBindingListResponseSchema = Type.Object(
+  { data: Type.Array(DeviceSyncBindingSchema, { maxItems: 500 }) },
+  { $id: "DeviceSyncBindingListResponse", additionalProperties: false }
+);
+
+export const DeviceSyncBindingGenerationRequestSchema = Type.Object(
+  { generation: BigIntString },
+  { $id: "DeviceSyncBindingGenerationRequest", additionalProperties: false }
+);
+
+export type DeviceSyncBindingGenerationRequest = Static<typeof DeviceSyncBindingGenerationRequestSchema>;
+
+export const DeviceSyncImportChunkDescriptorSchema = Type.Object(
+  {
+    chunkId: UuidString,
+    index: Type.Integer({ minimum: 0, maximum: 9999 }),
+    requestHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    itemCount: Type.Integer({ minimum: 1, maximum: 50 }),
+  },
+  { $id: "DeviceSyncImportChunkDescriptor", additionalProperties: false }
+);
+
+export const DeviceSyncImportPlanRequestSchema = Type.Object(
+  {
+    importId: UuidString,
+    generation: BigIntString,
+    consentVersion: Type.String({ minLength: 1, maxLength: 64 }),
+    manifestHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    chunks: Type.Array(DeviceSyncImportChunkDescriptorSchema, { maxItems: 10000 }),
+  },
+  { $id: "DeviceSyncImportPlanRequest", additionalProperties: false }
+);
+
+export type DeviceSyncImportPlanRequest = Static<typeof DeviceSyncImportPlanRequestSchema>;
+
+export const DeviceSyncImportChunkRequestSchema = Type.Object(
+  {
+    chunkId: UuidString,
+    commands: Type.Array(SyncCommandSchema, { minItems: 1, maxItems: 50 }),
+  },
+  { $id: "DeviceSyncImportChunkRequest", additionalProperties: false }
+);
+
+export type DeviceSyncImportChunkRequest = Static<typeof DeviceSyncImportChunkRequestSchema>;
+
+export const DeviceSyncImportChunkStateSchema = Type.Object(
+  {
+    chunkId: UuidString,
+    index: Type.Integer({ minimum: 0, maximum: 9999 }),
+    requestHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    itemCount: Type.Integer({ minimum: 1, maximum: 50 }),
+    status: Type.Union([Type.Literal("pending"), Type.Literal("applied")]),
+  },
+  { $id: "DeviceSyncImportChunkState", additionalProperties: false }
+);
+
+export const DeviceSyncImportPlanSchema = Type.Object(
+  {
+    id: UuidString,
+    bindingId: UuidString,
+    generation: BigIntString,
+    consentVersion: Type.String({ minLength: 1, maxLength: 64 }),
+    manifestHash: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+    status: Type.Union([Type.Literal("pending"), Type.Literal("activated")]),
+    chunks: Type.Array(DeviceSyncImportChunkStateSchema, { maxItems: 10000 }),
+    createdAt: DateTimeString,
+    activatedAt: Nullable(DateTimeString),
+    activatedGeneration: Nullable(BigIntString),
+  },
+  { $id: "DeviceSyncImportPlan", additionalProperties: false }
+);
+
+export const DeviceSyncImportPlanResponseSchema = Type.Object(
+  { data: DeviceSyncImportPlanSchema },
+  { $id: "DeviceSyncImportPlanResponse", additionalProperties: false }
+);
+
+export const DeviceSyncImportChunkResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        importId: UuidString,
+        chunkId: UuidString,
+        status: Type.Union([Type.Literal("applied"), Type.Literal("replayed")]),
+        results: Type.Array(SyncCommandResultItemSchema, { minItems: 1, maxItems: 50 }),
+      },
+      { additionalProperties: false }
+    ),
+  },
+  { $id: "DeviceSyncImportChunkResponse", additionalProperties: false }
+);
+
+export type DeviceSyncImportChunkResponse = Static<typeof DeviceSyncImportChunkResponseSchema>;
+
 // ==========================================
 // 2. Incremental Change Feed
 // ==========================================

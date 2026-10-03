@@ -1,0 +1,45 @@
+{
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "sourceBaseCommit": "ff967e876616f0a03367c1c5f1d639b211fd7d54",
+  "sourceFileHashes": {
+    "go.mod": "5f107a29e7154b98b2d97d5957f6ef9a0be49208caf61f0c1f057a8d2bc2288d",
+    "go.sum": "2d1754664cca36fb45a969eddc781a9f8ae261c337fa99faaff3b7c1ba57183c",
+    "packages/contracts/src/sync.ts": "d56ad060bf536b1584542f965763da397c97cd5e85cfda9d5f09d0afa1002e23",
+    "packages/contracts/src/routes.ts": "add27507e9180e1584bd0a65d944f3f0d40485675260074df609b435c9abd51b",
+    "scripts/contract-generator.mjs": "dc189d3e30423ac7423d91259a4aa6e7979f04f0299a39faf362b7fa7f421068",
+    "contracts/openapi.json": "13e3b220fc259d4a71b99227959bed14b69917f83449b5ff24a4c38de811ec35",
+    "prisma/schema.prisma": "875ec911af739bb69583b5a25c063bfe0d1c00ec77f74f81d81ab3772056ce0d",
+    "prisma/migrations/202609210028_device_sync_binding/migration.sql": "e602c8e8a001a9c92ba4fadc13d89ef2e21a77773e230e5781651ac721dc1fcf",
+    "packages/contracts/src/nutrition.ts": "2d52619d3736c9cd0811757940e6c3dc409f85361171ddbfd3d2f7935dfe27d7",
+    "packages/contracts/src/records.ts": "dbefc8dddf2512a6bbaf161f8cdecf98d57154dc913b55da0598235cbc27456c",
+    "internal/backend/nutrition_records.go": "74da1b2c7328f8a3ef48ac5d1b6323ee3347bd55adf41b7014f5687624253e15",
+    "internal/backend/nutrition_profile.go": "4afb96704fea1d719247f012560d001349b3a84b4cdc06a751e91c2c8bb79bf9",
+    "internal/backend/device_sync_binding.go": "6a202793e6105dda02d9768a3edc0a53096410d168b6805ba13e455725e5d89b",
+    "internal/backend/sync_commands.go": "c56aefa50bd46dfb706f7350525686ae3e80cc6e93fe209f3712eb2dc6c426b6",
+    "internal/backend/device_sync_binding_test.go": "144e5f7a1fdf58d554bd3e4063e8abdda3290917814b818a76ebc1a7e2480ec8",
+    "internal/backend/record_mutation.go": "a7d60ea92b4802528da60445825feafa2e95200c9b4ffd7990f3f0d684dc9bb4",
+    "internal/backend/register.go": "bb29af3d6793673bf8bedd9845fc5ce232d05926184d33489adeff5dd39e5010",
+    "internal/backend/server.go": "eb4ea093d6bd134a9fe953b070db7c20379aa0903774bb2a5f32a34a38fcb8c8",
+    "internal/backend/foundation_test.go": "4a11b3876029950f1d20661f920e6d0e9cc24d14c16b771f06de0bcdb8579fc2",
+    "internal/backend/native_sync_test.go": "689bafadc7f7687a436e94f5d1e28dd378a2a721f2985106d0bac5c42739c87d",
+    "scripts/go-device-sync-binding-integration.py": "3e66c895c0d1efa1bbd4c6d51acf9679fc2e33f30feeda1e3c4b677c5a66d07a"
+  },
+  "changedSourceHashes": {
+    "internal/backend/device_sync_binding.go": "6a202793e6105dda02d9768a3edc0a53096410d168b6805ba13e455725e5d89b",
+    "scripts/go-device-sync-binding-integration.py": "3e66c895c0d1efa1bbd4c6d51acf9679fc2e33f30feeda1e3c4b677c5a66d07a"
+  },
+  "apiBinarySha256": "bcd747c2cece0e4f98d8c3b1f30486dae11abc282fab8221df9e2319302e8efd",
+  "httpEvidence": "evidence/tasks/IOS_WEB_PARITY_20261002/device-sync-binding/http-result-20261003T153034Z-be262304.json",
+  "httpEvidenceSha256": "f19bcc2f28118b100ef0a1c829ce76985274ae0ab8cbb39a9edf70ccbae71e78",
+  "httpAssertions": 198,
+  "cleanupPassed": true,
+  "oldRegressionEvidence": [
+    {
+      "path": "evidence/tasks/IOS_WEB_PARITY_20261002/device-sync-binding/http-result-20261003T152814Z-9f40b70b.json",
+      "sha256": "101073d38e5ce0ac8843e63d8985af0c31532eb69f56fbbbe9d252099903315e",
+      "observed": "HTTP 409 CONCURRENT_MODIFICATION in concurrent enroll/pause race; cleanupPassed=true"
+    }
+  ],
+  "reportPath": "evidence/tasks/IOS_WEB_PARITY_20261002/device-sync-binding/LOCK_ORDER_FIX.md",
+  "reportSha256": "7f604719786fac1cd28ac3c76b5f18e47e9ec24babbd95fd34b603b30bd422e0"
+}
