@@ -1,0 +1,63 @@
+{
+  "status": "PASS",
+  "scope": "recent-session reauthentication for POST /me/export and DELETE /me",
+  "sourceRevision": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "sourceFileHashes": {
+    "internal/backend/reauth.go": "8d1dc0fc7b653f1a008e751493ea63bad18c212900b467372a255122f96296ca",
+    "internal/backend/reauth_test.go": "bf8374ebb671897e6e28de5028eddcc3a188dfd467f04465e35f059ea8f50ee8",
+    "internal/backend/auth.go": "37f09454b20c1a8c762b87075417f661a655fc5b99985fb304687222e74408c5",
+    "internal/backend/native_exports.go": "ddd17ec2a100c9fd35c15d96c089c8699336de1789017533f6e4391f7116f7d7",
+    "packages/contracts/src/routes.ts": "c1196785efb8fed4c97c8aebcf729ac5e02afb5ddc35ea88155f3d5aef1fd8e4",
+    "contracts/openapi.json": "6a097a120d85f83366214994a3b89da9a54971dc1710984740e642dec1662885",
+    "scripts/go-me-reauth-integration.py": "195959a92eac1671c6d2479632a6260dd25df7fd21016252f2de8d41d0dc9ffa"
+  },
+  "assertionCount": 25,
+  "cases": [
+    "session older than five minutes is denied for export and deletion without side effects",
+    "refresh rotates bearer credentials but does not renew reauthentication age",
+    "fresh password login permits export and persists one queued user-owned task",
+    "revoked older session cannot access profile or create exports",
+    "fresh session permits deletion, revokes every session/refresh, and preserves shared family/baby access",
+    "another family member export is scoped to that authenticated principal"
+  ],
+  "binarySha256": "3c847513eab1aecd7c8b425d70a9eea5654de4c7e5f377206c86f1331016d361",
+  "cleanup": {
+    "apiStopped": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "minioStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "ownedTenantDatabaseRemovedWithPrivateCluster": true,
+    "buildDirectoryRemoved": true
+  },
+  "ownedEnvironment": {
+    "postgresHost": "127.0.0.1",
+    "postgresPort": 49225,
+    "redisHost": "127.0.0.1",
+    "redisPort": 49226,
+    "minioHost": "127.0.0.1",
+    "minioPort": 49227,
+    "apiHost": "127.0.0.1",
+    "apiPort": 49229,
+    "database": "test_…",
+    "role": "test_…",
+    "roleIsSuperuser": false,
+    "tenantUsernamePrefix": "test_me_reauth_",
+    "familyPrefix": "test_family_me_reauth_",
+    "babyPrefix": "test_baby_me_reauth_",
+    "workerStarted": false,
+    "externalAI": false,
+    "pushCredentialsPresent": false,
+    "prismaMigrationsApplied": 25,
+    "nativeMigrationsApplied": 3
+  },
+  "tenant": {
+    "usersCreated": 3,
+    "allUsernamesUseTestPrefix": true,
+    "familiesUseTestPrefix": true,
+    "babiesUseTestPrefix": true,
+    "familyAndBabyPreservedAfterOwnerDeletion": true
+  },
+  "workerStarted": false,
+  "databaseDiagnostics": []
+}

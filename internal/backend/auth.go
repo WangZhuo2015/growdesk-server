@@ -238,6 +238,15 @@ func (s *Server) deleteCurrentUser(ctx context.Context, r *Request) (Result, err
 		return Result{}, err
 	}
 	defer rollback(tx)
+	if err = lockUser(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
+	if _, err = liveSession(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
+		return Result{}, err
+	}
+	if err = requireRecentSessionReauthentication(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
+		return Result{}, err
+	}
 	tag, err := tx.Exec(ctx, "UPDATE users SET deleted_at=NOW(), updated_at=NOW() WHERE id=$1 AND deleted_at IS NULL", r.Principal.UserID)
 	if err != nil {
 		return Result{}, err

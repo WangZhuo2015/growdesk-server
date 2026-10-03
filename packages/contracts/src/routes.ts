@@ -391,16 +391,23 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     summary: "Queue asynchronous user data export task",
     tags: ["User"],
     implementationStatus: "PLANNED_SH03",
-    responses: { 202: ExportUserDataResponseSchema, 401: ApiErrorRef },
+    headers: Type.Object({
+      "Idempotency-Key": Type.Optional(Type.String({
+        minLength: 1,
+        maxLength: 128,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+      })),
+    }, { additionalProperties: true }),
+    responses: { 202: ExportUserDataResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef, 429: ApiErrorRef },
   },
   {
     method: "DELETE",
     path: "/api/v1/me",
     operationId: "deleteCurrentUser",
-    summary: "Schedule user account deletion",
+    summary: "Soft-delete user account and revoke its sessions synchronously",
     tags: ["User"],
     implementationStatus: "PLANNED_SH03",
-    responses: { 200: DeleteUserResponseSchema, 401: ApiErrorRef },
+    responses: { 200: DeleteUserResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef },
   },
 
   // 4. Family & Baby

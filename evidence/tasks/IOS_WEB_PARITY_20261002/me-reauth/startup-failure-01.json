@@ -1,0 +1,28 @@
+{
+  "status": "FAIL",
+  "scope": "recent-session reauthentication for POST /me/export and DELETE /me",
+  "sourceRevision": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "sourceFileHashes": {
+    "internal/backend/reauth.go": "8d1dc0fc7b653f1a008e751493ea63bad18c212900b467372a255122f96296ca",
+    "internal/backend/reauth_test.go": "bf8374ebb671897e6e28de5028eddcc3a188dfd467f04465e35f059ea8f50ee8",
+    "internal/backend/auth.go": "37f09454b20c1a8c762b87075417f661a655fc5b99985fb304687222e74408c5",
+    "internal/backend/native_exports.go": "ddd17ec2a100c9fd35c15d96c089c8699336de1789017533f6e4391f7116f7d7",
+    "packages/contracts/src/routes.ts": "c1196785efb8fed4c97c8aebcf729ac5e02afb5ddc35ea88155f3d5aef1fd8e4",
+    "contracts/openapi.json": "7eec76e9505adc0417cf9a3aae1b8d3c11b49829bcbcf8f681df3478672c5871",
+    "scripts/go-me-reauth-integration.py": "9915649ac34c63c9202cb7d98760f78b3ddc365c8ac3c301c72f56f6c17a068d"
+  },
+  "assertionCount": 0,
+  "cases": [],
+  "binarySha256": "6344eb0ca23429bdc68de5828e525316bdbc7ba9b81554e74c20a98c4db3449e",
+  "cleanup": {
+    "apiStopped": false,
+    "postgresStopped": false,
+    "redisStopped": false,
+    "minioStopped": false,
+    "privateTempDirectoryRemoved": true,
+    "ownedTenantDatabaseRemovedWithPrivateCluster": false,
+    "buildDirectoryRemoved": true
+  },
+  "failureType": "RuntimeError",
+  "failure": "owned test infrastructure command failed: pg_ctl"
+}

@@ -4906,7 +4906,7 @@
       },
       "delete": {
         "operationId": "deleteCurrentUser",
-        "summary": "Schedule user account deletion",
+        "summary": "Soft-delete user account and revoke its sessions synchronously",
         "tags": [
           "User"
         ],
@@ -4952,6 +4952,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
@@ -4962,6 +4972,19 @@
         "summary": "Queue asynchronous user data export task",
         "tags": [
           "User"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
+          }
         ],
         "x-implementation-status": "PLANNED_SH03",
         "responses": {
@@ -5002,7 +5025,47 @@
               }
             }
           },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

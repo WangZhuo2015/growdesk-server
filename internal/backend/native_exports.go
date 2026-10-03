@@ -3,11 +3,35 @@ package backend
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 const nativeExportMaxBytes = 12 * 1024 * 1024
+
+const nativeExportIdempotencyScope = "native-user-export:"
+
+var nativeExportIdempotencyKeyPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
+
+func nativeExportIdempotencyKey(values []string) (string, error) {
+	if len(values) == 0 {
+		return "", nil
+	}
+	if len(values) != 1 || !nativeExportIdempotencyKeyPattern.MatchString(values[0]) {
+		return "", apiError(400, "INVALID_IDEMPOTENCY_KEY", "Idempotency-Key must be 1-128 ASCII letters, digits, dots, underscores, colons, or hyphens")
+	}
+	return values[0], nil
+}
+
+func nativeExportRequestHash(body Object) (string, error) {
+	if body == nil {
+		body = Object{}
+	}
+	return snapshotHash(Object{"operation": "user_data_export", "body": body})
+}
 
 type nativeExportFamily struct {
 	ID                string `json:"id"`
@@ -137,6 +161,40 @@ func (s *Server) exportNativeUserData(ctx context.Context, r *Request) (Result, 
 	if _, err = liveSession(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
 		return Result{}, err
 	}
+	if err = requireRecentSessionReauthentication(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
+		return Result{}, err
+	}
+	key, err := nativeExportIdempotencyKey(r.HTTP.Header.Values("Idempotency-Key"))
+	if err != nil {
+		return Result{}, err
+	}
+	requestHash := ""
+	receiptKey := nativeExportIdempotencyScope + key
+	if key != "" {
+		requestHash, err = nativeExportRequestHash(r.Body)
+		if err != nil {
+			return Result{}, err
+		}
+		receipt, lookupErr := one(ctx, tx, `SELECT to_jsonb(i) FROM idempotency_receipts i
+			WHERE actor_id=$1 AND scope_id=$2 AND command_id=$3`, r.Principal.UserID, r.Principal.UserID, receiptKey)
+		if lookupErr == nil {
+			if text(receipt["request_hash"]) != requestHash {
+				return Result{}, reusedKey(key)
+			}
+			response := obj(receipt["response_body"])
+			if integer(receipt["result_code"]) != 202 || response == nil ||
+				text(response["status"]) != "queued" || !actionUUID.MatchString(text(response["taskId"])) {
+				return Result{}, apiError(500, "EXPORT_RECEIPT_INVALID", "Stored export receipt is invalid")
+			}
+			if err = tx.Commit(ctx); err != nil {
+				return Result{}, err
+			}
+			return Result{Status: 202, Body: envelope(response)}, nil
+		}
+		if !errors.Is(lookupErr, pgx.ErrNoRows) {
+			return Result{}, lookupErr
+		}
+	}
 	if err = nativeTaskOwner(ctx, tx, nativeTaskInput{Version: 1, UserID: r.Principal.UserID}, false); err != nil {
 		return Result{}, err
 	}
@@ -144,10 +202,21 @@ func (s *Server) exportNativeUserData(ctx context.Context, r *Request) (Result, 
 	if err = enqueueNativeTask(ctx, tx, id, "user_data_export", nativeTaskInput{Version: 1, UserID: r.Principal.UserID}); err != nil {
 		return Result{}, err
 	}
+	response := Object{"taskId": id, "status": "queued"}
+	if key != "" {
+		body, marshalErr := jsonText(response)
+		if marshalErr != nil {
+			return Result{}, marshalErr
+		}
+		if _, err = tx.Exec(ctx, `INSERT INTO idempotency_receipts(actor_id,scope_id,command_id,request_hash,result_code,response_body,completed_at)
+			VALUES($1,$2,$3,$4,202,$5::jsonb,NOW())`, r.Principal.UserID, r.Principal.UserID, receiptKey, requestHash, body); err != nil {
+			return Result{}, err
+		}
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}
-	return Result{Status: 202, Body: envelope(Object{"taskId": id, "status": "queued"})}, nil
+	return Result{Status: 202, Body: envelope(response)}, nil
 }
 
 func (s *Server) downloadNativeUserExport(ctx context.Context, r *Request) (Result, error) {

@@ -1,0 +1,50 @@
+{
+  "status": "FAIL",
+  "scope": "recent-session reauthentication, principal-scoped POST /me/export idempotency, and DELETE /me",
+  "sourceRevision": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "sourceFileHashes": {
+    "internal/backend/reauth.go": "8d1dc0fc7b653f1a008e751493ea63bad18c212900b467372a255122f96296ca",
+    "internal/backend/reauth_test.go": "bf8374ebb671897e6e28de5028eddcc3a188dfd467f04465e35f059ea8f50ee8",
+    "internal/backend/auth.go": "37f09454b20c1a8c762b87075417f661a655fc5b99985fb304687222e74408c5",
+    "internal/backend/native_exports.go": "3771ca31a7952d817c3e06d31f7a1b4814a220fdfb974d3a5b9f7f388e50652a",
+    "internal/backend/native_export_idempotency_test.go": "fba110a3507e460759bb0d1db3d6d8087deaa6286ee400897af61aaeccfc9e0f",
+    "packages/contracts/src/routes.ts": "f1067b6f50a49e83cbf92ff5b5bec6b48dfd42d16b962f4180a716175cebf5a9",
+    "contracts/openapi.json": "d15ff1d29857960d59171435b5cd3df6d4cff8450b313caa9075e5b613f7b88a",
+    "scripts/go-me-reauth-integration.py": "a5c6bbfffcce193e06707ab42d3407faaf0ec6fe2bbfc0048c28857486cfdb05"
+  },
+  "assertionCount": 0,
+  "cases": [],
+  "binarySha256": "4e5db1884f223e661dc013f9691db87ba8be48f66a7b862e00fe5a974f3075c5",
+  "cleanup": {
+    "apiStopped": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "minioStopped": true,
+    "privateTempDirectoryRemoved": true,
+    "ownedTenantDatabaseRemovedWithPrivateCluster": true,
+    "buildDirectoryRemoved": true
+  },
+  "ownedEnvironment": {
+    "postgresHost": "127.0.0.1",
+    "postgresPort": 52102,
+    "redisHost": "127.0.0.1",
+    "redisPort": 52103,
+    "minioHost": "127.0.0.1",
+    "minioPort": 52104,
+    "apiHost": "127.0.0.1",
+    "apiPort": 52106,
+    "database": "test_…",
+    "role": "test_…",
+    "roleIsSuperuser": false,
+    "tenantUsernamePrefix": "test_me_reauth_",
+    "familyPrefix": "test_family_me_reauth_",
+    "babyPrefix": "test_baby_me_reauth_",
+    "workerStarted": false,
+    "externalAI": false,
+    "pushCredentialsPresent": false,
+    "prismaMigrationsApplied": 25,
+    "nativeMigrationsApplied": 3
+  },
+  "failureType": "AssertionError",
+  "failure": "foreign export request created a task for the deleted account"
+}
