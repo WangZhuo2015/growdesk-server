@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -55,6 +56,24 @@ func TestUpdateVaccineRecordContractRequiresVersionAndReceiptKey(t *testing.T) {
 	}
 	if err := route.Validate(request, params, Object{"baseVersion": "1", "notes": "test note", "unknown": true}); err == nil {
 		t.Fatal("unknown update field was accepted")
+	}
+}
+
+func TestUpdateVaccineRecordRejectsDuplicateIdempotencyHeadersBeforeTransaction(t *testing.T) {
+	request, err := http.NewRequest(http.MethodPatch, "http://127.0.0.1/api/v1/babies/11111111-1111-4111-8111-111111111111/vaccines/records/22222222-2222-4222-8222-222222222222", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request.Header.Add("Idempotency-Key", "test_vaccine_first")
+	request.Header.Add("Idempotency-Key", "test_vaccine_second")
+
+	_, err = (&Server{}).updateVaccineRecord(context.Background(), &Request{HTTP: request})
+	if err == nil {
+		t.Fatal("duplicate Idempotency-Key values were accepted")
+	}
+	appErr := normalizedError(err)
+	if appErr.Status != http.StatusBadRequest || appErr.Code != "BAD_REQUEST" {
+		t.Fatalf("duplicate receipt keys should fail before transaction: %+v", appErr)
 	}
 }
 

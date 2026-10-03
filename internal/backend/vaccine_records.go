@@ -245,7 +245,11 @@ func syncVaccineSelection(ctx context.Context, tx pgx.Tx, scope Scope, old, upda
 }
 
 func (s *Server) updateVaccineRecord(ctx context.Context, r *Request) (Result, error) {
-	key := r.HTTP.Header.Get("Idempotency-Key")
+	keys := r.HTTP.Header.Values("Idempotency-Key")
+	if len(keys) != 1 {
+		return Result{}, invalid("Exactly one Idempotency-Key is required")
+	}
+	key := keys[0]
 	if key == "" {
 		return Result{}, invalid("Idempotency-Key is required")
 	}

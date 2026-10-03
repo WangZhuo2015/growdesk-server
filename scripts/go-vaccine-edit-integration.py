@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import http.client
 import json
 import os
 from pathlib import Path
@@ -479,6 +480,30 @@ def request(base: str, method: str, path: str, *, body=None, token=None, key=Non
         return error.code, json.loads(error.read()), error.headers.get("X-Request-ID")
 
 
+def request_with_duplicate_idempotency_headers(base: str, method: str, path: str, *, body, token: str,
+                                               first_key: str, second_key: str):
+    """Send two literal header fields; urllib's normal mapping collapses duplicates."""
+    parsed = urllib.parse.urlsplit(base)
+    if parsed.scheme != "http" or parsed.hostname != "127.0.0.1" or parsed.port is None:
+        raise RuntimeError("duplicate-header probe requires an owned loopback HTTP API")
+    encoded = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
+    connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=15)
+    try:
+        connection.putrequest(method, path, skip_accept_encoding=True)
+        connection.putheader("Accept", "application/json")
+        connection.putheader("Content-Type", "application/json")
+        connection.putheader("Authorization", "Bearer " + token)
+        connection.putheader("Idempotency-Key", first_key)
+        connection.putheader("Idempotency-Key", second_key)
+        connection.putheader("Content-Length", str(len(encoded)))
+        connection.endheaders(encoded)
+        response = connection.getresponse()
+        payload = json.loads(response.read())
+        return response.status, payload, response.getheader("X-Request-ID"), len(encoded)
+    finally:
+        connection.close()
+
+
 def expect(observations: list[dict[str, object]], base: str, method: str, path: str,
            status: int, *, body=None, token=None, key=None, name: str):
     actual, payload, request_id = request(base, method, path, body=body, token=token, key=key)
@@ -488,6 +513,20 @@ def expect(observations: list[dict[str, object]], base: str, method: str, path: 
     code = payload.get("error", {}).get("code") if status >= 400 and isinstance(payload, dict) else None
     # Signed sync cursors are request capabilities; retain only the route in evidence.
     observations.append({"case": name, "method": method, "path": path.split("?", 1)[0], "status": actual, "errorCode": code})
+    return payload
+
+
+def expect_duplicate_idempotency_rejection(observations: list[dict[str, object]], base: str, path: str,
+                                           *, body, token: str, first_key: str, second_key: str, name: str):
+    actual, payload, request_id, body_byte_count = request_with_duplicate_idempotency_headers(
+        base, "PATCH", path, body=body, token=token, first_key=first_key, second_key=second_key,
+    )
+    code = payload.get("error", {}).get("code") if isinstance(payload, dict) else None
+    if actual != 400 or code != "BAD_REQUEST":
+        raise AssertionError(f"{name}: expected HTTP 400 BAD_REQUEST after body parsing, got {actual} ({code}, requestId={request_id})")
+    observations.append({"case": name, "method": "PATCH", "path": path.split("?", 1)[0],
+                         "status": actual, "errorCode": code, "rawDuplicateHeaderValues": 2,
+                         "contentLengthDeclared": body_byte_count})
     return payload
 
 
@@ -635,6 +674,37 @@ def exercise(stack: OwnedStack) -> dict[str, object]:
     if state_after_rejections != ["2", True, "2026-06-04", "test completed edit"]:
         raise AssertionError("rejected edits mutated vaccine record")
 
+    duplicate_key_a = "test_vaccine_duplicate_a_" + suffix
+    duplicate_key_b = "test_vaccine_duplicate_b_" + suffix
+
+    def duplicate_header_state():
+        cursor = stack.sql(f"SELECT cursor::text FROM family_sync_states WHERE family_id='{family_id}';")
+        changes = stack.sql(
+            f"SELECT count(*)::text FROM family_changes WHERE family_id='{family_id}' "
+            f"AND entity_type='vaccine' AND entity_id='{record_id}';"
+        )
+        receipts = stack.sql(
+            f"SELECT count(*)::text FROM idempotency_receipts WHERE actor_id='{owner['user']['id']}' "
+            f"AND scope_id='{family_id}' AND command_id IN "
+            f"('vaccine-record-update:{duplicate_key_a}','vaccine-record-update:{duplicate_key_b}');"
+        )
+        record = json.loads(stack.sql(
+            f"SELECT jsonb_build_array(version::text,is_completed,completed_date::text,notes) "
+            f"FROM vaccine_records WHERE id='{record_id}' AND family_id='{family_id}' AND baby_id='{baby_id}';"
+        ))
+        return [cursor, changes, receipts, record]
+
+    before_duplicate = duplicate_header_state()
+    duplicate_response = expect_duplicate_idempotency_rejection(
+        observations, stack.base, path, token=owner_token,
+        first_key=duplicate_key_a, second_key=duplicate_key_b,
+        body={"baseVersion": "2", "notes": "test duplicate key must not mutate"},
+        name="reject raw duplicate Idempotency-Key headers before transaction",
+    )
+    after_duplicate = duplicate_header_state()
+    if after_duplicate != before_duplicate:
+        raise AssertionError("duplicate Idempotency-Key rejection changed cursor, feed, receipt, or vaccine record")
+
     revoke = {
         "baseVersion": "2", "isCompleted": False, "completedDate": None,
         "scheduledDate": "2026-06-10", "notes": "test completion revoked",
@@ -759,6 +829,14 @@ def exercise(stack: OwnedStack) -> dict[str, object]:
             "activeTimelineRows": final_state[3],
             "timelineReactivated": restored_timeline[1],
         },
+        "duplicateIdempotencyHeaderProbe": {
+            "rawHeaderValues": 2,
+            "httpStatus": 400,
+            "errorCode": duplicate_response.get("error", {}).get("code"),
+            "before": before_duplicate,
+            "after": after_duplicate,
+            "unchanged": before_duplicate == after_duplicate,
+        },
         "migrations": {"prismaCount": len(stack.migrated), "nativeMigrationsApplied": True},
         "providerIsolation": {"ai": "fixture-only", "workerStarted": False, "pushCredentialsPresent": False},
     }
@@ -768,7 +846,7 @@ def main() -> int:
     if not __debug__:
         raise RuntimeError("Refusing optimized Python: regression assertions must remain enabled")
     evidence = {
-        "scope": "Go vaccine-record PATCH and fixed OpenAPI contract",
+        "scope": "Go vaccine-record PATCH and duplicate Idempotency-Key rejection",
         "status": "RUNNING",
         "sourceRevision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "sourceFileHashes": {},
@@ -785,7 +863,7 @@ def main() -> int:
         name: sha256_file(ROOT / name) for name in source_files if (ROOT / name).is_file()
     }
     EVIDENCE.mkdir(parents=True, exist_ok=True)
-    result_path = EVIDENCE / "http-result.json"
+    result_path = EVIDENCE / "http-result-duplicate-key-content-length.json"
     stack: OwnedStack | None = None
     return_code = 0
     try:
