@@ -2770,74 +2770,125 @@
         }
       },
       "SyncSnapshot": {
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "id",
-          "scope",
-          "epoch",
-          "highWater",
-          "status",
-          "pageCount",
-          "expiresAt"
-        ],
-        "properties": {
-          "id": {
-            "format": "uuid",
-            "description": "UUID v4 string",
-            "type": "string"
-          },
-          "scope": {
-            "type": "string"
-          },
-          "epoch": {
-            "format": "uuid",
-            "description": "UUID v4 string",
-            "type": "string"
-          },
-          "highWater": {
-            "pattern": "^\\d+$",
-            "description": "64-bit integer represented as string",
-            "type": "string"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "queued"
-                ]
+        "anyOf": [
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "scope",
+              "epoch",
+              "highWater",
+              "pageCount",
+              "expiresAt",
+              "status",
+              "nextCursor"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
               },
-              {
-                "type": "string",
-                "enum": [
-                  "processing"
-                ]
+              "scope": {
+                "type": "string"
               },
-              {
+              "epoch": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "highWater": {
+                "pattern": "^\\d+$",
+                "description": "64-bit integer represented as string",
+                "type": "string"
+              },
+              "pageCount": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "expiresAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "status": {
                 "type": "string",
                 "enum": [
                   "ready"
                 ]
               },
-              {
-                "type": "string",
-                "enum": [
-                  "failed"
+              "nextCursor": {
+                "minLength": 1,
+                "type": "string"
+              }
+            }
+          },
+          {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "scope",
+              "epoch",
+              "highWater",
+              "pageCount",
+              "expiresAt",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "scope": {
+                "type": "string"
+              },
+              "epoch": {
+                "format": "uuid",
+                "description": "UUID v4 string",
+                "type": "string"
+              },
+              "highWater": {
+                "pattern": "^\\d+$",
+                "description": "64-bit integer represented as string",
+                "type": "string"
+              },
+              "pageCount": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "expiresAt": {
+                "format": "date-time",
+                "description": "RFC3339 UTC timestamp",
+                "type": "string"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "queued"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "processing"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "failed"
+                    ]
+                  }
                 ]
               }
-            ]
-          },
-          "pageCount": {
-            "minimum": 0,
-            "type": "integer"
-          },
-          "expiresAt": {
-            "format": "date-time",
-            "description": "RFC3339 UTC timestamp",
-            "type": "string"
+            }
           }
-        }
+        ]
       },
       "Attachment": {
         "additionalProperties": false,
@@ -21292,74 +21343,125 @@
                   ],
                   "properties": {
                     "data": {
-                      "additionalProperties": false,
-                      "type": "object",
-                      "required": [
-                        "id",
-                        "scope",
-                        "epoch",
-                        "highWater",
-                        "status",
-                        "pageCount",
-                        "expiresAt"
-                      ],
-                      "properties": {
-                        "id": {
-                          "format": "uuid",
-                          "description": "UUID v4 string",
-                          "type": "string"
-                        },
-                        "scope": {
-                          "type": "string"
-                        },
-                        "epoch": {
-                          "format": "uuid",
-                          "description": "UUID v4 string",
-                          "type": "string"
-                        },
-                        "highWater": {
-                          "pattern": "^\\d+$",
-                          "description": "64-bit integer represented as string",
-                          "type": "string"
-                        },
-                        "status": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "enum": [
-                                "queued"
-                              ]
+                      "anyOf": [
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "scope",
+                            "epoch",
+                            "highWater",
+                            "pageCount",
+                            "expiresAt",
+                            "status",
+                            "nextCursor"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
                             },
-                            {
-                              "type": "string",
-                              "enum": [
-                                "processing"
-                              ]
+                            "scope": {
+                              "type": "string"
                             },
-                            {
+                            "epoch": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
+                            },
+                            "highWater": {
+                              "pattern": "^\\d+$",
+                              "description": "64-bit integer represented as string",
+                              "type": "string"
+                            },
+                            "pageCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "expiresAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            },
+                            "status": {
                               "type": "string",
                               "enum": [
                                 "ready"
                               ]
                             },
-                            {
-                              "type": "string",
-                              "enum": [
-                                "failed"
+                            "nextCursor": {
+                              "minLength": 1,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "scope",
+                            "epoch",
+                            "highWater",
+                            "pageCount",
+                            "expiresAt",
+                            "status"
+                          ],
+                          "properties": {
+                            "id": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
+                            },
+                            "scope": {
+                              "type": "string"
+                            },
+                            "epoch": {
+                              "format": "uuid",
+                              "description": "UUID v4 string",
+                              "type": "string"
+                            },
+                            "highWater": {
+                              "pattern": "^\\d+$",
+                              "description": "64-bit integer represented as string",
+                              "type": "string"
+                            },
+                            "pageCount": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
+                            "expiresAt": {
+                              "format": "date-time",
+                              "description": "RFC3339 UTC timestamp",
+                              "type": "string"
+                            },
+                            "status": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "queued"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "processing"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "failed"
+                                  ]
+                                }
                               ]
                             }
-                          ]
-                        },
-                        "pageCount": {
-                          "minimum": 0,
-                          "type": "integer"
-                        },
-                        "expiresAt": {
-                          "format": "date-time",
-                          "description": "RFC3339 UTC timestamp",
-                          "type": "string"
+                          }
                         }
-                      }
+                      ]
                     }
                   }
                 }
@@ -21387,6 +21489,206 @@
             }
           },
           "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sync/families/{familyId}/snapshots/{snapshotId}/pages/{page}": {
+      "get": {
+        "operationId": "getFamilySnapshotPage",
+        "summary": "Download one authorized page of a repeatable family snapshot",
+        "tags": [
+          "Sync"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "familyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "snapshotId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "pattern": "^(0|[1-9][0-9]*)$",
+              "maxLength": 10,
+              "type": "string"
+            },
+            "in": "path",
+            "name": "page",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "snapshotId",
+                        "page",
+                        "pageCount",
+                        "highWater",
+                        "content",
+                        "contentJSON",
+                        "sha256"
+                      ],
+                      "properties": {
+                        "snapshotId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "page": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "pageCount": {
+                          "minimum": 1,
+                          "type": "integer"
+                        },
+                        "highWater": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "content": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "entityType",
+                            "data"
+                          ],
+                          "properties": {
+                            "entityType": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": {}
+                              }
+                            }
+                          }
+                        },
+                        "contentJSON": {
+                          "type": "string"
+                        },
+                        "sha256": {
+                          "pattern": "^[a-f0-9]{64}$",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "410": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

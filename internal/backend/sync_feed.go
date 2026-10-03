@@ -100,6 +100,14 @@ func (s *Server) changeFeed(ctx context.Context,r *Request,scope,id string)(Resu
 			if decoded.Mode=="page" { high,_=syncPosition(decoded.HighWater) }
 			if high>integer(state["cursor"]) || position>high { return Result{},apiError(410,"SYNC_RESET_REQUIRED","Sync cursor is beyond retained state") }
 		}
+		if scope=="family" {
+			floorRow,err:=one(ctx,q,`SELECT jsonb_build_object('retention_floor',COALESCE(MAX(cursor),0))
+				FROM family_changes WHERE family_id=$1 AND created_at < NOW()-INTERVAL '90 days'`,id)
+			if err!=nil { return Result{},err }
+			if position<integer(floorRow["retention_floor"]) {
+				return Result{},apiError(410,"SYNC_RESET_REQUIRED","Sync cursor is older than the retained 90-day family change history")
+			}
+		}
 		limit:=pageLimit(r)
 		query:=`SELECT to_jsonb(c)||jsonb_build_object('__visible',true) FROM user_changes c WHERE user_id=$1 AND cursor>$2 AND cursor<=$3 ORDER BY cursor ASC LIMIT $4`
 		args:=[]any{id,position,high,limit+1}

@@ -153,6 +153,98 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(Value.Check(contracts.SyncCommandBatchRequestSchema, validBatch), true);
   });
 
+  test("Native family snapshot pages use the existing worker projection envelope", () => {
+    const route = contracts.ROUTE_DEFINITIONS.find(
+      (item) => item.operationId === "getFamilySnapshotPage"
+    );
+    assert.ok(route, "snapshot page download operation must be declared");
+    assert.equal(route.method, "GET");
+    assert.equal(
+      route.path,
+      "/api/v1/sync/families/:familyId/snapshots/:snapshotId/pages/:page"
+    );
+    assert.ok(route.params);
+    assert.equal(
+      Value.Check(route.params, {
+        familyId: "123e4567-e89b-12d3-a456-426614174001",
+        snapshotId: "123e4567-e89b-12d3-a456-426614174002",
+        page: "0",
+      }),
+      true
+    );
+    assert.equal(
+      Value.Check(route.params, {
+        familyId: "123e4567-e89b-12d3-a456-426614174001",
+        snapshotId: "123e4567-e89b-12d3-a456-426614174002",
+        page: "-1",
+      }),
+      false
+    );
+
+    assert.equal(
+      Value.Check(contracts.SyncSnapshotPageResponseSchema, {
+        data: {
+          snapshotId: "123e4567-e89b-12d3-a456-426614174002",
+          page: 0,
+          pageCount: 1,
+          highWater: "42",
+          content: {
+            entityType: "baby",
+            data: [{ id: "123e4567-e89b-12d3-a456-426614174003" }],
+          },
+          contentJSON: '{"data":[{"id":"123e4567-e89b-12d3-a456-426614174003"}],"entityType":"baby"}',
+          sha256: "a".repeat(64),
+        },
+      }),
+      true
+    );
+    assert.equal(
+      Value.Check(contracts.SyncSnapshotPageResponseSchema, {
+        data: {
+          snapshotId: "123e4567-e89b-12d3-a456-426614174002",
+          page: 0,
+          pageCount: 1,
+          highWater: "42",
+          content: { entityType: "baby", data: [] },
+          contentJSON: '{"data":[],"entityType":"baby"}',
+          sha256: "not-a-sha256",
+        },
+      }),
+      false
+    );
+
+    const snapshotMetadata = {
+      id: "123e4567-e89b-12d3-a456-426614174002",
+      scope: "family",
+      epoch: "123e4567-e89b-12d3-a456-426614174003",
+      highWater: "42",
+      pageCount: 1,
+      expiresAt: "2026-10-03T12:00:00.000Z",
+    };
+    assert.equal(
+      Value.Check(contracts.SyncSnapshotSchema, {
+        ...snapshotMetadata,
+        status: "ready",
+        nextCursor: "opaque-signed-cursor",
+      }),
+      true
+    );
+    assert.equal(
+      Value.Check(contracts.SyncSnapshotSchema, {
+        ...snapshotMetadata,
+        status: "ready",
+      }),
+      false
+    );
+    assert.equal(
+      Value.Check(contracts.SyncSnapshotSchema, {
+        ...snapshotMetadata,
+        status: "queued",
+      }),
+      true
+    );
+  });
+
   test("ROUTE_DEFINITIONS has unique operationIds and explicit status markings", () => {
     assert.ok(contracts.ROUTE_DEFINITIONS.length >= 80, `Expected >= 80 routes, got ${contracts.ROUTE_DEFINITIONS.length}`);
 

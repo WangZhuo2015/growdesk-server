@@ -140,6 +140,7 @@ export const syncRoutes: FastifyPluginAsync<SyncRoutesOptions> = async (
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
           404: ApiErrorEnvelopeSchema,
+          410: ApiErrorEnvelopeSchema,
         },
       },
     },

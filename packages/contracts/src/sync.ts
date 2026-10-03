@@ -176,22 +176,38 @@ export const CreateSyncSnapshotResponseSchema = Type.Object(
 
 export type CreateSyncSnapshotResponse = Static<typeof CreateSyncSnapshotResponseSchema>;
 
-export const SyncSnapshotSchema = Type.Object(
-  {
-    id: UuidString,
-    scope: Type.String(),
-    epoch: UuidString,
-    highWater: BigIntString,
-    status: Type.Union([
-      Type.Literal("queued"),
-      Type.Literal("processing"),
-      Type.Literal("ready"),
-      Type.Literal("failed"),
-    ]),
-    pageCount: Type.Integer({ minimum: 0 }),
-    expiresAt: DateTimeString,
-  },
-  { $id: "SyncSnapshot", additionalProperties: false }
+const SyncSnapshotMetadataProperties = {
+  id: UuidString,
+  scope: Type.String(),
+  epoch: UuidString,
+  highWater: BigIntString,
+  pageCount: Type.Integer({ minimum: 0 }),
+  expiresAt: DateTimeString,
+};
+
+export const SyncSnapshotSchema = Type.Union(
+  [
+    Type.Object(
+      {
+        ...SyncSnapshotMetadataProperties,
+        status: Type.Literal("ready"),
+        nextCursor: Type.String({ minLength: 1 }),
+      },
+      { additionalProperties: false }
+    ),
+    Type.Object(
+      {
+        ...SyncSnapshotMetadataProperties,
+        status: Type.Union([
+          Type.Literal("queued"),
+          Type.Literal("processing"),
+          Type.Literal("failed"),
+        ]),
+      },
+      { additionalProperties: false }
+    ),
+  ],
+  { $id: "SyncSnapshot" }
 );
 
 export type SyncSnapshot = Static<typeof SyncSnapshotSchema>;
@@ -204,3 +220,31 @@ export const SyncSnapshotResponseSchema = Type.Object(
 );
 
 export type SyncSnapshotResponse = Static<typeof SyncSnapshotResponseSchema>;
+
+export const SyncSnapshotPageContentSchema = Type.Object(
+  {
+    entityType: Type.String(),
+    data: Type.Array(Type.Record(Type.String(), Type.Unknown())),
+  },
+  { $id: "SyncSnapshotPageContent", additionalProperties: false }
+);
+
+export const SyncSnapshotPageResponseSchema = Type.Object(
+  {
+    data: Type.Object(
+      {
+        snapshotId: UuidString,
+        page: Type.Integer({ minimum: 0 }),
+        pageCount: Type.Integer({ minimum: 1 }),
+        highWater: BigIntString,
+        content: SyncSnapshotPageContentSchema,
+        contentJSON: Type.String(),
+        sha256: Type.String({ pattern: "^[a-f0-9]{64}$" }),
+      },
+      { additionalProperties: false }
+    ),
+  },
+  { $id: "SyncSnapshotPageResponse", additionalProperties: false }
+);
+
+export type SyncSnapshotPageResponse = Static<typeof SyncSnapshotPageResponseSchema>;

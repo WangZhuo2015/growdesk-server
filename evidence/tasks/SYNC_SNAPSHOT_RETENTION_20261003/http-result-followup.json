@@ -1,0 +1,262 @@
+{
+  "scope": "Go snapshot bootstrap cursor, verifiable pages, and 90-day family feed cursor floor",
+  "status": "PASS",
+  "commit": "35f8c1ebe0f4a8ef575b59aa609c1b9e777dde31",
+  "apiBinarySHA256": "6e73a5c81de4fd020b820ccb8d416441ed2218f753efbd51c97a7a9c7743a8ba",
+  "workerBinarySHA256": "1a7dcc7d9e4d4397e3a20606093fa718a3dd14849cbe7ccb6344e4534705ee3a",
+  "sourceSHA256": {
+    "apps/api/src/services/sync-service.ts": "8b4d3847c092536ce3d4ca39603b868e828d27b38ed0b7bdf47728cf4ac72636",
+    "apps/api/src/routes/sync-routes.ts": "bc4c6d730def64f5cf91800add33b53a73370fa4abbacdc9da5a349b7237d868",
+    "packages/contracts/src/sync.ts": "6877f513a535e317786bfe243c05f8451fafadfe59469533125cc4fe150c34b3",
+    "packages/contracts/src/routes.ts": "84dadaf924e9e9cd293df62abf05db6a339afc900f365dfa6ce65cfeb627975c",
+    "packages/contracts/tests/contracts.test.ts": "4c9d402204fdef290cc2d60420418935bc0f9a3129860baff7854f11692bef65",
+    "internal/backend/native_snapshots.go": "3d390944720242427d3801445e8616fc7a572fa5d88fd496ac72e86ccc6dd779",
+    "internal/backend/native_sync_test.go": "ad3bd3ccfc6bcc597bc49bf1760d9825e80fc0404b88d9d62a8ad992d3591448",
+    "internal/backend/sync_feed.go": "d7c748b19d24710e3d59ff0a6ff506131838ab5137ba637016eacc2f084b9115",
+    "internal/backend/foundation_test.go": "c8ecea7a2ac7de0478d7ca078f89f145160ed70fa595d9c89142f63f842976c8",
+    "scripts/go-sync-snapshot-integration.py": "688bb9f1bf8dc454b7ac2dbb5aba1f1ba49787e4d4350f3466dcce2e5db5a90b",
+    "contracts/openapi.json": "99f1d1c0a2b79fd98c80ef74a9ba41c742117c2aa994fe2daa9b7059a741b6f0"
+  },
+  "runtimes": {
+    "go": {
+      "httpAssertions": 61,
+      "snapshotWorkerRuns": 3,
+      "snapshots": 3,
+      "downloadedPages": 21,
+      "verifiedContentJSONPageHashes": 21,
+      "snapshotTailCatchUp": {
+        "baselineHighWater": "1",
+        "laterGrowthID": "41ca8369-ee5c-4afc-bc17-7f2f68b2d691",
+        "returnedChangeCount": 1,
+        "returnedEntityID": "41ca8369-ee5c-4afc-bc17-7f2f68b2d691"
+      },
+      "observations": [
+        {
+          "case": "family feed before test record",
+          "status": 200
+        },
+        {
+          "case": "family feed after test record",
+          "status": 200
+        },
+        {
+          "case": "cursor before retained floor",
+          "status": 410
+        },
+        {
+          "case": "cursor at retention floor remains usable",
+          "status": 200
+        },
+        {
+          "case": "tampered signed cursor rejected",
+          "status": 400
+        },
+        {
+          "case": "cross-family signed cursor rejected",
+          "status": 400
+        },
+        {
+          "case": "snapshot creation queued",
+          "status": 202
+        },
+        {
+          "case": "queued snapshot metadata has no resume cursor",
+          "status": 200
+        },
+        {
+          "case": "queued snapshot page not falsely ready",
+          "status": 409
+        },
+        {
+          "case": "authorized page 0 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 1 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 2 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 3 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 4 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 5 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 6 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 7 download",
+          "status": 200
+        },
+        {
+          "case": "snapshot page index at pageCount is not found",
+          "status": 404
+        },
+        {
+          "case": "write after ready snapshot baseline",
+          "status": 201
+        },
+        {
+          "case": "resume family feed from ready snapshot cursor",
+          "status": 200
+        },
+        {
+          "case": "test guest joins test family",
+          "status": 200
+        },
+        {
+          "case": "other snapshot creator hidden from family member",
+          "status": 404
+        },
+        {
+          "case": "family member queues own scoped snapshot",
+          "status": 202
+        },
+        {
+          "case": "authorized page 0 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 1 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 2 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 3 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 4 download",
+          "status": 200
+        },
+        {
+          "case": "snapshot page index at pageCount is not found",
+          "status": 404
+        },
+        {
+          "case": "explicit BabyMember grant",
+          "status": 201
+        },
+        {
+          "case": "permission change invalidates old snapshot",
+          "status": 410
+        },
+        {
+          "case": "permission change withholds stale snapshot cursor",
+          "status": 410
+        },
+        {
+          "case": "guest queues snapshot after BabyMember grant",
+          "status": 202
+        },
+        {
+          "case": "authorized page 0 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 1 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 2 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 3 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 4 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 5 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 6 download",
+          "status": 200
+        },
+        {
+          "case": "authorized page 7 download",
+          "status": 200
+        },
+        {
+          "case": "snapshot page index at pageCount is not found",
+          "status": 404
+        },
+        {
+          "case": "foreign tenant snapshot page denied",
+          "status": 403
+        },
+        {
+          "case": "foreign tenant snapshot cursor metadata denied",
+          "status": 403
+        },
+        {
+          "case": "BabyMember revoke",
+          "status": 200
+        },
+        {
+          "case": "revoked BabyMember cannot download prior snapshot",
+          "status": 410
+        },
+        {
+          "case": "revoked BabyMember cannot receive snapshot cursor",
+          "status": 410
+        },
+        {
+          "case": "family member removed",
+          "status": 200
+        },
+        {
+          "case": "removed family member snapshot page denied",
+          "status": 403
+        },
+        {
+          "case": "deleted or absent snapshot id is not found",
+          "status": 404
+        }
+      ],
+      "notes": [
+        "snapshot pages came from the real Go worker output; no task/record rows were SQL seeded",
+        "each downloaded page's sha256 matched contentJSON UTF-8 bytes and decoding contentJSON reproduced typed content",
+        "retention simulation changed created_at only for the existing HTTP-created test_ growth change",
+        "successful page responses exercise the existing whole-manifest snapshot hash verification"
+      ]
+    }
+  },
+  "ownedEnvironment": {
+    "kind": "private disposable local PostgreSQL 18 and Redis 8",
+    "database": "test_go_d7e0ae9a6fdad0ed",
+    "role": "test_go_d7e0ae9a6fdad0ed",
+    "postgresHost": "127.0.0.1",
+    "postgresPort": 64381,
+    "redisHost": "127.0.0.1",
+    "redisPort": 64382,
+    "apiHost": "127.0.0.1",
+    "objectStorage": "disabled; all AWS/S3 environment is excluded and snapshot pages are stored in PostgreSQL JSONB"
+  },
+  "cleanup": {
+    "apiProcessesStopped": true,
+    "redisProcessStopped": true,
+    "postgresStopped": true,
+    "temporaryDirectoryRemoved": true,
+    "noContainerResourcesCreated": true,
+    "liveAPIProcesses": 0
+  }
+}

@@ -789,6 +789,11 @@ export class SyncService {
         highWater: syncState.cursor,
         status: "queued",
         pageCount: 0,
+        manifest: {
+          nativeVersion: 1,
+          userId: principal.userId,
+          permissionVersion: syncState.permissionVersion,
+        },
         expiresAt: new Date(Date.now() + 24 * 3600 * 1000),
       },
     });
@@ -839,16 +844,78 @@ export class SyncService {
       throw new RecordNotFoundError("sync_snapshot", snapshotId);
     }
 
-    return {
-      data: {
-        id: snapshot.id,
-        scope: snapshot.scope,
-        epoch: snapshot.epoch,
-        highWater: snapshot.highWater.toString(),
-        status: snapshot.status as "queued" | "processing" | "ready" | "failed",
-        pageCount: snapshot.pageCount,
-        expiresAt: snapshot.expiresAt.toISOString(),
-      },
+    const manifest = snapshot.manifest as Record<string, unknown> | null;
+    if (manifest?.nativeVersion === 1 && manifest.userId !== principal.userId) {
+      // Snapshot contents are projected through the creator's BabyMember ACL;
+      // another family member must create their own bootstrap snapshot.
+      throw new RecordNotFoundError("sync_snapshot", snapshotId);
+    }
+
+    let nextCursor: string | undefined;
+    if (snapshot.status === "ready") {
+      if (snapshot.expiresAt.getTime() <= Date.now()) {
+        throw new SyncResetRequiredError("Snapshot has expired; create a new snapshot");
+      }
+      if (
+        manifest?.nativeVersion !== 1 ||
+        manifest.userId !== principal.userId ||
+        typeof manifest.permissionVersion !== "number"
+      ) {
+        throw new SyncResetRequiredError("Snapshot cannot be used as a native sync baseline");
+      }
+
+      const currentState = await this.prisma.familySyncState.findUnique({
+        where: { familyId },
+        select: { epoch: true, permissionVersion: true },
+      });
+      if (
+        !currentState ||
+        currentState.epoch !== snapshot.epoch ||
+        currentState.permissionVersion !== manifest.permissionVersion
+      ) {
+        throw new SyncResetRequiredError("Snapshot permissions changed; create a new snapshot");
+      }
+
+      nextCursor = encodeSyncCursor(
+        {
+          scope: "family",
+          scopeId: familyId,
+          epoch: snapshot.epoch,
+          position: snapshot.highWater.toString(),
+          highWater: snapshot.highWater.toString(),
+          mode: "tail",
+          schemaVersion: 1,
+        },
+        this.signingSecret
+      );
+    }
+
+    const metadata = {
+      id: snapshot.id,
+      scope: snapshot.scope,
+      epoch: snapshot.epoch,
+      highWater: snapshot.highWater.toString(),
+      pageCount: snapshot.pageCount,
+      expiresAt: snapshot.expiresAt.toISOString(),
     };
+    if (snapshot.status === "ready") {
+      if (!nextCursor) {
+        throw new SyncResetRequiredError("Ready snapshot has no valid sync baseline");
+      }
+      return { data: { ...metadata, status: "ready", nextCursor } };
+    }
+    if (
+      snapshot.status === "queued" ||
+      snapshot.status === "processing" ||
+      snapshot.status === "failed"
+    ) {
+      return {
+        data: {
+          ...metadata,
+          status: snapshot.status as "queued" | "processing" | "failed",
+        },
+      };
+    }
+    throw new SyncResetRequiredError("Snapshot has an unsupported status");
   }
 }

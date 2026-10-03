@@ -18,11 +18,11 @@ func TestNativeSyncAndRecoveryRegistration(t *testing.T) {
 	s := &Server{Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}}
 	s.RegisterBusinessHandlers()
 
-	// Verify the 10 recovered operations are registered and authenticated
+	// Verify native sync and snapshot operations are registered and authenticated.
 	ops := []string{
 		"createAiRun", "confirmAiRun", "cancelAiRun", "retryAiRun",
 		"createVoiceRun", "createDailySummaryRun", "createMedicalOcrRun",
-		"createFamilySnapshot", "getFamilySnapshot",
+		"createFamilySnapshot", "getFamilySnapshot", "getFamilySnapshotPage",
 		"executeSyncCommands",
 	}
 	for _, id := range ops {

@@ -2,6 +2,8 @@ package backend
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 func (s *Server) registerFamilySnapshots() {
 	s.Register("createFamilySnapshot", false, s.createNativeFamilySnapshot)
 	s.Register("getFamilySnapshot", false, s.getNativeFamilySnapshot)
+	s.Register("getFamilySnapshotPage", false, s.getNativeSnapshotPage)
 }
 func (s *Server) createNativeFamilySnapshot(ctx context.Context, r *Request) (Result, error) {
 	fid := r.Params["id"]
@@ -87,7 +90,41 @@ func (s *Server) getNativeFamilySnapshot(ctx context.Context, r *Request) (Resul
 		if err != nil {
 			return Result{}, err
 		}
-		return ok(Object{"id": row["id"], "scope": row["scope"], "epoch": row["epoch"], "highWater": text(row["high_water"]), "status": row["status"], "pageCount": row["page_count"], "expiresAt": isoValue(row["expires_at"])})
+		metadata := Object{"id": row["id"], "scope": row["scope"], "epoch": row["epoch"], "highWater": text(row["high_water"]), "status": row["status"], "pageCount": row["page_count"], "expiresAt": isoValue(row["expires_at"])}
+		if text(row["status"]) == "ready" {
+			expiry, err := asTime(row["expires_at"])
+			if err != nil || !expiry.After(time.Now()) {
+				return Result{}, apiError(410, "SNAPSHOT_EXPIRED", "Snapshot has expired")
+			}
+			manifest := obj(row["manifest"])
+			if integer(manifest["nativeVersion"]) != 1 {
+				return Result{}, apiError(409, "SNAPSHOT_FORMAT_UNSUPPORTED", "Snapshot cannot be used as a native sync baseline")
+			}
+			state, err := one(ctx, q, "SELECT to_jsonb(st) FROM family_sync_states st WHERE family_id=$1", r.Params["id"])
+			if err != nil {
+				return Result{}, err
+			}
+			if text(state["epoch"]) != text(row["epoch"]) || integer(state["permission_version"]) != integer(manifest["permissionVersion"]) {
+				return Result{}, apiError(410, "SYNC_RESET_REQUIRED", "Snapshot permissions changed; create a new snapshot")
+			}
+			highWater := text(row["high_water"])
+			if _, err = syncPosition(highWater); err != nil {
+				return Result{}, apiError(409, "SNAPSHOT_FORMAT_UNSUPPORTED", "Snapshot highWater cannot be used as a sync cursor")
+			}
+			key, err := s.syncSigningKey()
+			if err != nil {
+				return Result{}, err
+			}
+			cursor, err := signSyncCursor(syncCursor{
+				Scope: "family", ScopeID: r.Params["id"], Epoch: text(row["epoch"]),
+				Position: highWater, HighWater: highWater, Mode: "tail", SchemaVersion: 1,
+			}, key)
+			if err != nil {
+				return Result{}, err
+			}
+			metadata["nextCursor"] = cursor
+		}
+		return ok(metadata)
 	})
 }
 
@@ -158,7 +195,7 @@ func (s *Server) buildNativeSnapshot(ctx context.Context, input nativeTaskInput)
 			table := domainRecordTables[kind]
 			last := ""
 			for {
-				query := "SELECT to_jsonb(t) FROM "+pgx.Identifier{table}.Sanitize()+" t WHERE family_id=$1 AND baby_id=ANY($2::text[]) AND deleted_at IS NULL AND id>$3 ORDER BY id LIMIT 100"
+				query := "SELECT to_jsonb(t) FROM " + pgx.Identifier{table}.Sanitize() + " t WHERE family_id=$1 AND baby_id=ANY($2::text[]) AND deleted_at IS NULL AND id>$3 ORDER BY id LIMIT 100"
 				if kind == "medical" {
 					query = `SELECT to_jsonb(t)||jsonb_build_object('attachment_ids',(SELECT COALESCE(jsonb_agg(attachment_id ORDER BY attachment_id),'[]'::jsonb) FROM medical_report_attachments WHERE report_id=t.id))
 					FROM medical_reports t WHERE family_id=$1 AND baby_id=ANY($2::text[]) AND deleted_at IS NULL AND id>$3 ORDER BY id LIMIT 100`
@@ -256,7 +293,16 @@ func (s *Server) getNativeSnapshotPage(ctx context.Context, r *Request) (Result,
 		if hash != strings.TrimSpace(text(row["hash"])) {
 			return Result{}, apiError(409, "SNAPSHOT_TAMPERED", "Snapshot integrity check failed")
 		}
-		return ok(Object{"snapshotId": row["id"], "page": index, "pageCount": len(pages), "highWater": text(row["high_water"]), "content": pages[index]})
+		contentJSON, err := jsonBytes(pages[index])
+		if err != nil {
+			return Result{}, err
+		}
+		contentDigest := sha256.Sum256(contentJSON)
+		return ok(Object{
+			"snapshotId": row["id"], "page": index, "pageCount": len(pages),
+			"highWater": text(row["high_water"]), "content": pages[index],
+			"contentJSON": string(contentJSON), "sha256": hex.EncodeToString(contentDigest[:]),
+		})
 	})
 }
 

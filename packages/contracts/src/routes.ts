@@ -148,6 +148,7 @@ import {
   UserChangesResponseSchema,
   CreateSyncSnapshotResponseSchema,
   SyncSnapshotResponseSchema,
+  SyncSnapshotPageResponseSchema,
 } from "./sync.js";
 import {
   CreateAttachmentRequestSchema,
@@ -1385,7 +1386,32 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["Sync"],
     implementationStatus: "READY",
     params: Type.Object({ id: UuidString, snapshotId: UuidString }, { additionalProperties: false }),
-    responses: { 200: SyncSnapshotResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
+    responses: { 200: SyncSnapshotResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef, 410: ApiErrorRef },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/sync/families/:familyId/snapshots/:snapshotId/pages/:page",
+    operationId: "getFamilySnapshotPage",
+    summary: "Download one authorized page of a repeatable family snapshot",
+    tags: ["Sync"],
+    implementationStatus: "READY",
+    params: Type.Object(
+      {
+        familyId: UuidString,
+        snapshotId: UuidString,
+        page: Type.String({ pattern: "^(0|[1-9][0-9]*)$", maxLength: 10 }),
+      },
+      { additionalProperties: false }
+    ),
+    responses: {
+      200: SyncSnapshotPageResponseSchema,
+      400: ApiErrorRef,
+      401: ApiErrorRef,
+      403: ApiErrorRef,
+      404: ApiErrorRef,
+      409: ApiErrorRef,
+      410: ApiErrorRef,
+    },
   },
 
   // 15. Attachments (SH-06)
