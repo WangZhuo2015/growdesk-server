@@ -944,6 +944,7 @@ model MedicalReport {
   caregiverId String    @map("caregiver_id")
   reportDate  DateTime  @map("report_date") @db.Date
   title       String    @db.VarChar(100)
+  category    String?   @db.VarChar(32)
   hospital    String?   @db.VarChar(100)
   department  String?   @db.VarChar(100)
   diagnosis   String?   @db.VarChar(500)
@@ -1239,6 +1240,7 @@ model AiRun {
   babyId        String?       @map("baby_id")
   lastEventSeq  BigInt        @default(0) @map("last_event_seq")
   resultSummary String?       @map("result_summary")
+  ocrDraft      Json?         @map("ocr_draft") @db.JsonB
   proposedPlan  Json?         @map("proposed_plan") @db.JsonB
   errorCode     String?       @map("error_code")
   errorMessage  String?       @map("error_message")

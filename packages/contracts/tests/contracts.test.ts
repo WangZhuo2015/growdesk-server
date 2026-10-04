@@ -129,6 +129,110 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(Value.Check(contracts.CreateGrowthMeasurementRequestSchema, invalidWeight), false);
   });
 
+  test("Typed OCR drafts carry evidence and record confirmation references only", () => {
+    const text = (value: string | null) => ({ value, confidence: value === null ? null : 0.92, uncertainty: value === null ? "not visible" : "" });
+    const medicalDraft = {
+      schemaVersion: 1,
+      kind: "medical",
+      attachmentId: "123e4567-e89b-42d3-a456-426614174001",
+      modelSource: "fixture",
+      sourceText: "Hemoglobin 120 g/L",
+      title: text("Blood test"),
+      category: { value: "blood", confidence: 0.92, uncertainty: "" },
+      reportDate: { value: "2026-09-12", confidence: 0.92, uncertainty: "" },
+      hospital: text("Test Hospital"),
+      department: text(null),
+      doctorNotes: text(null),
+      items: [{
+        name: text("Hemoglobin"),
+        value: { value: "120", confidence: 0.9, uncertainty: "" },
+        unit: text("g/L"),
+        referenceRange: text("110-150"),
+        status: { value: "normal", confidence: 0.9, uncertainty: "" },
+        interpretation: text("Within printed range"),
+      }],
+      growthData: null,
+    };
+    assert.equal(Value.Check(contracts.MedicalOcrDraftSchema, medicalDraft), true);
+    assert.equal(Value.Check(contracts.MedicalOcrDraftSchema, {
+      ...medicalDraft,
+      category: { value: "diagnosis", confidence: 0.92, uncertainty: "" },
+    }), false);
+    assert.equal(Value.Check(contracts.MedicalOcrDraftSchema, {
+      ...medicalDraft,
+      items: [{ ...medicalDraft.items[0], status: { value: null, confidence: null, uncertainty: "not visible" } }],
+    }), true);
+
+    const growthDraft = {
+      schemaVersion: 1,
+      kind: "growth",
+      attachmentId: "123e4567-e89b-42d3-a456-426614174001",
+      modelSource: "fixture",
+      sourceText: "8.25 kg 70.5 cm",
+      measurementDate: { value: "2026-09-12", confidence: 0.9, uncertainty: "" },
+      weightKg: { value: "8.25", sourceValue: "8.25", sourceUnit: "kg", confidence: 0.95, uncertainty: "" },
+      heightCm: { value: "70.5", sourceValue: "70.5", sourceUnit: "cm", confidence: 0.95, uncertainty: "" },
+      headCircumferenceCm: { value: null, sourceValue: null, sourceUnit: null, confidence: null, uncertainty: "not visible" },
+    };
+    assert.equal(Value.Check(contracts.GrowthOcrDraftSchema, growthDraft), true);
+    assert.equal(Value.Check(contracts.GrowthOcrDraftSchema, {
+      ...growthDraft,
+      weightKg: { ...growthDraft.weightKg, confidence: 1.1 },
+    }), false);
+
+    assert.equal(Value.Check(contracts.CreateMedicalReportRequestSchema, {
+      reportDate: "2026-09-12", title: "Blood test", category: "blood",
+      ocrRunId: "123e4567-e89b-42d3-a456-426614174002",
+      attachmentIds: [medicalDraft.attachmentId],
+    }), true);
+    assert.equal(Value.Check(contracts.CreateGrowthMeasurementRequestSchema, {
+      measurementDate: "2026-09-12", weightKg: "8.25", attachmentId: growthDraft.attachmentId,
+      ocrRunId: "123e4567-e89b-42d3-a456-426614174003",
+    }), true);
+  });
+
+  test("Growth OCR route is a baby-scoped durable-run operation", () => {
+    const route = contracts.ROUTE_DEFINITIONS.find((item) => item.operationId === "createGrowthOcrRun");
+    assert.ok(route);
+    assert.equal(route.path, "/api/v1/growth/ocr-runs");
+    assert.equal(route.method, "POST");
+    assert.equal(route.implementationStatus, "READY");
+    const bodySchema = route.body;
+    assert.ok(bodySchema);
+    assert.equal(Value.Check(bodySchema, {
+      babyId: "123e4567-e89b-42d3-a456-426614174001",
+      attachmentId: "123e4567-e89b-42d3-a456-426614174002",
+    }), true);
+    assert.equal(Value.Check(bodySchema, {
+      babyId: "123e4567-e89b-42d3-a456-426614174001",
+      attachmentId: "123e4567-e89b-42d3-a456-426614174002",
+      familyId: "123e4567-e89b-42d3-a456-426614174003",
+    }), false);
+    assert.ok(Object.hasOwn(route.responses, 409));
+    assert.ok(Object.hasOwn(route.responses, 429));
+    assert.ok(Object.hasOwn(route.responses, 503));
+  });
+
+  test("OCR confirmation record creates document their scope failures and idempotency", () => {
+    const medical = contracts.ROUTE_DEFINITIONS.find((item) => item.operationId === "createMedicalReport");
+    const growth = contracts.ROUTE_DEFINITIONS.find((item) => item.operationId === "createGrowthMeasurement");
+    assert.ok(medical && growth);
+    for (const route of [medical, growth]) {
+      const header = route.headers?.properties?.["Idempotency-Key"] as {
+        minLength?: number;
+        maxLength?: number;
+      } | undefined;
+      assert.ok(header);
+      assert.equal(header.minLength, 1);
+      assert.equal(header.maxLength, 200);
+      assert.ok(Object.hasOwn(route.responses, 404));
+      assert.ok(Object.hasOwn(route.responses, 409));
+      assert.ok(Object.hasOwn(route.responses, 429));
+    }
+    assert.equal(medical.headers?.required?.includes("Idempotency-Key") ?? false, false);
+    assert.equal(growth.headers?.required?.includes("Idempotency-Key") ?? false, false);
+  });
+
   test("Sync command batch schema validates offline mutations structure", () => {
     const validBatch = {
       commands: [
@@ -352,7 +456,9 @@ describe("GrowDesk Contracts Test Suite", () => {
     assert.equal(header.minLength, 1);
     assert.equal(header.maxLength, 200);
     assert.equal(route.headers?.required?.includes("Idempotency-Key") ?? false, false);
+    assert.equal(route.implementationStatus, "READY");
     assert.ok(Object.hasOwn(route.responses, 503));
+    assert.ok(Object.hasOwn(route.responses, 429));
     const headers = route.headers;
     assert.ok(headers);
     assert.equal(Value.Check(headers, {}), true);

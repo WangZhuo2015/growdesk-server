@@ -1431,6 +1431,41 @@
             "maxLength": 100,
             "type": "string"
           },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blood"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "growth"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "trace_element"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "allergy"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "general"
+                ]
+              }
+            ],
+            "nullable": true
+          },
           "hospital": {
             "maxLength": 100,
             "type": "string",
@@ -2423,6 +2458,780 @@
             "type": "string",
             "nullable": true
           },
+          "ocrDraft": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "schemaVersion",
+                  "kind",
+                  "attachmentId",
+                  "modelSource",
+                  "sourceText",
+                  "title",
+                  "category",
+                  "reportDate",
+                  "hospital",
+                  "department",
+                  "doctorNotes",
+                  "items",
+                  "growthData"
+                ],
+                "properties": {
+                  "schemaVersion": {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "medical"
+                    ]
+                  },
+                  "attachmentId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "modelSource": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "sourceText": {
+                    "maxLength": 200000,
+                    "type": "string"
+                  },
+                  "title": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "maxLength": 4000,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "category": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "blood"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "growth"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "trace_element"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "allergy"
+                            ]
+                          },
+                          {
+                            "type": "string",
+                            "enum": [
+                              "general"
+                            ]
+                          }
+                        ],
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "reportDate": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "format": "date",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                        "description": "YYYY-MM-DD calendar date",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "hospital": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "maxLength": 4000,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "department": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "maxLength": 4000,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "doctorNotes": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "maxLength": 4000,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "items": {
+                    "maxItems": 500,
+                    "type": "array",
+                    "items": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "value",
+                        "unit",
+                        "referenceRange",
+                        "status",
+                        "interpretation"
+                      ],
+                      "properties": {
+                        "name": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "maxLength": 4000,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "value": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "anyOf": [
+                                {
+                                  "maxLength": 1000,
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "unit": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "maxLength": 4000,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "referenceRange": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "maxLength": 4000,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "status": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "normal"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "high"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "low"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "abnormal"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "positive"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "negative"
+                                  ]
+                                }
+                              ],
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "interpretation": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "value",
+                            "confidence",
+                            "uncertainty"
+                          ],
+                          "properties": {
+                            "value": {
+                              "maxLength": 4000,
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "confidence": {
+                              "minimum": 0,
+                              "maximum": 1,
+                              "type": "number",
+                              "nullable": true
+                            },
+                            "uncertainty": {
+                              "maxLength": 1000,
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "growthData": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "weightKg",
+                      "heightCm",
+                      "headCircumferenceCm"
+                    ],
+                    "properties": {
+                      "weightKg": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "sourceValue",
+                          "sourceUnit",
+                          "confidence",
+                          "uncertainty"
+                        ],
+                        "properties": {
+                          "value": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceValue": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceUnit": {
+                            "maxLength": 40,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "confidence": {
+                            "minimum": 0,
+                            "maximum": 1,
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "uncertainty": {
+                            "maxLength": 1000,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "heightCm": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "sourceValue",
+                          "sourceUnit",
+                          "confidence",
+                          "uncertainty"
+                        ],
+                        "properties": {
+                          "value": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceValue": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceUnit": {
+                            "maxLength": 40,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "confidence": {
+                            "minimum": 0,
+                            "maximum": 1,
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "uncertainty": {
+                            "maxLength": 1000,
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "headCircumferenceCm": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "sourceValue",
+                          "sourceUnit",
+                          "confidence",
+                          "uncertainty"
+                        ],
+                        "properties": {
+                          "value": {
+                            "pattern": "^-?\\d+(\\.\\d+)?$",
+                            "description": "Arbitrary-precision decimal represented as string",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceValue": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceUnit": {
+                            "maxLength": 40,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "confidence": {
+                            "minimum": 0,
+                            "maximum": 1,
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "uncertainty": {
+                            "maxLength": 1000,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "nullable": true
+                  }
+                }
+              },
+              {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "schemaVersion",
+                  "kind",
+                  "attachmentId",
+                  "modelSource",
+                  "sourceText",
+                  "measurementDate",
+                  "weightKg",
+                  "heightCm",
+                  "headCircumferenceCm"
+                ],
+                "properties": {
+                  "schemaVersion": {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "growth"
+                    ]
+                  },
+                  "attachmentId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "modelSource": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string"
+                  },
+                  "sourceText": {
+                    "maxLength": 200000,
+                    "type": "string"
+                  },
+                  "measurementDate": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "format": "date",
+                        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                        "description": "YYYY-MM-DD calendar date",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "weightKg": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "sourceValue",
+                      "sourceUnit",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceValue": {
+                        "maxLength": 200,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceUnit": {
+                        "maxLength": 40,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "heightCm": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "sourceValue",
+                      "sourceUnit",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceValue": {
+                        "maxLength": 200,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceUnit": {
+                        "maxLength": 40,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "headCircumferenceCm": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "value",
+                      "sourceValue",
+                      "sourceUnit",
+                      "confidence",
+                      "uncertainty"
+                    ],
+                    "properties": {
+                      "value": {
+                        "pattern": "^-?\\d+(\\.\\d+)?$",
+                        "description": "Arbitrary-precision decimal represented as string",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceValue": {
+                        "maxLength": 200,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "sourceUnit": {
+                        "maxLength": 40,
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "confidence": {
+                        "minimum": 0,
+                        "maximum": 1,
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "uncertainty": {
+                        "maxLength": 1000,
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "nullable": true
+          },
           "proposedPlan": {
             "additionalProperties": false,
             "type": "object",
@@ -2501,6 +3310,775 @@
             "description": "RFC3339 UTC timestamp",
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "MedicalOcrDraft": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "kind",
+          "attachmentId",
+          "modelSource",
+          "sourceText",
+          "title",
+          "category",
+          "reportDate",
+          "hospital",
+          "department",
+          "doctorNotes",
+          "items",
+          "growthData"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "medical"
+            ]
+          },
+          "attachmentId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "modelSource": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "sourceText": {
+            "maxLength": 200000,
+            "type": "string"
+          },
+          "title": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "maxLength": 4000,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "category": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "blood"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "growth"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "trace_element"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "allergy"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "general"
+                    ]
+                  }
+                ],
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "reportDate": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "YYYY-MM-DD calendar date",
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "hospital": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "maxLength": 4000,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "department": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "maxLength": 4000,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "doctorNotes": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "maxLength": 4000,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "items": {
+            "maxItems": 500,
+            "type": "array",
+            "items": {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "name",
+                "value",
+                "unit",
+                "referenceRange",
+                "status",
+                "interpretation"
+              ],
+              "properties": {
+                "name": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "maxLength": 4000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                },
+                "value": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "anyOf": [
+                        {
+                          "maxLength": 1000,
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                },
+                "unit": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "maxLength": 4000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                },
+                "referenceRange": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "maxLength": 4000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                },
+                "status": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "normal"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "high"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "low"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "abnormal"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "positive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "negative"
+                          ]
+                        }
+                      ],
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                },
+                "interpretation": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "value",
+                    "confidence",
+                    "uncertainty"
+                  ],
+                  "properties": {
+                    "value": {
+                      "maxLength": 4000,
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "minimum": 0,
+                      "maximum": 1,
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "uncertainty": {
+                      "maxLength": 1000,
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "growthData": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "weightKg",
+              "heightCm",
+              "headCircumferenceCm"
+            ],
+            "properties": {
+              "weightKg": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "value",
+                  "sourceValue",
+                  "sourceUnit",
+                  "confidence",
+                  "uncertainty"
+                ],
+                "properties": {
+                  "value": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceValue": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceUnit": {
+                    "maxLength": 40,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "confidence": {
+                    "minimum": 0,
+                    "maximum": 1,
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "uncertainty": {
+                    "maxLength": 1000,
+                    "type": "string"
+                  }
+                }
+              },
+              "heightCm": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "value",
+                  "sourceValue",
+                  "sourceUnit",
+                  "confidence",
+                  "uncertainty"
+                ],
+                "properties": {
+                  "value": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceValue": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceUnit": {
+                    "maxLength": 40,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "confidence": {
+                    "minimum": 0,
+                    "maximum": 1,
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "uncertainty": {
+                    "maxLength": 1000,
+                    "type": "string"
+                  }
+                }
+              },
+              "headCircumferenceCm": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "value",
+                  "sourceValue",
+                  "sourceUnit",
+                  "confidence",
+                  "uncertainty"
+                ],
+                "properties": {
+                  "value": {
+                    "pattern": "^-?\\d+(\\.\\d+)?$",
+                    "description": "Arbitrary-precision decimal represented as string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceValue": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceUnit": {
+                    "maxLength": 40,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "confidence": {
+                    "minimum": 0,
+                    "maximum": 1,
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "uncertainty": {
+                    "maxLength": 1000,
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "nullable": true
+          }
+        }
+      },
+      "GrowthOcrDraft": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "kind",
+          "attachmentId",
+          "modelSource",
+          "sourceText",
+          "measurementDate",
+          "weightKg",
+          "heightCm",
+          "headCircumferenceCm"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "growth"
+            ]
+          },
+          "attachmentId": {
+            "format": "uuid",
+            "description": "UUID v4 string",
+            "type": "string"
+          },
+          "modelSource": {
+            "minLength": 1,
+            "maxLength": 128,
+            "type": "string"
+          },
+          "sourceText": {
+            "maxLength": 200000,
+            "type": "string"
+          },
+          "measurementDate": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "format": "date",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                "description": "YYYY-MM-DD calendar date",
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "weightKg": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "sourceValue",
+              "sourceUnit",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "pattern": "^-?\\d+(\\.\\d+)?$",
+                "description": "Arbitrary-precision decimal represented as string",
+                "type": "string",
+                "nullable": true
+              },
+              "sourceValue": {
+                "maxLength": 200,
+                "type": "string",
+                "nullable": true
+              },
+              "sourceUnit": {
+                "maxLength": 40,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "heightCm": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "sourceValue",
+              "sourceUnit",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "pattern": "^-?\\d+(\\.\\d+)?$",
+                "description": "Arbitrary-precision decimal represented as string",
+                "type": "string",
+                "nullable": true
+              },
+              "sourceValue": {
+                "maxLength": 200,
+                "type": "string",
+                "nullable": true
+              },
+              "sourceUnit": {
+                "maxLength": 40,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
+          },
+          "headCircumferenceCm": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "value",
+              "sourceValue",
+              "sourceUnit",
+              "confidence",
+              "uncertainty"
+            ],
+            "properties": {
+              "value": {
+                "pattern": "^-?\\d+(\\.\\d+)?$",
+                "description": "Arbitrary-precision decimal represented as string",
+                "type": "string",
+                "nullable": true
+              },
+              "sourceValue": {
+                "maxLength": 200,
+                "type": "string",
+                "nullable": true
+              },
+              "sourceUnit": {
+                "maxLength": 40,
+                "type": "string",
+                "nullable": true
+              },
+              "confidence": {
+                "minimum": 0,
+                "maximum": 1,
+                "type": "number",
+                "nullable": true
+              },
+              "uncertainty": {
+                "maxLength": 1000,
+                "type": "string"
+              }
+            }
           }
         }
       },
@@ -15874,6 +17452,11 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "ocrRunId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
                   "notes": {
                     "maxLength": 1000,
                     "type": "string",
@@ -15894,6 +17477,16 @@
             "name": "babyId",
             "required": true,
             "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
           }
         ],
         "x-implementation-status": "PLANNED_SH04G",
@@ -16065,7 +17658,185 @@
               }
             }
           },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/growth/ocr-runs": {
+      "post": {
+        "operationId": "createGrowthOcrRun",
+        "summary": "Queue typed OCR draft extraction for a baby growth photo",
+        "tags": [
+          "Growth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "babyId",
+                  "attachmentId"
+                ],
+                "properties": {
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "attachmentId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "202": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "runId",
+                        "status"
+                      ],
+                      "properties": {
+                        "runId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -17181,6 +18952,41 @@
                             "maxLength": 100,
                             "type": "string"
                           },
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "blood"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "growth"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "trace_element"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "allergy"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "general"
+                                ]
+                              }
+                            ],
+                            "nullable": true
+                          },
                           "hospital": {
                             "maxLength": 100,
                             "type": "string",
@@ -17406,6 +19212,46 @@
                     "maxLength": 100,
                     "type": "string"
                   },
+                  "category": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "blood"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "growth"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "trace_element"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "allergy"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "general"
+                        ]
+                      }
+                    ],
+                    "nullable": true
+                  },
+                  "ocrRunId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
                   "hospital": {
                     "maxLength": 100,
                     "type": "string",
@@ -17447,6 +19293,16 @@
             "name": "babyId",
             "required": true,
             "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false
           }
         ],
         "x-implementation-status": "PLANNED_SH06",
@@ -17596,6 +19452,41 @@
                           "maxLength": 100,
                           "type": "string"
                         },
+                        "category": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "blood"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "trace_element"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "allergy"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "general"
+                              ]
+                            }
+                          ],
+                          "nullable": true
+                        },
                         "hospital": {
                           "maxLength": 100,
                           "type": "string",
@@ -17665,6 +19556,36 @@
             }
           },
           "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -17852,6 +19773,41 @@
                           "minLength": 1,
                           "maxLength": 100,
                           "type": "string"
+                        },
+                        "category": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "blood"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "trace_element"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "allergy"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "general"
+                              ]
+                            }
+                          ],
+                          "nullable": true
                         },
                         "hospital": {
                           "maxLength": 100,
@@ -18055,6 +20011,41 @@
                     "maxLength": 100,
                     "type": "string"
                   },
+                  "category": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "blood"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "growth"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "trace_element"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "allergy"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "general"
+                        ]
+                      }
+                    ],
+                    "nullable": true
+                  },
                   "hospital": {
                     "maxLength": 100,
                     "type": "string",
@@ -18254,6 +20245,41 @@
                           "minLength": 1,
                           "maxLength": 100,
                           "type": "string"
+                        },
+                        "category": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "blood"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "trace_element"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "allergy"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "general"
+                              ]
+                            }
+                          ],
+                          "nullable": true
                         },
                         "hospital": {
                           "maxLength": 100,
@@ -18477,6 +20503,11 @@
                     "format": "uuid",
                     "description": "UUID v4 string",
                     "type": "string"
+                  },
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
                   }
                 }
               }
@@ -18495,7 +20526,7 @@
             "required": false
           }
         ],
-        "x-implementation-status": "PLANNED_SH07",
+        "x-implementation-status": "READY",
         "responses": {
           "202": {
             "description": "Default Response",
@@ -18565,6 +20596,16 @@
             }
           },
           "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -20471,6 +22512,780 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "ocrDraft": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "schemaVersion",
+                                "kind",
+                                "attachmentId",
+                                "modelSource",
+                                "sourceText",
+                                "title",
+                                "category",
+                                "reportDate",
+                                "hospital",
+                                "department",
+                                "doctorNotes",
+                                "items",
+                                "growthData"
+                              ],
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "medical"
+                                  ]
+                                },
+                                "attachmentId": {
+                                  "format": "uuid",
+                                  "description": "UUID v4 string",
+                                  "type": "string"
+                                },
+                                "modelSource": {
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "type": "string"
+                                },
+                                "sourceText": {
+                                  "maxLength": 200000,
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "category": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "blood"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "growth"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "trace_element"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "allergy"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "general"
+                                          ]
+                                        }
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "reportDate": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "format": "date",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                      "description": "YYYY-MM-DD calendar date",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "hospital": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "department": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "doctorNotes": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "items": {
+                                  "maxItems": 500,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "name",
+                                      "value",
+                                      "unit",
+                                      "referenceRange",
+                                      "status",
+                                      "interpretation"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "value": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "anyOf": [
+                                              {
+                                                "maxLength": 1000,
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "unit": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "referenceRange": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "status": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "normal"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "high"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "low"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "abnormal"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "positive"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "negative"
+                                                ]
+                                              }
+                                            ],
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "interpretation": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "growthData": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "weightKg",
+                                    "heightCm",
+                                    "headCircumferenceCm"
+                                  ],
+                                  "properties": {
+                                    "weightKg": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "heightCm": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "headCircumferenceCm": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "schemaVersion",
+                                "kind",
+                                "attachmentId",
+                                "modelSource",
+                                "sourceText",
+                                "measurementDate",
+                                "weightKg",
+                                "heightCm",
+                                "headCircumferenceCm"
+                              ],
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "growth"
+                                  ]
+                                },
+                                "attachmentId": {
+                                  "format": "uuid",
+                                  "description": "UUID v4 string",
+                                  "type": "string"
+                                },
+                                "modelSource": {
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "type": "string"
+                                },
+                                "sourceText": {
+                                  "maxLength": 200000,
+                                  "type": "string"
+                                },
+                                "measurementDate": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "format": "date",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                      "description": "YYYY-MM-DD calendar date",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "weightKg": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "heightCm": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "headCircumferenceCm": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ],
+                          "nullable": true
+                        },
                         "proposedPlan": {
                           "additionalProperties": false,
                           "type": "object",
@@ -20908,6 +23723,780 @@
                         },
                         "resultSummary": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "ocrDraft": {
+                          "anyOf": [
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "schemaVersion",
+                                "kind",
+                                "attachmentId",
+                                "modelSource",
+                                "sourceText",
+                                "title",
+                                "category",
+                                "reportDate",
+                                "hospital",
+                                "department",
+                                "doctorNotes",
+                                "items",
+                                "growthData"
+                              ],
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "medical"
+                                  ]
+                                },
+                                "attachmentId": {
+                                  "format": "uuid",
+                                  "description": "UUID v4 string",
+                                  "type": "string"
+                                },
+                                "modelSource": {
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "type": "string"
+                                },
+                                "sourceText": {
+                                  "maxLength": 200000,
+                                  "type": "string"
+                                },
+                                "title": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "category": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "blood"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "growth"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "trace_element"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "allergy"
+                                          ]
+                                        },
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "general"
+                                          ]
+                                        }
+                                      ],
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "reportDate": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "format": "date",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                      "description": "YYYY-MM-DD calendar date",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "hospital": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "department": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "doctorNotes": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "maxLength": 4000,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "items": {
+                                  "maxItems": 500,
+                                  "type": "array",
+                                  "items": {
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                      "name",
+                                      "value",
+                                      "unit",
+                                      "referenceRange",
+                                      "status",
+                                      "interpretation"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "value": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "anyOf": [
+                                              {
+                                                "maxLength": 1000,
+                                                "type": "string"
+                                              },
+                                              {
+                                                "type": "number"
+                                              }
+                                            ],
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "unit": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "referenceRange": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "status": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "normal"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "high"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "low"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "abnormal"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "positive"
+                                                ]
+                                              },
+                                              {
+                                                "type": "string",
+                                                "enum": [
+                                                  "negative"
+                                                ]
+                                              }
+                                            ],
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "interpretation": {
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                          "value",
+                                          "confidence",
+                                          "uncertainty"
+                                        ],
+                                        "properties": {
+                                          "value": {
+                                            "maxLength": 4000,
+                                            "type": "string",
+                                            "nullable": true
+                                          },
+                                          "confidence": {
+                                            "minimum": 0,
+                                            "maximum": 1,
+                                            "type": "number",
+                                            "nullable": true
+                                          },
+                                          "uncertainty": {
+                                            "maxLength": 1000,
+                                            "type": "string"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "growthData": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "weightKg",
+                                    "heightCm",
+                                    "headCircumferenceCm"
+                                  ],
+                                  "properties": {
+                                    "weightKg": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "heightCm": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    },
+                                    "headCircumferenceCm": {
+                                      "additionalProperties": false,
+                                      "type": "object",
+                                      "required": [
+                                        "value",
+                                        "sourceValue",
+                                        "sourceUnit",
+                                        "confidence",
+                                        "uncertainty"
+                                      ],
+                                      "properties": {
+                                        "value": {
+                                          "pattern": "^-?\\d+(\\.\\d+)?$",
+                                          "description": "Arbitrary-precision decimal represented as string",
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceValue": {
+                                          "maxLength": 200,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "sourceUnit": {
+                                          "maxLength": 40,
+                                          "type": "string",
+                                          "nullable": true
+                                        },
+                                        "confidence": {
+                                          "minimum": 0,
+                                          "maximum": 1,
+                                          "type": "number",
+                                          "nullable": true
+                                        },
+                                        "uncertainty": {
+                                          "maxLength": 1000,
+                                          "type": "string"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            {
+                              "additionalProperties": false,
+                              "type": "object",
+                              "required": [
+                                "schemaVersion",
+                                "kind",
+                                "attachmentId",
+                                "modelSource",
+                                "sourceText",
+                                "measurementDate",
+                                "weightKg",
+                                "heightCm",
+                                "headCircumferenceCm"
+                              ],
+                              "properties": {
+                                "schemaVersion": {
+                                  "type": "number",
+                                  "enum": [
+                                    1
+                                  ]
+                                },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "growth"
+                                  ]
+                                },
+                                "attachmentId": {
+                                  "format": "uuid",
+                                  "description": "UUID v4 string",
+                                  "type": "string"
+                                },
+                                "modelSource": {
+                                  "minLength": 1,
+                                  "maxLength": 128,
+                                  "type": "string"
+                                },
+                                "sourceText": {
+                                  "maxLength": 200000,
+                                  "type": "string"
+                                },
+                                "measurementDate": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "format": "date",
+                                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                                      "description": "YYYY-MM-DD calendar date",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "weightKg": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "heightCm": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "headCircumferenceCm": {
+                                  "additionalProperties": false,
+                                  "type": "object",
+                                  "required": [
+                                    "value",
+                                    "sourceValue",
+                                    "sourceUnit",
+                                    "confidence",
+                                    "uncertainty"
+                                  ],
+                                  "properties": {
+                                    "value": {
+                                      "pattern": "^-?\\d+(\\.\\d+)?$",
+                                      "description": "Arbitrary-precision decimal represented as string",
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceValue": {
+                                      "maxLength": 200,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "sourceUnit": {
+                                      "maxLength": 40,
+                                      "type": "string",
+                                      "nullable": true
+                                    },
+                                    "confidence": {
+                                      "minimum": 0,
+                                      "maximum": 1,
+                                      "type": "number",
+                                      "nullable": true
+                                    },
+                                    "uncertainty": {
+                                      "maxLength": 1000,
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          ],
                           "nullable": true
                         },
                         "proposedPlan": {

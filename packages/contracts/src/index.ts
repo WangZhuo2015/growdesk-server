@@ -6,6 +6,7 @@ export * from "./family.js";
 export * from "./records.js";
 export * from "./growth.js";
 export * from "./medical.js";
+export * from "./ocr.js";
 export * from "./ai.js";
 export * from "./voice-logs.js";
 export * from "./sync.js";

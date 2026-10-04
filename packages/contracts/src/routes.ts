@@ -116,6 +116,10 @@ import {
   VaccineCatalogResponseSchema,
 } from "./medical.js";
 import {
+  GrowthOcrRunResponseSchema,
+  CreateGrowthOcrRunRequestSchema,
+} from "./ocr.js";
+import {
   AiSessionResponseSchema,
   AiSessionListResponseSchema,
   CreateAiSessionRequestSchema,
@@ -980,7 +984,32 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH04G",
     params: BabyIdParam,
     body: CreateGrowthMeasurementRequestSchema,
-    responses: { 201: GrowthMeasurementResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
+    headers: Type.Object({
+      "Idempotency-Key": Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    }, { additionalProperties: true }),
+    responses: { 201: GrowthMeasurementResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef, 429: ApiErrorRef },
+  },
+  {
+    method: "POST",
+    path: "/api/v1/growth/ocr-runs",
+    operationId: "createGrowthOcrRun",
+    summary: "Queue typed OCR draft extraction for a baby growth photo",
+    tags: ["Growth"],
+    implementationStatus: "READY",
+    body: CreateGrowthOcrRunRequestSchema,
+    headers: Type.Object({
+      "Idempotency-Key": Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    }, { additionalProperties: true }),
+    responses: {
+      202: GrowthOcrRunResponseSchema,
+      400: ApiErrorRef,
+      401: ApiErrorRef,
+      403: ApiErrorRef,
+      404: ApiErrorRef,
+      409: ApiErrorRef,
+      429: ApiErrorRef,
+      503: ApiErrorRef,
+    },
   },
   {
     method: "GET",
@@ -1045,7 +1074,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH06",
     params: BabyIdParam,
     body: CreateMedicalReportRequestSchema,
-    responses: { 201: MedicalReportResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
+    headers: Type.Object({
+      "Idempotency-Key": Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    }, { additionalProperties: true }),
+    responses: { 201: MedicalReportResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef, 429: ApiErrorRef },
   },
   {
     method: "GET",
@@ -1084,7 +1116,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "createMedicalOcrRun",
     summary: "Queue OCR parsing run for uploaded medical report attachment",
     tags: ["Medical"],
-    implementationStatus: "PLANNED_SH07",
+    implementationStatus: "READY",
     body: CreateMedicalOcrRunRequestSchema,
     headers: Type.Object({
       "Idempotency-Key": Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
@@ -1095,6 +1127,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
       401: ApiErrorRef,
       404: ApiErrorRef,
       409: ApiErrorRef,
+      429: ApiErrorRef,
       503: ApiErrorRef,
     },
   },

@@ -8,6 +8,7 @@ import {
   PaginatedEnvelope,
   SuccessStatusResponseSchema,
 } from "./common.js";
+import { GrowthOcrDraftSchema, MedicalOcrDraftSchema } from "./ocr.js";
 
 // ==========================================
 // 1. AI Sessions & Messages
@@ -168,6 +169,7 @@ export const AiRunSchema = Type.Object(
     attempt: Type.Integer({ minimum: 1 }),
     lastEventSeq: BigIntString,
     resultSummary: Nullable(Type.String()),
+    ocrDraft: Type.Optional(Nullable(Type.Union([MedicalOcrDraftSchema, GrowthOcrDraftSchema]))),
     proposedPlan: Nullable(
       Type.Object(
         {

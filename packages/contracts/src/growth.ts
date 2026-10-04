@@ -66,6 +66,7 @@ export const CreateGrowthMeasurementRequestSchema = Type.Object(
     heightCm: Type.Optional(Nullable(DecimalString)),
     headCircumferenceCm: Type.Optional(Nullable(DecimalString)),
     attachmentId: Type.Optional(Nullable(Type.String())),
+    ocrRunId: Type.Optional(UuidString),
     notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
   },
   { $id: "CreateGrowthMeasurementRequest", additionalProperties: false }

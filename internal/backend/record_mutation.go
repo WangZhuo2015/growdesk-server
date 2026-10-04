@@ -159,18 +159,7 @@ func publishRecordChange(ctx context.Context, tx pgx.Tx, userID string, command 
 	if err != nil {
 		return err
 	}
-	if _, err = tx.Exec(ctx, `UPDATE family_sync_states SET cursor=$2,updated_at=$3 WHERE family_id=$1`, command.Scope.FamilyID, cursor, now); err != nil {
-		return err
-	}
-	payload := copyObject(change.Payload)
-	payload["babyId"] = command.Scope.BabyID
-	encoded, err := jsonText(payload)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(ctx, `INSERT INTO family_changes(family_id,cursor,entity_type,entity_id,version,op,payload,schema_version,created_at)
-		VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,1,$8)`, command.Scope.FamilyID, cursor, command.Kind, command.ID, version, op, encoded, now)
-	if err != nil {
+	if err = publishFamilyChange(ctx, tx, command.Scope, command.Kind, command.ID, version, op, change.Payload, cursor, now); err != nil {
 		return err
 	}
 	response, err := jsonText(change.Entity)
@@ -191,5 +180,29 @@ func publishRecordChange(ctx context.Context, tx pgx.Tx, userID string, command 
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO idempotency_receipts(actor_id,scope_id,command_id,request_hash,result_code,result_summary,response_body,completed_at)
 		VALUES($1,$2,$3,$4,200,$5::jsonb,$6::jsonb,$7)`, userID, command.Scope.FamilyID, command.Key, command.RequestHash, summaryJSON, response, now)
+	return err
+}
+
+// publishFamilyChange is the shared cursor/feed writer for every family record
+// mutation. Callers allocate one cursor per changed entity while holding the
+// family lock, and invoke this in the same transaction as the entity write.
+func publishFamilyChange(ctx context.Context, tx pgx.Tx, scope Scope, entityType, entityID string, version int64, operation string, payload Object, cursor int64, now time.Time) error {
+	if operation != "upsert" && operation != "delete" {
+		return errors.New("invalid family change operation")
+	}
+	if payload == nil || cursor < 1 || entityID == "" || entityType == "" {
+		return errors.New("invalid family change")
+	}
+	if _, err := tx.Exec(ctx, `UPDATE family_sync_states SET cursor=$2,updated_at=$3 WHERE family_id=$1`, scope.FamilyID, cursor, now); err != nil {
+		return err
+	}
+	projected := copyObject(payload)
+	projected["babyId"] = scope.BabyID
+	encoded, err := jsonText(projected)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO family_changes(family_id,cursor,entity_type,entity_id,version,op,payload,schema_version,created_at)
+		VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,1,$8)`, scope.FamilyID, cursor, entityType, entityID, version, operation, encoded, now)
 	return err
 }

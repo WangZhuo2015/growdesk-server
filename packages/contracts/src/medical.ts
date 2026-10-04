@@ -8,6 +8,7 @@ import {
   UuidString,
   PaginatedEnvelope,
 } from "./common.js";
+import { MedicalOcrCategorySchema } from "./ocr.js";
 
 // ==========================================
 // 1. Medical Reports
@@ -31,6 +32,7 @@ export const MedicalReportSchema = Type.Object(
     items: Type.Optional(Type.Array(MedicalReportItemSchema, { maxItems: 500 })),
     reportDate: DateString,
     title: Type.String({ minLength: 1, maxLength: 100 }),
+    category: Type.Optional(Nullable(MedicalOcrCategorySchema)),
     hospital: Nullable(Type.String({ maxLength: 100 })),
     department: Nullable(Type.String({ maxLength: 100 })),
     diagnosis: Nullable(Type.String({ maxLength: 500 })),
@@ -53,6 +55,8 @@ export const CreateMedicalReportRequestSchema = Type.Object(
     }, { additionalProperties: false, minProperties: 1 })),
     reportDate: DateString,
     title: Type.String({ minLength: 1, maxLength: 100 }),
+    category: Type.Optional(Nullable(MedicalOcrCategorySchema)),
+    ocrRunId: Type.Optional(UuidString),
     hospital: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     department: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     diagnosis: Type.Optional(Nullable(Type.String({ maxLength: 500 }))),
@@ -70,6 +74,7 @@ export const UpdateMedicalReportRequestSchema = Type.Object(
     items: Type.Optional(Type.Array(MedicalReportItemSchema, { maxItems: 500 })),
     reportDate: Type.Optional(DateString),
     title: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
+    category: Type.Optional(Nullable(MedicalOcrCategorySchema)),
     hospital: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     department: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     diagnosis: Type.Optional(Nullable(Type.String({ maxLength: 500 }))),
@@ -99,6 +104,7 @@ export type MedicalReportListResponse = Static<typeof MedicalReportListResponseS
 export const CreateMedicalOcrRunRequestSchema = Type.Object(
   {
     attachmentId: UuidString,
+    babyId: Type.Optional(UuidString),
   },
   { $id: "CreateMedicalOcrRunRequest", additionalProperties: false }
 );

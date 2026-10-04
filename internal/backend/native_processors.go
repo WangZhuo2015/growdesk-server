@@ -16,6 +16,11 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 	if err := nativeTaskOwner(ctx, s.DB, lease.Input, false); err != nil {
 		return err
 	}
+	if lease.Kind == "medical_ocr" || lease.Kind == "growth_ocr" {
+		if _, err := taskAttachments(ctx, s.DB, lease.Input, lease.Kind); err != nil {
+			return err
+		}
+	}
 	switch lease.Kind {
 	case "sync_snapshot_family":
 		return s.executeNativeSnapshot(ctx, lease)
@@ -56,10 +61,16 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 			return providerFailure("AI_ACTION_UNSUPPORTED", "A daily summary must not propose record mutations", false)
 		}
 	case "medical_ocr":
-		message = "Extract the text and labelled measurements from this document. Preserve original units and uncertainty. Do not diagnose, invent missing values or execute actions. Return a read-only text result for human review."
+		message = medicalOCRPrompt
 		answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
 		if err == nil && len(answer.Actions) != 0 {
-			return providerFailure("AI_ACTION_UNSUPPORTED", "Document extraction must not propose mutations", false)
+			return providerFailure("AI_ACTION_UNSUPPORTED", "Medical extraction must not propose mutations", false)
+		}
+	case "growth_ocr":
+		message = growthOCRPrompt
+		answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
+		if err == nil && len(answer.Actions) != 0 {
+			return providerFailure("AI_ACTION_UNSUPPORTED", "Growth extraction must not propose mutations", false)
 		}
 	default:
 		return errors.New("unsupported native task kind")
@@ -98,6 +109,17 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 			return providerFailure("AI_ACTION_INVALID", "Provider proposed an invalid feeding record", false)
 		}
 	}
+	var ocrDraft Object
+	if lease.Kind == "medical_ocr" || lease.Kind == "growth_ocr" {
+		modelSource := config.Model
+		if config.Mode == "fixture" {
+			modelSource = "fixture"
+		}
+		ocrDraft, err = canonicalTypedOCRDraft(s.Contract, lease.Kind, answer.OCRDraft, input, answer.Text, modelSource)
+		if err != nil {
+			return err
+		}
+	}
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
 		return err
@@ -118,6 +140,9 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 
 	status := "succeeded"
 	result := Object{"text": answer.Text, "usage": answer.Usage}
+	if ocrDraft != nil {
+		result["ocrDraft"] = ocrDraft
+	}
 	var proposal any
 	if len(answer.Actions) > 0 {
 		actions, err := toJSONValue(answer.Actions)
@@ -179,6 +204,8 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 		result["reviewRequired"], result["attachmentId"] = true, input.AttachmentIDs[0]
 		// This endpoint extracts a document, not a clinical diagnosis. The
 		// user must explicitly create/review a medical record separately.
+	} else if lease.Kind == "growth_ocr" {
+		result["reviewRequired"], result["attachmentId"] = true, input.AttachmentIDs[0]
 	}
 	planJSON := "null"
 	if proposal != nil {
@@ -187,9 +214,16 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 			return err
 		}
 	}
-	if _, err = tx.Exec(ctx, `UPDATE ai_runs SET result_summary=$2,proposed_plan=$3::jsonb,error_code=NULL,error_message=NULL,
+	ocrDraftJSON := "null"
+	if ocrDraft != nil {
+		ocrDraftJSON, err = jsonText(ocrDraft)
+		if err != nil {
+			return err
+		}
+	}
+	if _, err = tx.Exec(ctx, `UPDATE ai_runs SET result_summary=$2,proposed_plan=$3::jsonb,ocr_draft=$5::jsonb,error_code=NULL,error_message=NULL,
 		finished_at=CASE WHEN $4 THEN NULL ELSE NOW() END,updated_at=NOW() WHERE id=$1`,
-		lease.ID, answer.Text, planJSON, status == "awaiting_confirmation"); err != nil {
+		lease.ID, answer.Text, planJSON, status == "awaiting_confirmation", ocrDraftJSON); err != nil {
 		return err
 	}
 	if err = terminalNativeTask(ctx, tx, lease, status, result); err != nil {

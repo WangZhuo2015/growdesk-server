@@ -22,7 +22,7 @@ const nativeLeaseSeconds = 20
 
 var nativeTaskKinds = []string{
 	"ai_chat_run", "voice_transcription", "daily_summary_synthesis",
-	"medical_ocr", "sync_snapshot_family", "user_data_export", "push_delivery",
+	"medical_ocr", "growth_ocr", "sync_snapshot_family", "user_data_export", "push_delivery",
 }
 
 type nativeTaskInput struct {

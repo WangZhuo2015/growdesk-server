@@ -26,6 +26,9 @@ func (s *Server) registerAIRunCommands() {
 	s.Register("createMedicalOcrRun", false, func(ctx context.Context, r *Request) (Result, error) {
 		return s.createAuxiliaryRun(ctx, r, "medical_ocr")
 	})
+	s.Register("createGrowthOcrRun", false, func(ctx context.Context, r *Request) (Result, error) {
+		return s.createAuxiliaryRun(ctx, r, "growth_ocr")
+	})
 }
 
 func taskAttachments(ctx context.Context, q Querier, input nativeTaskInput, kind string) ([]Object, error) {
@@ -67,8 +70,15 @@ func taskAttachments(ctx context.Context, q Querier, input nativeTaskInput, kind
 			if text(row["purpose"]) != "medical_report" {
 				return nil, invalid("Medical OCR requires a medical_report attachment")
 			}
-			if !strings.HasPrefix(mime, "image/") && mime != "application/pdf" {
-				return nil, invalid("OCR requires an image or PDF attachment")
+			if !supportedOCRMime(kind, mime) {
+				return nil, invalid("Medical OCR supports JPEG, PNG, WebP images and PDF attachments")
+			}
+		case "growth_ocr":
+			if text(row["purpose"]) != "growth_photo" {
+				return nil, invalid("Growth OCR requires a growth_photo attachment")
+			}
+			if !supportedOCRMime(kind, mime) {
+				return nil, invalid("Growth OCR supports JPEG, PNG and WebP images")
 			}
 		case "ai_chat_run":
 			if !strings.HasPrefix(mime, "image/") && mime != "application/pdf" {
@@ -245,7 +255,7 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 		baby = text(r.Body["babyId"])
 	}
 	attachmentID := text(r.Body["attachmentId"])
-	if kind == "medical_ocr" {
+	if kind == "medical_ocr" || kind == "growth_ocr" {
 		row, err := s.readNativeAttachment(ctx, r.Principal.UserID, attachmentID, false, false)
 		if err != nil {
 			if normalizedError(err).Status == http.StatusForbidden {
@@ -253,19 +263,23 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 			}
 			return Result{}, err
 		}
-		baby = text(row["baby_id"])
+		attachmentBaby := text(row["baby_id"])
+		if baby != "" && baby != attachmentBaby {
+			return Result{}, apiError(404, "RECORD_NOT_FOUND", "Attachment was not found in the requested baby scope")
+		}
+		baby = attachmentBaby
 		if baby == "" {
-			return Result{}, invalid("Medical OCR requires a baby-scoped attachment")
+			return Result{}, invalid("OCR requires a baby-scoped attachment")
 		}
 	}
 	input, err := nativeSubmissionScope(ctx, s.DB, r.Principal.UserID, baby)
 	if err != nil {
-		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+		if (kind == "medical_ocr" || kind == "growth_ocr") && normalizedError(err).Status == http.StatusForbidden {
 			return Result{}, notFound("Attachment", attachmentID)
 		}
 		return Result{}, err
 	}
-	if kind == "medical_ocr" {
+	if kind == "medical_ocr" || kind == "growth_ocr" {
 		input.AttachmentIDs = []string{attachmentID}
 		// Validate before checking provider configuration: a malformed request
 		// should remain a 400 even when the OCR provider is unavailable.
@@ -282,7 +296,7 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	if kind == "daily_summary_synthesis" {
 		input.TargetDate = text(r.Body["targetDate"])
 	} else {
-		if kind != "medical_ocr" {
+		if kind != "medical_ocr" && kind != "growth_ocr" {
 			input.AttachmentIDs = []string{attachmentID}
 		}
 		if _, err = requireObjectStore(s); err != nil {
@@ -295,13 +309,13 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	}
 	defer rollback(tx)
 	if err = lockSubmissionScope(ctx, tx, input); err != nil {
-		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+		if (kind == "medical_ocr" || kind == "growth_ocr") && normalizedError(err).Status == http.StatusForbidden {
 			return Result{}, notFound("Attachment", attachmentID)
 		}
 		return Result{}, err
 	}
 	if _, err = taskAttachments(ctx, tx, input, kind); err != nil {
-		if kind == "medical_ocr" && normalizedError(err).Status == http.StatusForbidden {
+		if (kind == "medical_ocr" || kind == "growth_ocr") && normalizedError(err).Status == http.StatusForbidden {
 			return Result{}, notFound("Attachment", attachmentID)
 		}
 		return Result{}, err
@@ -339,6 +353,8 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	title := "语音记录"
 	if kind == "medical_ocr" {
 		title = "医疗文档识别"
+	} else if kind == "growth_ocr" {
+		title = "成长照片识别"
 	} else if kind == "daily_summary_synthesis" {
 		title = "日报 " + input.TargetDate
 	}
@@ -447,7 +463,7 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 	}
 	task := obj(run["__task"])
 	kind := text(task["kind"])
-	if (kind != "ai_chat_run" && kind != "voice_transcription" && kind != "medical_ocr" && kind != "daily_summary_synthesis") || (text(task["status"]) != "failed" && text(task["status"]) != "cancelled") {
+	if (kind != "ai_chat_run" && kind != "voice_transcription" && kind != "medical_ocr" && kind != "growth_ocr" && kind != "daily_summary_synthesis") || (text(task["status"]) != "failed" && text(task["status"]) != "cancelled") {
 		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Only failed or cancelled executable runs can be retried")
 	}
 	if _, err = nativeProviderConfiguration(); err != nil {
@@ -474,7 +490,7 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 	if _, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='active',next_dispatch_at=NOW(),terminal_at=NULL WHERE aggregate_id=$1 AND phase_key='native-initial'`, r.Params["id"]); err != nil {
 		return Result{}, err
 	}
-	if _, err = tx.Exec(ctx, `UPDATE ai_runs SET error_code=NULL,error_message=NULL,proposed_plan=NULL,result_summary=NULL,started_at=NULL,finished_at=NULL,updated_at=NOW() WHERE id=$1`, r.Params["id"]); err != nil {
+	if _, err = tx.Exec(ctx, `UPDATE ai_runs SET error_code=NULL,error_message=NULL,proposed_plan=NULL,result_summary=NULL,ocr_draft=NULL,started_at=NULL,finished_at=NULL,updated_at=NOW() WHERE id=$1`, r.Params["id"]); err != nil {
 		return Result{}, err
 	}
 	if err = appendNativeRunEvent(ctx, tx, r.Params["id"], "attempt_restarted", Object{"attempt": next}); err != nil {

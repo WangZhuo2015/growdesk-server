@@ -41,6 +41,7 @@ class MedicalScenario(DOMAIN.Scenario):
         attachment = self.alias(str(uuid.uuid4()), 'attachment')
         self.owned.sql(f"""INSERT INTO attachments(id,family_id,baby_id,uploader_id,purpose,mime_type,byte_size,sha256,object_key,status,expires_at)
           VALUES('{attachment}','{fid}','{bid}','{uid}','medical_report','image/png',8,repeat('0',64),'test_medical_metadata','ready',NOW()+INTERVAL '1 day');""")
+        family_changes_before = int(self.owned.sql(f"SELECT COUNT(*) FROM family_changes WHERE family_id='{fid}';").strip())
         self.call('GET', path, 401, observe='medical requires authentication')
         self.call('GET', alias, 403, token=outsider, observe='alias family isolation')
         self.call('GET', path, 200, token=owner, observe='medical empty list')
@@ -110,7 +111,9 @@ class MedicalScenario(DOMAIN.Scenario):
             assert TOOLS.expect(interop_base, 'GET', path, 200, token=owner) == persisted
             update = TOOLS.expect(interop_base, 'PATCH', path + '/' + gid, 200, {'baseVersion': '1', 'notes': 'test interop'}, owner)
             assert self.call('GET', path + '/' + gid, 200, token=owner) == update
-        assert self.owned.sql(f"SELECT COUNT(*) FROM family_changes WHERE family_id='{fid}';").strip() == '0'
+        expected_family_changes = family_changes_before + 5 + int(bool(interop_base))
+        actual_family_changes = int(self.owned.sql(f"SELECT COUNT(*) FROM family_changes WHERE family_id='{fid}';").strip())
+        assert actual_family_changes == expected_family_changes, (actual_family_changes, expected_family_changes)
         if runtime == 'go':
             self.owned.sql(f"UPDATE baby_members SET role='viewer' WHERE baby_id='{bid}' AND user_id='{uid}';")
             snapshot = self.durable_state(fid)

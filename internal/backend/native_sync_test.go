@@ -27,7 +27,7 @@ func TestNativeSyncAndRecoveryRegistration(t *testing.T) {
 	// Verify native sync and snapshot operations are registered and authenticated.
 	ops := []string{
 		"createAiRun", "confirmAiRun", "cancelAiRun", "retryAiRun",
-		"createVoiceRun", "createDailySummaryRun", "createMedicalOcrRun",
+		"createVoiceRun", "createDailySummaryRun", "createMedicalOcrRun", "createGrowthOcrRun",
 		"createFamilySnapshot", "getFamilySnapshot", "getFamilySnapshotPage",
 		"executeSyncCommands", "exportUserData", "getUserExportStatus", "downloadUserExport",
 	}

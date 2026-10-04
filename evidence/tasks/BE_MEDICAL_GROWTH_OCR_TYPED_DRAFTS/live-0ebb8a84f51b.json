@@ -1,0 +1,97 @@
+{
+  "status": "PASS",
+  "runId": "0ebb8a84f51b",
+  "externalSecretsRead": false,
+  "cases": [
+    "ready_growth_photo_rejected_by_medical_ocr_before_task_or_receipt",
+    "ready_growth_photo_HEIC_rejected_before_task_or_receipt",
+    "foreign_principal_and_baby_scope_denials",
+    "explicit_request_baby_must_match_attachment_baby",
+    "durable_cancel_same_key_replay_and_changed_body_conflict",
+    "worker_completion_wins_then_cancel_preserves_succeeded_result",
+    "http_cancel_while_worker_waits_on_loopback_provider_then_release_valid_result_without_commit",
+    "real_pdf_upload_worker_typed_medical_result_failed_retry_scope_and_no_diagnosis",
+    "owner_and_second_family_member_receive_medical_and_growth_changes_at_consecutive_cursors",
+    "human_edited_medical_confirmation_with_atomic_growth_rollback_readback_and_idempotency",
+    "two_member_medical_create_update_delete_feed_events",
+    "growth_photo_upload_queue_typed_worker_explicit_save_scope_and_exact_replay"
+  ],
+  "httpAssertions": 81,
+  "workerRuns": [
+    "medical-invalid-result",
+    "medical-retry-success",
+    "medical-held-provider-cancel-fence",
+    "growth-success"
+  ],
+  "businessCounts": {
+    "medicalReports": 1,
+    "growthMeasurements": 2
+  },
+  "taskStateCounts": {
+    "tasks": 4,
+    "outbox": 4,
+    "sessions": 4,
+    "messages": 6,
+    "runs": 4,
+    "events": 17,
+    "receipts": 7
+  },
+  "beforeExplicitConfirmation": {
+    "medicalReports": 0,
+    "growthMeasurements": 0
+  },
+  "feed": {
+    "twoMemberReadback": true,
+    "medicalAndGrowthChanges": 2,
+    "rollbackCursorBefore": 0,
+    "finalCursor": 6,
+    "finalChangeCount": 6
+  },
+  "cancellationRaces": {
+    "cancelWhileLoopbackProviderHeld": true,
+    "validResponseReleasedAfterCancel": true,
+    "lateWorkerCommitFenced": true,
+    "completedWorkerRemainedSucceededAfterCancel": true
+  },
+  "rollbackStateUnchanged": true,
+  "fixtureOnly": true,
+  "recognitionQualityClaimed": false,
+  "externalProviderCalls": false,
+  "productionOrLegacyServicesContacted": false,
+  "principalIdsRecorded": false,
+  "tokensOrPresignedUrlsRecorded": false,
+  "apiBinarySha256": "2f06bbe1a9f6fa45a4859530a2aa9d3f3d1c150635d60c6136a0b05736e68b2a",
+  "workerBinarySha256": "70ba497b7bb6f3441fe2f3d43d5b26f1f7cc21ccc68706c384162a97cd0bdc3e",
+  "migrationBinarySha256": "73c1e7cd5e89a5aaff8ec933b2c17020e959c106bc34cd404c5e01454257ab64",
+  "apiSourceRevision": "263d0107f07ea2732f08747f5d1d37c4bd291a6e",
+  "sourceHashes": {
+    "packages/contracts/src/ocr.ts": "3bd15f0cb7a50732e9e662c4db09355068b0dde5e1919d5c6e292b02b8531f0a",
+    "packages/contracts/src/routes.ts": "865304ab3684047ec054f2f9f956df419e06f71a1582d56acb9e3c32774e91bc",
+    "packages/contracts/src/medical.ts": "87a981edf009cf38c54319b4aac6b630cc94da0993c21c531bcabcf03eb8f44b",
+    "packages/contracts/src/growth.ts": "06c6c08280b3d4455c11f357409fd4ea311ee7cb69cbee76c294fe64f1b21136",
+    "packages/contracts/src/ai.ts": "324ff12815cb1b0cb67a62b514808433307db98875c662d2c13c4fd66e6e539f",
+    "packages/contracts/src/index.ts": "148f847113029e85883f1af2a4bd6b6faddbadf50780cde9121126149ccd4826",
+    "packages/contracts/tests/contracts.test.ts": "1d9f25802e4110d8bc9700019ba8cace686c710d14b046bcf05b62097af5524b",
+    "internal/backend/ai_run_commands.go": "755226500b4d9ba682cc8a1a287a0fcdef646486321fc6c7d82a6451bfc0f104",
+    "internal/backend/native_processors.go": "548716c7c50432fdb5636c17d348c65c44c48cf5001d6f909c486a3d93fffadd",
+    "internal/backend/native_tasks.go": "34d1658d78cb792d8ab8c1fe92dcd43ad5c3dbe4b749df212f8734320668e932",
+    "internal/backend/medical_growth_ocr.go": "8d01b39de40f8349c1398ce439abc0a7c42029f4081e88467a07a41a6180b5d0",
+    "internal/backend/ai_provider.go": "5cd7ffdcb9d31c17bce90727cab48c699682ffc34bdaf8cb768bf8b801caac63",
+    "internal/backend/ai_run_reads.go": "c9dd332aba5bfc114ae6e120413511beba533a40c8ac35a9a953f7fb090500a1",
+    "internal/backend/growth.go": "379a1c5b2b629c7fceaa00f4c524c902d4fc9dd532c4403ecbaddb26aeb726bb",
+    "internal/backend/medical_reports.go": "8c4b1b44d45e79b8304c8b9bf8733d73d136800bec4fb77a632e9fdcb24c6ec8",
+    "internal/backend/medical_projections.go": "6ed6a470eaa8855279878db18e2d8fa5507257747ef20f11a14b64c32e30a049",
+    "internal/backend/record_mutation.go": "6512613068cf60bf22dd95f0bb3d9993335b234d086ae865b26d93efd2558fb2",
+    "prisma/schema.prisma": "d5cdcba911603422bb49c00bd0b8abba27f68ab822b84de8a227e339232f1cab",
+    "internal/backend/foundation_test.go": "3ce837bf432883663f7d97ea6e81c3eb2de8156f871409daaca2e311cb91a844",
+    "internal/backend/native_sync_test.go": "99d1b601d0999363b59c20c8fb20e2370ba9bfa33d1fe42cd6e4d00b843b10fb",
+    "internal/backend/medical_growth_ocr_test.go": "de8055503a222cffc563c2e27a63a759501fd0d6858686b4fa5cdb2ccf65c221",
+    "prisma/migrations/202610030030_medical_growth_ocr_typed_drafts/migration.sql": "8118bb9af551149ff08759023221d9ea96485ecc64c9c1f55bf64ed04ed5f7ee",
+    "contracts/openapi.json": "eeb0ea157531cf4d19e49a3268157564b0457622d5a41b1db3b3a68d792e9be0",
+    "scripts/go-medical-growth-ocr-typed-integration.py": "77433a1a9a156c39c5f5995fa38aad365a1e2ff3cab19e78b33c26c116cd91a8",
+    "scripts/go-medical-integration.py": "86c4eb51449a12d4791eb909bced8f6b150f86b262812e8d183814a6683015a3"
+  },
+  "sourceManifestSha256": "c247202dbf175e109ca358205928e4fb492287cd9953fd13f3438e35b2fb7e60",
+  "privateStackCleaned": true,
+  "privateDatabaseAndObjectDataRemoved": true
+}
