@@ -124,6 +124,7 @@ class Scenario:
             intro = source["introduction"]
             allergen = source["allergen"]
             expected = {
+                "isCustom": False,
                 "name": source["name"], "icon": source["icon"], "category": source["category"],
                 "foodGroup": source.get("foodGroup"),
                 "recommendedFromMonth": intro.get("recommendedFromMonth"),
@@ -220,6 +221,8 @@ class Scenario:
         create = self.call("POST", "/api/v1/food/items", 201, custom_body, owner_token,
                            {"Idempotency-Key": key}, label="idempotent custom food create")
         item = create
+        if item.get("isCustom") is not True:
+            raise AssertionError("custom create omitted the server-owned catalog classification")
         if item["icon"] != "🍐" or item["firstAddedDate"] != "2026-10-03" or item["familyStatus"]["version"] != 1:
             raise AssertionError("custom icon/first-added/status data did not round-trip")
         if item["nutrition"] != [] or item["nutrientsJson"] != custom_body["nutrientsJson"] or item["nutritionBasis"] != "per_100g":
@@ -289,6 +292,8 @@ class Scenario:
         cleared = self.call("PATCH", f"/api/v1/families/{family_id}/food/items/{item_id}", 200,
                             {"baseVersion": 1, "nutrientsJson": None}, owner_token,
                             label="clear numeric profile without erasing Web metadata")
+        if cleared.get("isCustom") is not True:
+            raise AssertionError("profile clear lost the custom catalog classification")
         if cleared["version"] != 2 or cleared["nutrientsJson"] is not None or cleared["nutrition"] != [] or cleared["icon"] != "🍐":
             raise AssertionError("numeric profile clear changed unrelated descriptive/custom-food fields")
         self.error("PATCH", f"/api/v1/families/{family_id}/food/items/{item_id}", 409, "CONCURRENCY_CONFLICT",
@@ -367,6 +372,8 @@ class Scenario:
 
         refreshed = self.call("GET", list_path, 200, token=owner_token, label="relaunch-style catalog read")
         persisted = next(value for value in refreshed["data"] if value["id"] == item_id)
+        if persisted.get("isCustom") is not True:
+            raise AssertionError("independent catalog read lost the custom classification")
         if persisted["version"] != 2 or persisted["nutrientsJson"] is not None or persisted["icon"] != "🍐":
             raise AssertionError("custom food/profile state did not persist after independent HTTP reads")
 
@@ -405,6 +412,8 @@ class Scenario:
         snap_egg = next((row for row in status_rows if row["foodItemId"] == "food_egg"), None)
         if snap_item is None or snap_egg is None:
             raise AssertionError("native snapshot pages omitted custom food or family-shared food status")
+        if snap_item.get("isCustom") is not True:
+            raise AssertionError("snapshot custom catalog classification differs from HTTP reads")
         if snap_item.get("icon") != "🍐" or snap_item.get("nutrition") != [] or snap_item.get("nutrientsJson") is not None:
             raise AssertionError("snapshot custom-food DTO lost typed or numeric nutrition fields")
         if snap_egg.get("tried") is not False or snap_egg.get("firstAddedDate") is not None or snap_egg.get("acceptance") != 0:
@@ -449,6 +458,19 @@ def main():
         "status": "RUNNING",
         "serverHead": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "sourceSha256": {"legacyFoodJson": digest},
+        "deliverySourceSha256": {
+            name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+            for name in (
+                "internal/backend/food_library.go", "internal/backend/native_snapshot_catalogs.go",
+                "internal/backend/native_snapshots.go", "packages/contracts/src/nutrition.ts",
+                "contracts/openapi.json", "scripts/go-food-library-parity-integration.py",
+                "scripts/go-sync-snapshot-integration.py",
+            )
+        },
+        "binarySha256": {
+            "api": hashlib.sha256(args.api_binary.read_bytes()).hexdigest(),
+            "worker": hashlib.sha256(args.worker_binary.read_bytes()).hexdigest(),
+        },
         "runtime": {"apiHost": "127.0.0.1", "database": "owned test_ PostgreSQL 18", "redis": "owned test_ Redis 8", "externalProviders": "not configured", "push": "not configured", "objectStorage": "not used by this scope"},
         "cleanup": {},
     }

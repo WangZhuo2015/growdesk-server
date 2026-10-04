@@ -5828,6 +5828,9 @@
           "id": {
             "type": "string"
           },
+          "isCustom": {
+            "type": "boolean"
+          },
           "name": {
             "minLength": 1,
             "maxLength": 100,
@@ -6242,6 +6245,9 @@
               "properties": {
                 "id": {
                   "type": "string"
+                },
+                "isCustom": {
+                  "type": "boolean"
                 },
                 "name": {
                   "minLength": 1,
@@ -37389,6 +37395,9 @@
                           "id": {
                             "type": "string"
                           },
+                          "isCustom": {
+                            "type": "boolean"
+                          },
                           "name": {
                             "minLength": 1,
                             "maxLength": 100,
@@ -37932,6 +37941,9 @@
                     "id": {
                       "type": "string"
                     },
+                    "isCustom": {
+                      "type": "boolean"
+                    },
                     "name": {
                       "minLength": 1,
                       "maxLength": 100,
@@ -38411,6 +38423,9 @@
                   "properties": {
                     "id": {
                       "type": "string"
+                    },
+                    "isCustom": {
+                      "type": "boolean"
                     },
                     "name": {
                       "minLength": 1,

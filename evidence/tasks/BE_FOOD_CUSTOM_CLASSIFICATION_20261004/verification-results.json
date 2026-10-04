@@ -1,0 +1,27 @@
+[
+  {
+    "name": "go-test",
+    "exitCode": 0,
+    "seconds": 15.234
+  },
+  {
+    "name": "go-vet",
+    "exitCode": 0,
+    "seconds": 2.515
+  },
+  {
+    "name": "typecheck",
+    "exitCode": 0,
+    "seconds": 4.992
+  },
+  {
+    "name": "lint",
+    "exitCode": 0,
+    "seconds": 9.287
+  },
+  {
+    "name": "unit",
+    "exitCode": 0,
+    "seconds": 41.91
+  }
+]

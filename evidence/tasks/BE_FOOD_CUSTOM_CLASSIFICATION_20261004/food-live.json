@@ -1,0 +1,223 @@
+{
+  "suite": "Go food-library family/shared-state HTTP parity",
+  "status": "PASS",
+  "serverHead": "cca394e5806c35c27b5fabd441731af75215896b",
+  "sourceSha256": {
+    "legacyFoodJson": "89d96cdb829f552982ddb1da76d51b85eb8d2d02a70194386e3b200cff8453d2"
+  },
+  "deliverySourceSha256": {
+    "internal/backend/food_library.go": "23dea057b85c7213440660ca7af7f2dffb9817e6fb7a7c328ddb8a6cd330c483",
+    "internal/backend/native_snapshot_catalogs.go": "54b63207bb7d01bc0770a97c622fa43a1d27ea0b133aff96f3d9f7a3119ee785",
+    "internal/backend/native_snapshots.go": "3d390944720242427d3801445e8616fc7a572fa5d88fd496ac72e86ccc6dd779",
+    "packages/contracts/src/nutrition.ts": "029fc96978d4f84eb4a3ccdf2f46425741d9c2533fa5dec562b214d2a011e50d",
+    "contracts/openapi.json": "099e1e9b4b6ace2ab7d7ef5dff040a8b12708f810318ca69e91713f9831d6fbc",
+    "scripts/go-food-library-parity-integration.py": "6749513f273ae2bb4993ade7a0964c8142af31a33a16e5bfd31fe3460327634d",
+    "scripts/go-sync-snapshot-integration.py": "688bb9f1bf8dc454b7ac2dbb5aba1f1ba49787e4d4350f3466dcce2e5db5a90b"
+  },
+  "binarySha256": {
+    "api": "dbde896289bf203b4dbca888dfb9b1c80155f958a35403176245b21cf66fd36f",
+    "worker": "5dc4d1465dde7468219ab123f6cb7fb96a0a7002a41a531201b8d83a865cd934"
+  },
+  "runtime": {
+    "apiHost": "127.0.0.1",
+    "database": "owned test_ PostgreSQL 18",
+    "redis": "owned test_ Redis 8",
+    "externalProviders": "not configured",
+    "push": "not configured",
+    "objectStorage": "not used by this scope",
+    "apiUrl": "http://127.0.0.1:53752"
+  },
+  "cleanup": {
+    "apiProcessesStopped": true,
+    "redisProcessStopped": true,
+    "postgresStopped": true,
+    "temporaryDirectoryRemoved": true,
+    "noContainerResourcesCreated": true
+  },
+  "result": {
+    "assertions": 50,
+    "testUsernames": [
+      "test_food_owner_a56541c03afd48d2",
+      "test_food_viewer_a56541c03afd48d2",
+      "test_food_outsider_a56541c03afd48d2"
+    ],
+    "familyName": "test_food_family_a56541c03afd48d2",
+    "babyCount": 2,
+    "catalogItems": 45,
+    "foodItemIdPrefix": "custom_",
+    "observations": [
+      {
+        "case": "register owner",
+        "status": 201,
+        "usernamePrefix": "test_"
+      },
+      {
+        "case": "rename to test family",
+        "status": 200
+      },
+      {
+        "case": "owner test family has two test babies",
+        "status": 201,
+        "babyCount": 2
+      },
+      {
+        "case": "register viewer",
+        "status": 201,
+        "usernamePrefix": "test_"
+      },
+      {
+        "case": "second test account joins as viewer candidate",
+        "status": 200
+      },
+      {
+        "case": "viewer membership fixture in private test database",
+        "status": 200,
+        "writePath": "SQL setup only; all food operations remain HTTP"
+      },
+      {
+        "case": "register outsider",
+        "status": 201,
+        "usernamePrefix": "test_"
+      },
+      {
+        "case": "catalog requires authentication",
+        "status": 401,
+        "errorCode": "UNAUTHORIZED"
+      },
+      {
+        "case": "owner loads food library",
+        "status": 200
+      },
+      {
+        "case": "45 reference food rows match legacy Web source fields",
+        "status": 200,
+        "itemCount": 45,
+        "sourceAsOf": "2026-08-03",
+        "sourceSha256": "89d96cdb829f552982ddb1da76d51b85eb8d2d02a70194386e3b200cff8453d2"
+      },
+      {
+        "case": "viewer can read family food statuses",
+        "status": 200
+      },
+      {
+        "case": "idempotent custom food create",
+        "status": 201
+      },
+      {
+        "case": "same-key lost-response replay",
+        "status": 201
+      },
+      {
+        "case": "same key with changed body rejected",
+        "status": 409,
+        "errorCode": "IDEMPOTENCY_KEY_REUSED"
+      },
+      {
+        "case": "failed feed append returns error",
+        "status": 500,
+        "errorCode": "P2039"
+      },
+      {
+        "case": "create/feed failure rolls back all projections and receipt",
+        "status": 500
+      },
+      {
+        "case": "failed update feed append returns error",
+        "status": 500,
+        "errorCode": "P2039"
+      },
+      {
+        "case": "profile/feed failure rolls back the row and family cursor",
+        "status": 500
+      },
+      {
+        "case": "clear numeric profile without erasing Web metadata",
+        "status": 200
+      },
+      {
+        "case": "stale numeric profile update rejected",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "failed status feed append returns error",
+        "status": 500,
+        "errorCode": "P2039"
+      },
+      {
+        "case": "status/feed failure rolls back the row and family cursor",
+        "status": 500
+      },
+      {
+        "case": "parallel baseVersion 0 has one status winner",
+        "status": 200,
+        "conflicts": 1
+      },
+      {
+        "case": "update existing family status",
+        "status": 200
+      },
+      {
+        "case": "clear tried date and reaction",
+        "status": 200
+      },
+      {
+        "case": "stale status version rejected",
+        "status": 409,
+        "errorCode": "CONCURRENCY_CONFLICT"
+      },
+      {
+        "case": "outsider cannot read another family",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "outsider cannot create in another family",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "outsider cannot update another family's status",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "family viewer cannot create custom food",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "family viewer cannot change shared status",
+        "status": 403,
+        "errorCode": "FAMILY_ACCESS_DENIED"
+      },
+      {
+        "case": "relaunch-style catalog read",
+        "status": 200
+      },
+      {
+        "case": "bounded worker processed only this family's snapshot",
+        "status": 200,
+        "activeTaskBeforeWorker": "sync_snapshot_family"
+      },
+      {
+        "case": "real snapshot food_item and food_status DTOs with content digest",
+        "status": 200,
+        "snapshotPageCount": 8,
+        "highWater": "6"
+      },
+      {
+        "case": "durable test-family food state",
+        "status": 200,
+        "state": {
+          "cursor": "6",
+          "itemCount": 1,
+          "foodChanges": 6,
+          "statusCount": 2,
+          "foodReceipts": 1
+        }
+      }
+    ]
+  },
+  "cleanupVerified": true
+}

@@ -39,6 +39,7 @@ type foodLibraryDataSource struct {
 
 type foodLibraryItem struct {
 	ID                               string                 `json:"id"`
+	IsCustom                         bool                   `json:"isCustom"`
 	Name                             string                 `json:"name"`
 	Icon                             string                 `json:"icon"`
 	Category                         string                 `json:"category"`
@@ -110,6 +111,7 @@ func foodLibraryNullableBool(value any) *bool {
 func foodLibraryItemFromRows(item, status Object) (foodLibraryItem, error) {
 	value := foodLibraryItem{
 		ID: text(item["id"]), Name: text(item["name"]), Icon: text(item["icon"]),
+		IsCustom: boolean(item["is_custom"]),
 		Category: text(item["category"]), FoodGroup: foodLibraryNullableText(item["food_group"]),
 		Status: "to_try", Acceptance: 0,
 		AllergenRisk: text(item["allergen_risk"]), RecommendedAgeMonths: integer(item["recommended_age_months"]),

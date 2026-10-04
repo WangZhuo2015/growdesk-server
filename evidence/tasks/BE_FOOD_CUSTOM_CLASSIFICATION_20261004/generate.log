@@ -1,0 +1,10 @@
+
+> growdesk-server@0.1.0 backend:contracts:generate
+> node scripts/generate-contracts.mjs
+
+Generating canonical OpenAPI 3.0.3 specification from @growdesk/contracts...
+Successfully generated /private/tmp/growdesk-server-vaccine-edit-20261002/contracts/openapi.json
+- OpenAPI version: 3.0.3
+- Path count: 137
+- Operation count: 187
+- Schema component count: 81

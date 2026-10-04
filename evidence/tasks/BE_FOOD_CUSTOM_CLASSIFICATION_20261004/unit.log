@@ -1,0 +1,216 @@
+
+> growdesk-server@0.1.0 backend:test:unit
+> npm run backend:build && node --import tsx --test "packages/*/tests/**/*.test.ts" "apps/*/tests/**/*.test.ts" "tests/unit/**/*.test.ts"
+
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ AI API preflight rejects an absent provider with 503 (3.9735ms)
+✔ AI API preflight accepts only explicit fixture responses (0.2485ms)
+✔ AI API preflight accepts approved compatible provider configuration (0.078209ms)
+✔ password hashing and verification (1034.737833ms)
+✔ access token signing and verification lifecycle (31.527875ms)
+✔ refresh token generation and hashing (0.291042ms)
+✔ body validation preserves nullable JSON values without coercion (690.238917ms)
+✔ query validation retains Fastify's default scalar coercion (214.647584ms)
+✔ health liveness is a real Fastify route (587.601291ms)
+✔ health route does not expose business endpoints in the baseline (53.905042ms)
+✔ health readiness is 503 when dependencies are not configured (97.052833ms)
+✔ health readiness is 200 only when both foundation dependencies respond (30.606875ms)
+✔ liveness does not call or depend on readiness (125.148834ms)
+✔ readiness closes its dependency owner with the app (15.922459ms)
+✔ knowledge preserves source details and filters exact milestone month and activity range (793.029625ms)
+✔ legacy supplement nutrient aliases and units normalize deterministically (0.841792ms)
+✔ validated weather preserves the old UI shape and crosses midnight (185.006125ms)
+✔ European AQI is not classified using unrelated 50-point thresholds (9.970167ms)
+✔ invalid/missing AQI stays unavailable instead of appearing excellent (5.387917ms)
+✔ optional AQI HTTP, JSON and network failures do not fabricate a measurement (33.654833ms)
+✔ forecast rejects unknown JSON, missing values and mismatched parallel arrays (1.136125ms)
+✔ forecast failures return 502, never a cacheable successful response (0.951166ms)
+✔ invalid coordinates are rejected before any paid or external work (3.821083ms)
+✔ valid custom coordinates and unknown WMO codes remain explicit (1.411458ms)
+✔ Web AI contracts do not cause duplicate schema registration on repeated startup (828.337625ms)
+✔ all six Web AI operations are exported exactly once in the canonical contract (0.219875ms)
+✔ scheduler requires both database and Redis configuration before starting (0.637917ms)
+✔ scheduler lifecycle stops cleanly without dispatching jobs (0.170458ms)
+✔ AI provider fails explicitly when no provider is configured (0.721209ms)
+✔ fixture provider requires an explicit response and emits persisted-style text deltas (0.657584ms)
+✔ OpenAI-compatible HTTP fixture streams text without contacting an external provider (55.980625ms)
+✔ worker requires both database and Redis configuration before starting (0.61775ms)
+✔ worker lifecycle stops cleanly without claiming jobs (0.162667ms)
+✔ Redis guard accepts an isolated loopback test URL without connecting (0.961166ms)
+✔ runtime Redis supports an explicitly configured ACL user (0.1ms)
+✔ Redis guard rejects remoteHost before a connection (0.922667ms)
+✔ Redis guard rejects defaultPort before a connection (0.237209ms)
+✔ Redis guard rejects noPassword before a connection (0.162083ms)
+✔ Redis guard rejects query before a connection (0.147417ms)
+✔ Redis probe runs PING and disconnects the client (1.0345ms)
+✔ Redis probe fails closed for missing configuration (0.094625ms)
+✔ Redis probe bounds a hung ping and disconnects (10.5785ms)
+✔ Redis probe single-flights concurrent checks and closes in-flight clients (1.891291ms)
+▶ GrowDesk Contracts Test Suite
+  ✔ ApiErrorEnvelope schema validates standard error payload (0.775167ms)
+  ✔ Feeding record creation payload validates correct input and rejects malformed fields (0.340083ms)
+  ✔ Sleep record creation payload validates correct input (0.100791ms)
+  ✔ Growth measurement schema enforces decimal strings (0.139875ms)
+  ✔ Typed OCR drafts carry evidence and record confirmation references only (0.490084ms)
+  ✔ Growth OCR route is a baby-scoped durable-run operation (11.510791ms)
+  ✔ OCR confirmation record creates document their scope failures and idempotency (0.191334ms)
+  ✔ Sync command batch schema validates offline mutations structure (0.251542ms)
+  ✔ Native family snapshot pages use the existing worker projection envelope (6.156ms)
+  ✔ ROUTE_DEFINITIONS has unique operationIds and explicit status markings (3.998792ms)
+  ✔ attachment content is documented as binary media while errors remain JSON (6853.238541ms)
+  ✔ account export declares typed status, JSON download, and integrity headers (2128.127583ms)
+  ✔ medical OCR contract documents the optional idempotency key and provider failure (1981.3505ms)
+  ✔ Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff (1930.447292ms)
+✔ GrowDesk Contracts Test Suite (12918.18425ms)
+✔ food creation keeps absent, false and true tried states without coercion (0.787666ms)
+✔ custom food create preserves the legacy icon and first-added fields (1.01875ms)
+✔ family-shared food status requires CAS and keeps explicit clears (0.172542ms)
+✔ formula create accepts a typed label profile and supported basis (15.863084ms)
+✔ formula profile update requires a version field when supplied by caller (0.246292ms)
+✔ formula product reads preserve legacy JSON while writes remain typed (0.356292ms)
+✔ food create and versioned profile update preserve clear semantics (0.111292ms)
+✔ measured food records carry an explicit decimal gram quantity (0.245ms)
+✔ nutrition profile amounts reject negative and malformed nutrient entries (0.146625ms)
+✔ weather query supports explicit city, coordinates, and omitted default (0.7075ms)
+✔ weather response preserves unavailable values as null and labels AQI scale (0.517ms)
+✔ database guard accepts an owned PostgreSQL test URL without connecting (0.768375ms)
+✔ database guard rejects sqlite before a connection (0.3325ms)
+✔ database guard rejects productionHost before a connection (0.122ms)
+✔ database guard rejects unknownHost before a connection (0.076125ms)
+✔ database guard rejects productionDatabase before a connection (0.076542ms)
+✔ database guard rejects wrongRole before a connection (0.068584ms)
+✔ database guard rejects defaultPort before a connection (0.093458ms)
+✔ database guard rejects driverOverride before a connection (0.071708ms)
+✔ database guard rejects strictTls before a connection (0.074583ms)
+✔ PostgreSQL probe runs SELECT 1 and closes the client (1.16125ms)
+✔ PostgreSQL probe fails closed for missing configuration (0.102541ms)
+✔ PostgreSQL probe bounds a hung query and still closes (32.868708ms)
+✔ PostgreSQL probe single-flights concurrent checks and waits on close (25.896625ms)
+✔ one user can hold active memberships for multiple babies and families (4.102875ms)
+✔ multiple caregivers can access the same baby through separate BabyMember rows (0.294167ms)
+✔ family admin without a BabyMember row cannot read or manage that baby (1.194459ms)
+✔ baby access requires an active FamilyMember and an active BabyMember (0.11725ms)
+✔ viewer can read but cannot write or manage baby records (0.107209ms)
+✔ family write/manage permission intersects with baby permission (0.099709ms)
+✔ unknown runtime family or baby roles fail closed (0.093416ms)
+✔ record scope must agree with the Baby composite family identity (0.083792ms)
+✔ family feed projection returns only babies with active baby access (0.128875ms)
+✔ the last active baby admin cannot be revoked, but another admin permits revocation (0.17875ms)
+✔ a viewer or revoked FamilyMember does not satisfy the last-admin safeguard (0.080709ms)
+✔ baby membership consistency and composite uniqueness are explicit (0.092375ms)
+✔ legacy family-only record authorization no longer grants write access (0.060708ms)
+✔ login without an active binding does not enable sync (2.316875ms)
+✔ unexpected runtime operation fails closed even with a valid binding (0.096542ms)
+✔ unknown runtime family role cannot read cloud data (0.080708ms)
+✔ pending rejects upload and download (0.096583ms)
+✔ paused rejects upload and download (0.053333ms)
+✔ revoked rejects upload and download (0.042833ms)
+✔ switching bindingId cannot reuse an old binding (0.058042ms)
+✔ switching installationId cannot reuse an old binding (0.040208ms)
+✔ switching localVaultId cannot reuse an old binding (0.048125ms)
+✔ switching familyId cannot reuse an old binding (0.086541ms)
+✔ switching accounts cannot reuse an active binding (0.060959ms)
+✔ late requests from a previous generation are rejected after re-enable (0.073292ms)
+✔ expired consent does not silently approve a new policy (0.045417ms)
+✔ removed family membership rejects a still-active binding (0.767541ms)
+✔ invited family membership cannot sync (0.072583ms)
+✔ revoked family membership cannot sync (0.047958ms)
+✔ viewer can pull but cannot upload; consenting member can upload (0.0665ms)
+✔ accepts exact isolated runner connection (0.630916ms)
+✔ rejects sqlite before any connection and without exposing secret (0.251208ms)
+✔ rejects productionHost before any connection and without exposing secret (0.061709ms)
+✔ rejects unknownHost before any connection and without exposing secret (0.066625ms)
+✔ rejects wrongRole before any connection and without exposing secret (0.06ms)
+✔ rejects wrongDatabase before any connection and without exposing secret (0.047667ms)
+✔ rejects wrongPort before any connection and without exposing secret (0.060625ms)
+✔ rejects queryBypass before any connection and without exposing secret (0.063416ms)
+✔ rejects wrongSecret before any connection and without exposing secret (0.054458ms)
+✔ object storage guard admits only the manifest-bound loopback test namespace (0.827958ms)
+✔ A3 reconcile terminates unclaimed cancellations before recovery or max-attempt failure (0.73575ms)
+✔ A3 retry cancelled task clears the cancellation marker before dispatch (0.468917ms)
+✔ A3 retry failed task clears the cancellation marker before dispatch (0.106042ms)
+✔ A3 cancel keeps ownership checks and records a request without stealing a running lease (0.301792ms)
+✔ backend import boundaries are enforced (1994.747375ms)
+✔ architecture rules catch package subpaths and relative boundary bypasses (4.865541ms)
+BFF_LEGACY_SCHEMA {"field":{"type":"string"},"propertyOrder":["sessionSecretHash","userId","username","password","deviceLabel","legacyAuthToken"]}
+✔ BFF legacy exchange source preserves the already published optional credential schema (6.800042ms)
+✔ production compose keeps attachment storage private and digest pinned (0.599917ms)
+✔ food creation preserves tried=undefined with one transaction (1.15925ms)
+✔ food creation preserves tried=false with one transaction (0.141375ms)
+✔ food creation preserves tried=true with one transaction (0.121208ms)
+✔ status creation failure is propagated without a post-commit retry (8.235542ms)
+✔ an unowned explicit family is rejected before transaction creation (8.954208ms)
+✔ F3 service persists explicit tried in the active family and returns it on create/list (1.306709ms)
+✔ F3 route-local create schema accepts optional tried without dropping it (608.698375ms)
+✔ F3 omission keeps old create behavior; false is explicitly persisted (0.214709ms)
+✔ growth legacy metadata maps through the entity and DTO whitelist (14.285042ms)
+✔ growth metadata outside the importer marker stays out of the DTO (3.778458ms)
+✔ pure reference planner maps canonical business and AI message fields (6.12875ms)
+✔ AI archive and job receipts are internally consumed while unsupported references remain quarantined (0.246042ms)
+✔ planner fails closed on duplicate, public URL, and purpose mismatch (42.60475ms)
+✔ legacy paths are restricted to a literal captured uploads path (0.703042ms)
+✔ unsafe paths never query the database (0.21375ms)
+✔ only an unambiguous authorized attachment identity is returned (0.570458ms)
+✔ absent ambiguous and malformed mappings do not expose an object (0.22425ms)
+✔ legacy public knowledge remains byte-faithful after compatibility aliases are removed (13.780667ms)
+✔ legacy release metadata and source references retain their golden hashes (0.491417ms)
+✔ legacy vaccine engine rules retain their golden hash (0.107375ms)
+✔ legacy books retain their golden hash (0.128334ms)
+✔ supplement product keyset cursor accepts promoted source-stable IDs (56.477625ms)
+✔ supplement product cursor rejects malformed or unsafe values (1.342833ms)
+✔ timeline filters non-care projections before pagination without losing any supported kind (35.307875ms)
+✔ maximum-size timeline page retains its lookahead and every tied-timestamp row (4.344709ms)
+✔ exactly 200 timeline rows form a complete final page (0.482291ms)
+✔ 201st timeline row remains discoverable after a maximum-size page (0.42225ms)
+✔ default-size and empty timeline pages preserve their existing contracts (0.210667ms)
+✔ lookahead does not increase the public page limit or allow unbounded repository reads (0.418209ms)
+✔ maximum-size pagination still rejects missing baby membership before querying records (0.386167ms)
+✔ a page of 30 sessions requires one summary query rather than 60 (3.921834ms)
+✔ empty pages require no additional query (0.330041ms)
+✔ last message DTO retains order metadata but excludes images and tool payloads (4.206083ms)
+✔ incomplete, duplicate, unexpected and inconsistent summaries fail closed (0.913666ms)
+✔ summary input is bounded before accessing the database (0.3915ms)
+✔ client record version parses strictly within the persisted int32 range (10.985ms)
+ℹ tests 165
+ℹ suites 1
+ℹ pass 165
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15293.416

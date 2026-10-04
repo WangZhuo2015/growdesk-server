@@ -1,0 +1,22 @@
+[
+  {
+    "name": "format",
+    "exitCode": 0,
+    "seconds": 0.019
+  },
+  {
+    "name": "build",
+    "exitCode": 0,
+    "seconds": 10.321
+  },
+  {
+    "name": "generate",
+    "exitCode": 0,
+    "seconds": 2.426
+  },
+  {
+    "name": "check",
+    "exitCode": 0,
+    "seconds": 2.295
+  }
+]

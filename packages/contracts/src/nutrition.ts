@@ -336,6 +336,8 @@ export const FoodDataSourceSchema = Type.Object(
 export const FoodLibraryItemSchema = Type.Object(
   {
     id: Type.String(),
+    /** Server-owned catalog classification; absent on older servers means unknown, not editable. */
+    isCustom: Type.Optional(Type.Boolean()),
     name: Type.String({ minLength: 1, maxLength: 100 }),
     icon: Type.String({ minLength: 1, maxLength: 32 }),
     category: Type.String({ minLength: 1, maxLength: 50 }),
