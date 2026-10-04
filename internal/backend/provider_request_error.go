@@ -16,7 +16,7 @@ func nativeProviderRequestError(ctx context.Context, err error) error {
 	var networkError net.Error
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) ||
 		(errors.As(err, &networkError) && networkError.Timeout()) {
-		return providerFailure("AI_PROVIDER_TIMEOUT", "AI provider request timed out", true)
+		return providerFailure("AI_PROVIDER_TIMEOUT", "AI provider request timed out after dispatch; its outcome could not be confirmed", true)
 	}
-	return providerFailure("AI_PROVIDER_NETWORK_ERROR", "AI provider connection failed", true)
+	return providerFailure("AI_PROVIDER_NETWORK_ERROR", "AI provider request may have been accepted before the connection failed", true)
 }

@@ -207,6 +207,30 @@ func appendNativeRunEvent(ctx context.Context, tx pgx.Tx, id, kind string, paylo
 	_, err = tx.Exec(ctx, `INSERT INTO ai_run_events(id,run_id,sequence,event_type,payload,created_at) VALUES($1,$2,$3,$4,$5::jsonb,NOW())`, newID(), id, seq, kind, raw)
 	return err
 }
+func stopNativeAIRunAfterUncertainProvider(ctx context.Context, tx pgx.Tx, runID string, attempt int64, reported, unknown bool) error {
+	code := "AI_PROVIDER_RESULT_NOT_PERSISTED"
+	message := "The provider returned a result, but the run result was not durably committed; automatic replay was stopped."
+	if unknown {
+		code = "AI_PROVIDER_OUTCOME_UNKNOWN"
+		message = "The provider dispatch outcome is unknown; automatic replay was stopped. Reconcile provider usage before retrying."
+	}
+	if _, err := tx.Exec(ctx, `UPDATE native_go.ai_provider_attempts SET status='unknown',error_code=COALESCE(error_code,$3),settled_at=COALESCE(settled_at,clock_timestamp())
+		WHERE run_id=$1 AND attempt=$2 AND status='dispatched'`, runID, attempt, code); err != nil {
+		return err
+	}
+	details, _ := jsonText(Object{"code": code, "message": message, "retryable": false, "attempt": attempt, "retryRequiresConfirmation": true})
+	if _, err := tx.Exec(ctx, `UPDATE task_executions SET status='failed',lease_owner=NULL,lease_expires_at=NULL,error_details=$2::jsonb,updated_at=NOW() WHERE id=$1`, runID, details); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='closed',terminal_at=NOW() WHERE aggregate_id=$1 AND phase_key='native-initial'`, runID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE ai_runs SET error_code=$2,error_message=$3,finished_at=NOW(),updated_at=NOW() WHERE id=$1`, runID, code, message); err != nil {
+		return err
+	}
+	return appendNativeRunEvent(ctx, tx, runID, "run_failed", Object{"code": code, "message": message, "attempt": attempt, "retryRequiresConfirmation": true})
+}
+
 func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskLease, bool, error) {
 	var lease nativeTaskLease
 	tx, err := s.DB.Begin(ctx)
@@ -323,6 +347,26 @@ func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskL
 			return lease, false, e
 		}
 		return lease, false, tx.Commit(ctx)
+	}
+	if isNativeAIRun(text(row["kind"])) && text(row["status"]) == "running" && integer(row["attempt"]) > 0 {
+		previousAttempt := integer(row["attempt"])
+		risky, reported, unknown, usageErr := nativeAIProviderRetryRisk(ctx, tx, id, previousAttempt)
+		if usageErr != nil {
+			return lease, false, usageErr
+		}
+		if risky {
+			dispatched, dispatchErr := nativeAIProviderDispatched(ctx, tx, id, previousAttempt)
+			if dispatchErr != nil {
+				return lease, false, dispatchErr
+			}
+			if dispatchErr = settleNativeAIBudgetAttempt(ctx, tx, id, previousAttempt, dispatched); dispatchErr != nil {
+				return lease, false, dispatchErr
+			}
+			if dispatchErr = stopNativeAIRunAfterUncertainProvider(ctx, tx, id, previousAttempt, reported, unknown); dispatchErr != nil {
+				return lease, false, dispatchErr
+			}
+			return lease, false, tx.Commit(ctx)
+		}
 	}
 	attempt := integer(row["attempt"])
 	if attempt < 1 {
@@ -525,7 +569,7 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 	cancelled := row["cancel_requested_at"] != nil || text(row["status"]) == "cancelling"
 	status, event := "failed", "run_failed"
 	if cancelled {
-		status, event, code, message = "cancelled", "run_cancelled", "TASK_CANCELLED", "Task was cancelled"
+		status, event = "cancelled", "run_cancelled"
 	}
 	if !cancelled && errors.Is(cause, context.DeadlineExceeded) {
 		code, message, retryable = "TASK_TIMEOUT", "Task execution deadline exceeded", true
@@ -534,13 +578,36 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 		code, message, retryable = "WORKER_STOPPED", "Worker execution interrupted", true
 	}
 	retry := !cancelled && retryable && lease.Attempt < integer(row["max_attempts"])
+	providerRetryRisk := false
 	if isNativeAIRun(lease.Kind) {
 		dispatched, usageErr := nativeAIProviderDispatched(ctx, tx, lease.ID, lease.Attempt)
 		if usageErr != nil {
 			return usageErr
 		}
+		providerRisk, providerReported, providerUnknown, riskErr := nativeAIProviderRetryRisk(ctx, tx, lease.ID, lease.Attempt)
+		if riskErr != nil {
+			return riskErr
+		}
+		providerRetryRisk = providerRisk
 		if usageErr = settleNativeAIBudgetAttempt(ctx, tx, lease.ID, lease.Attempt, dispatched); usageErr != nil {
 			return usageErr
+		}
+		if providerRisk {
+			retry = false
+			retryable = false
+			if providerUnknown {
+				code = "AI_PROVIDER_OUTCOME_UNKNOWN"
+				message = "The provider dispatch outcome is unknown; automatic retry was stopped. Reconcile provider usage before retrying."
+				if _, usageErr = tx.Exec(ctx, `UPDATE native_go.ai_provider_attempts SET status='unknown',error_code=COALESCE(error_code,$3),settled_at=COALESCE(settled_at,clock_timestamp())
+					WHERE run_id=$1 AND attempt=$2 AND status='dispatched'`, lease.ID, lease.Attempt, code); usageErr != nil {
+					return usageErr
+				}
+			} else if providerReported {
+				code = "AI_PROVIDER_RESULT_NOT_PERSISTED"
+				message = "The provider returned a result, but the run result was not durably committed; automatic replay was stopped."
+			}
+		} else if cancelled {
+			code, message = "TASK_CANCELLED", "Task was cancelled"
 		}
 		if retry {
 			if usageErr = nativeTaskOwner(ctx, tx, lease.Input, false); usageErr != nil {
@@ -555,11 +622,13 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 				code, message, retryable = budgetErr.Code, budgetErr.Message, false
 			}
 		}
+	} else if cancelled {
+		code, message = "TASK_CANCELLED", "Task was cancelled"
 	}
 	if retry {
 		status, event = "queued", "attempt_restarted"
 	}
-	details, _ := jsonText(Object{"code": code, "message": message, "retryable": retryable, "attempt": lease.Attempt})
+	details, _ := jsonText(Object{"code": code, "message": message, "retryable": retryable, "attempt": lease.Attempt, "retryRequiresConfirmation": providerRetryRisk})
 	_, err = tx.Exec(ctx, `UPDATE task_executions SET status=$2,attempt=$3,lease_owner=NULL,lease_expires_at=NULL,error_details=$4::jsonb,updated_at=NOW() WHERE id=$1`,
 		lease.ID, status, lease.Attempt+boolInt(retry), details)
 	if err != nil {
@@ -583,7 +652,7 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 			return err
 		}
 	}
-	if err = appendNativeRunEvent(ctx, tx, lease.ID, event, Object{"code": code, "message": message, "attempt": lease.Attempt}); err != nil {
+	if err = appendNativeRunEvent(ctx, tx, lease.ID, event, Object{"code": code, "message": message, "attempt": lease.Attempt, "retryRequiresConfirmation": providerRetryRisk}); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

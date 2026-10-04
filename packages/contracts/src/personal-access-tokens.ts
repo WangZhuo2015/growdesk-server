@@ -134,7 +134,7 @@ export const PersonalAIUsageResponseSchema = Type.Object(
     ),
     dailyActivityTrend: Type.Array(
       Type.Object(
-        { date: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }), fullDate: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }), total: AIUsageCountSchema, success: AIUsageCountSchema, error: AIUsageCountSchema },
+        { date: Type.String({ pattern: "^\\d{2}-\\d{2}$" }), fullDate: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }), total: AIUsageCountSchema, success: AIUsageCountSchema, error: AIUsageCountSchema },
         { additionalProperties: false },
       ),
       { minItems: 14, maxItems: 14 },

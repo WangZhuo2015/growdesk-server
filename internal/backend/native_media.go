@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -17,14 +16,11 @@ import (
 func providerReadJSON(ctx context.Context, client *http.Client, request *http.Request) (Object, error) {
 	response, err := client.Do(request)
 	if err != nil {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		return nil, providerFailure("AI_PROVIDER_NETWORK_ERROR", "Provider request failed", true)
+		return nil, nativeProviderRequestError(ctx, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, providerFailure("AI_PROVIDER_HTTP_ERROR", fmt.Sprintf("Provider returned HTTP %d", response.StatusCode), response.StatusCode == 408 || response.StatusCode == 429 || response.StatusCode >= 500)
+		return nil, nativeProviderHTTPFailure(response.StatusCode)
 	}
 	raw, err := io.ReadAll(io.LimitReader(response.Body, maxProviderResponse+1))
 	if err != nil {
@@ -251,14 +247,11 @@ func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig,
 	defer client.CloseIdleConnections()
 	response, err := client.Do(request)
 	if err != nil {
-		if ctx.Err() != nil {
-			return nativeAIResult{}, ctx.Err()
-		}
-		return nativeAIResult{}, providerFailure("AI_PROVIDER_NETWORK_ERROR", "Visual provider connection failed", true)
+		return nativeAIResult{}, nativeProviderRequestError(ctx, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nativeAIResult{}, providerFailure("AI_PROVIDER_HTTP_ERROR", fmt.Sprintf("Visual provider returned HTTP %d", response.StatusCode), response.StatusCode == 429 || response.StatusCode >= 500)
+		return nativeAIResult{}, nativeProviderHTTPFailure(response.StatusCode)
 	}
 	if strings.Contains(response.Header.Get("Content-Type"), "text/event-stream") {
 		result, returnErr = readNativeAIStream(response.Body, delta)

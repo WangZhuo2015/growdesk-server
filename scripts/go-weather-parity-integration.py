@@ -289,6 +289,11 @@ class LocalOwnedEnvironment:
             SESSION_ENCRYPTION_KEY=self.jwt,
             GROWDESK_ENV='test',
             GROWDESK_GO_EXPERIMENTAL='1',
+            GROWDESK_AI_BUDGET_UNIT='ai_run_attempt',
+            GROWDESK_AI_BUDGET_PERIOD='utc_day',
+            GROWDESK_AI_BUDGET_USER_LIMIT='100',
+            GROWDESK_AI_BUDGET_FAMILY_LIMIT='1000',
+            GROWDESK_AI_BUDGET_GLOBAL_LIMIT='10000',
             DB_POOL_MAX='10',
             HOST='127.0.0.1',
         )

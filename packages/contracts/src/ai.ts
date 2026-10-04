@@ -229,6 +229,12 @@ export type AiRunConfirmResponse = Static<typeof AiRunConfirmResponseSchema>;
 export const AiRunCancelResponseSchema = SuccessStatusResponseSchema;
 export type AiRunCancelResponse = Static<typeof AiRunCancelResponseSchema>;
 
+export const AiRunRetryQuerySchema = Type.Object(
+  { confirmPossibleDuplicate: Type.Optional(Type.Boolean()) },
+  { $id: "AiRunRetryQuery", additionalProperties: false },
+);
+export type AiRunRetryQuery = Static<typeof AiRunRetryQuerySchema>;
+
 export const AiRunRetryResponseSchema = Type.Object(
   {
     data: Type.Object(
