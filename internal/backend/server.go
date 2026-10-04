@@ -14,7 +14,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type Principal struct{ UserID, SessionID, Username, DeviceLabel string }
+type Principal struct {
+	UserID, SessionID, Username, DeviceLabel string
+	AuthKind                                string
+	PersonalAccessTokenID                  string
+}
 type Request struct {
 	HTTP   *http.Request
 	Route  *Route
@@ -212,7 +216,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req := &Request{HTTP: r, Route: route, Params: params, Body: body, RawBody: rawBody, RequestID: requestID}
 	if !s.Public[route.OperationID] {
-		principal, err := s.authenticate(ctx, r)
+		principal, err := s.authenticateOperation(ctx, r, route.OperationID)
 		if err != nil {
 			s.writeError(w, err, requestID)
 			return

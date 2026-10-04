@@ -28,6 +28,7 @@ model User {
   babyMemberships         BabyMember[]
   syncState               UserSyncState?
   deviceSessions          DeviceSession[]
+  personalAccessTokens    PersonalAccessToken[]
   refreshCredentials      RefreshCredential[]
   recoveryCodes           RecoveryCode[]
   bffSessions             BffSession[]
@@ -318,6 +319,24 @@ model RefreshCredential {
   @@index([userId], name: "ix_refresh_credentials_user")
   @@index([rotationId], name: "ix_refresh_credentials_rotation")
   @@map("refresh_credentials")
+  @@schema("public")
+}
+
+model PersonalAccessToken {
+  id         String    @id
+  userId     String    @map("user_id")
+  name       String    @db.VarChar(100)
+  tokenHash  String    @unique @map("token_hash") @db.Char(64)
+  tokenHint  String    @map("token_hint") @db.VarChar(64)
+  scopes     String[]  @default(["voice:submit"])
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt, createdAt(sort: Desc)], name: "ix_personal_access_tokens_user_active")
+  @@map("personal_access_tokens")
   @@schema("public")
 }
 

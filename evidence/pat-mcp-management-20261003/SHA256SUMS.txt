@@ -1,0 +1,9 @@
+d8e88682694a4c6ba919ac03fb97b192106eda3a6a6ffca0378bea4e12f42aa9  evidence/pat-mcp-management-20261003/REPORT.md
+35beff604bb58417aba1206145949bbab4aa8483428d3bcea2292040ade90a1d  evidence/pat-mcp-management-20261003/source-sha256.json
+1bad86c1155a44d04ef8d8151efa70a4ffe2714b3a07a3ce413777cb3f31109b  evidence/pat-mcp-management-20261003/expired-inventory-before-fix.log
+c6c15ef045cfa103d9a6a92a292e8738ebc144f0a444211e78e15b102e1e1eac  evidence/pat-mcp-management-20261003/expired-inventory-after-fix.log
+de90ac1059ee03a568aa0ad67f5d01e98a0af9560b539499afcea46f21839595  evidence/pat-mcp-management-20261003/first-full-run-226-2.log
+eaab99ffd4fdcecd89da11c386a1015db3b5bea33e1250125b7c80690c986e85  evidence/pat-mcp-management-20261003/final-full-run.log
+370c6bdb9f40d96a1431d083f79b8541cfa770f12bd0e01cf752431a2598bc4d  evidence/pat-mcp-management-20261003/parent-typecheck.log
+b9d0135afba3ce3d771c63a58ddc31b7156e800a0086bb219f8c662603adb6fe  evidence/pat-mcp-management-20261003/parent-lint.log
+78aa5bd2b6445747f5507eaa5b2c9c3cc0b5f606caf3afd806ac0b1bf162d0bb  evidence/pat-mcp-management-20261003/parent-go-full.log

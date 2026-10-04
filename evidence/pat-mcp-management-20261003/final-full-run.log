@@ -1,0 +1,796 @@
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ isolated PostgreSQL enforces role, ownership, constraints and rollback (20.308083ms)
+✔ isolated authenticated Redis has working expiry and atomic NX writes (4.686625ms)
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35408) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+✔ foundation HTTP readiness checks owned PostgreSQL and Redis with real drivers (3347.83125ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5938.739167
+
+> growdesk-server@0.1.0 backend:contracts:check
+> node scripts/check-contracts.mjs
+
+Checking canonical OpenAPI specification consistency...
+Contract check passed: /private/tmp/growdesk-server-pat-mcp-20261003/contracts/openapi.json is perfectly in sync (133 paths, 183 operations).
+=== RUN   TestPersonalAccessTokensHTTPIntegration
+    personal_access_tokens_integration_test.go:242: PAT_CLEANUP tenant_sha256=babcf24ea41a4f503944819b92466efa4de4201d5b319be1ec2cdf32d758cb67 remaining_rows=0
+    personal_access_tokens_integration_test.go:242: PAT_CLEANUP tenant_sha256=df2138094c7e1eaa9bc71ee94ec98c57dc332b99e04d460777f35c081acf24bf remaining_rows=0
+    personal_access_tokens_integration_test.go:244: PAT_HTTP_WORKER_ASSERTIONS=85
+--- PASS: TestPersonalAccessTokensHTTPIntegration (0.21s)
+PASS
+ok  	github.com/WangZhuo2015/growdesk-server/internal/backend	3.471s
+Legacy import integration PASS: atomic rollback, same batch retry, changed batch refusal, multi-family composite FK, user deletion preserves shared baby, archive private.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35562) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35562) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-07: AI Sessions, Runs & Lifecycle suite
+  ✔ Setup: Register User A and User B, create families and babies (3171.685042ms)
+  ✔ AI-01: Create AI session and list messages (22.924416ms)
+  ✔ AI-02: Create AI run returns 202 with unified TaskExecution and AiRun (43.846083ms)
+  ✔ AI-03: Get AI run status matches current state (18.486208ms)
+  ✔ AI-04: Confirming proposed actions requires awaiting_confirmation state (125.546333ms)
+  ✔ AI-05: Cancelling run updates task state (54.106792ms)
+  ✔ AI-06: Retrying failed run increments attempt and re-enqueues (59.912333ms)
+  ✔ AI-07: User B cannot access, read or confirm User A's AI run (404/403) (14.566916ms)
+  ✔ AI-08: Voice Run creation and Baby access validation (13.261208ms)
+  ✔ AI-09: Daily summary creation and listing with tenant boundary (30.224792ms)
+✔ SH-07: AI Sessions, Runs & Lifecycle suite (3913.390375ms)
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35563) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35563) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-06: S3 Attachments Pipeline suite
+  ✔ Setup: Register User A and User B (3153.923791ms)
+  ✔ ATT-01: Initialize attachment upload capability (15.459ms)
+  ✔ ATT-02: Complete attachment with matching metadata marks ready (12.313541ms)
+  ✔ ATT-03: Authorized content is streamed through the API (5.366458ms)
+  ✔ ATT-04: Mismatched checksum triggers 400 and marks attachment failed (15.679375ms)
+  ✔ ATT-05: Cannot renew upload URL for ready attachment (6.307916ms)
+  ✔ ATT-06: Cross-tenant isolation prevents User B access (19.348667ms)
+  ✔ ATT-07: Avatar references block deletion until detached (81.231416ms)
+  ✔ ATT-08: Avatar assignment and deletion serialize on the attachment row (51.772375ms)
+  ✔ ATT-09: AI message image references block deletion until the message is removed (42.79125ms)
+  ✔ ATT-10: AI archive references block deletion before object storage is touched (50.4065ms)
+  ✔ ATT-11: Delete failure remains retryable and success soft-deletes record (39.949ms)
+✔ SH-06: S3 Attachments Pipeline suite (3693.765416ms)
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35564) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35564) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-03D: Password Change & Recovery Codes suite
+  ✔ Setup: Register user (2944.229083ms)
+  ✔ Setup: Second login creates session 2 (152.389917ms)
+  ✔ RC-01: Change password with wrong current password fails with 401 (114.292417ms)
+  ✔ RC-02: Change password with valid credentials revokes session 2 while keeping session 1 (555.54175ms)
+  ✔ RC-03: Login verifies new password and rejects old password (853.275209ms)
+  ✔ RC-04: Regenerate recovery codes with wrong password fails with 401 (394.8255ms)
+  ✔ RC-05: Regenerate recovery codes returns 10 codes and batchId (371.950833ms)
+  ✔ RC-06: Regenerating second batch revokes first batch in DB (342.320167ms)
+  ✔ RC-07: Recovery with revoked code from batch 1 fails with 401 (9.113958ms)
+  ✔ RC-08: Recovery with wrong username or bogus code fails closed with 401 (5.355375ms)
+  ✔ RC-09: Valid recovery code resets password, marks code used, revokes batch and all sessions (428.016458ms)
+  ✔ RC-10: Re-using the consumed recovery code fails with 401 (5.906583ms)
+  ✔ RC-11: User can login with new recovered password (388.005375ms)
+✔ SH-03D: Password Change & Recovery Codes suite (6707.164917ms)
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35565) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35565) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-03B: Refresh Token Rotation & Replay Reuse Detection suite
+  ✔ R-01: Atomic refresh rotation issues successor and marks predecessor used (46.250458ms)
+  ✔ R-02: Same rotationId replay within 60s returns cached successor (lost response tolerance) (3.009916ms)
+  ✔ R-03: Token reuse with different rotationId triggers 409 and revokes session family (7.892958ms)
+  ✔ R-04: Non-existent refresh token fails closed with 401 INVALID_REFRESH_TOKEN (1.311709ms)
+✔ SH-03B: Refresh Token Rotation & Replay Reuse Detection suite (3159.715875ms)
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35566) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35566) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-03A: Authentication, DeviceSession, and Principal resolution suite
+  ✔ A-01: User registration creates user, default family, and initial session (2861.193333ms)
+  ✔ A-02: Username duplicate registration rejected with 409 USERNAME_EXISTS (6.18975ms)
+  ✔ A-03: User login with valid credentials creates new session (101.003041ms)
+  ✔ A-04: User login with invalid password rejected with 401 INVALID_CREDENTIALS (91.694917ms)
+  ✔ A-05: Legacy bcrypt hash transparently upgraded on successful login (498.674709ms)
+  ✔ A-06: Authenticated request resolves UserPrincipal and accesses /me (61.761875ms)
+  ✔ A-07: List active sessions returns all active DeviceSessions (64.468583ms)
+  ✔ A-08: Logout revokes session and subsequent requests fail with 401 (47.988666ms)
+  ✔ A-09: Explicit session revocation by ID terminates that session only (279.097417ms)
+✔ SH-03A: Authentication, DeviceSession, and Principal resolution suite (4197.700125ms)
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35567) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-05: BFF Session Management suite
+  ✔ Setup: Register test user (2889.172083ms)
+  ✔ BFF-01: Initial login & bind with username, password, and sessionSecretHash (148.718708ms)
+  ✔ BFF-02: Exchange sessionSecretHash for active accessToken (22.129292ms)
+  ✔ BFF-03: Concurrent exchange requests succeed without conflict (18.8025ms)
+  ✔ BFF-04: Revoke session and verify subsequent exchange returns 401 (20.288209ms)
+✔ SH-05: BFF Session Management suite (3328.261791ms)
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35568) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35568) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04D: Diaper Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (2961.739792ms)
+  ✔ Setup: Register User B in separate Family B (124.417ms)
+  ✔ D-01: Create diaper record creates entity and atomic timeline projection (56.756708ms)
+  ✔ D-02: Same Idempotency-Key and payload returns replayed result (23.673083ms)
+  ✔ D-03: Reusing Idempotency-Key with different payload triggers 409 (28.570625ms)
+  ✔ D-04: Keyset pagination works stably (86.748084ms)
+  ✔ D-05: Optimistic locking detects concurrency conflicts (50.810209ms)
+  ✔ D-06: User B cannot access or modify Baby A's diaper records (18.458875ms)
+  ✔ D-07: Delete diaper record soft-deletes and removes timeline projection (29.127917ms)
+  ✔ D-08: Create poop diaper record with color and consistency (42.926334ms)
+✔ SH-04D: Diaper Record Pipeline suite (3722.449541ms)
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35569) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35569) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-03C: Family and Baby Authorization & Management suite
+  ✔ FB-01: User A creates a new family -> User A is admin, permissionVersion is 1 (33.394416ms)
+  ✔ FB-02: User C creates Family 2; User A and C listFamilies return strictly isolated data (39.244375ms)
+  ✔ FB-03: Create family invite -> preview without auth works (14.091917ms)
+  ✔ FB-04: User B joins Family 1 via inviteCode -> becomes member, but has NO baby access (33.858166ms)
+  ✔ FB-04A: family projection preserves real member identity, relation, and role (26.400125ms)
+  ✔ FB-05: User A creates Baby 1; User B cannot see Baby 1 in list or get (54.601375ms)
+  ✔ FB-06: User A adds User B as caregiver to Baby 1 -> User B now sees and gets Baby 1 (58.793875ms)
+  ✔ FB-07: Cross-tenant isolation: Cannot add User C (from Family 2) to Baby 1 (Family 1) (10.137833ms)
+  ✔ FB-08: Last family admin protection: User A cannot demote self while only admin (19.8185ms)
+  ✔ FB-09: Last baby admin protection: User A cannot be revoked from Baby 1 while only baby admin (66.574917ms)
+  ✔ FB-10: Promote User B to baby admin -> now User A can be revoked from Baby 1 (82.441042ms)
+  ✔ FB-11: Viewer permissions: demoting family member or baby role to viewer denies write/create (49.146084ms)
+  ✔ FB-12: Removing User A from Family 1 cascades revocation of baby membership (81.037125ms)
+✔ SH-03C: Family and Baby Authorization & Management suite (3995.572125ms)
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35570) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35570) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04F: Feeding Record Pipeline & Formula Products suite
+  ✔ Setup: Register User A and create Baby A (2960.03575ms)
+  ✔ Setup: Register User B in separate Family B (142.21925ms)
+  ✔ FP-01: Create formula product in Family A catalog (18.052583ms)
+  ✔ FP-02: List formula products adheres to family boundary (33.268166ms)
+  ✔ FEED-01: Create feeding record creates entity and atomic timeline projection (51.904083ms)
+  ✔ FP-03: includeArchived preserves product metadata and feeding history (43.036666ms)
+  ✔ FEED-02: Same Idempotency-Key and payload returns replayed result (20.369ms)
+  ✔ FEED-03: Reusing Idempotency-Key with different payload triggers 409 (20.366125ms)
+  ✔ FEED-04: Formula product from another family is rejected (13.91475ms)
+  ✔ FEED-05: Keyset pagination works stably (136.596125ms)
+  ✔ FEED-06: Optimistic locking detects concurrency conflicts (64.289333ms)
+  ✔ FEED-07: User B cannot access or modify Baby A's feeding records (52.145792ms)
+  ✔ FEED-08: Delete feeding record soft-deletes and removes timeline projection (45.060709ms)
+  ✔ formula product keyset pages preserve 205 equal-time rows and reject foreign scope (78.886ms)
+✔ SH-04F: Feeding Record Pipeline & Formula Products suite (3898.982833ms)
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35620) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35620) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04FO: Food Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (2618.640208ms)
+  ✔ Setup: Register User B and create Baby B (131.30175ms)
+  ✔ FO-01: Create food record creates entity and timeline projection (64.542334ms)
+  ✔ FO-02: Idempotent replay with same key returns cached result (17.77075ms)
+  ✔ FO-03: Reusing Idempotency-Key with different payload triggers 409 (32.1015ms)
+  ✔ FO-04: Keyset pagination works stably across food records (84.360042ms)
+  ✔ FO-05: Optimistic locking detects concurrency conflicts (83.305417ms)
+  ✔ FO-06: User B cannot access or modify Baby A's food records (26.456709ms)
+  ✔ FO-07: Delete food record soft-deletes and removes active timeline (71.033083ms)
+  ✔ FO-08: Food Library Items management (155.278625ms)
+  ✔ FO-09: Food Guidelines returns age-stage guidance (2.582417ms)
+  ✔ FO-10: Baby Food Plan save and get with tenant isolation (88.992541ms)
+  ✔ FO-11: stale full-plan writes conflict and retry preserves both changes (28.691667ms)
+✔ SH-04FO: Food Record Pipeline suite (3607.017917ms)
+✔ SH-02A: foundation migration applies cleanly and establishes all core tables (28.042917ms)
+✔ SH-02A: composite foreign keys prevent cross-family baby reference (12.452542ms)
+✔ SH-02A: check constraints reject invalid values and enforce version/cursor non-negative (9.201708ms)
+✔ SH-02A: user deletion cascades credentials/sessions but preserves shared baby (25.081333ms)
+✔ SH-02A: idempotency receipt primary key enforces actor/scope/command uniqueness (10.3405ms)
+✔ SH-02A: index query plan confirms timeline index usage (7.073625ms)
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35640) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35640) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04G: Growth photo attachment scope and deletion references
+  ✔ same baby can create/read/update a growth photo reference (220.995ms)
+  ✔ cross scope and invalid attachment states are rejected (229.46875ms)
+  ✔ growth references block attachment delete until detached (94.97925ms)
+✔ SH-04G: Growth photo attachment scope and deletion references (3455.037875ms)
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35641) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35641) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04G: Growth Measurement Pipeline & WHO Percentiles suite
+  ✔ Setup: Register User A and User B, create families and babies (2703.520959ms)
+  ✔ G-01: Create growth measurement with timeline projection (66.374875ms)
+  ✔ G-02: Idempotency replay with same key returns cached result (22.788875ms)
+  ✔ G-03: Reusing Idempotency-Key with different payload triggers 409 (19.811375ms)
+  ✔ G-04: Keyset pagination works stably across growth measurements (114.925583ms)
+  ✔ G-05: Optimistic locking detects concurrency conflicts on baseVersion (53.698917ms)
+  ✔ G-06: User B cannot access or modify Baby A's growth measurements (403) (54.221ms)
+  ✔ G-07: Delete growth measurement soft-deletes and removes active timeline projection (104.141416ms)
+  ✔ G-08: Get Growth Chart returns historical measurements overlaid with WHO percentiles (27.778959ms)
+✔ SH-04G: Growth Measurement Pipeline & WHO Percentiles suite (3546.699291ms)
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35642) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35642) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-06: Medical Reports, Vaccines & Notifications Pipeline suite
+  ✔ Setup: Register User A and User B, create babies (2641.916791ms)
+  ✔ MED-01: Create medical report and verify atomic timeline projection (49.582458ms)
+  ✔ MED-02: Idempotency replay with same key returns cached result (8.696167ms)
+  ✔ MED-03: Keyset pagination works stably across reports (62.72675ms)
+  ✔ MED-04: baseVersion optimistic concurrency conflict detection (36.984334ms)
+  ✔ MED-05: User B cannot access Baby A's medical report (10.024ms)
+  ✔ MED-06: Delete medical report soft-deletes and removes timeline projection (18.1255ms)
+  ✔ VAC-01: Get standard vaccine schedule returns recommendations (2.272375ms)
+  ✔ VAC-02: Create vaccine record and verify atomic timeline projection (19.94175ms)
+  ✔ VAC-03: List vaccine records returns baby's vaccinations (11.048333ms)
+  ✔ VAC-04: User B cannot access Baby A's vaccine records (6.572916ms)
+  ✔ VAC-05: Delete vaccine record removes record and timeline projection (12.280375ms)
+  ✔ NOTIF-01: Push device registration and notification listing (20.829792ms)
+✔ SH-06: Medical Reports, Vaccines & Notifications Pipeline suite (3202.536917ms)
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35651) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35651) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-06 notifications use an owned keyset and enforce user isolation
+  ✔ 205 owned rows are returned once across keyset pages (40.1715ms)
+  ✔ another principal cannot list or mark the owner's notification (23.601958ms)
+  ✔ malformed cursors fail instead of silently restarting from page one (5.495333ms)
+✔ SH-06 notifications use an owned keyset and enforce user isolation (3024.894042ms)
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35652) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35652) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-09: durable RecordSnapshot delete/restore is scoped, atomic and replay safe
+  ✔ delete captures the full row and accepts an absent body (144.820333ms)
+  ✔ explicit restore survives service statelessness and is idempotent (127.941958ms)
+  ✔ same idempotency key replays the original delete result (93.017667ms)
+  ✔ concurrent explicit restores serialize into one restore and one replay (140.864042ms)
+  ✔ family scope and payload tamper are rejected (56.144541ms)
+  ✔ food plan uses exact physical delete/restore semantics (52.824333ms)
+✔ SH-09: durable RecordSnapshot delete/restore is scoped, atomic and replay safe (3360.14575ms)
+▶ replay authorization and legacy care keys are serialized in owned PostgreSQL
+  ✔ SQL-imported instants round-trip without host timezone shifts (206.288666ms)
+  ✔ missing family is rejected before sync lock or side effects (43.175292ms)
+  ✔ current database family and baby revocations reject cached replay (180.898667ms)
+  ✔ sixteen same-key creates produce one row, one change, and one receipt (325.52375ms)
+  ✔ feeding imported client id replays and enforces mismatch, baby scope, and tombstone (95.382375ms)
+  ✔ diaper imported client id replays and enforces mismatch, baby scope, and tombstone (42.001584ms)
+  ✔ sleep imported client id replays and enforces mismatch, baby scope, and tombstone (87.539042ms)
+✔ replay authorization and legacy care keys are serialized in owned PostgreSQL (1022.534833ms)
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35655) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35655) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04S: Sleep Record Pipeline suite
+  ✔ Setup: Register User A and create Baby A (2636.357667ms)
+  ✔ Setup: Register User B and create Baby B (156.429416ms)
+  ✔ S-01: Create ongoing sleep record with timeline projection (44.241459ms)
+  ✔ S-02: Creating second active sleep while first ongoing fails with 409 (23.514833ms)
+  ✔ S-03: Idempotency replay returns cached ongoing sleep (17.472208ms)
+  ✔ S-04: End sleep session via PATCH with endedAt (28.544458ms)
+  ✔ S-05: Concurrency conflict 409 on outdated baseVersion (12.047167ms)
+  ✔ S-06: Create finished sleep with cross-midnight interval (18.375083ms)
+  ✔ S-07: Invalid interval (endedAt < startedAt) rejected with 400 (3.619834ms)
+  ✔ S-08: Keyset pagination works stably across sleep records (18.869208ms)
+  ✔ S-09: Multi-tenant cross-baby isolation (13.058166ms)
+  ✔ S-10: Soft-delete removes record and timeline projection (34.576375ms)
+✔ SH-04S: Sleep Record Pipeline suite (3126.37575ms)
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04SU: Supplement Record Pipeline suite
+  ✔ Setup: Register User A and User B, create families and babies (2650.183417ms)
+  ✔ SU-01: Create supplement record with timeline projection (30.059208ms)
+  ✔ SU-02: Idempotency replay with same key returns cached result (7.090083ms)
+  ✔ SU-03: Reusing Idempotency-Key with different payload triggers 409 (7.00625ms)
+  ✔ SU-04: Keyset pagination works stably across supplement records (47.209917ms)
+  ✔ SU-05: Optimistic locking detects concurrency conflicts on baseVersion (33.145125ms)
+  ✔ SU-06: User B cannot access or modify Baby A's supplement records (403) (6.823792ms)
+  ✔ SU-07: Delete supplement record soft-deletes and removes active timeline projection (14.44725ms)
+  ✔ SU-08: Normalized supplement catalog, schedules, completion projection and CAS (71.045167ms)
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35693) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+  ✔ SU-09: MCP supplement product tool enforces audience, scope, baby binding and idempotency (1650.022375ms)
+✔ SH-04SU: Supplement Record Pipeline suite (4644.587542ms)
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35701) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35701) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-09: Local-First Sync Protocol & State Machine Suite
+  ✔ 00. Setup: Register users, create family and baby memberships (2145.538083ms)
+  ✔ SYNC-01: Batch command execution creates multi-domain records and advances cursor (73.027208ms)
+  ✔ SYNC-02: Command idempotency replay returns cached cursor and version (10.504125ms)
+  ✔ SYNC-03: Intra-batch duplicate entityId is rejected with 422 BATCH_DEPENDENCY_UNRESOLVED (2.32275ms)
+  ✔ SYNC-04: Optimistic concurrency conflict returns status: conflict with currentVersion (7.305667ms)
+  ✔ SYNC-05: Family incremental change feed pagination and mode transition (30.043084ms)
+  ✔ SYNC-06: Epoch mismatch returns 410 SYNC_RESET_REQUIRED (1.795375ms)
+  ✔ SYNC-07: Cursor tampering and cross-family cursor throws 400 INVALID_SYNC_CURSOR (8.086375ms)
+  ✔ SYNC-08: BabyMember revocation filters out baby changes from feed (13.985042ms)
+  ✔ SYNC-09: User changes feed pagination (3.726666ms)
+  ✔ SYNC-10: Bootstrap snapshot queueing and background processing (22.239ms)
+✔ SH-09: Local-First Sync Protocol & State Machine Suite (2623.796083ms)
+▶ SH-07: Durable Task Engine & Worker/Scheduler Infrastructure suite
+  ✔ TASK-01: Outbox transactional creation alongside TaskExecution (146.719ms)
+  ✔ TASK-02: Conditional claim atomically increments fence token and sets lease (29.889875ms)
+  ✔ TASK-03: Stale worker with outdated fence token is strictly rejected on completion (15.049083ms)
+  ✔ TASK-04: Periodic heartbeat extends lease correctly (59.359292ms)
+  ✔ TASK-05: Worker honors cancellation request and aborts gracefully (520.8855ms)
+  ✔ TASK-06: Outbox dispatcher claims with FOR UPDATE SKIP LOCKED and closes dispatched records (4.172583ms)
+  ✔ TASK-07: Scheduler reconciliation detects expired running tasks and re-enqueues within retry limit (4.072375ms)
+  ✔ TASK-08: Task reaching max attempts is transitioned to failed with error details (2.63675ms)
+  ✔ TASK-09: Park task puts execution in awaiting_confirmation and releases lease (2.930709ms)
+✔ SH-07: Durable Task Engine & Worker/Scheduler Infrastructure suite (897.647875ms)
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35729) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35729) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ SH-04TL: Unified Timeline Pipeline suite
+  ✔ Setup: Register User A and User B, create families and babies (2072.603167ms)
+  ✔ TL-01: Create events across 6 care domains and verify timeline projection (128.519375ms)
+  ✔ TL-02: Keyset pagination works stably across multi-domain timeline entries (7.093167ms)
+  ✔ TL-03: Soft-deleting a care record removes it from timeline (14.709333ms)
+  ✔ TL-04: Multi-tenant cross-baby isolation (403) (3.827334ms)
+✔ SH-04TL: Unified Timeline Pipeline suite (2351.939166ms)
+▶ SH-02B: UnitOfWork full transaction and concurrency suite
+  ✔ B-01: Idempotent replay returns cached result without re-executing (169.807ms)
+  ✔ B-02: Key reuse with different payload throws 409 IDEMPOTENCY_KEY_REUSED (8.396333ms)
+  ✔ B-04: Concurrency conflict detected on baseVersion mismatch (46.4695ms)
+  ✔ B-05: Transaction atomicity rolls back all changes on callback error (30.577ms)
+  ✔ B-06: Baby access denied if BabyMember row is missing or viewer (9.005375ms)
+  ✔ B-07: Concurrent commands serialize under FamilySyncState row lock (54.855209ms)
+  ✔ B-08: Timeline projection is maintained atomically with keyset pagination (16.319292ms)
+✔ SH-02B: UnitOfWork full transaction and concurrency suite (400.21925ms)
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35739) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35739) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ AgentVoiceLog routes persist history and enforce baby/family membership
+  ✔ revoked baby access removes old history from every operation (11.430541ms)
+✔ AgentVoiceLog routes persist history and enforce baby/family membership (2238.12325ms)
+ℹ tests 228
+ℹ suites 0
+ℹ pass 228
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11467.107542
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35766) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35766) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ care: scoped mutations, stale deletes and complete maximum-sized pages
+  ✔ sleep: another tenant's record ID never authorizes an own-baby mutation (79.943792ms)
+  ✔ sleep: 401 equal-time records traverse 200/200/1 without loss (36.954208ms)
+  ✔ diaper: another tenant's record ID never authorizes an own-baby mutation (61.734458ms)
+  ✔ diaper: 401 equal-time records traverse 200/200/1 without loss (22.386291ms)
+  ✔ food: another tenant's record ID never authorizes an own-baby mutation (56.211042ms)
+  ✔ food: 401 equal-time records traverse 200/200/1 without loss (31.145166ms)
+  ✔ supplement: another tenant's record ID never authorizes an own-baby mutation (50.544334ms)
+  ✔ supplement: 401 equal-time records traverse 200/200/1 without loss (22.60475ms)
+✔ care: scoped mutations, stale deletes and complete maximum-sized pages (2468.25775ms)
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35767) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35767) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ Web feeding: mixed records, client versions, scope binding and 200-row pagination
+  ✔ a valid own-baby path cannot be used to mutate another family's record ID (28.0085ms)
+  ✔ stale deletes conflict; correct deletes and idempotent replays succeed (41.130542ms)
+  ✔ a 200-row page advertises and returns its 201st row on the next page (55.551333ms)
+✔ Web feeding: mixed records, client versions, scope binding and 200-row pagination (2234.889833ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2926.443917
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ durable Web AI: Fastify injection with owned PostgreSQL
+  ✔ reject anonymous requests and foreign baby ownership (4.0685ms)
+  ✔ create preserves context and scoped metadata (12.680958ms)
+  ✔ message replay is idempotent and differing content conflicts (17.5955ms)
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35782) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+  ✔ fresh service and application instances read persisted history (1606.818959ms)
+  ✔ foreign reads, renames, appends and deletes never reveal a session (12.54625ms)
+  ✔ rename persists and revoked baby membership blocks existing credentials (17.8235ms)
+  ✔ concurrent identical submissions persist only one message (11.391083ms)
+  ✔ protected AI images require a ready attachment in the exact conversation scope (10.982834ms)
+  ✔ invalid input does not modify stored history (2.904ms)
+  ✔ explicit deletion removes stored history without local resurrection (5.497542ms)
+✔ durable Web AI: Fastify injection with owned PostgreSQL (3772.750375ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4225.296583
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35796) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:35796) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+▶ legacy upload resolver enforces live object permissions
+  ✔ authentication, unknown paths and foreign families (10.115417ms)
+  ✔ unsafe path fails without local filesystem fallback (2.921291ms)
+  ✔ old credentials cannot resolve an object after baby access is revoked (6.579ms)
+  ✔ deleted and ambiguous mappings cannot be guessed (10.077083ms)
+✔ legacy upload resolver enforces live object permissions (2075.106042ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2534.212292
+Owned PostgreSQL/Redis integration checks passed; test process exited successfully.
+Owned test processes stopped and private data directory removed.

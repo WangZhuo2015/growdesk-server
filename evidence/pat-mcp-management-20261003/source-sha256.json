@@ -1,0 +1,16 @@
+{
+  "contracts/openapi.json": "f0a5bb9a5865b637c82edbb674be3697d4690f1e8410d0fe580e536c387f3809",
+  "internal/backend/auth.go": "cf3ded66e16a739032f3ba5061d18843df679bb12c52ba97058abc639c58a51e",
+  "internal/backend/foundation_test.go": "fbdb902b04a5deb1aebf9f449a44969a5583f6460cc19c23b1f44371a0a48ebc",
+  "internal/backend/personal_access_tokens.go": "d6ff14deb3e4fa045b10d776fc1aa3f3efdb8911d2b0a9c8161b8070a26e37ad",
+  "internal/backend/personal_access_tokens_integration_test.go": "dc660129e1828bafe34036cf614f6ad5972951342d4681e7afb60ace6077d665",
+  "internal/backend/register.go": "5e86f8e77088c37198c3de8aeba9a503fbee47e2dd9fb591c0868bd04db88f2f",
+  "internal/backend/server.go": "db90d03578d1805764ee6ad6dafce63a9c388b4d3f3ab8119c4aa72ab8fda5c8",
+  "packages/contracts/src/index.ts": "8e0793ea4b6090ccad0fb597ce30e8911ebd03e99ffd7b4e286fd4ae597ab16b",
+  "packages/contracts/src/personal-access-tokens.ts": "1a4f02bee19c5ac289b9592df34d1c608cf80ff350795d8d6e2d840cf1b81146",
+  "packages/contracts/src/routes.ts": "a9c56214b7762c3d5f4822f98fc340826b4edec2264a9e78a4d19f8b7cd8602d",
+  "prisma/migrations/202610030032_personal_access_tokens/migration.sql": "53e13d434e23c2bf3aea083ea66deb2dc25834f77aa530581737ebcd3ad7bced",
+  "prisma/schema.prisma": "4c60cfd0604e07e0f0eb094719117466058fe3d3c6031b18bcede49bad3a0b9f",
+  "scripts/test-integration.py": "cf58c30897f60d4c79fa0ffe4052e9a8db8494aef473a8198b56e794a8a3a293",
+  "tests/integration/feeding.test.ts": "284510d6a8b7156fa49cf20eab1b5a634deeca2803e9aa8fa95683d77a780673"
+}

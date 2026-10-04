@@ -2,6 +2,7 @@ package backend
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net/http"
 	"strings"
@@ -36,7 +37,90 @@ func (s *Server) authenticate(ctx context.Context, r *http.Request) (Principal, 
 	if err != nil {
 		return Principal{}, err
 	}
+	p.AuthKind = "session"
 	return p, nil
+}
+
+const personalAccessTokenPrefix = "bp_pat_"
+
+func personalTokenScopeForOperation(operation string) string {
+	switch operation {
+	case "createPersonalVoiceTextRun", "getPersonalVoiceTextRun":
+		return "voice:submit"
+	default:
+		return ""
+	}
+}
+
+func containsScope(scopes []string, required string) bool {
+	for _, scope := range scopes {
+		if scope == required {
+			return true
+		}
+	}
+	return false
+}
+
+// authenticatePersonalAccessToken admits opaque PAT credentials only for the
+// deliberately narrow personal voice text-run operations. They are not JWTs,
+// app sessions, or MCP bearer credentials.
+func (s *Server) authenticatePersonalAccessToken(ctx context.Context, r *http.Request, requiredScope string) (Principal, error) {
+	header := r.Header.Get("Authorization")
+	if !strings.HasPrefix(header, "Bearer ") {
+		return Principal{}, apiError(401, "UNAUTHORIZED", "Missing or malformed Authorization header")
+	}
+	raw := strings.TrimSpace(strings.TrimPrefix(header, "Bearer "))
+	if !strings.HasPrefix(raw, personalAccessTokenPrefix) || len(raw) != len(personalAccessTokenPrefix)+64 {
+		return Principal{}, apiError(401, "PERSONAL_TOKEN_INVALID", "Personal access token is invalid or expired")
+	}
+	if _, err := hex.DecodeString(raw[len(personalAccessTokenPrefix):]); err != nil {
+		return Principal{}, apiError(401, "PERSONAL_TOKEN_INVALID", "Personal access token is invalid or expired")
+	}
+	var principal Principal
+	var scopes []string
+	err := s.DB.QueryRow(ctx, `UPDATE personal_access_tokens p SET last_used_at=NOW()
+		FROM users u WHERE p.token_hash=$1 AND p.user_id=u.id AND u.deleted_at IS NULL
+		AND p.revoked_at IS NULL AND (p.expires_at IS NULL OR p.expires_at>NOW())
+		AND $2=ANY(p.scopes)
+		RETURNING p.id,p.user_id,u.username,p.scopes`, hashText(raw), requiredScope).Scan(
+		&principal.PersonalAccessTokenID, &principal.UserID, &principal.Username, &scopes)
+	if errors.Is(err, pgx.ErrNoRows) {
+		var live bool
+		var hasScope bool
+		checkErr := s.DB.QueryRow(ctx, `SELECT p.revoked_at IS NULL AND (p.expires_at IS NULL OR p.expires_at>NOW()),
+			$2=ANY(p.scopes) FROM personal_access_tokens p JOIN users u ON u.id=p.user_id AND u.deleted_at IS NULL
+			WHERE p.token_hash=$1`, hashText(raw), requiredScope).Scan(&live, &hasScope)
+		if errors.Is(checkErr, pgx.ErrNoRows) || (checkErr == nil && !live) {
+			return Principal{}, apiError(401, "PERSONAL_TOKEN_INVALID", "Personal access token is invalid or expired")
+		}
+		if checkErr != nil {
+			return Principal{}, checkErr
+		}
+		if !hasScope {
+			return Principal{}, apiError(403, "PERSONAL_TOKEN_SCOPE_REQUIRED", "Personal access token does not grant this operation")
+		}
+		return Principal{}, apiError(401, "PERSONAL_TOKEN_INVALID", "Personal access token is invalid or expired")
+	}
+	if err != nil {
+		return Principal{}, err
+	}
+	if !containsScope(scopes, requiredScope) {
+		return Principal{}, apiError(403, "PERSONAL_TOKEN_SCOPE_REQUIRED", "Personal access token does not grant this operation")
+	}
+	principal.AuthKind = "personal_access_token"
+	return principal, nil
+}
+
+func (s *Server) authenticateOperation(ctx context.Context, r *http.Request, operation string) (Principal, error) {
+	raw := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
+	if strings.HasPrefix(raw, personalAccessTokenPrefix) {
+		required := personalTokenScopeForOperation(operation)
+		if required == "" {
+			return Principal{}, apiError(401, "UNAUTHORIZED", "Invalid or expired access token")
+		}
+		return s.authenticatePersonalAccessToken(ctx, r, required)
+	}
+	return s.authenticate(ctx, r)
 }
 
 // bcryptjs truncates UTF-8 password bytes at 72. Preserve legacy verification

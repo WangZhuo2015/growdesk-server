@@ -163,6 +163,20 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 command(['python3', 'scripts/legacy-import/test_record_snapshot_materializer_integration.py'], env=env)
                 print('RecordSnapshot focused owned PostgreSQL checks passed.', flush=True)
                 return
+            command(['npm', 'run', 'backend:contracts:check'], env=env)
+            # The PAT management acceptance runs against this same exclusively
+            # owned PostgreSQL/Redis pair, through the native Go HTTP server and
+            # durable worker. It never adopts a developer or production service.
+            go_port = free_port()
+            go_env = dict(env,
+                GROWDESK_GO_EXPERIMENTAL='1', GROWDESK_ENV='test',
+                HOST='127.0.0.1', PORT=str(go_port),
+                DATABASE_URL=f"postgresql://{identity['user']}:{identity['password']}@127.0.0.1:{pgport}/{identity['database']}?sslmode=disable",
+                REDIS_URL=f"redis://:{identity['password']}@127.0.0.1:{redisport}/0",
+                JWT_SECRET=secrets.token_hex(32), SESSION_ENCRYPTION_KEY=secrets.token_hex(32),
+                PUBLIC_BASE_URL=f'http://127.0.0.1:{go_port}')
+            command(['go', 'test', '-v', '-tags', 'pat_integration', '-run', '^TestPersonalAccessTokensHTTPIntegration$',
+                     '-count=1', './internal/backend'], env=go_env, timeout=240)
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
             if legacy_care:
                 # Opt-in only: this suite uses the same owned manifest and

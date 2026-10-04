@@ -1,0 +1,92 @@
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ isolated PostgreSQL enforces role, ownership, constraints and rollback (21.989458ms)
+✔ isolated authenticated Redis has working expiry and atomic NX writes (5.176708ms)
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for POST: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for GET: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The params schema for HEAD: /api/v1/web/ai/sessions is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for GET: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for HEAD: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for PATCH: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The body schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for DELETE: /api/v1/web/ai/sessions/:id is missing. This may indicate the schema is not well specified.
+(node:38567) [FSTWRN001] FastifyWarning: The querystring schema for POST: /api/v1/web/ai/sessions/:id/messages is missing. This may indicate the schema is not well specified.
+✔ foundation HTTP readiness checks owned PostgreSQL and Redis with real drivers (3338.889291ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5975.639042
+
+> growdesk-server@0.1.0 backend:contracts:check
+> node scripts/check-contracts.mjs
+
+Checking canonical OpenAPI specification consistency...
+Contract check passed: /private/tmp/growdesk-server-pat-mcp-20261003/contracts/openapi.json is perfectly in sync (133 paths, 183 operations).
+=== RUN   TestPersonalAccessTokensHTTPIntegration
+    personal_access_tokens_integration_test.go:605: expired recent rows hid active credentials: shown=1 expected=10
+    personal_access_tokens_integration_test.go:242: PAT_CLEANUP tenant_sha256=4df4aa0951f62ea374bb9ebfdd58c42f08ae7d5654b46e6c2c247c39916b62b6 remaining_rows=0
+    personal_access_tokens_integration_test.go:242: PAT_CLEANUP tenant_sha256=8ea96d1101d5364a105dbb5f5a8a3fc9c01bca0b41538faf03c2d1883114a6db remaining_rows=0
+    personal_access_tokens_integration_test.go:244: PAT_HTTP_WORKER_ASSERTIONS=103
+--- FAIL: TestPersonalAccessTokensHTTPIntegration (0.21s)
+FAIL
+FAIL	github.com/WangZhuo2015/growdesk-server/internal/backend	0.746s
+FAIL
+Isolated verification failed (CalledProcessError); owned resources cleaned.

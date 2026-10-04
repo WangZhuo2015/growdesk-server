@@ -53,7 +53,7 @@ func TestContractInventory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(c.Routes) != 179 {
+	if len(c.Routes) != 187 {
 		t.Fatalf("reference changed: %d operations", len(c.Routes))
 	}
 	r, p := c.Match("GET", "/api/v1/families/invites/preview")

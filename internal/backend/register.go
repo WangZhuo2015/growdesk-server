@@ -10,6 +10,7 @@ func (s *Server) RegisterBusinessHandlers() {
 	s.registerCare()
 	s.registerNotifications()
 	s.registerVoiceLogs()
+	s.registerPersonalAccessTokens()
 	s.registerWebAISessions()
 	s.registerFormulaProducts()
 	s.registerFoodLibrary()

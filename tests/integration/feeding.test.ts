@@ -234,6 +234,7 @@ test("SH-04F: Feeding Record Pipeline & Formula Products suite", async (t) => {
       isActive: true,
       isDefault: true,
       isArchived: false,
+      version: 1,
       createdAt: projectedBody.data[0]?.createdAt,
       updatedAt: projectedBody.data[0]?.updatedAt,
     });
