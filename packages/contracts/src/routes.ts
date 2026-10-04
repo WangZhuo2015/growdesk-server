@@ -235,6 +235,11 @@ import {
   OAuthTokenResponseSchema,
   OAuthRevokeTokenRequestSchema,
   OAuthRevokeTokenResponseSchema,
+  OAuthErrorResponseSchema,
+  OAuthClientRegistrationRequestSchema,
+  OAuthClientRegistrationResponseSchema,
+  OAuthAuthorizationQuerySchema,
+  OAuthAuthorizationFormSchema,
   McpRpcRequestSchema,
   McpRpcResponseSchema,
 } from "./mcp.js";
@@ -249,6 +254,8 @@ export interface RouteDefinition {
   tags: string[];
   implementationStatus: "READY" | "READY_TEST_SAMPLE" | "PLANNED_SH02" | "PLANNED_SH03" | "PLANNED_SH04F" | "PLANNED_SH04S" | "PLANNED_SH04D" | "PLANNED_SH04FO" | "PLANNED_SH04SU" | "PLANNED_SH04G" | "PLANNED_SH04N" | "PLANNED_SH04T" | "PLANNED_SH06" | "PLANNED_SH07" | "PLANNED_SH08" | "PLANNED_SH09" | "PLANNED_PASSPORT" | "READY_PASSPORT";
   body?: TSchema;
+  /** Request media types for a typed body; defaults to application/json. */
+  requestContentTypes?: readonly string[];
   params?: TSchema;
   querystring?: TSchema;
   headers?: TSchema;
@@ -548,7 +555,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["User", "OAuth"],
     implementationStatus: "READY",
     params: IdParam,
-    responses: { 401: ApiErrorRef, 503: ApiErrorRef },
+    responses: { 200: RevokePersonalAccessTokenResponseSchema, 401: ApiErrorRef, 404: ApiErrorRef },
   },
   {
     method: "GET",
@@ -2142,7 +2149,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "getOAuthAuthorizationServerMetadata",
     summary: "OAuth 2.1 authorization server discovery metadata (RFC8414)",
     tags: ["OAuth"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     responses: { 200: OAuthServerMetadataSchema },
   },
   {
@@ -2151,7 +2158,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "getOAuthProtectedResourceMetadata",
     summary: "OAuth 2.1 protected resource metadata",
     tags: ["OAuth"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     responses: { 200: OAuthProtectedResourceMetadataSchema },
   },
   {
@@ -2160,8 +2167,68 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "getOAuthProtectedMcpResourceMetadata",
     summary: "OAuth 2.1 protected resource metadata for MCP endpoint",
     tags: ["OAuth"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     responses: { 200: OAuthProtectedResourceMetadataSchema },
+  },
+  {
+    method: "POST",
+    path: "/oauth/register",
+    operationId: "registerOAuthClient",
+    summary: "Register a public OAuth client with exact redirect URIs",
+    tags: ["OAuth"],
+    implementationStatus: "READY",
+    body: OAuthClientRegistrationRequestSchema,
+    responses: { 201: OAuthClientRegistrationResponseSchema, 400: OAuthErrorResponseSchema },
+  },
+  {
+    method: "GET",
+    path: "/oauth/authorize",
+    operationId: "getOAuthAuthorization",
+    summary: "Render a verified-session OAuth login and consent page",
+    tags: ["OAuth"],
+    implementationStatus: "READY",
+    querystring: OAuthAuthorizationQuerySchema,
+    responses: { 200: Type.String(), 400: Type.String() },
+    responseContentTypes: { 200: ["text/html; charset=utf-8"], 400: ["text/html; charset=utf-8"] },
+  },
+  {
+    method: "POST",
+    path: "/oauth/authorize",
+    operationId: "submitOAuthAuthorization",
+    summary: "Submit OAuth login, explicit consent, or denial",
+    tags: ["OAuth"],
+    implementationStatus: "READY",
+    body: OAuthAuthorizationFormSchema,
+    requestContentTypes: ["application/x-www-form-urlencoded"],
+    responses: { 200: Type.String(), 303: Type.String(), 400: Type.String(), 401: Type.String() },
+    responseContentTypes: {
+      200: ["text/html; charset=utf-8"],
+      303: ["text/html; charset=utf-8"],
+      400: ["text/html; charset=utf-8"],
+      401: ["text/html; charset=utf-8"],
+    },
+  },
+  {
+    method: "POST",
+    path: "/oauth/token",
+    operationId: "exchangeMcpOAuthTokenShort",
+    summary: "Exchange a one-time authorization code or rotate an MCP refresh token",
+    tags: ["OAuth"],
+    implementationStatus: "READY",
+    body: OAuthTokenRequestSchema,
+    requestContentTypes: ["application/json", "application/x-www-form-urlencoded"],
+    responses: { 200: OAuthTokenResponseSchema, 400: OAuthErrorResponseSchema },
+  },
+  {
+    method: "POST",
+    path: "/oauth/revoke",
+    operationId: "revokeMcpOAuthTokenShort",
+    summary: "Revoke an MCP OAuth grant by access or refresh token",
+    tags: ["OAuth"],
+    implementationStatus: "READY",
+    body: OAuthRevokeTokenRequestSchema,
+    requestContentTypes: ["application/json", "application/x-www-form-urlencoded"],
+    responses: { 200: OAuthRevokeTokenResponseSchema, 400: OAuthErrorResponseSchema },
   },
   {
     method: "POST",
@@ -2169,9 +2236,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "exchangeMcpOAuthToken",
     summary: "Exchange authorization code or refresh token for MCP bearer token",
     tags: ["OAuth"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     body: OAuthTokenRequestSchema,
-    responses: { 200: OAuthTokenResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef },
+    requestContentTypes: ["application/json", "application/x-www-form-urlencoded"],
+    responses: { 200: OAuthTokenResponseSchema, 400: OAuthErrorResponseSchema },
   },
   {
     method: "POST",
@@ -2179,9 +2247,10 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "revokeMcpOAuthToken",
     summary: "Revoke MCP OAuth access or refresh token",
     tags: ["OAuth"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     body: OAuthRevokeTokenRequestSchema,
-    responses: { 200: OAuthRevokeTokenResponseSchema, 400: ApiErrorRef },
+    requestContentTypes: ["application/json", "application/x-www-form-urlencoded"],
+    responses: { 200: OAuthRevokeTokenResponseSchema, 400: OAuthErrorResponseSchema },
   },
   {
     method: "POST",
@@ -2189,7 +2258,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     operationId: "handleMcpRpc",
     summary: "MCP JSON-RPC 2.0 endpoint (OAuth Bearer authenticated)",
     tags: ["MCP"],
-    implementationStatus: "PLANNED_SH08",
+    implementationStatus: "READY",
     body: McpRpcRequestSchema,
     responses: { 200: McpRpcResponseSchema, 401: ApiErrorRef },
   },

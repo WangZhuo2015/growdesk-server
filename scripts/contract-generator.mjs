@@ -235,6 +235,20 @@ export async function generateCanonicalOpenApi() {
   const rawSpec = app.swagger();
   const spec = transformOpenApi(rawSpec);
 
+  // Fastify Swagger defaults request bodies to JSON. The shared TypeBox route
+  // registry remains authoritative for OAuth's standard form-encoded wire
+  // format; copy its declared schema to every explicitly supported media type.
+  for (const route of contracts.ROUTE_DEFINITIONS) {
+    if (!route.body || !route.requestContentTypes?.length) continue;
+    const operation = spec.paths?.[route.path]?.[route.method.toLowerCase()];
+    const requestBody = operation?.requestBody;
+    if (!requestBody) throw new Error(`Route ${route.operationId} is missing its generated request body`);
+    const schema = requestBody.content?.["application/json"]?.schema ?? route.body;
+    requestBody.content = Object.fromEntries(
+      route.requestContentTypes.map((mediaType) => [mediaType, { schema }]),
+    );
+  }
+
   // Validate operationId uniqueness and OpenAPI version
   if (spec.openapi !== "3.0.3") {
     throw new Error(`Invalid OpenAPI version: expected 3.0.3, got ${spec.openapi}`);

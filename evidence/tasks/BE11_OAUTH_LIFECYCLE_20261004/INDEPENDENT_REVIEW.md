@@ -1,0 +1,36 @@
+# BE-11 MCP OAuth lifecycle: independent review
+
+Review status: **the original P2 compatibility finding is resolved in the reviewed working tree; no confirmed P1 finding**. This closes the follow-up review of that finding only. It does not mark the implementation accepted or deployed; the implementation report remains `IMPLEMENTED_NOT_REVIEWED`.
+
+The initial review was against HEAD `a3d6b5ac67e6faec9bbd4cb05313ac967bc312eb` (parent `3fcee38`). The follow-up reviewed the uncommitted fix, migration regression, test-runner changes, and updated implementation report in `/private/tmp/growdesk-server-mcp-oauth-20261004`. Review changes were limited to this report. I inspected source and test structure but did not rerun the suite or start database services. The full-suite result below is recorded by the implementation report, not independently reproduced in this follow-up.
+
+## Original P2 finding (retained; resolved)
+
+### Existing grants without a newly registered OAuth client disappeared from the connection inventory
+
+At the initial review, `native/migrations/0001_oauth.sql` had created `native_go.oauth_grants.client_id` without an `oauth_clients` table or client foreign key. Migration 0004 created `oauth_clients` without backfilling earlier grants, while adding the client foreign key as `NOT VALID`. The then-current connection inventory used an inner join, so a historical grant with no matching client row would not appear in `GET /api/v1/connections`. Its owner could not discover the grant ID through the inventory to use the normal revoke action. This finding described the pre-fix working tree.
+
+## Follow-up verification
+
+- The current listing requires a verified app session, uses a `LEFT JOIN`, supplies the fixed display name `Legacy OAuth client` when there is no registered client, and filters by `g.user_id=$1` from the authenticated principal. The response is constructed from an explicit allowlist of connection metadata fields; it does not select or return access tokens, refresh tokens, authorization codes, hashes, or secrets ([connection listing](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/personal_access_tokens.go:167)).
+- Revocation still requires a verified app session. Both the initial lookup and the locked grant lookup constrain the grant to the authenticated user; the transaction also takes the existing user/family/session locks before setting revocation timestamps ([connection revoke](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/personal_access_tokens.go:186)). No client-supplied user or family identifier was introduced by this fix.
+- The new tagged PostgreSQL regression inserts an old-style grant with an unregistered client ID, then calls `ApplyNativeMigrationsThrough(ctx, "0004_oauth_lifecycle.sql")` and the normal all-migrations verifier. Through the real HTTP handler and database pool, it checks the fallback label and public client ID, absence of credential-shaped response fields, anonymous rejection, foreign-owner invisibility and revoke rejection, successful owner revocation, and preservation of the grant's original live device session ([legacy migration test](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/mcp_oauth_legacy_migration_integration_test.go:13)). The shared tenant helper creates `test_` users and test-prefixed families and babies.
+- The integration runner first invokes the migration CLI through `0003_passport.sql`, then runs the populated-grant regression, then applies and verifies all migrations before the OAuth/PAT HTTP tests ([integration runner](/private/tmp/growdesk-server-mcp-oauth-20261004/scripts/test-integration.py:181)). The runner's boundary is an exact existing filename; the migration function still compares stored SHA-256 values for already-applied files and fails on a mismatch ([migration runner](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/native_migrations.go:19)).
+- `git diff --exit-code HEAD -- native/migrations/0001_oauth.sql native/migrations/0002_object_cleanup.sql native/migrations/0003_passport.sql` returned no differences. Migration 0004 still declares the client foreign key `NOT VALID`; the fix did not alter or remove that constraint ([migration 0004](/private/tmp/growdesk-server-mcp-oauth-20261004/native/migrations/0004_oauth_lifecycle.sql:14)). The implementation report records that the real owner revoke route updated only `revoked_at` successfully against this constraint without a constraint relaxation.
+
+The P2 is therefore resolved in the current working tree, and the added regression covers the original reproduction condition and owner-revoke path. I found no authentication relaxation in the fix under review.
+
+## Initial review coverage retained
+
+These points were established in the initial static review and were not rerun as part of the narrow follow-up:
+
+- The OAuth HTTP integration test attaches the real Go `Server` handler to `httptest` and uses its PostgreSQL pool. It covers concurrent authorization-code redemption, token hashing, audience separation, refresh reuse, revocation, connection ownership, and soft account deletion ([OAuth integration test](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/mcp_oauth_integration_test.go:132)).
+- Static inspection found that browser authorization derives the account from a verified login or signed OAuth browser session, checks baby membership, uses an exact registered redirect and MCP audience, and stores one-time request-secret digests. No client-supplied `userId` authorization path was found.
+- Access and refresh credentials are opaque and stored by hash; MCP bearer validation checks its audience and live grant/session/family/baby membership. App JWTs are rejected by MCP authentication, and PAT dispatch does not authenticate `/mcp` or connection management ([PAT negative checks](/private/tmp/growdesk-server-mcp-oauth-20261004/internal/backend/personal_access_tokens_integration_test.go:342)).
+- Discovery endpoint responses and metadata-driven third-party discovery were not exercised. Negative browser tests for request-secret replay, cross-account consent, and denial were not present in the reviewed test source. Account deletion coverage exercises soft-delete-and-revoke behavior rather than a physical SQL `DELETE` of every cascade path.
+
+## Verification limits and remaining acceptance boundary
+
+The implementation report records `python3 scripts/test-integration.py --suite all` exiting 0, including the populated 0001–0003 to 0004 regression, OAuth lifecycle and PAT HTTP integration, 228 Node tests with zero skips, and the other listed checks ([implementation evidence](/private/tmp/growdesk-server-mcp-oauth-20261004/evidence/tasks/BE11_OAUTH_LIFECYCLE_20261004/REPORT.md:18)). I reviewed the source wiring and regression assertions but did not rerun those tests. The evidence directory contains the implementation report and this review, not raw runner logs.
+
+CI/PR review, production migration or deployment, iOS settings UI, App Store build, and live third-party MCP-client acceptance remain unverified. The regression exercises actual PostgreSQL and the Go HTTP handler via `httptest`, but does not substitute for those release and device/client acceptance layers.

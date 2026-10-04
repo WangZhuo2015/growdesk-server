@@ -164,16 +164,79 @@ func validatePersonalAccessToken(ctx context.Context, q Querier, principal Princ
 	return nil
 }
 
-func (s *Server) listPersonalConnections(_ context.Context, _ *Request) (Result, error) {
-	// The current Go OAuth adapter does not persist or query grants. An empty
-	// response is therefore paired with an explicit availability flag.
-	return Result{Status: http.StatusOK, Body: Object{
-		"data": []Object{}, "managementAvailable": false, "reasonCode": "MCP_OAUTH_GRANTS_NOT_IMPLEMENTED",
-	}}, nil
+func (s *Server) listPersonalConnections(ctx context.Context, r *Request) (Result, error) {
+	if r.Principal.AuthKind != "session" {
+		return Result{}, apiError(401, "UNAUTHORIZED", "A verified app session is required")
+	}
+	rows, err := many(ctx, s.DB, `SELECT jsonb_build_object(
+		'id',g.id,'client_id',g.client_id,'client_name',COALESCE(c.client_name,'Legacy OAuth client'),'resource',g.audience,'scopes',g.scopes,
+		'family_id',g.family_id,'baby_id',g.baby_id,'created_at',g.created_at,'last_used_at',g.last_used_at,'revoked_at',g.revoked_at)
+		FROM native_go.oauth_grants g LEFT JOIN native_go.oauth_clients c ON c.client_id=g.client_id
+		WHERE g.user_id=$1 ORDER BY g.created_at DESC,g.id DESC LIMIT 100`, r.Principal.UserID)
+	if err != nil {
+		return Result{}, err
+	}
+	items := make([]Object, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, Object{"id": row["id"], "clientId": row["client_id"], "clientName": row["client_name"], "resource": row["resource"], "scopes": row["scopes"], "familyId": row["family_id"], "babyId": row["baby_id"], "createdAt": isoValue(row["created_at"]), "lastUsedAt": isoValue(row["last_used_at"]), "revokedAt": isoValue(row["revoked_at"])})
+	}
+	return Result{Status: http.StatusOK, Body: Object{"data": items, "managementAvailable": true}}, nil
 }
 
-func (s *Server) revokePersonalConnection(_ context.Context, _ *Request) (Result, error) {
-	return Result{}, apiError(http.StatusServiceUnavailable, "MCP_OAUTH_GRANTS_NOT_IMPLEMENTED", "MCP OAuth grant management is unavailable")
+func (s *Server) revokePersonalConnection(ctx context.Context, r *Request) (Result, error) {
+	if r.Principal.AuthKind != "session" {
+		return Result{}, apiError(401, "UNAUTHORIZED", "A verified app session is required")
+	}
+	id := r.Params["id"]
+	pre, err := one(ctx, s.DB, `SELECT jsonb_build_object('family_id',family_id,'session_id',session_id) FROM native_go.oauth_grants WHERE id=$1 AND user_id=$2`, id, r.Principal.UserID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Result{}, notFound("OAuthConnection", id)
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return Result{}, err
+	}
+	defer rollback(tx)
+	if err = lockUser(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
+	if _, err = lockFamily(ctx, tx, text(pre["family_id"])); err != nil {
+		return Result{}, err
+	}
+	var session string
+	sessionErr := tx.QueryRow(ctx, `SELECT id FROM device_sessions WHERE id=$1 AND user_id=$2 FOR UPDATE`, text(pre["session_id"]), r.Principal.UserID).Scan(&session)
+	if sessionErr != nil && !errors.Is(sessionErr, pgx.ErrNoRows) {
+		return Result{}, sessionErr
+	}
+	var revoked *time.Time
+	err = tx.QueryRow(ctx, `SELECT revoked_at FROM native_go.oauth_grants WHERE id=$1 AND user_id=$2 FOR UPDATE`, id, r.Principal.UserID).Scan(&revoked)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Result{}, notFound("OAuthConnection", id)
+	}
+	if err != nil {
+		return Result{}, err
+	}
+	if revoked == nil {
+		if _, err = tx.Exec(ctx, `UPDATE native_go.oauth_grants SET revoked_at=clock_timestamp() WHERE id=$1`, id); err != nil {
+			return Result{}, err
+		}
+		if _, err = tx.Exec(ctx, `UPDATE native_go.oauth_access SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE grant_id=$1`, id); err != nil {
+			return Result{}, err
+		}
+		if _, err = tx.Exec(ctx, `UPDATE native_go.oauth_refresh SET revoked_at=COALESCE(revoked_at,clock_timestamp()) WHERE grant_id=$1`, id); err != nil {
+			return Result{}, err
+		}
+		if err = appendOAuthUserChange(ctx, tx, r.Principal.UserID, id, Object{}, "delete"); err != nil {
+			return Result{}, err
+		}
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return Result{}, err
+	}
+	return ok(Object{"success": true})
 }
 
 func (s *Server) getPersonalAIUsage(_ context.Context, _ *Request) (Result, error) {

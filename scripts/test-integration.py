@@ -46,7 +46,7 @@ def validate_web_root(value):
     return root
 
 
-def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s3=False, record_snapshot_only=False):
+def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s3=False, record_snapshot_only=False, suite='all'):
     if (web_ui or legacy_web_root is not None) and web_root is None:
         raise RuntimeError('--web-ui/--legacy-web-root require --web-root')
     pgdir = '/opt/homebrew/opt/postgresql@18/bin'
@@ -149,6 +149,9 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 else: raise RuntimeError('Owned MinIO readiness timed out')
             # Prove instance ownership before any migration or concurrent business suite.
             command(['node', '--import', 'tsx', '--test', 'tests/integration/infrastructure.test.ts'], env=env)
+            if suite == 'infrastructure':
+                print('Owned PostgreSQL/Redis infrastructure checks passed.', flush=True)
+                return
             # Apply the complete production migration sequence to this freshly
             # owned database before business suites run. Fail on the first SQL
             # error; per-suite legacy CREATE TABLE probes are not migration proof.
@@ -175,8 +178,22 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 REDIS_URL=f"redis://:{identity['password']}@127.0.0.1:{redisport}/0",
                 JWT_SECRET=secrets.token_hex(32), SESSION_ENCRYPTION_KEY=secrets.token_hex(32),
                 PUBLIC_BASE_URL=f'http://127.0.0.1:{go_port}')
-            command(['go', 'test', '-v', '-tags', 'pat_integration', '-run', '^TestPersonalAccessTokensHTTPIntegration$',
-                     '-count=1', './internal/backend'], env=go_env, timeout=240)
+            # Exercise an actual populated upgrade path: apply native 0001-0003,
+            # insert a historical OAuth grant in the Go regression test, then
+            # apply 0004 through the checksum-tracked runner. The all-migrations
+            # invocation afterward verifies every recorded checksum.
+            if suite in ('mcp-oauth', 'all'):
+                command(['go', 'run', './cmd/growdesk-migrate', '--through', '0003_passport.sql'], env=go_env, timeout=180)
+                command(['go', 'test', '-tags', 'mcp_oauth_integration', '-run', '^TestMCPOAuthLegacyGrantUpgradeIntegration$',
+                         '-count=1', './internal/backend'], env=go_env, timeout=300)
+            command(['go', 'run', './cmd/growdesk-migrate'], env=go_env, timeout=180)
+            tags = 'mcp_oauth_integration' if suite == 'mcp-oauth' else 'pat_integration,mcp_oauth_integration'
+            tests = '^TestMCPOAuthLifecycleHTTPIntegration$' if suite == 'mcp-oauth' else '^(TestPersonalAccessTokensHTTPIntegration|TestMCPOAuthLifecycleHTTPIntegration)$'
+            command(['go', 'test', '-v', '-tags', tags, '-run', tests,
+                     '-count=1', './internal/backend'], env=go_env, timeout=300)
+            if suite == 'mcp-oauth':
+                print('Isolated MCP OAuth lifecycle HTTP checks passed.', flush=True)
+                return
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
             if legacy_care:
                 # Opt-in only: this suite uses the same owned manifest and
@@ -226,7 +243,7 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['infrastructure'], default='infrastructure')
+    parser.add_argument('--suite', choices=['infrastructure', 'mcp-oauth', 'all'], default='all')
     parser.add_argument('--web-root', type=Path,
                         help='absolute old Web repository containing .next/standalone/server.js')
     parser.add_argument('--web-ui', action='store_true',
@@ -246,7 +263,7 @@ if __name__ == '__main__':
         raise KeyboardInterrupt()
     signal.signal(signal.SIGTERM, interrupted)
     try:
-        main(web_root, args.web_ui, legacy_web_root, args.legacy_care, args.s3, args.record_snapshot_only)
+        main(web_root, args.web_ui, legacy_web_root, args.legacy_care, args.s3, args.record_snapshot_only, args.suite)
     except (Exception, KeyboardInterrupt) as error:
         # Driver/subprocess exceptions may contain credentials; log only a class name.
         print(f'Isolated verification failed ({type(error).__name__}); owned resources cleaned.', flush=True)

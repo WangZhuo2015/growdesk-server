@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"mime"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,8 +17,8 @@ import (
 
 type Principal struct {
 	UserID, SessionID, Username, DeviceLabel string
-	AuthKind                                string
-	PersonalAccessTokenID                  string
+	AuthKind                                 string
+	PersonalAccessTokenID                    string
 }
 type Request struct {
 	HTTP   *http.Request
@@ -33,7 +34,10 @@ type Result struct {
 	Status  int
 	Body    any
 	Headers http.Header
-	Stream  func(http.ResponseWriter) error
+	// RawBody bypasses JSON encoding for browser-facing OAuth HTML responses.
+	RawBody     []byte
+	ContentType string
+	Stream      func(http.ResponseWriter) error
 }
 type Handler func(context.Context, *Request) (Result, error)
 type Server struct {
@@ -190,13 +194,42 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if len(raw) > 0 {
 			mediaType, _, mediaErr := mime.ParseMediaType(r.Header.Get("Content-Type"))
-			if mediaErr != nil || mediaType != "application/json" {
-				s.writeError(w, apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Expected application/json"), requestID)
+			mediaType = strings.ToLower(mediaType)
+			supported := mediaErr == nil && mediaType != "" && mediaType == "application/json" && (route.Operation.RequestBody == nil || route.Operation.RequestBody.Value == nil)
+			if route.Operation.RequestBody != nil && route.Operation.RequestBody.Value != nil && route.Operation.RequestBody.Value.Content.Get(mediaType) != nil {
+				supported = true
+			}
+			if !supported {
+				s.writeError(w, apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Unsupported request Content-Type"), requestID)
 				return
 			}
-			body, err = decodeNativeBody(route.OperationID, raw)
-			if err != nil {
-				s.writeError(w, err, requestID)
+			switch mediaType {
+			case "application/json":
+				body, err = decodeNativeBody(route.OperationID, raw)
+				if err != nil {
+					s.writeError(w, err, requestID)
+					return
+				}
+			case "application/x-www-form-urlencoded":
+				values, parseErr := url.ParseQuery(string(raw))
+				if parseErr != nil {
+					s.writeError(w, invalid("Invalid form body"), requestID)
+					return
+				}
+				body = Object{}
+				for key, items := range values {
+					if len(items) == 1 {
+						body[key] = items[0]
+					} else if len(items) > 1 {
+						list := make([]any, len(items))
+						for i, item := range items {
+							list[i] = item
+						}
+						body[key] = list
+					}
+				}
+			default:
+				s.writeError(w, apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Unsupported request Content-Type"), requestID)
 				return
 			}
 			switch route.OperationID {
@@ -251,12 +284,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if result.RawBody != nil {
+		contentType := result.ContentType
+		if contentType == "" {
+			contentType = "text/html; charset=utf-8"
+		}
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(result.Status)
+		if r.Method != http.MethodHead {
+			_, _ = w.Write(result.RawBody)
+		}
+		return
+	}
 	raw, err := jsonBytes(result.Body)
 	if err != nil {
 		s.writeError(w, err, requestID)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if result.ContentType != "" {
+		w.Header().Set("Content-Type", result.ContentType)
+	} else {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	}
 	w.WriteHeader(result.Status)
 	if r.Method != http.MethodHead {
 		_, _ = w.Write(raw)

@@ -38,6 +38,9 @@ func (s *Server) bffExchange(ctx context.Context, r *Request) (Result, error) {
 	if err = lockUser(ctx, tx, uid); err != nil {
 		return Result{}, err
 	}
+	if err = lockOAuthFamiliesForSession(ctx, tx, sid); err != nil {
+		return Result{}, err
+	}
 	session, err := liveSession(ctx, tx, uid, sid)
 	if err != nil {
 		if normalizedError(err).Status == 401 {
@@ -139,6 +142,9 @@ func (s *Server) bffRevoke(ctx context.Context, r *Request) (Result, error) {
 	defer rollback(tx)
 	uid := text(pre["user_id"])
 	if err = lockUser(ctx, tx, uid); err != nil {
+		return Result{}, err
+	}
+	if err = lockOAuthFamiliesForSession(ctx, tx, text(pre["session_id"])); err != nil {
 		return Result{}, err
 	}
 	// Same order as refresh: user -> device -> BFF -> credentials.
