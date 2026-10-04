@@ -1,0 +1,22 @@
+{
+  "status": "REPRODUCED_BEFORE_FIX",
+  "preFixRevision": "23dacd0697e582687aae5e6128344d3be24f7232",
+  "transport": "real Go API over HTTP",
+  "requested": {
+    "reconstitutionRatio": "0.133333333333333333",
+    "weightKg": "8.275",
+    "heightCm": "70.55",
+    "headCircumferenceCm": "44.1375"
+  },
+  "observed": {
+    "reconstitutionRatio": "0.13333",
+    "weightKg": "8.28",
+    "heightCm": "70.6",
+    "headCircumferenceCm": "44.1"
+  },
+  "testDataOnly": true,
+  "externalProviderCalls": false,
+  "productionOrLegacyServicesContacted": false,
+  "privateStackCleaned": true,
+  "privateDatabaseAndObjectDataRemoved": true
+}

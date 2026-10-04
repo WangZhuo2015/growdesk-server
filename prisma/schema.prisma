@@ -633,7 +633,11 @@ model FormulaProduct {
   stage               String?
   scoopWeightG        Decimal?        @map("scoop_weight_g") @db.Decimal(12, 5)
   waterPerScoopMl     Decimal?        @map("water_per_scoop_ml") @db.Decimal(12, 5)
-  reconstitutionRatio Decimal?        @map("reconstitution_ratio") @db.Decimal(12, 5)
+  // Prisma 7 maps an unannotated Decimal to DECIMAL(65,30) in generated DDL.
+  // Migration 033 deliberately overrides that default with unconstrained SQL
+  // NUMERIC; do not infer the deployed column typmod from this client scalar.
+  // The database validation script guards the custom mapping and later DDL.
+  reconstitutionRatio Decimal?        @map("reconstitution_ratio")
   servingSizeUnit     String          @default("per_100g") @map("serving_size_unit")
   nutrientsJson       Json?           @map("nutrients_json") @db.JsonB
   notes               String?
@@ -907,9 +911,12 @@ model GrowthMeasurement {
   familyId            String    @map("family_id")
   babyId              String    @map("baby_id")
   measurementDate     DateTime  @map("measurement_date") @db.Date
-  weightKg            Decimal?  @map("weight_kg") @db.Decimal(5, 2)
-  heightCm            Decimal?  @map("height_cm") @db.Decimal(5, 1)
-  headCircumferenceCm Decimal?  @map("head_circumference_cm") @db.Decimal(4, 1)
+  // Prisma 7's default Decimal mapping is DECIMAL(65,30), not unbounded.
+  // Migration 033 deliberately stores these as unconstrained SQL NUMERIC;
+  // scripts/db-validate.mjs guards the custom mapping and later DDL.
+  weightKg            Decimal?  @map("weight_kg")
+  heightCm            Decimal?  @map("height_cm")
+  headCircumferenceCm Decimal?  @map("head_circumference_cm")
   attachmentId        String?   @map("attachment_id") @db.VarChar(255)
   notes               String?
   legacyClientId      String?   @map("legacy_client_id")

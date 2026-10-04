@@ -117,7 +117,10 @@ def checked(args: list[str], *, env: dict[str, str], cwd: Path, timeout: int = 1
     if result.returncode:
         # Commands run with private fixture configuration. Keep diagnostics
         # bounded and avoid echoing environment, URLs, SQL passwords or tokens.
-        raise RuntimeError(f"owned_command_failed:{Path(args[0]).name}:{result.returncode}")
+        server_error = next((line.split("ERROR:", 1)[1].strip()
+                             for line in reversed(result.stderr.splitlines()) if "ERROR:" in line), "")
+        diagnostic = f":{server_error[:160]}" if server_error else ""
+        raise RuntimeError(f"owned_command_failed:{Path(args[0]).name}:{result.returncode}{diagnostic}")
     return result.stdout.strip()
 
 
@@ -149,6 +152,47 @@ class OwnedStack:
         self.worker_binary = self.root / "growdesk-worker"
         self.migrate_binary = self.root / "growdesk-migrate"
         self.app_env: dict[str, str] = {}
+        self.migration_preserved_values: dict[str, str] = {}
+
+    def _seed_decimal_migration_rows(self) -> None:
+        family_id = "test_decimal_family_" + self.suffix
+        baby_id = "test_decimal_baby_" + self.suffix
+        user_id = "test_decimal_user_" + self.suffix
+        self.decimal_seed_ids = {"family": family_id, "baby": baby_id, "user": user_id}
+        try:
+            self.sql(f"""INSERT INTO users(id,username,password_hash,display_name,updated_at)
+          VALUES('{user_id}','{user_id}','test_hash','test decimal migration owner',NOW());
+          INSERT INTO families(id,name,updated_at) VALUES('{family_id}','test decimal migration family',NOW());
+          INSERT INTO family_members(id,family_id,user_id,role,relation,status,updated_at)
+          VALUES('test_decimal_member_{self.suffix}','{family_id}','{user_id}','admin','parent','active',NOW());
+          INSERT INTO babies(id,family_id,nickname,birth_date,gender,updated_at)
+          VALUES('{baby_id}','{family_id}','test decimal migration baby','2025-01-02','female',NOW());
+          INSERT INTO formula_products(id,family_id,brand,name,reconstitution_ratio,updated_at)
+          VALUES('test_decimal_formula_{self.suffix}','{family_id}','test decimal brand','test decimal formula','0.13333',NOW());
+          INSERT INTO growth_measurements(id,family_id,baby_id,measurement_date,weight_kg,height_cm,
+            head_circumference_cm,updated_at)
+          VALUES('test_decimal_growth_{self.suffix}','{family_id}','{baby_id}','2026-09-14','8.27','70.5','44.1',NOW());""")
+        except RuntimeError as error:
+            raise RuntimeError(f"decimal_migration_seed_failed:{str(error)[:180]}") from None
+
+    def _assert_decimal_migration_rows_preserved(self) -> None:
+        family_id = self.decimal_seed_ids["family"]
+        baby_id = self.decimal_seed_ids["baby"]
+        try:
+            raw = self.sql(f"""SELECT (SELECT reconstitution_ratio::text FROM formula_products
+          WHERE id='test_decimal_formula_{self.suffix}' AND family_id='{family_id}')||'|'||
+          (SELECT weight_kg::text||'|'||height_cm::text||'|'||head_circumference_cm::text
+           FROM growth_measurements WHERE id='test_decimal_growth_{self.suffix}'
+             AND family_id='{family_id}' AND baby_id='{baby_id}')""")
+        except RuntimeError:
+            raise RuntimeError("decimal_migration_preservation_read_failed") from None
+        expected = "0.13333|8.27|70.5|44.1"
+        if raw != expected:
+            raise AssertionError("migration_033_changed_populated_clinical_decimal_values")
+        self.migration_preserved_values = {
+            "formulaRatio": "0.13333", "weightKg": "8.27", "heightCm": "70.5",
+            "headCircumferenceCm": "44.1",
+        }
 
     def _spawn(self, label: str, args: list[str], env: dict[str, str]) -> subprocess.Popen:
         log = open(self.root / f"{label}.log", "ab", buffering=0)
@@ -182,12 +226,19 @@ class OwnedStack:
                            env=app_db_env, cwd=ROOT)
         if identity != f"{self.db_name}|{self.db_role}|false|127.0.0.1":
             raise RuntimeError("postgres_identity_guard_failed")
+        self.env.update(app_db_env)
         migrations = sorted((ROOT / "prisma/migrations").glob("*/migration.sql"))
         for migration in migrations:
-            checked(["/opt/homebrew/bin/psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", "127.0.0.1",
-                     "-p", str(self.pg_port), "-U", self.db_role, "-d", self.db_name, "-f", str(migration)],
-                    env=app_db_env, cwd=ROOT)
-        self.env.update(app_db_env)
+            if migration.parent.name == "202610040033_clinical_formula_decimal_precision":
+                self._seed_decimal_migration_rows()
+            try:
+                checked(["/opt/homebrew/bin/psql", "-X", "-v", "ON_ERROR_STOP=1", "-h", "127.0.0.1",
+                         "-p", str(self.pg_port), "-U", self.db_role, "-d", self.db_name, "-f", str(migration)],
+                        env=app_db_env, cwd=ROOT)
+            except RuntimeError:
+                raise RuntimeError(f"owned_migration_failed:{migration.parent.name}") from None
+            if migration.parent.name == "202610040033_clinical_formula_decimal_precision":
+                self._assert_decimal_migration_rows_preserved()
 
     def _start_redis(self) -> None:
         self.redis_dir.mkdir(mode=0o700)
@@ -528,6 +579,48 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
                                           "medical_report", minio_port, PDF, "application/pdf")
     cases: list[str] = []
 
+    decimal_types = stack.sql("""SELECT table_name||'.'||column_name||'='||data_type||':'||
+      COALESCE(numeric_precision::text,'unbounded')||':'||COALESCE(numeric_scale::text,'unbounded')
+      FROM information_schema.columns WHERE table_schema='public' AND (
+        (table_name='formula_products' AND column_name='reconstitution_ratio') OR
+        (table_name='growth_measurements' AND column_name IN ('weight_kg','height_cm','head_circumference_cm'))
+      ) ORDER BY table_name,column_name""").splitlines()
+    expected_decimal_types = {
+        "formula_products.reconstitution_ratio=numeric:unbounded:unbounded",
+        "growth_measurements.weight_kg=numeric:unbounded:unbounded",
+        "growth_measurements.height_cm=numeric:unbounded:unbounded",
+        "growth_measurements.head_circumference_cm=numeric:unbounded:unbounded",
+    }
+    if set(decimal_types) != expected_decimal_types:
+        raise AssertionError("decimal_migration_did_not_install_unbounded_numeric_columns")
+    if not stack.migration_preserved_values:
+        raise AssertionError("migration_033_populated_upgrade_assertion_missing")
+    cases.append("migration_033_installs_unbounded_numeric_for_formula_ratio_and_all_growth_values")
+    cases.append("migration_033_preserves_populated_preexisting_formula_and_growth_values")
+
+    formula_path = f"/api/v1/families/{family_id}/nutrition/products"
+    formula_ratio = "0.133333333333333333"
+    formula = expect(base, "POST", formula_path, 201,
+                     {"brand": "test decimal brand", "name": "test decimal formula",
+                      "reconstitutionRatio": formula_ratio}, owner_token,
+                     "test_mgocr_formula_decimal_" + suffix)["data"]
+    if formula.get("reconstitutionRatio") != formula_ratio:
+        raise AssertionError("formula_ratio_create_lost_decimal_precision")
+    formula_list = expect(base, "GET", formula_path, 200, token=owner_token)["data"]
+    formula_list_row = next((row for row in formula_list if row.get("id") == formula["id"]), None)
+    if formula_list_row is None or formula_list_row.get("reconstitutionRatio") != formula_ratio:
+        raise AssertionError("formula_ratio_list_lost_decimal_precision")
+    updated_ratio = "0.123456789012345678"
+    updated_formula = expect(base, "PATCH", f"{formula_path}/{formula['id']}", 200,
+                              {"baseVersion": 1, "reconstitutionRatio": updated_ratio}, owner_token)["data"]
+    if updated_formula.get("version") != 2 or updated_formula.get("reconstitutionRatio") != updated_ratio:
+        raise AssertionError("formula_ratio_update_lost_decimal_precision")
+    stale_formula = expect(base, "PATCH", f"{formula_path}/{formula['id']}", 409,
+                           {"baseVersion": 1, "reconstitutionRatio": "0.5"}, owner_token)
+    if stale_formula.get("error", {}).get("code") != "CONCURRENCY_CONFLICT":
+        raise AssertionError("formula_ratio_stale_cas_not_rejected")
+    cases.append("formula_ratio_create_update_list_preserve_decimal_digits_and_cas")
+
     before = state(stack, owner_id, family_id, baby_id)
     wrong_purpose = expect(base, "POST", "/api/v1/medical/ocr-runs", 400,
                            {"babyId": baby_id, "attachmentId": growth_png}, owner_token,
@@ -676,7 +769,7 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
         "notes": "test user reviewed the draft", "attachmentIds": [med_pdf], "ocrRunId": failed_run,
         "items": [{"id": "test-item-1", "name": "Hemoglobin", "value": "121", "unit": "g/L",
                    "referenceRange": "110-150", "status": "normal", "interpretation": "test user corrected value"}],
-        "growthData": {"weightKg": "8.25", "heightCm": "70.5", "headCircumferenceCm": "44.1"},
+        "growthData": {"weightKg": "8.275", "heightCm": "70.55", "headCircumferenceCm": "44.1375"},
     }
     report_path = f"/api/v1/babies/{baby_id}/medical-reports"
     report_key = "test_mgocr_confirm_medical_" + suffix
@@ -716,8 +809,8 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
     if report_read["id"] != report["id"] or len(growth_after_medical) != 1:
         raise AssertionError("explicit_medical_confirm_readback_failed")
     medical_growth = growth_after_medical[0]
-    if (medical_growth["weightKg"] != "8.25" or medical_growth["heightCm"] != "70.5" or
-            medical_growth["headCircumferenceCm"] != "44.1"):
+    if (medical_growth["weightKg"] != "8.275" or medical_growth["heightCm"] != "70.55" or
+            medical_growth["headCircumferenceCm"] != "44.1375"):
         raise AssertionError("optional_growth_data_not_created_atomically")
     owner_delta = family_feed(base, family_id, owner_token, owner_feed_before["nextCursor"])
     member_delta = family_feed(base, family_id, member_token, member_feed_before["nextCursor"])
@@ -730,7 +823,7 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
         if (len(changes) != 2 or medical_change is None or growth_change is None or
                 [change["cursor"] for change in changes] != expected_cursors or
                 medical_change["payload"].get("title") != report["title"] or
-                growth_change["payload"].get("weightKg") != "8.25"):
+                growth_change["payload"].get("weightKg") != "8.275"):
             raise AssertionError(f"{label}_family_feed_missed_medical_or_optional_growth_change")
     cases.append("owner_and_second_family_member_receive_medical_and_growth_changes_at_consecutive_cursors")
     cases.append("human_edited_medical_confirmation_with_atomic_growth_rollback_readback_and_idempotency")
@@ -771,6 +864,46 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
     measurement_read = expect(base, "GET", f"{growth_path}/{measurement['id']}", 200, token=owner_token)["data"]
     if measurement_read["weightKg"] != "8.30" or measurement_read["attachmentId"] != growth_png:
         raise AssertionError("explicit_growth_confirm_readback_failed")
+
+    direct_growth_path = f"/api/v1/babies/{baby_id}/growth-measurements"
+    direct_growth_body = {"measurementDate": "2026-09-18", "weightKg": "8.275",
+                          "heightCm": "70.55", "headCircumferenceCm": "45.137500000000000001",
+                          "notes": "test exact decimal create"}
+    direct_growth = expect(base, "POST", direct_growth_path, 201, direct_growth_body, owner_token,
+                           "test_mgocr_growth_decimal_create_" + suffix)["data"]
+    expected_direct = {"weightKg": direct_growth_body["weightKg"], "heightCm": direct_growth_body["heightCm"],
+                       "headCircumferenceCm": direct_growth_body["headCircumferenceCm"]}
+    if any(direct_growth.get(key) != value for key, value in expected_direct.items()):
+        raise AssertionError("direct_growth_create_lost_decimal_precision")
+    direct_read = expect(base, "GET", f"{direct_growth_path}/{direct_growth['id']}", 200,
+                         token=owner_token)["data"]
+    direct_list = expect(base, "GET", direct_growth_path, 200, token=owner_token)["data"]
+    list_row = next((row for row in direct_list if row.get("id") == direct_growth["id"]), None)
+    if (list_row is None or any(direct_read.get(key) != value or list_row.get(key) != value
+                                for key, value in expected_direct.items())):
+        raise AssertionError("direct_growth_read_or_list_lost_decimal_precision")
+    expect(base, "GET", f"/api/v1/babies/{baby_id}/growth-measurements/{direct_growth['id']}", 403,
+           token=outsider_token)
+    updated_growth_body = {"baseVersion": "1", "weightKg": "8.2755", "heightCm": "70.555",
+                           "headCircumferenceCm": "45.137500000000000002"}
+    updated_growth = expect(base, "PATCH", f"{direct_growth_path}/{direct_growth['id']}", 200,
+                            updated_growth_body, owner_token)["data"]
+    expected_updated = {"weightKg": updated_growth_body["weightKg"], "heightCm": updated_growth_body["heightCm"],
+                        "headCircumferenceCm": updated_growth_body["headCircumferenceCm"]}
+    if updated_growth.get("version") != "2" or any(updated_growth.get(key) != value
+                                                   for key, value in expected_updated.items()):
+        raise AssertionError("direct_growth_update_lost_decimal_precision")
+    stale_growth = expect(base, "PATCH", f"{direct_growth_path}/{direct_growth['id']}", 409,
+                          {"baseVersion": "1", "weightKg": "10.0"}, owner_token,
+                          "test_mgocr_growth_stale_cas_" + suffix)
+    if stale_growth.get("error", {}).get("code") != "CONCURRENCY_CONFLICT":
+        raise AssertionError("direct_growth_stale_cas_not_rejected:" +
+                             str(stale_growth.get("error", {}).get("code", "missing")))
+    direct_after_cas = expect(base, "GET", f"{direct_growth_path}/{direct_growth['id']}", 200,
+                              token=owner_token)["data"]
+    if any(direct_after_cas.get(key) != value for key, value in expected_updated.items()):
+        raise AssertionError("stale_growth_cas_changed_exact_values")
+    cases.append("growth_create_update_get_list_preserve_weight_height_head_decimal_digits_cross_scope_and_cas")
 
     before_update = state(stack, owner_id, family_id, baby_id)
     owner_before_update = family_feed(base, family_id, owner_token)
@@ -826,7 +959,7 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
             raise AssertionError(f"{label}_family_feed_missed_medical_report_delete")
     cases.append("two_member_medical_create_update_delete_feed_events")
     final_state = state(stack, owner_id, family_id, baby_id)
-    if final_state["medicalReports"] != 1 or final_state["growthMeasurements"] != 2:
+    if final_state["medicalReports"] != 1 or final_state["growthMeasurements"] != 3:
         raise AssertionError("confirmation_record_count_mismatch")
     cases.append("growth_photo_upload_queue_typed_worker_explicit_save_scope_and_exact_replay")
 
@@ -846,6 +979,15 @@ def run_scenarios(stack: OwnedStack, base: str, minio_port: int) -> dict:
                                "validResponseReleasedAfterCancel": True,
                                "lateWorkerCommitFenced": True,
                                "completedWorkerRemainedSucceededAfterCancel": True},
+        "decimalRoundTrip": {"unboundedColumns": sorted(decimal_types),
+                             "populatedUpgradePreserved": stack.migration_preserved_values,
+                             "formulaRatio": {"created": formula_ratio, "updated": updated_ratio,
+                                              "listPreserved": True, "casPreserved": True},
+                             "directGrowth": {"created": expected_direct, "updated": expected_updated,
+                                              "getAndListPreserved": True, "casPreserved": True,
+                                              "crossScopeDenied": True},
+                             "medicalOptionalGrowth": {key: medical_growth[key] for key in
+                                                        ("weightKg", "heightCm", "headCircumferenceCm")}},
         "rollbackStateUnchanged": True,
         "fixtureOnly": True,
         "recognitionQualityClaimed": False,
@@ -902,8 +1044,11 @@ def main() -> int:
                 "internal/backend/record_mutation.go", "prisma/schema.prisma",
                 "internal/backend/foundation_test.go", "internal/backend/native_sync_test.go",
                 "internal/backend/medical_growth_ocr_test.go",
+                "internal/backend/growth_test.go",
                 "prisma/migrations/202610030030_medical_growth_ocr_typed_drafts/migration.sql",
+                "prisma/migrations/202610040033_clinical_formula_decimal_precision/migration.sql",
                 "contracts/openapi.json", "scripts/go-medical-growth-ocr-typed-integration.py",
+                "scripts/check-clinical-decimal-mapping.mjs", "scripts/db-validate.mjs",
                 "scripts/go-medical-integration.py",
             )
         }
