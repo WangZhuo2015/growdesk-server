@@ -1,0 +1,49 @@
+{
+  "status": "passed",
+  "runID": "6ae3e9f823a742e4",
+  "testPrincipal": "test_weather_6ae3e9f823a742e4",
+  "userID": "3ead7810-08ca-4114-8e39-02eb212f2a39",
+  "checks": [
+    "unauthenticated request rejected before provider access",
+    "default Suzhou strategy and Redis fresh-cache hit",
+    "city geocoding and explicitly European AQI scale/category/source",
+    "coordinate lookup skips geocoding and hourly local dates cross midnight",
+    "paired coordinates, exclusivity, bounds, duplicates, and unmatched city validation",
+    "missing weather, UV and AQI data remain null, never zero/good",
+    "air-quality provider failure preserves weather while marking AQI unavailable",
+    "provider failure returns a bounded error without fabricated values",
+    "provider timeout returns bounded 502",
+    "expired Redis cache is served only after provider failure and visibly marked stale",
+    "cache older than 24 hours is rejected after provider failure",
+    "non-finite numeric query rejected",
+    "provider data remains available and cache state is exposed when owned Redis is down"
+  ],
+  "checkCount": 13,
+  "error": null,
+  "failureLocation": null,
+  "provider": "loopback_virtual_open_meteo_protocol_fixture_only",
+  "stackKind": "owned_local_postgres18_redis8_processes",
+  "apiOrigin": "loopback_owned_api_only",
+  "cleanup": {
+    "apiStopped": true,
+    "fixtureStopped": true,
+    "containersRemoved": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "ownedTempDirectoryRemoved": true
+  },
+  "postgresCleanupEvidence": {
+    "postmasterPID": 84487,
+    "startupIdentity": {
+      "postmasterPID": 84487,
+      "dataDirectory": "/private/tmp/growdesk-weather-owned-6ae3e9f823a742e4-k1ngs62j/pgdata",
+      "postmasterStartTime": "1791090440",
+      "processStartedAt": "Sat Oct  3 22:07:20 2026"
+    },
+    "pgCtlStopExitCode": 0,
+    "ownedPIDTerminationProven": true,
+    "failure": null
+  },
+  "noProductionOrExternalProvider": true,
+  "createdAt": "2026-10-04T05:07:31Z"
+}

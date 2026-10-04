@@ -1,0 +1,9 @@
+{
+  "status": "FAIL",
+  "runId": "bc7be360244a",
+  "failure": "RuntimeError:owned_command_failed:pg_ctl:1",
+  "externalSecretsRead": false,
+  "credentialsOrTokensRecorded": false,
+  "privateStackCleaned": true,
+  "privateDatabaseAndObjectDataRemoved": true
+}

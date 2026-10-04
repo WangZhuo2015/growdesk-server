@@ -1,0 +1,1 @@
+{"status": "passed", "evidence": "evidence/tasks/IOS_WEB_PARITY_20261002/combined-187-validation/weather/http-6ae3e9f823a742e4.json", "checks": 13, "cleanup": {"apiStopped": true, "fixtureStopped": true, "containersRemoved": true, "postgresStopped": true, "redisStopped": true, "ownedTempDirectoryRemoved": true}}

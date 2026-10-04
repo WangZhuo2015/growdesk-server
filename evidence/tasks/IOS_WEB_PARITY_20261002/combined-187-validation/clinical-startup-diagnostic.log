@@ -1,0 +1,9 @@
+Owned PostgreSQL startup log (bounded):
+2026-10-03 22:09:18.201 PDT [85330] LOG:  starting PostgreSQL 18.6 (Homebrew) on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit
+2026-10-03 22:09:18.201 PDT [85330] LOG:  listening on IPv4 address "127.0.0.1", port 51288
+2026-10-03 22:09:18.201 PDT [85330] LOG:  listening on Unix socket "/private/tmp/growdesk-mgocr-9qd6uz7i/pgsocket/.s.PGSQL.51288"
+2026-10-03 22:09:18.202 PDT [85330] FATAL:  postmaster became multithreaded during startup
+2026-10-03 22:09:18.202 PDT [85330] HINT:  Set the LC_ALL environment variable to a valid locale.
+2026-10-03 22:09:18.203 PDT [85330] LOG:  database system is shut down
+
+{"status": "FAIL", "runId": "14fb7258ff04", "evidence": "evidence/tasks/BE_MEDICAL_GROWTH_OCR_TYPED_DRAFTS/live-14fb7258ff04.json", "privateStackCleaned": true, "failure": "RuntimeError:owned_command_failed:pg_ctl:1"}

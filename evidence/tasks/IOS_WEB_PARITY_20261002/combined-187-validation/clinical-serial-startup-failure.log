@@ -1,0 +1,1 @@
+{"status": "FAIL", "runId": "89cbc16fbef0", "evidence": "evidence/tasks/BE_MEDICAL_GROWTH_OCR_TYPED_DRAFTS/live-89cbc16fbef0.json", "privateStackCleaned": true, "failure": "RuntimeError:owned_command_failed:pg_ctl:1"}

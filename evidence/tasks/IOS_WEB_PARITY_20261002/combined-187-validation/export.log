@@ -1,0 +1,3 @@
+PASS isolated account export/download HTTP E2E (58 checks)
+Evidence: /private/tmp/growdesk-server-vaccine-edit-20261002/evidence/tasks/IOS_WEB_PARITY_20261002/combined-187-validation/export-live.json
+PASS owned API, PostgreSQL, Redis, test tenant, and private build directory cleaned

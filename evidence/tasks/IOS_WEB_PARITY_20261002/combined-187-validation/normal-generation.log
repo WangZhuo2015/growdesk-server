@@ -1,0 +1,57 @@
+
+> growdesk-server@0.1.0 backend:db:generate
+> node scripts/db-generate.mjs
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (7.10.0) to ./packages/database/src/generated in 283ms
+
+Database client generation complete.
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> growdesk-server@0.1.0 backend:contracts:generate
+> node scripts/generate-contracts.mjs
+
+Generating canonical OpenAPI 3.0.3 specification from @growdesk/contracts...
+Successfully generated /private/tmp/growdesk-server-vaccine-edit-20261002/contracts/openapi.json
+- OpenAPI version: 3.0.3
+- Path count: 137
+- Operation count: 187
+- Schema component count: 81
