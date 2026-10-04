@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"mime"
 	"net/http"
 	"sort"
 	"strconv"
@@ -248,7 +249,21 @@ func (r *Route) Validate(req *http.Request, params map[string]string, body Objec
 	}
 	if ref := r.Operation.RequestBody; ref != nil && ref.Value != nil {
 		rb := ref.Value
-		media := rb.Content.Get("application/json")
+		mediaType := req.Header.Get("Content-Type")
+		if mediaType == "" {
+			mediaType = "application/json"
+		} else {
+			var mediaErr error
+			mediaType, _, mediaErr = mime.ParseMediaType(mediaType)
+			if mediaErr != nil {
+				return apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Unsupported request Content-Type")
+			}
+		}
+		mediaType = strings.ToLower(mediaType)
+		media := rb.Content.Get(mediaType)
+		if media == nil && body != nil {
+			return apiError(415, "FST_ERR_CTP_INVALID_MEDIA_TYPE", "Unsupported request Content-Type")
+		}
 		if media != nil && media.Schema != nil && media.Schema.Value != nil {
 			if body == nil && rb.Required {
 				return apiError(400, "FST_ERR_VALIDATION", "Request body is required")

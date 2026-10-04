@@ -325,6 +325,9 @@ func (s *Server) deleteCurrentUser(ctx context.Context, r *Request) (Result, err
 	if err = lockUser(ctx, tx, r.Principal.UserID); err != nil {
 		return Result{}, err
 	}
+	if err = lockOAuthFamiliesForUser(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
 	if _, err = liveSession(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
 		return Result{}, err
 	}
@@ -344,6 +347,9 @@ func (s *Server) deleteCurrentUser(ctx context.Context, r *Request) (Result, err
 	if _, err = tx.Exec(ctx, "UPDATE refresh_credentials SET revoked_at=NOW() WHERE user_id=$1 AND revoked_at IS NULL", r.Principal.UserID); err != nil {
 		return Result{}, err
 	}
+	if err = revokeOAuthUserGrants(ctx, tx, r.Principal.UserID, ""); err != nil {
+		return Result{}, err
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}
@@ -360,12 +366,18 @@ func (s *Server) listSessions(ctx context.Context, r *Request) (Result, error) {
 	}
 	return ok(items)
 }
-func revokeSessionTx(ctx context.Context, q Querier, user, session string) (bool, error) {
+func revokeSessionTx(ctx context.Context, q pgx.Tx, user, session string) (bool, error) {
+	if err := lockOAuthFamiliesForSession(ctx, q, session); err != nil {
+		return false, err
+	}
 	tag, err := q.Exec(ctx, "UPDATE device_sessions SET revoked_at=NOW() WHERE id=$1 AND user_id=$2", session, user)
 	if err != nil || tag.RowsAffected() == 0 {
 		return false, err
 	}
 	_, err = q.Exec(ctx, "UPDATE refresh_credentials SET revoked_at=NOW() WHERE session_id=$1 AND user_id=$2 AND revoked_at IS NULL", session, user)
+	if err == nil {
+		err = revokeOAuthSessionGrants(ctx, q, user, session)
+	}
 	return true, err
 }
 func (s *Server) revoke(ctx context.Context, user, session string) (bool, error) {
@@ -412,6 +424,9 @@ func (s *Server) changePassword(ctx context.Context, r *Request) (Result, error)
 	if err = tx.QueryRow(ctx, "SELECT cursor FROM user_sync_states WHERE user_id=$1 FOR UPDATE", r.Principal.UserID).Scan(&cursor); err != nil {
 		return Result{}, err
 	}
+	if err = lockOAuthFamiliesForUser(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
 	if _, err = liveSession(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
 		return Result{}, err
 	}
@@ -442,6 +457,9 @@ func (s *Server) changePassword(ctx context.Context, r *Request) (Result, error)
 		if _, err = tx.Exec(ctx, command.sql, command.args...); err != nil {
 			return Result{}, err
 		}
+	}
+	if err = revokeOAuthUserGrants(ctx, tx, r.Principal.UserID, r.Principal.SessionID); err != nil {
+		return Result{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
@@ -529,6 +547,9 @@ func (s *Server) recoverPassword(ctx context.Context, r *Request) (Result, error
 	if err = tx.QueryRow(ctx, "SELECT cursor FROM user_sync_states WHERE user_id=$1 FOR UPDATE", uid).Scan(&cursor); err != nil {
 		return Result{}, err
 	}
+	if err = lockOAuthFamiliesForUser(ctx, tx, uid); err != nil {
+		return Result{}, err
+	}
 	rec, err := one(ctx, tx, "SELECT to_jsonb(c) FROM recovery_codes c WHERE code_hash=$1 AND user_id=$2 FOR UPDATE", hashText(code), uid)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Result{}, deny
@@ -557,6 +578,9 @@ func (s *Server) recoverPassword(ctx context.Context, r *Request) (Result, error
 		if _, err = tx.Exec(ctx, cmd.sql, cmd.args...); err != nil {
 			return Result{}, err
 		}
+	}
+	if err = revokeOAuthUserGrants(ctx, tx, uid, ""); err != nil {
+		return Result{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err

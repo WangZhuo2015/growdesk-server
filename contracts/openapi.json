@@ -7125,10 +7125,13 @@
         "required": [
           "issuer",
           "authorization_endpoint",
+          "registration_endpoint",
           "token_endpoint",
           "revocation_endpoint",
           "scopes_supported",
           "response_types_supported",
+          "grant_types_supported",
+          "token_endpoint_auth_methods_supported",
           "code_challenge_methods_supported"
         ],
         "properties": {
@@ -7136,6 +7139,9 @@
             "type": "string"
           },
           "authorization_endpoint": {
+            "type": "string"
+          },
+          "registration_endpoint": {
             "type": "string"
           },
           "token_endpoint": {
@@ -7151,6 +7157,18 @@
             }
           },
           "response_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grant_types_supported": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "token_endpoint_auth_methods_supported": {
             "type": "array",
             "items": {
               "type": "string"
@@ -10240,25 +10258,90 @@
                   "type": "object",
                   "required": [
                     "data",
-                    "managementAvailable",
-                    "reasonCode"
+                    "managementAvailable"
                   ],
                   "properties": {
                     "data": {
-                      "maxItems": 0,
+                      "maxItems": 100,
                       "type": "array",
-                      "items": {}
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "clientId",
+                          "clientName",
+                          "resource",
+                          "scopes",
+                          "familyId",
+                          "babyId",
+                          "createdAt",
+                          "lastUsedAt",
+                          "revokedAt"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "clientId": {
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "type": "string"
+                          },
+                          "clientName": {
+                            "minLength": 1,
+                            "maxLength": 200,
+                            "type": "string"
+                          },
+                          "resource": {
+                            "minLength": 1,
+                            "maxLength": 2048,
+                            "type": "string"
+                          },
+                          "scopes": {
+                            "minItems": 1,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "familyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "babyId": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "lastUsedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "revokedAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
                     },
                     "managementAvailable": {
                       "type": "boolean",
                       "enum": [
-                        false
-                      ]
-                    },
-                    "reasonCode": {
-                      "type": "string",
-                      "enum": [
-                        "MCP_OAUTH_GRANTS_NOT_IMPLEMENTED"
+                        true
                       ]
                     }
                   }
@@ -10301,6 +10384,37 @@
         ],
         "x-implementation-status": "READY",
         "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "Standard API Error Envelope",
             "content": {
@@ -10311,7 +10425,7 @@
               }
             }
           },
-          "503": {
+          "404": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {
@@ -41378,7 +41492,7 @@
         "tags": [
           "OAuth"
         ],
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -41390,10 +41504,13 @@
                   "required": [
                     "issuer",
                     "authorization_endpoint",
+                    "registration_endpoint",
                     "token_endpoint",
                     "revocation_endpoint",
                     "scopes_supported",
                     "response_types_supported",
+                    "grant_types_supported",
+                    "token_endpoint_auth_methods_supported",
                     "code_challenge_methods_supported"
                   ],
                   "properties": {
@@ -41401,6 +41518,9 @@
                       "type": "string"
                     },
                     "authorization_endpoint": {
+                      "type": "string"
+                    },
+                    "registration_endpoint": {
                       "type": "string"
                     },
                     "token_endpoint": {
@@ -41416,6 +41536,18 @@
                       }
                     },
                     "response_types_supported": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "grant_types_supported": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "token_endpoint_auth_methods_supported": {
                       "type": "array",
                       "items": {
                         "type": "string"
@@ -41442,7 +41574,7 @@
         "tags": [
           "OAuth"
         ],
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -41494,7 +41626,7 @@
         "tags": [
           "OAuth"
         ],
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -41530,6 +41662,662 @@
                       "items": {
                         "type": "string"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth/register": {
+      "post": {
+        "operationId": "registerOAuthClient",
+        "summary": "Register a public OAuth client with exact redirect URIs",
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "client_name",
+                  "redirect_uris"
+                ],
+                "properties": {
+                  "client_name": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "redirect_uris": {
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "minLength": 1,
+                      "maxLength": 2048,
+                      "type": "string"
+                    }
+                  },
+                  "scope": {
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "grant_types": {
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "response_types": {
+                    "maxItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "token_endpoint_auth_method": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "client_id",
+                    "client_id_issued_at",
+                    "client_name",
+                    "redirect_uris",
+                    "scope",
+                    "grant_types",
+                    "response_types",
+                    "token_endpoint_auth_method"
+                  ],
+                  "properties": {
+                    "client_id": {
+                      "minLength": 1,
+                      "maxLength": 128,
+                      "type": "string"
+                    },
+                    "client_id_issued_at": {
+                      "type": "integer"
+                    },
+                    "client_name": {
+                      "type": "string"
+                    },
+                    "redirect_uris": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "scope": {
+                      "type": "string"
+                    },
+                    "grant_types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "response_types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "token_endpoint_auth_method": {
+                      "type": "string",
+                      "enum": [
+                        "none"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth/authorize": {
+      "get": {
+        "operationId": "getOAuthAuthorization",
+        "summary": "Render a verified-session OAuth login and consent page",
+        "tags": [
+          "OAuth"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "code"
+              ]
+            },
+            "in": "query",
+            "name": "response_type",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 128,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "client_id",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "redirect_uri",
+            "required": true
+          },
+          {
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "scope",
+            "required": false
+          },
+          {
+            "schema": {
+              "maxLength": 512,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "state",
+            "required": false
+          },
+          {
+            "schema": {
+              "minLength": 43,
+              "maxLength": 43,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "code_challenge",
+            "required": true
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "S256"
+              ]
+            },
+            "in": "query",
+            "name": "code_challenge_method",
+            "required": true
+          },
+          {
+            "schema": {
+              "minLength": 1,
+              "maxLength": 2048,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "resource",
+            "required": true
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "submitOAuthAuthorization",
+        "summary": "Submit OAuth login, explicit consent, or denial",
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "browserSecret",
+                  "decision"
+                ],
+                "properties": {
+                  "requestId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "browserSecret": {
+                    "minLength": 43,
+                    "maxLength": 43,
+                    "type": "string"
+                  },
+                  "decision": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "login"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "allow"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "deny"
+                        ]
+                      }
+                    ]
+                  },
+                  "username": {
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "password": {
+                    "maxLength": 256,
+                    "type": "string"
+                  },
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string"
+                  },
+                  "scopeSelection": {
+                    "type": "string",
+                    "enum": [
+                      "true"
+                    ]
+                  },
+                  "scope": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "maxItems": 4,
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "text/html; charset=utf-8": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth/token": {
+      "post": {
+        "operationId": "exchangeMcpOAuthTokenShort",
+        "summary": "Exchange a one-time authorization code or rotate an MCP refresh token",
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "grant_type",
+                  "client_id"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string"
+                  },
+                  "code_verifier": {
+                    "type": "string"
+                  },
+                  "refresh_token": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "grant_type",
+                  "client_id"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string"
+                  },
+                  "code_verifier": {
+                    "type": "string"
+                  },
+                  "refresh_token": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "access_token",
+                    "token_type",
+                    "expires_in",
+                    "refresh_token",
+                    "scope"
+                  ],
+                  "properties": {
+                    "access_token": {
+                      "type": "string"
+                    },
+                    "token_type": {
+                      "type": "string",
+                      "enum": [
+                        "Bearer"
+                      ]
+                    },
+                    "expires_in": {
+                      "type": "integer"
+                    },
+                    "refresh_token": {
+                      "type": "string"
+                    },
+                    "scope": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oauth/revoke": {
+      "post": {
+        "operationId": "revokeMcpOAuthTokenShort",
+        "summary": "Revoke an MCP OAuth grant by access or refresh token",
+        "tags": [
+          "OAuth"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "token",
+                  "client_id"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "token_type_hint": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "token",
+                  "client_id"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "token_type_hint": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "success"
+                      ],
+                      "properties": {
+                        "success": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
                     }
                   }
                 }
@@ -41575,13 +42363,55 @@
                   },
                   "refresh_token": {
                     "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "grant_type",
+                  "client_id"
+                ],
+                "properties": {
+                  "grant_type": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string"
+                  },
+                  "redirect_uri": {
+                    "type": "string"
+                  },
+                  "code_verifier": {
+                    "type": "string"
+                  },
+                  "refresh_token": {
+                    "type": "string"
+                  },
+                  "resource": {
+                    "type": "string"
+                  },
+                  "scope": {
+                    "type": "string"
                   }
                 }
               }
             }
           }
         },
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -41594,6 +42424,7 @@
                     "access_token",
                     "token_type",
                     "expires_in",
+                    "refresh_token",
                     "scope"
                   ],
                   "properties": {
@@ -41621,21 +42452,23 @@
             }
           },
           "400": {
-            "description": "Standard API Error Envelope",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Standard API Error Envelope",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -41673,10 +42506,31 @@
                   }
                 }
               }
+            },
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "token",
+                  "client_id"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "token_type_hint": {
+                    "type": "string"
+                  },
+                  "client_id": {
+                    "type": "string"
+                  }
+                }
+              }
             }
           }
         },
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",
@@ -41710,11 +42564,23 @@
             }
           },
           "400": {
-            "description": "Standard API Error Envelope",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "error_description": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -41770,7 +42636,7 @@
             }
           }
         },
-        "x-implementation-status": "PLANNED_SH08",
+        "x-implementation-status": "READY",
         "responses": {
           "200": {
             "description": "Default Response",

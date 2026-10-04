@@ -1,6 +1,7 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { DateTimeString, Nullable, SuccessEnvelope, SuccessStatusResponseSchema, UuidString } from "./common.js";
 import { AiRunSchema } from "./ai.js";
+import { OAuthConnectionListResponseSchema } from "./mcp.js";
 
 export const PersonalAccessTokenScopeSchema = Type.Literal("voice:submit");
 export type PersonalAccessTokenScope = Static<typeof PersonalAccessTokenScopeSchema>;
@@ -52,14 +53,7 @@ export const CreatePersonalAccessTokenResponseSchema = SuccessEnvelope(
 );
 export type CreatePersonalAccessTokenResponse = Static<typeof CreatePersonalAccessTokenResponseSchema>;
 
-export const ListPersonalConnectionsResponseSchema = Type.Object(
-  {
-    data: Type.Array(Type.Unknown(), { maxItems: 0 }),
-    managementAvailable: Type.Literal(false),
-    reasonCode: Type.Literal("MCP_OAUTH_GRANTS_NOT_IMPLEMENTED"),
-  },
-  { $id: "ListPersonalConnectionsResponse", additionalProperties: false },
-);
+export const ListPersonalConnectionsResponseSchema = OAuthConnectionListResponseSchema;
 export type ListPersonalConnectionsResponse = Static<typeof ListPersonalConnectionsResponseSchema>;
 
 export const PersonalAIUsageUnavailableResponseSchema = Type.Object(

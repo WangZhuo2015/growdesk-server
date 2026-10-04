@@ -15,6 +15,7 @@ var revision = "development"
 
 func main() {
 	version := flag.Bool("version", false, "print build identity without connecting to services")
+	through := flag.String("through", "", "apply native migrations through this exact filename")
 	flag.Parse()
 	if *version {
 		if err := json.NewEncoder(os.Stdout).Encode(map[string]string{"revision": revision, "reference": assets.ReferenceCommit}); err != nil {
@@ -24,7 +25,7 @@ func main() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	if err := backend.ApplyNativeMigrations(ctx); err != nil {
+	if err := backend.ApplyNativeMigrationsThrough(ctx, *through); err != nil {
 		slog.Error("native migrations failed", "error", err)
 		os.Exit(1)
 	}

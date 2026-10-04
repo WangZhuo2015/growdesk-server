@@ -22,6 +22,11 @@ func (s *Server) registerMcpOAuth() {
 	s.Register("getOAuthAuthorizationServerMetadata", true, s.getOAuthAuthorizationServerMetadata)
 	s.Register("getOAuthProtectedResourceMetadata", true, s.getOAuthProtectedResourceMetadata)
 	s.Register("getOAuthProtectedMcpResourceMetadata", true, s.getOAuthProtectedMcpResourceMetadata)
+	s.Register("registerOAuthClient", true, s.registerOAuthClient)
+	s.Register("getOAuthAuthorization", true, s.getOAuthAuthorization)
+	s.Register("submitOAuthAuthorization", true, s.submitOAuthAuthorization)
+	s.Register("exchangeMcpOAuthTokenShort", true, s.exchangeOAuthToken)
+	s.Register("revokeMcpOAuthTokenShort", true, s.revokeOAuthToken)
 	s.Register("exchangeMcpOAuthToken", true, s.exchangeMcpOAuthToken)
 	s.Register("revokeMcpOAuthToken", true, s.revokeMcpOAuthToken)
 	s.Register("handleMcpRpc", true, s.handleMcpRpc)
@@ -41,13 +46,16 @@ func (s *Server) mcpResourceAudience() string {
 func (s *Server) getOAuthAuthorizationServerMetadata(ctx context.Context, r *Request) (Result, error) {
 	base := s.oauthBaseURL()
 	return Result{Status: 200, Body: Object{
-		"issuer":                           base,
-		"authorization_endpoint":           base + "/oauth/authorize",
-		"token_endpoint":                   base + "/api/v1/mcp/oauth/token",
-		"revocation_endpoint":              base + "/api/v1/mcp/oauth/revoke",
-		"scopes_supported":                 []string{"mcp:read", "mcp:write"},
-		"response_types_supported":         []string{"code"},
-		"code_challenge_methods_supported": []string{"S256"},
+		"issuer":                                base,
+		"authorization_endpoint":                base + "/oauth/authorize",
+		"registration_endpoint":                 base + "/oauth/register",
+		"token_endpoint":                        base + "/oauth/token",
+		"revocation_endpoint":                   base + "/oauth/revoke",
+		"scopes_supported":                      []string{"baby:read", "baby:write"},
+		"response_types_supported":              []string{"code"},
+		"grant_types_supported":                 []string{"authorization_code", "refresh_token"},
+		"token_endpoint_auth_methods_supported": []string{"none"},
+		"code_challenge_methods_supported":      []string{"S256"},
 	}}, nil
 }
 
@@ -56,7 +64,7 @@ func (s *Server) getOAuthProtectedResourceMetadata(ctx context.Context, r *Reque
 	return Result{Status: 200, Body: Object{
 		"resource":                 base,
 		"authorization_servers":    []string{base},
-		"scopes_supported":         []string{"mcp:read", "mcp:write"},
+		"scopes_supported":         []string{"baby:read", "baby:write"},
 		"bearer_methods_supported": []string{"header"},
 	}}, nil
 }
@@ -66,68 +74,27 @@ func (s *Server) getOAuthProtectedMcpResourceMetadata(ctx context.Context, r *Re
 	return Result{Status: 200, Body: Object{
 		"resource":                 s.mcpResourceAudience(),
 		"authorization_servers":    []string{base},
-		"scopes_supported":         []string{"mcp:read", "mcp:write"},
+		"scopes_supported":         []string{"baby:read", "baby:write"},
 		"bearer_methods_supported": []string{"header"},
 	}}, nil
 }
 
 func (s *Server) exchangeMcpOAuthToken(ctx context.Context, r *Request) (Result, error) {
-	grantType := text(r.Body["grant_type"])
-	clientID := text(r.Body["client_id"])
-	if clientID == "" {
-		return Result{}, invalid("client_id is required")
-	}
-
-	scope := "baby:read baby:write"
-	switch grantType {
-	case "authorization_code":
-		code := text(r.Body["code"])
-		if code == "" {
-			return Result{}, invalid("code is required for authorization_code grant")
-		}
-	case "refresh_token":
-		refreshToken := text(r.Body["refresh_token"])
-		if refreshToken == "" {
-			return Result{}, invalid("refresh_token is required for refresh_token grant")
-		}
-	default:
-		return Result{}, apiError(400, "UNSUPPORTED_GRANT_TYPE", "grant_type is not supported")
-	}
-
-	// Issue token bound to MCP audience
-	now := time.Now().Unix()
-	claims := jwt.MapClaims{
-		"sub":   "oauth_client_" + clientID,
-		"sid":   newID(),
-		"aud":   s.mcpResourceAudience(),
-		"iss":   "growdesk-api",
-		"scope": scope,
-		"iat":   now,
-		"exp":   now + 3600,
-		"jti":   newID(),
-	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.Config.JWTSecret))
-	if err != nil {
-		return Result{}, err
-	}
-
-	return Result{Status: 200, Body: Object{
-		"access_token": token,
-		"token_type":   "Bearer",
-		"expires_in":   3600,
-		"scope":        scope,
-	}}, nil
+	return s.exchangeOAuthToken(ctx, r)
 }
 
 func (s *Server) revokeMcpOAuthToken(ctx context.Context, r *Request) (Result, error) {
-	return ok(Object{"success": true})
+	return s.revokeOAuthToken(ctx, r)
 }
 
 type mcpAuthContext struct {
-	principal Principal
-	claims    jwt.MapClaims
-	scopes    map[string]bool
-	babyID    string
+	principal  Principal
+	claims     jwt.MapClaims
+	scopes     map[string]bool
+	babyID     string
+	grantID    string
+	accessHash string
+	expiresAt  time.Time
 }
 
 func (s *Server) authenticateMcp(ctx context.Context, r *http.Request) (*mcpAuthContext, error) {
@@ -140,45 +107,45 @@ func (s *Server) authenticateMcp(ctx context.Context, r *http.Request) (*mcpAuth
 		return nil, apiError(401, "UNAUTHORIZED", "Missing bearer token")
 	}
 
-	claims := jwt.MapClaims{}
-	targetAud := s.mcpResourceAudience()
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (any, error) {
-		return []byte(s.Config.JWTSecret), nil
-	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithAudience(targetAud), jwt.WithExpirationRequired())
-	if err != nil || !token.Valid {
+	if len(tokenStr) != len("mcp_at_")+64 || !strings.HasPrefix(tokenStr, "mcp_at_") {
 		return nil, apiError(401, "UNAUTHORIZED", "Invalid or expired MCP access token")
 	}
-
-	sub := text(claims["sub"])
-	sid := text(claims["sid"])
-	if sub == "" {
-		return nil, apiError(401, "UNAUTHORIZED", "Invalid token subject")
+	if _, err := hex.DecodeString(strings.TrimPrefix(tokenStr, "mcp_at_")); err != nil {
+		return nil, apiError(401, "UNAUTHORIZED", "Invalid or expired MCP access token")
 	}
-
-	p := Principal{UserID: sub, SessionID: sid}
-	// If sessionId is present, verify live session
-	if sid != "" {
-		err = s.DB.QueryRow(ctx, `SELECT u.username, d.device_label FROM device_sessions d JOIN users u ON u.id=d.user_id WHERE d.id=$1 AND d.user_id=$2 AND d.revoked_at IS NULL AND d.absolute_expires_at>NOW() AND u.deleted_at IS NULL`, sid, sub).Scan(&p.Username, &p.DeviceLabel)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, apiError(401, "SESSION_REVOKED", "Session has expired or was revoked")
+	var userID, sessionID, familyID, babyID, grantID, username, label string
+	var scopes, grantScopes []string
+	var expires time.Time
+	err := s.DB.QueryRow(ctx, `SELECT g.user_id,g.session_id,g.family_id,g.baby_id,g.id,a.scopes,g.scopes,a.expires_at,u.username,d.device_label
+		FROM native_go.oauth_access a JOIN native_go.oauth_grants g ON g.id=a.grant_id
+		JOIN users u ON u.id=g.user_id AND u.deleted_at IS NULL
+		JOIN device_sessions d ON d.id=g.session_id AND d.user_id=g.user_id AND d.revoked_at IS NULL AND d.absolute_expires_at>clock_timestamp()
+		JOIN families f ON f.id=g.family_id AND f.deleted_at IS NULL
+		JOIN babies b ON b.id=g.baby_id AND b.family_id=g.family_id AND b.deleted_at IS NULL
+		JOIN family_members fm ON fm.family_id=g.family_id AND fm.user_id=g.user_id AND fm.status='active' AND fm.deleted_at IS NULL AND fm.role IN ('admin','member','viewer')
+		JOIN baby_members bm ON bm.baby_id=g.baby_id AND bm.family_id=g.family_id AND bm.user_id=g.user_id AND bm.status='active' AND bm.deleted_at IS NULL AND bm.role IN ('admin','member','viewer')
+		WHERE a.token_hash=$1 AND a.revoked_at IS NULL AND a.expires_at>clock_timestamp()
+		AND g.revoked_at IS NULL AND g.expires_at>clock_timestamp() AND g.audience=$2`,
+		hashText(tokenStr), s.mcpResourceAudience()).Scan(&userID, &sessionID, &familyID, &babyID, &grantID, &scopes, &grantScopes, &expires, &username, &label)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, apiError(401, "UNAUTHORIZED", "Invalid or expired MCP access token")
+	}
+	if err != nil {
+		return nil, err
+	}
+	p := Principal{UserID: userID, SessionID: sessionID, Username: username, DeviceLabel: label, AuthKind: "mcp_oauth"}
+	parsedScopes := map[string]bool{}
+	for _, scope := range scopes {
+		parsedScopes[scope] = true
+	}
+	for _, scope := range scopes {
+		if !containsScope(grantScopes, scope) {
+			return nil, apiError(401, "UNAUTHORIZED", "Invalid MCP access token scope")
 		}
-		if err != nil {
-			return nil, err
-		}
 	}
-
-	scopes := map[string]bool{}
-	for _, sc := range strings.Fields(text(claims["scope"])) {
-		scopes[sc] = true
-	}
-
-	babyID := text(claims["baby_id"])
-	return &mcpAuthContext{
-		principal: p,
-		claims:    claims,
-		scopes:    scopes,
-		babyID:    babyID,
-	}, nil
+	claims := jwt.MapClaims{"sub": userID, "sid": sessionID, "aud": s.mcpResourceAudience(), "scope": strings.Join(scopes, " "), "baby_id": babyID, "exp": float64(expires.Unix())}
+	_ = familyID
+	return &mcpAuthContext{principal: p, claims: claims, scopes: parsedScopes, babyID: babyID, grantID: grantID, accessHash: hashText(tokenStr), expiresAt: expires}, nil
 }
 
 func rpcError(id any, code int, message string) Result {
@@ -240,7 +207,7 @@ func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
 			"result": Object{
 				"protocolVersion": "2025-06-18",
 				"capabilities":    Object{"tools": Object{}},
-				"serverInfo":       Object{"name": "growdesk", "version": "0.1.0"},
+				"serverInfo":      Object{"name": "growdesk", "version": "0.1.0"},
 			},
 		}}, nil
 

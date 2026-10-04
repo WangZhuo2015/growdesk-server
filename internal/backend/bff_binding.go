@@ -84,6 +84,11 @@ func (s *Server) bindBffForUser(ctx context.Context, r *Request, secretHash, uid
 			return Result{}, err
 		}
 	}
+	if before != nil {
+		if err = lockOAuthFamiliesForSession(ctx, tx, text(before["session_id"])); err != nil {
+			return Result{}, err
+		}
+	}
 	user, err := one(ctx, tx, "SELECT to_jsonb(u) FROM users u WHERE id=$1 AND deleted_at IS NULL FOR UPDATE", uid)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Result{}, apiError(401, "INVALID_CREDENTIALS", "Invalid username or password")

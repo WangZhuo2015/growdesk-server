@@ -1,4 +1,4 @@
-//go:build pat_integration
+//go:build pat_integration || mcp_oauth_integration
 
 package backend
 
@@ -394,13 +394,13 @@ func TestPersonalAccessTokensHTTPIntegration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectPATStatus(t, response, http.StatusServiceUnavailable)
+	expectPATStatus(t, response, http.StatusNotFound)
 	response, err = patCall(httpServer.URL, http.MethodGet, "/api/v1/connections", owner.accessToken, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	expectPATStatus(t, response, http.StatusOK)
-	assertPAT(t, response.body["managementAvailable"] == false && response.body["reasonCode"] == "MCP_OAUTH_GRANTS_NOT_IMPLEMENTED", "connection response must report unavailable grant management: %#v", response.body)
+	assertPAT(t, response.body["managementAvailable"] == true, "connection inventory must report authoritative management: %#v", response.body)
 	entries, ok := response.body["data"].([]any)
 	assertPAT(t, ok && len(entries) == 0, "connection response should contain the real empty inventory: %#v", response.body)
 

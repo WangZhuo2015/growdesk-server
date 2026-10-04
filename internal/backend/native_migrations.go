@@ -13,6 +13,14 @@ import (
 // ApplyNativeMigrations requires the same explicitly isolated test identity as
 // the preview API. Never run migrations implicitly during service startup.
 func ApplyNativeMigrations(ctx context.Context) error {
+	return ApplyNativeMigrationsThrough(ctx, "")
+}
+
+// ApplyNativeMigrationsThrough applies and verifies the ordered native
+// migrations up to and including through. An empty through applies all files.
+// The boundary is useful to exercise upgrades from populated historical
+// schemas without weakening checksum tracking.
+func ApplyNativeMigrationsThrough(ctx context.Context, through string) error {
 	c, err := LoadConfig()
 	if err != nil {
 		return err
@@ -39,9 +47,24 @@ func ApplyNativeMigrations(ctx context.Context) error {
 		return err
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
+	if through != "" {
+		found := false
+		for _, file := range files {
+			if !file.IsDir() && file.Name() == through {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New("native migration boundary not found")
+		}
+	}
 	for _, file := range files {
 		if file.IsDir() || !strings.HasSuffix(file.Name(), ".sql") {
 			continue
+		}
+		if through != "" && file.Name() > through {
+			break
 		}
 		raw, err := assets.NativeMigrations.ReadFile("native/migrations/" + file.Name())
 		if err != nil {
@@ -64,6 +87,9 @@ func ApplyNativeMigrations(ctx context.Context) error {
 		}
 		if _, err = tx.Exec(ctx, `INSERT INTO native_go.migrations(name,sha256) VALUES($1,$2)`, file.Name(), hash); err != nil {
 			return err
+		}
+		if through != "" && file.Name() == through {
+			break
 		}
 	}
 	return tx.Commit(ctx)
