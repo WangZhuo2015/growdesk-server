@@ -38,6 +38,7 @@ type Server struct {
 	Redis       *redis.Client
 	ObjectStore *nativeObjectStore
 	PushHTTP    *http.Client
+	Weather     *weatherProvider
 	Contract    *Contract
 	Handlers    map[string]Handler
 	Public      map[string]bool
@@ -77,9 +78,15 @@ func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error)
 		pool.Close()
 		return nil, err
 	}
+	weather, err := newWeatherProvider(c)
+	if err != nil {
+		store.Close()
+		pool.Close()
+		return nil, err
+	}
 	s := &Server{
 		Config: c, DB: pool, Redis: redis.NewClient(rc), ObjectStore: store,
-		PushHTTP: nativePushClient(c), Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log,
+		PushHTTP: nativePushClient(c), Weather: weather, Contract: contract, Handlers: map[string]Handler{}, Public: map[string]bool{}, Log: log,
 		slots: make(chan struct{}, c.MaxConcurrentRequests), hashSlots: make(chan struct{}, 4),
 	}
 	s.registerHealth()
@@ -89,6 +96,9 @@ func NewServer(ctx context.Context, c Config, log *slog.Logger) (*Server, error)
 func (s *Server) Close() {
 	if s.PushHTTP != nil {
 		s.PushHTTP.CloseIdleConnections()
+	}
+	if s.Weather != nil && s.Weather.HTTP != nil {
+		s.Weather.HTTP.CloseIdleConnections()
 	}
 	s.ObjectStore.Close()
 	_ = s.Redis.Close()

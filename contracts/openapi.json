@@ -7626,6 +7626,487 @@
         }
       }
     },
+    "/api/v1/weather": {
+      "get": {
+        "operationId": "getWeather",
+        "summary": "Get current weather, hourly forecast, UV and sourced air quality",
+        "tags": [
+          "Weather"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "minimum": -90,
+              "maximum": 90,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lat",
+            "required": false
+          },
+          {
+            "schema": {
+              "minimum": -180,
+              "maximum": 180,
+              "type": "number"
+            },
+            "in": "query",
+            "name": "lon",
+            "required": false
+          },
+          {
+            "schema": {
+              "minLength": 2,
+              "maxLength": 100,
+              "type": "string"
+            },
+            "in": "query",
+            "name": "city",
+            "required": false
+          }
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "city",
+                        "temperature",
+                        "condition",
+                        "conditionIcon",
+                        "weatherCode",
+                        "observedAt",
+                        "uv",
+                        "uvCurrent",
+                        "rainProbability",
+                        "currentPrecipitationProbability",
+                        "humidity",
+                        "precipitation",
+                        "windSpeed",
+                        "airQuality",
+                        "airQualityIndex",
+                        "airQualityScale",
+                        "airQualityCategory",
+                        "outdoorAdvice",
+                        "hourlyForecast",
+                        "timezone",
+                        "units",
+                        "sources",
+                        "fetchedAt",
+                        "isStale",
+                        "cacheState",
+                        "staleAgeSeconds",
+                        "cacheMaxAgeSeconds"
+                      ],
+                      "properties": {
+                        "city": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "temperature": {
+                          "minimum": -100,
+                          "maximum": 100,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "condition": {
+                          "type": "string"
+                        },
+                        "conditionIcon": {
+                          "type": "string"
+                        },
+                        "weatherCode": {
+                          "minimum": 0,
+                          "maximum": 999,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "observedAt": {
+                          "format": "date-time",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "uv": {
+                          "minimum": 0,
+                          "maximum": 30,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "uvCurrent": {
+                          "minimum": 0,
+                          "maximum": 30,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "rainProbability": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "currentPrecipitationProbability": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "humidity": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "precipitation": {
+                          "minimum": 0,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "windSpeed": {
+                          "minimum": 0,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "airQuality": {
+                          "maxLength": 80,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "airQualityIndex": {
+                          "minimum": 0,
+                          "maximum": 1000,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "airQualityScale": {
+                          "type": "string",
+                          "enum": [
+                            "european_aqi"
+                          ]
+                        },
+                        "airQualityCategory": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "good"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "fair"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "moderate"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "poor"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "very_poor"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "extremely_poor"
+                              ]
+                            }
+                          ],
+                          "nullable": true
+                        },
+                        "outdoorAdvice": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "hourlyForecast": {
+                          "maxItems": 8,
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "time",
+                              "dateTime",
+                              "temperature",
+                              "weatherCode",
+                              "condition",
+                              "conditionIcon",
+                              "precipitationProbability",
+                              "uv"
+                            ],
+                            "properties": {
+                              "time": {
+                                "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                                "type": "string"
+                              },
+                              "dateTime": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "temperature": {
+                                "minimum": -100,
+                                "maximum": 100,
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "weatherCode": {
+                                "minimum": 0,
+                                "maximum": 999,
+                                "type": "integer",
+                                "nullable": true
+                              },
+                              "condition": {
+                                "type": "string"
+                              },
+                              "conditionIcon": {
+                                "type": "string"
+                              },
+                              "precipitationProbability": {
+                                "minimum": 0,
+                                "maximum": 100,
+                                "type": "number",
+                                "nullable": true
+                              },
+                              "uv": {
+                                "minimum": 0,
+                                "maximum": 30,
+                                "type": "number",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        },
+                        "timezone": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "units": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "temperature",
+                            "uv",
+                            "rainProbability",
+                            "humidity",
+                            "precipitation",
+                            "windSpeed",
+                            "airQuality"
+                          ],
+                          "properties": {
+                            "temperature": {
+                              "type": "string",
+                              "enum": [
+                                "°C"
+                              ]
+                            },
+                            "uv": {
+                              "type": "string",
+                              "enum": [
+                                "index"
+                              ]
+                            },
+                            "rainProbability": {
+                              "type": "string",
+                              "enum": [
+                                "%"
+                              ]
+                            },
+                            "humidity": {
+                              "type": "string",
+                              "enum": [
+                                "%"
+                              ]
+                            },
+                            "precipitation": {
+                              "type": "string",
+                              "enum": [
+                                "mm"
+                              ]
+                            },
+                            "windSpeed": {
+                              "type": "string",
+                              "enum": [
+                                "km/h"
+                              ]
+                            },
+                            "airQuality": {
+                              "type": "string",
+                              "enum": [
+                                "European AQI points"
+                              ]
+                            }
+                          }
+                        },
+                        "sources": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "location",
+                            "weather",
+                            "airQuality",
+                            "outdoorAdvice",
+                            "attribution"
+                          ],
+                          "properties": {
+                            "location": {
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "type": "string"
+                            },
+                            "weather": {
+                              "minLength": 1,
+                              "maxLength": 120,
+                              "type": "string"
+                            },
+                            "airQuality": {
+                              "minLength": 1,
+                              "maxLength": 160,
+                              "type": "string"
+                            },
+                            "outdoorAdvice": {
+                              "type": "string",
+                              "enum": [
+                                "growdesk_weather_rules_v1"
+                              ]
+                            },
+                            "attribution": {
+                              "minLength": 1,
+                              "maxLength": 400,
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fetchedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "isStale": {
+                          "type": "boolean"
+                        },
+                        "cacheState": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "miss"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "hit"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "stale"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "unavailable"
+                              ]
+                            }
+                          ]
+                        },
+                        "staleAgeSeconds": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "cacheMaxAgeSeconds": {
+                          "minimum": 1,
+                          "maximum": 3600,
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/register": {
       "post": {
         "operationId": "register",

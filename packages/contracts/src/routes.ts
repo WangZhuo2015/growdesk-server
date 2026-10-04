@@ -217,6 +217,7 @@ import {
   UpdateBookStatusResponseSchema,
 } from "./knowledge.js";
 import { AppConfigResponseSchema } from "./appConfig.js";
+import { WeatherQuerySchema, WeatherResponseEnvelopeSchema } from "./weather.js";
 import {
   OAuthServerMetadataSchema,
   OAuthProtectedResourceMetadataSchema,
@@ -278,6 +279,23 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     tags: ["Health"],
     implementationStatus: "READY",
     responses: { 200: HealthReadyResponseSchema },
+  },
+  {
+    method: "GET",
+    path: "/api/v1/weather",
+    operationId: "getWeather",
+    summary: "Get current weather, hourly forecast, UV and sourced air quality",
+    tags: ["Weather"],
+    implementationStatus: "READY",
+    querystring: WeatherQuerySchema,
+    responses: {
+      200: WeatherResponseEnvelopeSchema,
+      400: ApiErrorRef,
+      401: ApiErrorRef,
+      404: ApiErrorRef,
+      502: ApiErrorRef,
+      503: ApiErrorRef,
+    },
   },
 
   // 2. Auth & Sessions

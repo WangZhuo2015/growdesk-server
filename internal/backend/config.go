@@ -13,19 +13,21 @@ import (
 )
 
 type Config struct {
-	Experimental          bool
-	Address               string
-	Environment           string
-	DatabaseURL           string
-	RedisURL              string
-	JWTSecret             string
-	SessionEncryptionKey  string
-	InvitePepper          string
-	PublicURL             string
-	MaxDBConnections      int32
-	MaxConcurrentRequests int
-	RequestTimeout        time.Duration
-	MaxBodyBytes          int64
+	Experimental              bool
+	Address                   string
+	Environment               string
+	DatabaseURL               string
+	RedisURL                  string
+	JWTSecret                 string
+	SessionEncryptionKey      string
+	InvitePepper              string
+	PublicURL                 string
+	MaxDBConnections          int32
+	MaxConcurrentRequests     int
+	RequestTimeout            time.Duration
+	MaxBodyBytes              int64
+	WeatherTestProviderOrigin string
+	WeatherCacheFreshTTL      time.Duration
 }
 
 func envOr(name, fallback string) string {
@@ -44,6 +46,24 @@ func LoadConfig() (Config, error) {
 		JWTSecret: os.Getenv("JWT_SECRET"), SessionEncryptionKey: os.Getenv("SESSION_ENCRYPTION_KEY"),
 		InvitePepper: envOr("INVITE_SECRET", os.Getenv("INVITE_CODE_PEPPER")), PublicURL: envOr("PUBLIC_BASE_URL", "http://127.0.0.1:3081"),
 		MaxDBConnections: 10, MaxConcurrentRequests: 256, RequestTimeout: 30 * time.Second, MaxBodyBytes: 1048576,
+		WeatherCacheFreshTTL: 10 * time.Minute,
+	}
+	c.WeatherTestProviderOrigin = os.Getenv("WEATHER_TEST_PROVIDER_ORIGIN")
+	if c.WeatherTestProviderOrigin != "" && c.Environment != "test" {
+		return c, errors.New("WEATHER_TEST_PROVIDER_ORIGIN is allowed only in GROWDESK_ENV=test")
+	}
+	if c.WeatherTestProviderOrigin != "" && !validWeatherTestOrigin(c.WeatherTestProviderOrigin) {
+		return c, errors.New("WEATHER_TEST_PROVIDER_ORIGIN must be an explicit loopback HTTP origin")
+	}
+	if raw := os.Getenv("WEATHER_CACHE_FRESH_SECONDS"); raw != "" {
+		if c.Environment != "test" {
+			return c, errors.New("WEATHER_CACHE_FRESH_SECONDS is allowed only in GROWDESK_ENV=test")
+		}
+		seconds, err := strconv.Atoi(raw)
+		if err != nil || seconds < 1 || seconds > 600 {
+			return c, errors.New("invalid WEATHER_CACHE_FRESH_SECONDS")
+		}
+		c.WeatherCacheFreshTTL = time.Duration(seconds) * time.Second
 	}
 	if c.Environment != "test" && c.Environment != "development" && c.Environment != "production" {
 		return c, errors.New("invalid GROWDESK_ENV")

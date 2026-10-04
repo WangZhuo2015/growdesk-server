@@ -3,6 +3,7 @@ package backend
 // Missing operations fail explicitly; registered implementations never proxy
 // business execution to the frozen TypeScript reference.
 func (s *Server) RegisterBusinessHandlers() {
+	s.registerWeather()
 	s.registerAuth()
 	s.registerFamilies()
 	s.registerBabies()

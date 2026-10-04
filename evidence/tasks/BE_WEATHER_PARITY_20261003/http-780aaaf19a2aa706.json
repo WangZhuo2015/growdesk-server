@@ -1,0 +1,23 @@
+{
+  "status": "failed",
+  "runID": "780aaaf19a2aa706",
+  "testPrincipal": "test_weather_780aaaf19a2aa706",
+  "userID": null,
+  "checks": [],
+  "checkCount": 0,
+  "error": "AssertionError: GET /api/v1/weather?unit=fahrenheit: expected 400, got 200; unexpected_success",
+  "failureLocation": "go-integration.py:119 in expect",
+  "provider": "loopback_virtual_open_meteo_protocol_fixture_only",
+  "stackKind": "owned_local_postgres18_redis8_processes",
+  "apiOrigin": "loopback_owned_api_only",
+  "cleanup": {
+    "apiStopped": true,
+    "fixtureStopped": true,
+    "containersRemoved": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "ownedTempDirectoryRemoved": true
+  },
+  "noProductionOrExternalProvider": true,
+  "createdAt": "2026-10-04T03:51:31Z"
+}

@@ -1,0 +1,23 @@
+{
+  "status": "failed",
+  "runID": "1299ab99be49b18d",
+  "testPrincipal": "test_weather_1299ab99be49b18d",
+  "userID": null,
+  "checks": [],
+  "checkCount": 0,
+  "error": "AssertionError: ",
+  "failureLocation": "go-weather-parity-integration.py:404 in run_tests",
+  "provider": "loopback_virtual_open_meteo_protocol_fixture_only",
+  "stackKind": "owned_local_postgres18_redis8_processes",
+  "apiOrigin": "loopback_owned_api_only",
+  "cleanup": {
+    "apiStopped": true,
+    "fixtureStopped": true,
+    "containersRemoved": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "ownedTempDirectoryRemoved": true
+  },
+  "noProductionOrExternalProvider": true,
+  "createdAt": "2026-10-04T03:50:57Z"
+}

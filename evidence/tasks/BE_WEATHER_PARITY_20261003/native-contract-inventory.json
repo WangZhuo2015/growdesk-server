@@ -1,0 +1,15 @@
+{
+  "version": {
+    "reference": "f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4",
+    "revision": "development"
+  },
+  "acceptance": "IMPLEMENTED_NOT_REVIEWED",
+  "operationCount": 176,
+  "weatherOperation": {
+    "implemented": true,
+    "method": "GET",
+    "operationId": "getWeather",
+    "path": "/api/v1/weather",
+    "verified": false
+  }
+}

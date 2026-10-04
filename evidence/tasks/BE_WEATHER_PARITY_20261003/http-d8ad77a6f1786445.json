@@ -1,0 +1,17 @@
+{
+  "status": "failed",
+  "runID": "d8ad77a6f1786445",
+  "testPrincipal": "test_weather_d8ad77a6f1786445",
+  "userID": null,
+  "checks": [],
+  "checkCount": 0,
+  "provider": "loopback_virtual_open_meteo_protocol_fixture_only",
+  "apiOrigin": "loopback_owned_api_only",
+  "cleanup": {
+    "apiStopped": true,
+    "fixtureStopped": true,
+    "containersRemoved": true
+  },
+  "noProductionOrExternalProvider": true,
+  "createdAt": "2026-10-03T16:48:21Z"
+}

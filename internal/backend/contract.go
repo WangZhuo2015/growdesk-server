@@ -153,6 +153,16 @@ func (r *Route) Validate(req *http.Request, params map[string]string, body Objec
 			allowedQuery[p.Value.Name] = true
 		}
 	}
+	// The native bridge normally drops unknown query fields before adapting
+	// schema parameters. Weather declares additionalProperties=false, so keep
+	// its TypeBox query contract strict before that normalization happens.
+	if r.OperationID == "getWeather" {
+		for key := range query {
+			if !allowedQuery[key] {
+				return apiError(400, "FST_ERR_VALIDATION", "unsupported weather query parameter")
+			}
+		}
+	}
 	if len(allowedQuery) > 0 {
 		for key := range query {
 			if !allowedQuery[key] {
@@ -215,6 +225,13 @@ func (r *Route) Validate(req *http.Request, params map[string]string, body Objec
 				return apiError(400, "FST_ERR_VALIDATION", p.Name+" must be an integer")
 			}
 			value = float64(n)
+		}
+		if s.Type != nil && s.Type.Is("number") {
+			n, err := strconv.ParseFloat(raw, 64)
+			if err != nil || math.IsNaN(n) || math.IsInf(n, 0) {
+				return apiError(400, "FST_ERR_VALIDATION", p.Name+" must be a finite number")
+			}
+			value = n
 		}
 		if s.Type != nil && s.Type.Is("boolean") {
 			if raw == "true" {

@@ -1,0 +1,22 @@
+{
+  "status": "failed",
+  "runID": "2cee12e28b771431",
+  "testPrincipal": "test_weather_2cee12e28b771431",
+  "userID": null,
+  "checks": [],
+  "checkCount": 0,
+  "error": "RuntimeError: owned PostgreSQL startup failed: 2026-10-03 09:54:48.947 PDT [32371] LOG:  starting PostgreSQL 18.6 (Homebrew) on aarch64-apple-darwin27.0.0, compiled by Apple clang version 21.0.0 (clang-2100.3.34.2), 64-bit\n2026-10-03 09:54:48.947 PDT [32371] LOG:  listening on IPv4 address \"127.0.0.1\", port 51124\n2026-10-03 09:54:48.947 PDT [32371] LOG:  listening on Unix socket \"/private/tmp/growdesk-weather-owned-2cee12e28b771431-1brnbr4q/socket/.s.PGSQL.51124\"\n2026-10-03 09:54:48.948 PDT [32371] FATAL:  postmaster became multithreaded during startup\n2026-10-03 09:54:48.948 PDT [32371] HINT:  Set the LC_ALL environment variable to a valid locale.\n2026-10-03 09:54:48.949 PDT [32371] LOG:  database system is shut down\n",
+  "provider": "loopback_virtual_open_meteo_protocol_fixture_only",
+  "stackKind": "owned_local_postgres18_redis8_processes",
+  "apiOrigin": "loopback_owned_api_only",
+  "cleanup": {
+    "apiStopped": true,
+    "fixtureStopped": true,
+    "containersRemoved": true,
+    "postgresStopped": true,
+    "redisStopped": true,
+    "ownedTempDirectoryRemoved": true
+  },
+  "noProductionOrExternalProvider": true,
+  "createdAt": "2026-10-03T16:54:49Z"
+}

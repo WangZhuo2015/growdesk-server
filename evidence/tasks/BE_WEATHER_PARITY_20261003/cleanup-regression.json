@@ -1,0 +1,22 @@
+{
+  "testCommand": "python3 scripts/test_weather_cleanup.py",
+  "failureInjection": "owned pg_ctl stub exits 23 for stop; PID identity is a live test-owned process and the test does not signal that PID",
+  "beforeFix": {
+    "exitCode": 1,
+    "ran": 2,
+    "failures": 2,
+    "reproduced": [
+      "pg_ctl stop failure was suppressed, postgresStopped was true, and the owned directory was removed",
+      "postmaster startup identity mismatch still invoked pg_ctl and removed the owned directory"
+    ]
+  },
+  "afterFix": {
+    "exitCode": 0,
+    "ran": 2,
+    "failures": 0,
+    "passed": [
+      "pg_ctl stop failure reports postgresStopped=false and preserves the owned directory even if pgdata disappears",
+      "postmaster startup identity mismatch skips pg_ctl, reports postgresStopped=false, and preserves the owned directory"
+    ]
+  }
+}
