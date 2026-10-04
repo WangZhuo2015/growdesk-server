@@ -20,6 +20,16 @@ func TestGrowthProjectionKeepsDecimalAndNullableContract(t *testing.T) {
 	if strings.Contains(raw,"must-not-leak") || strings.Contains(raw,"legacy_metadata") || strings.Contains(raw,"deletedAt") { t.Fatal("private fields leaked") }
 }
 
+func TestGrowthProjectionPreservesAcceptedDecimalScale(t *testing.T) {
+	row := Object{"id": "record", "family_id": "family", "baby_id": "baby", "measurement_date": "2026-09-23",
+		"weight_kg": json.Number("8.275000"), "height_cm": json.Number("70.125"),
+		"head_circumference_cm": json.Number("44.137500000000000001"), "version": json.Number("1")}
+	entity, err := growthEntity(row)
+	if err != nil { t.Fatal(err) }
+	if entity["weightKg"] != "8.275000" || entity["heightCm"] != "70.125" ||
+		entity["headCircumferenceCm"] != "44.137500000000000001" { t.Fatalf("accepted decimal scale changed: %#v", entity) }
+}
+
 func TestGrowthImportedMetadataWhitelist(t *testing.T) {
 	row:=Object{"legacy_client_id":"source-id","legacy_metadata":Object{"sourceTable":"GrowthMeasurement","legacyDate":"2026-02-28","legacyClientId":"other","password":"private","legacyGrowth":Object{"ageInMonths":json.Number("0"),"ageLabel":"test_初生","percentile":json.Number("100")}}}
 	fields:=growthLegacyFields(row)

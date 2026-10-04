@@ -39,6 +39,8 @@ async function main() {
     }
   }
 
+  execSync("node scripts/check-clinical-decimal-mapping.mjs", { stdio: "inherit" });
+
   const lockPath = path.join(migrationsDir, "migration_lock.toml");
   try {
     const lockStat = await fsp.stat(lockPath);

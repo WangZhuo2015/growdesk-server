@@ -87,9 +87,8 @@ func growthEntity(row Object) (Object, error) {
 	}
 	for _, field := range []struct {
 		wire, column string
-		precision    int
-	}{{"weightKg", "weight_kg", 2}, {"heightCm", "height_cm", 1}, {"headCircumferenceCm", "head_circumference_cm", 1}} {
-		value, err := fixedJSDecimal(row[field.column], field.precision)
+	}{{"weightKg", "weight_kg"}, {"heightCm", "height_cm"}, {"headCircumferenceCm", "head_circumference_cm"}} {
+		value, err := exactDecimalString(row[field.column])
 		if err != nil {
 			return nil, err
 		}
@@ -99,6 +98,21 @@ func growthEntity(row Object) (Object, error) {
 		out[key] = value
 	}
 	return out, nil
+}
+
+// exactDecimalString projects persisted PostgreSQL numerics without routing
+// them through binary float or a display precision. The request contract uses
+// decimal strings, so every accepted fractional digit must survive readback.
+func exactDecimalString(value any) (any, error) {
+	if value == nil {
+		return nil, nil
+	}
+	raw := text(value)
+	var number pgtype.Numeric
+	if err := number.Scan(raw); err != nil || !number.Valid || number.NaN || number.InfinityModifier != pgtype.Finite {
+		return nil, errors.New("invalid persisted growth decimal")
+	}
+	return raw, nil
 }
 
 func growthDTO(entity Object) Object {
