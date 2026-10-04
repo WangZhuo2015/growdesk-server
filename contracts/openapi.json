@@ -10323,6 +10323,11 @@
                             "description": "RFC3339 UTC timestamp",
                             "type": "string"
                           },
+                          "expiresAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
                           "lastUsedAt": {
                             "format": "date-time",
                             "description": "RFC3339 UTC timestamp",
@@ -11060,10 +11065,14 @@
                           ]
                         },
                         "costMicros": {
-                          "type": "null"
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
                         },
                         "currency": {
-                          "type": "null"
+                          "pattern": "^[A-Z]{3}$",
+                          "type": "string",
+                          "nullable": true
                         },
                         "costState": {
                           "anyOf": [

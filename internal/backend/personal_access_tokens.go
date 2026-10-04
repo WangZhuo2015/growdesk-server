@@ -170,7 +170,7 @@ func (s *Server) listPersonalConnections(ctx context.Context, r *Request) (Resul
 	}
 	rows, err := many(ctx, s.DB, `SELECT jsonb_build_object(
 		'id',g.id,'client_id',g.client_id,'client_name',COALESCE(c.client_name,'Legacy OAuth client'),'resource',g.audience,'scopes',g.scopes,
-		'family_id',g.family_id,'baby_id',g.baby_id,'created_at',g.created_at,'last_used_at',g.last_used_at,'revoked_at',g.revoked_at)
+		'family_id',g.family_id,'baby_id',g.baby_id,'created_at',g.created_at,'expires_at',g.expires_at,'last_used_at',g.last_used_at,'revoked_at',g.revoked_at)
 		FROM native_go.oauth_grants g LEFT JOIN native_go.oauth_clients c ON c.client_id=g.client_id
 		WHERE g.user_id=$1 ORDER BY g.created_at DESC,g.id DESC LIMIT 100`, r.Principal.UserID)
 	if err != nil {
@@ -178,7 +178,7 @@ func (s *Server) listPersonalConnections(ctx context.Context, r *Request) (Resul
 	}
 	items := make([]Object, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, Object{"id": row["id"], "clientId": row["client_id"], "clientName": row["client_name"], "resource": row["resource"], "scopes": row["scopes"], "familyId": row["family_id"], "babyId": row["baby_id"], "createdAt": isoValue(row["created_at"]), "lastUsedAt": isoValue(row["last_used_at"]), "revokedAt": isoValue(row["revoked_at"])})
+		items = append(items, Object{"id": row["id"], "clientId": row["client_id"], "clientName": row["client_name"], "resource": row["resource"], "scopes": row["scopes"], "familyId": row["family_id"], "babyId": row["baby_id"], "createdAt": isoValue(row["created_at"]), "expiresAt": isoValue(row["expires_at"]), "lastUsedAt": isoValue(row["last_used_at"]), "revokedAt": isoValue(row["revoked_at"])})
 	}
 	return Result{Status: http.StatusOK, Body: Object{"data": items, "managementAvailable": true}}, nil
 }

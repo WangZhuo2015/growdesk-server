@@ -155,6 +155,7 @@ export const OAuthConnectionSummarySchema = Type.Object(
     familyId: UuidString,
     babyId: UuidString,
     createdAt: DateTimeString,
+    expiresAt: Type.Optional(DateTimeString),
     lastUsedAt: Nullable(DateTimeString),
     revokedAt: Nullable(DateTimeString),
   },

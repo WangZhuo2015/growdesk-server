@@ -79,6 +79,10 @@ func TestMCPOAuthLegacyGrantUpgradeIntegration(t *testing.T) {
 			continue
 		}
 		found = true
+		expiresAt, expiryErr := asTime(entry["expiresAt"])
+		if expiryErr != nil || expiresAt.Before(time.Now().Add(29*24*time.Hour)) || expiresAt.After(time.Now().Add(31*24*time.Hour)) {
+			t.Fatalf("owner legacy connection must expose its persisted expiration: expires=%v err=%v", entry["expiresAt"], expiryErr)
+		}
 		if entry["clientName"] != "Legacy OAuth client" || entry["clientId"] != legacyClientID {
 			t.Fatalf("legacy connection did not use the safe fallback: %#v", entry)
 		}
@@ -90,6 +94,30 @@ func TestMCPOAuthLegacyGrantUpgradeIntegration(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("populated 0001 OAuth grant disappeared from connection inventory: %#v", listed.body)
+	}
+
+	// An expired grant remains owner-manageable and exposes its actual expired
+	// timestamp; clients must never guess expiry from the creation time.
+	if _, err = server.DB.Exec(ctx, `UPDATE native_go.oauth_grants SET expires_at=NOW()-INTERVAL '1 hour' WHERE id=$1 AND user_id=$2`, grantID, owner.userID); err != nil {
+		t.Fatal(err)
+	}
+	expiredList, err := patCall(httpServer.URL, http.MethodGet, "/api/v1/connections", owner.accessToken, nil)
+	if err != nil || expiredList.status != http.StatusOK {
+		t.Fatalf("read expired owner grant: status=%d err=%v", expiredList.status, err)
+	}
+	foundExpired := false
+	for _, raw := range expiredList.body["data"].([]any) {
+		entry := obj(raw)
+		if text(entry["id"]) == grantID {
+			expires, expiryErr := asTime(entry["expiresAt"])
+			if expiryErr != nil || !expires.Before(time.Now()) {
+				t.Fatalf("expired grant must expose a past timestamp: expires=%v err=%v", entry["expiresAt"], expiryErr)
+			}
+			foundExpired = true
+		}
+	}
+	if !foundExpired {
+		t.Fatal("expired grant disappeared from its owner's management inventory")
 	}
 
 	anonymous, err := patCall(httpServer.URL, http.MethodDelete, "/api/v1/connections/"+grantID, "", nil)
