@@ -515,6 +515,40 @@ func TestPersonalAccessTokensHTTPIntegration(t *testing.T) {
 	expectPATStatus(t, response, http.StatusOK)
 	feeding := patData(t, response)
 	assertPAT(t, feeding["source"] == "ai_chat" && feeding["notes"] == "test_pat_proposal", "explicitly confirmed record did not read back with its source: %#v", feeding)
+	var absentDraft bool
+	if err = server.DB.QueryRow(ctx, `SELECT ocr_draft IS NULL FROM ai_runs WHERE id=$1 AND user_id=$2`, runID, owner.userID).Scan(&absentDraft); err != nil {
+		t.Fatal(err)
+	}
+	assertPAT(t, absentDraft, "a non-OCR action run must persist SQL NULL for its absent OCR draft")
+
+	// A plain answer shares the same worker persistence path. Exercise it with
+	// actual PostgreSQL constraints as well as the explicitly confirmed action.
+	t.Setenv("GROWDESK_AI_FIXTURE_RESPONSE", `{"text":"test plain answer without actions","actions":[]}`)
+	response, err = patCall(httpServer.URL, http.MethodPost, "/api/v1/voice/text-runs", pat, map[string]any{
+		"babyId": owner.babyID, "message": "test plain answer", "clientRequestId": newID(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectPATStatus(t, response, http.StatusAccepted)
+	plainRunID := text(patData(t, response)["id"])
+	worked, err = server.RunWorkerOnce(ctx, "test_pat_plain_answer_worker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPAT(t, worked, "worker did not process the plain-answer task")
+	response, err = patCall(httpServer.URL, http.MethodGet, "/api/v1/voice/text-runs/"+plainRunID, pat, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectPATStatus(t, response, http.StatusOK)
+	plainRun := patData(t, response)
+	assertPAT(t, plainRun["status"] == "succeeded" && plainRun["resultSummary"] == "test plain answer without actions" && plainRun["proposedPlan"] == nil,
+		"a plain answer must complete without a proposal: %#v", plainRun)
+	if err = server.DB.QueryRow(ctx, `SELECT ocr_draft IS NULL FROM ai_runs WHERE id=$1 AND user_id=$2`, plainRunID, owner.userID).Scan(&absentDraft); err != nil {
+		t.Fatal(err)
+	}
+	assertPAT(t, absentDraft, "a plain-answer run must persist SQL NULL for its absent OCR draft")
 
 	otherTokenResponse, err := patCall(httpServer.URL, http.MethodPost, "/api/v1/me/tokens", other.accessToken, map[string]any{"name": "test other token"})
 	if err != nil {

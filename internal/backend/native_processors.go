@@ -214,7 +214,9 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 			return err
 		}
 	}
-	ocrDraftJSON := "null"
+	// Non-OCR tasks have no draft. Bind SQL NULL; JSON null would violate the
+	// object's shape constraint and fail otherwise valid chat/voice tasks.
+	var ocrDraftJSON any
 	if ocrDraft != nil {
 		ocrDraftJSON, err = jsonText(ocrDraft)
 		if err != nil {
