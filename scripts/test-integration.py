@@ -177,7 +177,10 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 DATABASE_URL=f"postgresql://{identity['user']}:{identity['password']}@127.0.0.1:{pgport}/{identity['database']}?sslmode=disable",
                 REDIS_URL=f"redis://:{identity['password']}@127.0.0.1:{redisport}/0",
                 JWT_SECRET=secrets.token_hex(32), SESSION_ENCRYPTION_KEY=secrets.token_hex(32),
-                PUBLIC_BASE_URL=f'http://127.0.0.1:{go_port}')
+                PUBLIC_BASE_URL=f'http://127.0.0.1:{go_port}',
+                GROWDESK_AI_BUDGET_UNIT='ai_run_attempt', GROWDESK_AI_BUDGET_PERIOD='utc_day',
+                GROWDESK_AI_BUDGET_USER_LIMIT='2', GROWDESK_AI_BUDGET_FAMILY_LIMIT='20',
+                GROWDESK_AI_BUDGET_GLOBAL_LIMIT='100')
             # Exercise an actual populated upgrade path: apply native 0001-0003,
             # insert a historical OAuth grant in the Go regression test, then
             # apply 0004 through the checksum-tracked runner. The all-migrations
@@ -188,7 +191,7 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                          '-count=1', './internal/backend'], env=go_env, timeout=300)
             command(['go', 'run', './cmd/growdesk-migrate'], env=go_env, timeout=180)
             tags = 'mcp_oauth_integration' if suite == 'mcp-oauth' else 'pat_integration,mcp_oauth_integration'
-            tests = '^TestMCPOAuthLifecycleHTTPIntegration$' if suite == 'mcp-oauth' else '^(TestPersonalAccessTokensHTTPIntegration|TestMCPOAuthLifecycleHTTPIntegration)$'
+            tests = '^TestMCPOAuthLifecycleHTTPIntegration$' if suite == 'mcp-oauth' else '^(TestAIUsageAccountingIntegration|TestPersonalAccessTokensHTTPIntegration|TestMCPOAuthLifecycleHTTPIntegration)$'
             command(['go', 'test', '-v', '-tags', tags, '-run', tests,
                      '-count=1', './internal/backend'], env=go_env, timeout=300)
             if suite == 'mcp-oauth':

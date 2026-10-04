@@ -314,6 +314,77 @@ func TestMCPOAuthLifecycleHTTPIntegration(t *testing.T) {
 	if result := probe(access); result.status != http.StatusOK {
 		t.Fatalf("live OAuth access did not authenticate MCP: %d %#v", result.status, result.body)
 	}
+	createProduct := func(requestID string) patHTTPResponse {
+		response, callErr := patCall(httpServer.URL, http.MethodPost, "/mcp", access, map[string]any{
+			"jsonrpc": "2.0", "id": requestID, "method": "tools/call",
+			"params": map[string]any{"name": "create_supplement_product", "arguments": map[string]any{
+				"babyId": owner.babyID, "familyId": owner.familyID, "name": "test AI usage audit product", "idempotencyKey": "test_ai_usage_audit_product",
+			}},
+		})
+		if callErr != nil {
+			t.Fatal(callErr)
+		}
+		return response
+	}
+	createdProduct := createProduct("test-create-product")
+	if createdProduct.status != http.StatusOK || obj(createdProduct.body["error"]) != nil || mcpResultWasReplay(Result{Body: Object(createdProduct.body)}) {
+		t.Fatalf("virtual MCP product creation failed or was unexpectedly replayed: %d %#v", createdProduct.status, createdProduct.body)
+	}
+	replayedProduct := createProduct("test-create-product-replay")
+	if replayedProduct.status != http.StatusOK || !mcpResultWasReplay(Result{Body: Object(replayedProduct.body)}) {
+		t.Fatalf("same MCP idempotency key should return the stored product: %d %#v", replayedProduct.status, replayedProduct.body)
+	}
+	usage, err := patCall(httpServer.URL, http.MethodGet, "/api/v1/me/ai-usage?babyId="+owner.babyID, owner.accessToken, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if usage.status != http.StatusOK {
+		t.Fatalf("owner AI usage snapshot status %d: %#v", usage.status, usage.body)
+	}
+	overview := obj(usage.body["overview"])
+	if integer(overview["totalCalls"]) != 2 || integer(overview["readCallsCount"]) != 0 || integer(overview["writeCallsCount"]) != 2 || integer(overview["totalRecordsCreatedByAi"]) != 1 {
+		t.Fatalf("MCP usage aggregation lost actual calls or replay idempotency: %#v", overview)
+	}
+	toolRanking, ok := usage.body["toolUsageRanking"].([]any)
+	if !ok || len(toolRanking) != 1 || text(obj(toolRanking[0])["toolName"]) != "create_supplement_product" || integer(obj(toolRanking[0])["count"]) != 2 {
+		t.Fatalf("MCP tool ranking did not report the supported tool dispatches: %#v", usage.body["toolUsageRanking"])
+	}
+	agents, ok := usage.body["connectedAgents"].([]any)
+	if !ok || len(agents) != 1 || obj(agents[0])["status"] != "active" || integer(obj(agents[0])["successCount"]) != 2 || integer(obj(agents[0])["errorCount"]) != 0 || integer(obj(obj(agents[0])["topTool"])["count"]) != 2 {
+		t.Fatalf("MCP connected-agent summary does not match actual successful tool calls: %#v", usage.body["connectedAgents"])
+	}
+	auditRows, ok := usage.body["recentAuditLogs"].([]any)
+	if !ok || len(auditRows) != 3 {
+		t.Fatalf("MCP recent call audit did not retain the three authenticated dispatches: %#v", usage.body["recentAuditLogs"])
+	}
+	if obj(auditRows[0])["action"] == nil || obj(auditRows[0])["authResult"] != "success" {
+		t.Fatalf("MCP audit rows do not retain dashboard-compatible action and outcome fields: %#v", auditRows[0])
+	}
+	dailyTrend, ok := usage.body["dailyActivityTrend"].([]any)
+	if !ok || len(dailyTrend) != 14 || integer(obj(dailyTrend[len(dailyTrend)-1])["total"]) != 2 || integer(obj(dailyTrend[len(dailyTrend)-1])["success"]) != 2 {
+		t.Fatalf("MCP daily trend must count tool calls and expose successful outcomes: %#v", usage.body["dailyActivityTrend"])
+	}
+	var callCount, createdCount, unfinishedCount int
+	if err = server.DB.QueryRow(ctx, `SELECT count(*),COALESCE(sum(records_created),0),count(*) FILTER (WHERE outcome='pending') FROM native_go.mcp_usage_calls WHERE user_id=$1 AND baby_id=$2`, owner.userID, owner.babyID).Scan(&callCount, &createdCount, &unfinishedCount); err != nil {
+		t.Fatalf("read persisted MCP audit rows: %v", err)
+	}
+	if callCount != 3 || createdCount != 1 || unfinishedCount != 0 {
+		t.Fatalf("MCP audit rows must settle once and count one newly-created product: calls=%d created=%d pending=%d", callCount, createdCount, unfinishedCount)
+	}
+	foreignUsage, err := patCall(httpServer.URL, http.MethodGet, "/api/v1/me/ai-usage", foreign.accessToken, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if foreignUsage.status != http.StatusOK || integer(obj(foreignUsage.body["overview"])["totalCalls"]) != 0 || len(foreignUsage.body["recentAuditLogs"].([]any)) != 0 {
+		t.Fatalf("foreign account saw another user's MCP audit: %#v", foreignUsage.body)
+	}
+	crossBabyUsage, err := patCall(httpServer.URL, http.MethodGet, "/api/v1/me/ai-usage?babyId="+owner.babyID, foreign.accessToken, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if crossBabyUsage.status != http.StatusNotFound {
+		t.Fatalf("foreign user queried an owner's baby usage: %d %#v", crossBabyUsage.status, crossBabyUsage.body)
+	}
 	refreshForm := url.Values{"grant_type": {"refresh_token"}, "client_id": {clientID}, "refresh_token": {refresh}, "resource": {resource}, "scope": {"baby:read"}}
 	rotated, err := oauthHTTPCall(httpServer.URL, http.MethodPost, "/oauth/token", "application/x-www-form-urlencoded", "", oauthFormBody(refreshForm))
 	if err != nil {
@@ -439,6 +510,10 @@ func TestMCPOAuthLifecycleHTTPIntegration(t *testing.T) {
 	var active int
 	if err = server.DB.QueryRow(ctx, `SELECT (SELECT count(*) FROM native_go.oauth_grants WHERE user_id=$1 AND revoked_at IS NULL)+(SELECT count(*) FROM native_go.oauth_access a JOIN native_go.oauth_grants g ON g.id=a.grant_id WHERE g.user_id=$1 AND a.revoked_at IS NULL)`, owner.userID).Scan(&active); err != nil || active != 0 {
 		t.Fatalf("soft deletion left active OAuth credentials: count=%d err=%v", active, err)
+	}
+	var ownerUsageRows int
+	if err = server.DB.QueryRow(ctx, `SELECT count(*) FROM native_go.mcp_usage_calls WHERE user_id=$1`, owner.userID).Scan(&ownerUsageRows); err != nil || ownerUsageRows != 0 {
+		t.Fatalf("soft deletion left owner-scoped MCP usage audit: count=%d err=%v", ownerUsageRows, err)
 	}
 	if _, err = server.DB.Exec(ctx, `DELETE FROM native_go.oauth_requests WHERE id=ANY($1)`, trackedRequests); err != nil {
 		t.Fatalf("clean test OAuth requests: %v", err)

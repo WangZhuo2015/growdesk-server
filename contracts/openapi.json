@@ -10435,10 +10435,22 @@
     "/api/v1/me/ai-usage": {
       "get": {
         "operationId": "getPersonalAIUsage",
-        "summary": "Report that provider usage accounting is unavailable",
+        "summary": "Aggregate current user's native AI attempts and MCP access usage",
         "tags": [
           "AI",
           "User"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "babyId",
+            "required": false,
+            "description": "UUID v4 string"
+          }
         ],
         "x-implementation-status": "READY",
         "responses": {
@@ -10450,34 +10462,726 @@
                   "additionalProperties": false,
                   "type": "object",
                   "required": [
-                    "data",
                     "availability",
-                    "reasonCode"
+                    "generatedAt",
+                    "timezone",
+                    "baby",
+                    "coverage",
+                    "overview",
+                    "connectedAgents",
+                    "toolUsageRanking",
+                    "dailyActivityTrend",
+                    "recentAuditLogs",
+                    "aiRuns",
+                    "providerUsage",
+                    "budget"
                   ],
                   "properties": {
-                    "data": {
-                      "maxItems": 0,
-                      "type": "array",
-                      "items": {}
-                    },
                     "availability": {
                       "type": "string",
                       "enum": [
-                        "unavailable"
+                        "partial"
                       ]
                     },
-                    "reasonCode": {
+                    "generatedAt": {
+                      "format": "date-time",
+                      "description": "RFC3339 UTC timestamp",
+                      "type": "string"
+                    },
+                    "timezone": {
                       "type": "string",
                       "enum": [
-                        "AI_USAGE_ACCOUNTING_NOT_IMPLEMENTED"
+                        "UTC"
                       ]
+                    },
+                    "baby": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "nickname",
+                        "familyId",
+                        "familyName"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "nickname": {
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyName": {
+                          "type": "string"
+                        }
+                      },
+                      "nullable": true
+                    },
+                    "coverage": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "mcpCalls",
+                        "providerAttempts",
+                        "unsupportedMetrics"
+                      ],
+                      "properties": {
+                        "mcpCalls": {
+                          "type": "string",
+                          "enum": [
+                            "native_go_dispatch_only"
+                          ]
+                        },
+                        "providerAttempts": {
+                          "type": "string",
+                          "enum": [
+                            "native_go_attempt_ledger_only"
+                          ]
+                        },
+                        "unsupportedMetrics": {
+                          "maxItems": 12,
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "overview": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "totalCalls",
+                        "todayCalls",
+                        "last7DaysCalls",
+                        "connectedAgentsCount",
+                        "successRate",
+                        "avgDurationMs",
+                        "readCallsCount",
+                        "writeCallsCount",
+                        "manageCallsCount",
+                        "totalRecordsCreatedByAi"
+                      ],
+                      "properties": {
+                        "totalCalls": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "todayCalls": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "last7DaysCalls": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "connectedAgentsCount": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "successRate": {
+                          "minimum": 0,
+                          "maximum": 100,
+                          "type": "number",
+                          "nullable": true
+                        },
+                        "avgDurationMs": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "readCallsCount": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "writeCallsCount": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "manageCallsCount": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "totalRecordsCreatedByAi": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        }
+                      }
+                    },
+                    "connectedAgents": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "clientId",
+                          "agentName",
+                          "clientName",
+                          "status",
+                          "totalCalls",
+                          "todayCalls",
+                          "successCount",
+                          "errorCount",
+                          "firstSeen",
+                          "lastSeen",
+                          "topTool",
+                          "recordsWritten"
+                        ],
+                        "properties": {
+                          "clientId": {
+                            "type": "string"
+                          },
+                          "agentName": {
+                            "type": "string"
+                          },
+                          "clientName": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "active"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "idle"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "authorized"
+                                ]
+                              }
+                            ]
+                          },
+                          "totalCalls": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "todayCalls": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "successCount": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "errorCount": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "firstSeen": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "lastSeen": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "topTool": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "toolName",
+                              "label",
+                              "count"
+                            ],
+                            "properties": {
+                              "toolName": {
+                                "type": "string"
+                              },
+                              "label": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "nullable": true
+                          },
+                          "recordsWritten": {
+                            "minimum": 0,
+                            "type": "integer",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "toolUsageRanking": {
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "toolName",
+                          "label",
+                          "count",
+                          "percentage",
+                          "category"
+                        ],
+                        "properties": {
+                          "toolName": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "percentage": {
+                            "minimum": 0,
+                            "maximum": 100,
+                            "type": "number"
+                          },
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "read"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "write"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "manage"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "dailyActivityTrend": {
+                      "minItems": 14,
+                      "maxItems": 14,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "date",
+                          "fullDate",
+                          "total",
+                          "success",
+                          "error"
+                        ],
+                        "properties": {
+                          "date": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "type": "string"
+                          },
+                          "fullDate": {
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "type": "string"
+                          },
+                          "total": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "success": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "error": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "recentAuditLogs": {
+                      "maxItems": 100,
+                      "type": "array",
+                      "items": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "agentName",
+                          "toolName",
+                          "toolLabel",
+                          "action",
+                          "category",
+                          "authResult",
+                          "createdAt",
+                          "durationMs",
+                          "userName",
+                          "userRelation",
+                          "ip",
+                          "errorMessage"
+                        ],
+                        "properties": {
+                          "id": {
+                            "format": "uuid",
+                            "description": "UUID v4 string",
+                            "type": "string"
+                          },
+                          "agentName": {
+                            "type": "string"
+                          },
+                          "toolName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "toolLabel": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "read"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "write"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "manage"
+                                ]
+                              }
+                            ]
+                          },
+                          "authResult": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "pending"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "success"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "denied"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "error"
+                                ]
+                              }
+                            ]
+                          },
+                          "createdAt": {
+                            "format": "date-time",
+                            "description": "RFC3339 UTC timestamp",
+                            "type": "string"
+                          },
+                          "durationMs": {
+                            "minimum": 0,
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "userName": {
+                            "type": "string"
+                          },
+                          "userRelation": {
+                            "type": "string"
+                          },
+                          "ip": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "errorMessage": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "aiRuns": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "queued",
+                        "running",
+                        "succeeded",
+                        "failed",
+                        "cancelled"
+                      ],
+                      "properties": {
+                        "total": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "queued": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "running": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "succeeded": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "failed": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "cancelled": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "providerUsage": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "totalAttempts",
+                        "modelCalls",
+                        "asrCalls",
+                        "reportedAttempts",
+                        "unknownAttempts",
+                        "inputTokens",
+                        "outputTokens",
+                        "totalTokens",
+                        "tokenUsageState",
+                        "costMicros",
+                        "currency",
+                        "costState"
+                      ],
+                      "properties": {
+                        "totalAttempts": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "modelCalls": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "asrCalls": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "reportedAttempts": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "unknownAttempts": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "inputTokens": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "outputTokens": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "totalTokens": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "tokenUsageState": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "no_calls"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "reported"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "partial"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "unknown"
+                              ]
+                            }
+                          ]
+                        },
+                        "costMicros": {
+                          "type": "null"
+                        },
+                        "currency": {
+                          "type": "null"
+                        },
+                        "costState": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "no_calls"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "unpriced"
+                              ]
+                            }
+                          ]
+                        }
+                      }
+                    },
+                    "budget": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "availability",
+                        "unit",
+                        "period",
+                        "periodStart",
+                        "limit",
+                        "reservedUnits",
+                        "settledUnits",
+                        "remainingUnits"
+                      ],
+                      "properties": {
+                        "availability": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "configured"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "not_configured"
+                              ]
+                            }
+                          ]
+                        },
+                        "unit": {
+                          "type": "string",
+                          "enum": [
+                            "ai_run_attempt"
+                          ]
+                        },
+                        "period": {
+                          "type": "string",
+                          "enum": [
+                            "utc_day"
+                          ]
+                        },
+                        "periodStart": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "limit": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "reservedUnits": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "settledUnits": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "remainingUnits": {
+                          "minimum": 0,
+                          "type": "integer",
+                          "nullable": true
+                        }
+                      }
                     }
                   }
                 }
               }
             }
           },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
           "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Standard API Error Envelope",
             "content": {
               "application/json": {

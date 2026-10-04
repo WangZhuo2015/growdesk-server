@@ -105,6 +105,9 @@ func nativeSubmissionScope(ctx context.Context, q Querier, user, baby string) (n
 	return input, nil
 }
 func lockSubmissionScope(ctx context.Context, tx pgx.Tx, input nativeTaskInput) error {
+	if err := lockUser(ctx, tx, input.UserID); err != nil {
+		return err
+	}
 	if input.FamilyID != "" {
 		if _, err := lockFamily(ctx, tx, input.FamilyID); err != nil {
 			return err
@@ -416,6 +419,16 @@ func cancelTaskTx(ctx context.Context, tx pgx.Tx, id string) error {
 	case "succeeded", "failed", "cancelled":
 		return nil
 	}
+	if isNativeAIRun(text(row["kind"])) {
+		attempt := max(int64(1), integer(row["attempt"]))
+		dispatched, usageErr := nativeAIProviderDispatched(ctx, tx, id, attempt)
+		if usageErr != nil {
+			return usageErr
+		}
+		if usageErr = settleNativeAIBudgetAttempt(ctx, tx, id, attempt, dispatched); usageErr != nil {
+			return usageErr
+		}
+	}
 	// A terminal CAS fences old workers immediately. Provider cancellation is
 	// cooperative, but a late provider response can never publish business data.
 	tag, err := tx.Exec(ctx, `UPDATE task_executions SET status='cancelled',cancel_requested_at=NOW(),lease_owner=NULL,
@@ -457,6 +470,9 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 		return Result{}, err
 	}
 	defer rollback(tx)
+	if err = lockUser(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
 	run, err := s.lockOwnedRun(ctx, tx, r.Principal.UserID, r.Params["id"])
 	if err != nil {
 		return Result{}, err
@@ -469,12 +485,14 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 	if _, err = nativeProviderConfiguration(); err != nil {
 		return Result{}, err
 	}
-	var exists bool
-	if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM task_outbox WHERE aggregate_id=$1 AND phase_key='native-initial' AND payload ? '__native')`, r.Params["id"]).Scan(&exists); err != nil {
-		return Result{}, err
-	}
-	if !exists {
+	outbox, err := one(ctx, tx, `SELECT to_jsonb(o)||jsonb_build_object('owner_scope',t.owner_scope)
+		FROM task_outbox o JOIN task_executions t ON t.id=o.aggregate_id
+		WHERE o.aggregate_id=$1 AND o.phase_key='native-initial' AND o.payload ? '__native'`, r.Params["id"])
+	if errors.Is(err, pgx.ErrNoRows) {
 		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Run has no compatible retained input")
+	}
+	if err != nil {
+		return Result{}, err
 	}
 	next := max(int64(1), integer(task["attempt"])) + 1
 	if integer(task["fence_token"]) >= 9223372036854775807 {
@@ -482,6 +500,19 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 	}
 	if next > 32 {
 		return Result{}, apiError(409, "ATTEMPTS_EXHAUSTED", "Create a new run after 32 explicit attempts")
+	}
+	input, err := decodeNativeTaskInput(outbox)
+	if err != nil {
+		return Result{}, err
+	}
+	if err = nativeTaskOwner(ctx, tx, input, false); err != nil {
+		return Result{}, err
+	}
+	if err = checkNativeAIConcurrency(ctx, tx, input); err != nil {
+		return Result{}, err
+	}
+	if err = reserveNativeAIAttempt(ctx, tx, r.Params["id"], input, next); err != nil {
+		return Result{}, err
 	}
 	if _, err = tx.Exec(ctx, `UPDATE task_executions SET status='queued',attempt=$2,max_attempts=GREATEST(max_attempts,$2),
 		fence_token=fence_token+1,cancel_requested_at=NULL,lease_owner=NULL,lease_expires_at=NULL,progress=NULL,result_ref=NULL,error_details=NULL,updated_at=NOW() WHERE id=$1`, r.Params["id"], next); err != nil {

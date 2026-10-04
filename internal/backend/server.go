@@ -29,6 +29,7 @@ type Request struct {
 	RawBody   []byte
 	Principal Principal
 	RequestID string
+	AuditID   string
 }
 type Result struct {
 	Status  int
