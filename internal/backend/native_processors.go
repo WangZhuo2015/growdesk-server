@@ -39,36 +39,39 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 	var answer nativeAIResult
 	switch lease.Kind {
 	case "ai_chat_run":
+		providerCtx := withNativeUsageTracker(ctx, s, lease, "model")
 		if len(input.AttachmentIDs) == 0 {
-			answer, err = callNativeAI(ctx, config, input.SessionID, input.BabyID, message, nil, delta)
+			answer, err = callNativeAI(providerCtx, config, input.SessionID, input.BabyID, message, nil, delta)
 		} else {
-			answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
+			answer, err = s.callNativeVisualAI(providerCtx, config, input, message, delta)
 		}
 	case "voice_transcription":
-		transcript, err = s.transcribeNativeAudio(ctx, config, input)
+		asrCtx := withNativeUsageTracker(ctx, s, lease, "asr")
+		transcript, err = s.transcribeNativeAudio(asrCtx, config, input)
 		if err != nil {
 			return err
 		}
 		message = transcript
-		answer, err = callNativeAI(ctx, config, input.SessionID, input.BabyID, transcript, nil, delta)
+		providerCtx := withNativeUsageTracker(ctx, s, lease, "model")
+		answer, err = callNativeAI(providerCtx, config, input.SessionID, input.BabyID, transcript, nil, delta)
 	case "daily_summary_synthesis":
 		message, err = s.nativeDailySummaryPrompt(ctx, input)
 		if err != nil {
 			return err
 		}
-		answer, err = callNativeAI(ctx, config, input.SessionID, input.BabyID, message, nil, delta)
+		answer, err = callNativeAI(withNativeUsageTracker(ctx, s, lease, "model"), config, input.SessionID, input.BabyID, message, nil, delta)
 		if err == nil && len(answer.Actions) != 0 {
 			return providerFailure("AI_ACTION_UNSUPPORTED", "A daily summary must not propose record mutations", false)
 		}
 	case "medical_ocr":
 		message = medicalOCRPrompt
-		answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
+		answer, err = s.callNativeVisualAI(withNativeUsageTracker(ctx, s, lease, "model"), config, input, message, delta)
 		if err == nil && len(answer.Actions) != 0 {
 			return providerFailure("AI_ACTION_UNSUPPORTED", "Medical extraction must not propose mutations", false)
 		}
 	case "growth_ocr":
 		message = growthOCRPrompt
-		answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
+		answer, err = s.callNativeVisualAI(withNativeUsageTracker(ctx, s, lease, "model"), config, input, message, delta)
 		if err == nil && len(answer.Actions) != 0 {
 			return providerFailure("AI_ACTION_UNSUPPORTED", "Growth extraction must not propose mutations", false)
 		}

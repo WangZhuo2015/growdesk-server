@@ -157,6 +157,7 @@ func cleanupPATUser(ctx context.Context, s *Server, tenant patTenant) error {
 	_, _ = s.DB.Exec(ctx, `DELETE FROM task_outbox WHERE aggregate_id IN (SELECT id FROM task_executions WHERE owner_scope=$1)`, "user:"+userID)
 	_, _ = s.DB.Exec(ctx, `DELETE FROM ai_run_events WHERE run_id IN (SELECT id FROM ai_runs WHERE user_id=$1)`, userID)
 	_, _ = s.DB.Exec(ctx, `DELETE FROM ai_runs WHERE user_id=$1`, userID)
+	_, _ = s.DB.Exec(ctx, `DELETE FROM native_go.ai_budget_windows WHERE (scope_type='user' AND scope_id=$1) OR (scope_type='family' AND scope_id=$2)`, userID, familyID)
 	_, _ = s.DB.Exec(ctx, `DELETE FROM ai_messages WHERE session_id IN (SELECT id FROM ai_sessions WHERE user_id=$1)`, userID)
 	_, _ = s.DB.Exec(ctx, `DELETE FROM ai_sessions WHERE user_id=$1`, userID)
 	_, _ = s.DB.Exec(ctx, `DELETE FROM task_executions WHERE owner_scope=$1`, "user:"+userID)
@@ -196,6 +197,10 @@ func remainingPATTenantRows(ctx context.Context, s *Server, tenant patTenant) (i
 		(SELECT count(*) FROM ai_sessions WHERE user_id=$1) +
 		(SELECT count(*) FROM ai_runs WHERE user_id=$1) +
 		(SELECT count(*) FROM task_executions WHERE owner_scope=$5) +
+		(SELECT count(*) FROM native_go.ai_provider_attempts WHERE user_id=$1) +
+		(SELECT count(*) FROM native_go.ai_budget_reservations WHERE user_id=$1) +
+		(SELECT count(*) FROM native_go.mcp_usage_calls WHERE user_id=$1) +
+		(SELECT count(*) FROM native_go.ai_budget_windows WHERE (scope_type='user' AND scope_id=$1) OR (scope_type='family' AND scope_id=$3)) +
 		(SELECT count(*) FROM feeding_records WHERE family_id=$3) +
 		(SELECT count(*) FROM family_sync_states WHERE family_id=$3) +
 		(SELECT count(*) FROM family_changes WHERE family_id=$3)`,
@@ -389,7 +394,8 @@ func TestPersonalAccessTokensHTTPIntegration(t *testing.T) {
 		}
 		expectPATStatus(t, response, item.want)
 	}
-	assertPAT(t, response.body["availability"] == "unavailable" && response.body["reasonCode"] == "AI_USAGE_ACCOUNTING_NOT_IMPLEMENTED", "usage endpoint must identify unavailable accounting without fabricated totals: %#v", response.body)
+	assertPAT(t, response.body["availability"] == "partial" && integer(obj(response.body["overview"])["totalCalls"]) == 0 && integer(obj(response.body["providerUsage"])["totalAttempts"]) == 0,
+		"usage endpoint must return real empty native accounting with explicit coverage: %#v", response.body)
 	response, err = patCall(httpServer.URL, http.MethodDelete, "/api/v1/connections/"+newID(), owner.accessToken, nil)
 	if err != nil {
 		t.Fatal(err)

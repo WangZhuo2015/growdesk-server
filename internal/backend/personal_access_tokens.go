@@ -239,12 +239,11 @@ func (s *Server) revokePersonalConnection(ctx context.Context, r *Request) (Resu
 	return ok(Object{"success": true})
 }
 
-func (s *Server) getPersonalAIUsage(_ context.Context, _ *Request) (Result, error) {
-	// Task results currently retain provider payloads without normalized token,
-	// model-price, or reconciliation records. Do not report a fabricated quota.
-	return Result{Status: http.StatusOK, Body: Object{
-		"data": []Object{}, "availability": "unavailable", "reasonCode": "AI_USAGE_ACCOUNTING_NOT_IMPLEMENTED",
-	}}, nil
+func (s *Server) getPersonalAIUsage(ctx context.Context, r *Request) (Result, error) {
+	if r.Principal.AuthKind != "session" {
+		return Result{}, apiError(http.StatusUnauthorized, "UNAUTHORIZED", "A verified app session is required")
+	}
+	return s.personalAIUsage(ctx, r)
 }
 
 func (s *Server) createPersonalVoiceTextRun(ctx context.Context, r *Request) (Result, error) {

@@ -40,7 +40,8 @@ import {
   ListPersonalAccessTokensResponseSchema,
   RevokePersonalAccessTokenResponseSchema,
   ListPersonalConnectionsResponseSchema,
-  PersonalAIUsageUnavailableResponseSchema,
+  PersonalAIUsageQuerySchema,
+  PersonalAIUsageResponseSchema,
   PersonalVoiceTextRunRequestSchema,
   PersonalVoiceTextRunResponseSchema,
 } from "./personal-access-tokens.js";
@@ -561,10 +562,11 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     method: "GET",
     path: "/api/v1/me/ai-usage",
     operationId: "getPersonalAIUsage",
-    summary: "Report that provider usage accounting is unavailable",
+    summary: "Aggregate current user's native AI attempts and MCP access usage",
     tags: ["AI", "User"],
     implementationStatus: "READY",
-    responses: { 200: PersonalAIUsageUnavailableResponseSchema, 401: ApiErrorRef },
+    querystring: PersonalAIUsageQuerySchema,
+    responses: { 200: PersonalAIUsageResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
   },
 
   // 4. Family & Baby

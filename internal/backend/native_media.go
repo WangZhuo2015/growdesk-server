@@ -85,7 +85,7 @@ func closeTaskFile(file *os.File) {
 	}
 }
 
-func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConfig, input nativeTaskInput) (string, error) {
+func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConfig, input nativeTaskInput) (transcript string, returnErr error) {
 	if len(input.AttachmentIDs) != 1 {
 		return "", invalid("Voice transcription requires one audio attachment")
 	}
@@ -155,6 +155,19 @@ func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConf
 	request.ContentLength = size
 	request.Header.Set("Content-Type", writer.FormDataContentType())
 	request.Header.Set("Authorization", "Bearer "+c.APIKey)
+	attemptID, err := beginNativeProviderAttempt(ctx, "openai-compatible", c.ASRModel)
+	if err != nil {
+		return "", err
+	}
+	settled := false
+	defer func() {
+		if attemptID != "" && !settled {
+			_ = finishNativeProviderAttempt(ctx, attemptID, nil, false, nativeProviderErrorCode(returnErr))
+		}
+	}()
+	if attemptID != "" {
+		request.Header.Set("Idempotency-Key", attemptID)
+	}
 	client := providerHTTPClient(c.Timeout)
 	defer client.CloseIdleConnections()
 	response, err := providerReadJSON(ctx, client, request)
@@ -165,10 +178,14 @@ func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConf
 	if !ok || strings.TrimSpace(transcript) == "" || len(transcript) > 256*1024 {
 		return "", providerFailure("ASR_PROVIDER_INVALID_RESPONSE", "Transcription is missing or too large", false)
 	}
+	if err = finishNativeProviderAttempt(ctx, attemptID, obj(response["usage"]), true, ""); err != nil {
+		return "", err
+	}
+	settled = true
 	return transcript, nil
 }
 
-func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig, input nativeTaskInput, message string, delta func(string) error) (nativeAIResult, error) {
+func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig, input nativeTaskInput, message string, delta func(string) error) (result nativeAIResult, returnErr error) {
 	if len(input.AttachmentIDs) == 0 {
 		return callNativeAI(ctx, c, input.SessionID, input.BabyID, message, nil, delta)
 	}
@@ -217,6 +234,19 @@ func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig,
 	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer "+c.APIKey)
+	attemptID, err := beginNativeProviderAttempt(ctx, "openai-compatible", c.Model)
+	if err != nil {
+		return nativeAIResult{}, err
+	}
+	settled := false
+	defer func() {
+		if attemptID != "" && !settled {
+			_ = finishNativeProviderAttempt(ctx, attemptID, result.Usage, false, nativeProviderErrorCode(returnErr))
+		}
+	}()
+	if attemptID != "" {
+		request.Header.Set("Idempotency-Key", attemptID)
+	}
 	client := providerHTTPClient(c.Timeout)
 	defer client.CloseIdleConnections()
 	response, err := client.Do(request)
@@ -231,7 +261,15 @@ func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig,
 		return nativeAIResult{}, providerFailure("AI_PROVIDER_HTTP_ERROR", fmt.Sprintf("Visual provider returned HTTP %d", response.StatusCode), response.StatusCode == 429 || response.StatusCode >= 500)
 	}
 	if strings.Contains(response.Header.Get("Content-Type"), "text/event-stream") {
-		return readNativeAIStream(response.Body, delta)
+		result, returnErr = readNativeAIStream(response.Body, delta)
+		if returnErr != nil {
+			return result, returnErr
+		}
+		if returnErr = finishNativeProviderAttempt(ctx, attemptID, result.Usage, true, ""); returnErr != nil {
+			return result, returnErr
+		}
+		settled = true
+		return result, nil
 	}
 	data, err := io.ReadAll(io.LimitReader(response.Body, maxProviderResponse+1))
 	if err != nil {
@@ -248,9 +286,17 @@ func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig,
 	if len(choices) == 0 {
 		return nativeAIResult{}, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "Visual provider returned no choices", false)
 	}
-	result, err := parseNativeAssistant(text(obj(obj(choices[0])["message"])["content"]))
+	result, err = parseNativeAssistant(text(obj(obj(choices[0])["message"])["content"]))
+	result.Usage = obj(decoded["usage"])
 	if err == nil && delta != nil {
 		err = delta(result.Text)
 	}
+	if err != nil {
+		return result, err
+	}
+	if err = finishNativeProviderAttempt(ctx, attemptID, result.Usage, true, ""); err != nil {
+		return result, err
+	}
+	settled = true
 	return result, err
 }

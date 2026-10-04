@@ -350,6 +350,9 @@ func (s *Server) deleteCurrentUser(ctx context.Context, r *Request) (Result, err
 	if err = revokeOAuthUserGrants(ctx, tx, r.Principal.UserID, ""); err != nil {
 		return Result{}, err
 	}
+	if err = purgeDeletedUserAIUsage(ctx, tx, r.Principal.UserID); err != nil {
+		return Result{}, err
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}

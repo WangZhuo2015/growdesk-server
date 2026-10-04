@@ -91,6 +91,7 @@ type mcpAuthContext struct {
 	principal  Principal
 	claims     jwt.MapClaims
 	scopes     map[string]bool
+	familyID   string
 	babyID     string
 	grantID    string
 	accessHash string
@@ -144,8 +145,7 @@ func (s *Server) authenticateMcp(ctx context.Context, r *http.Request) (*mcpAuth
 		}
 	}
 	claims := jwt.MapClaims{"sub": userID, "sid": sessionID, "aud": s.mcpResourceAudience(), "scope": strings.Join(scopes, " "), "baby_id": babyID, "exp": float64(expires.Unix())}
-	_ = familyID
-	return &mcpAuthContext{principal: p, claims: claims, scopes: parsedScopes, babyID: babyID, grantID: grantID, accessHash: hashText(tokenStr), expiresAt: expires}, nil
+	return &mcpAuthContext{principal: p, claims: claims, scopes: parsedScopes, familyID: familyID, babyID: babyID, grantID: grantID, accessHash: hashText(tokenStr), expiresAt: expires}, nil
 }
 
 func rpcError(id any, code int, message string) Result {
@@ -181,11 +181,30 @@ var mcpCreateSupplementTool = Object{
 	},
 }
 
-func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
+func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (result Result, returnErr error) {
 	auth, err := s.authenticateMcp(ctx, r.HTTP)
 	if err != nil {
 		return Result{}, err
 	}
+	method, toolName := "", ""
+	if r.Body != nil {
+		method = text(r.Body["method"])
+		toolName = text(obj(r.Body["params"])["name"])
+	}
+	auditID, err := s.beginMcpUsageCall(ctx, auth, method, toolName)
+	if err != nil {
+		return Result{}, err
+	}
+	r.AuditID = auditID
+	started := time.Now()
+	defer func() {
+		outcome, errorCode := mcpUsageOutcome(result, returnErr)
+		persistCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if auditErr := s.finishMcpUsageCall(persistCtx, auditID, outcome, errorCode, time.Since(started).Milliseconds(), result); auditErr != nil {
+			s.Log.Error("MCP usage audit settlement failed", "callId", auditID)
+		}
+	}()
 
 	rpc := r.Body
 	if rpc == nil {
@@ -193,7 +212,7 @@ func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
 	}
 
 	rpcID := rpc["id"]
-	method := text(rpc["method"])
+	method = text(rpc["method"])
 	params := obj(rpc["params"])
 	if params == nil {
 		params = Object{}
@@ -382,12 +401,14 @@ func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
 		now := time.Now().UTC().Truncate(time.Millisecond)
 		var productID string
 		var version int64 = 1
+		recordsCreated := int64(0)
 		if err == nil && existing != nil {
 			productID = text(existing["id"])
 			version = integer(existing["version"]) + 1
 			_, err = tx.Exec(ctx, `UPDATE supplement_products SET brand=$1, dosage_form=$2, unit_name=$3, default_dose=$4, nutrients_json=$5::jsonb, notes=$6, is_active=true, is_archived=false, version=$7, updated_at=$8 WHERE id=$9 AND family_id=$10`,
 				brand, dosageForm, unitName, defaultDose, string(nutrientsRaw), notes, version, now, productID, scope.FamilyID)
 		} else {
+			recordsCreated = 1
 			productID = newID()
 			_, err = tx.Exec(ctx, `INSERT INTO supplement_products (id, family_id, name, brand, dosage_form, unit_name, default_dose, nutrients_json, notes, is_active, is_archived, version, created_at, updated_at)
 				VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, true, false, 1, $10, $10)`,
@@ -422,6 +443,15 @@ func (s *Server) handleMcpRpc(ctx context.Context, r *Request) (Result, error) {
 			VALUES ($1, $2, $3, $4, 200, $5::jsonb, $6::jsonb, NOW())`,
 			auth.principal.UserID, scope.FamilyID, commandID, reqHash, string(summaryJSON), string(productPayload)); err != nil {
 			return Result{}, err
+		}
+		if r.AuditID != "" {
+			tag, auditErr := tx.Exec(ctx, `UPDATE native_go.mcp_usage_calls SET records_created=$2 WHERE id=$1 AND user_id=$3`, r.AuditID, recordsCreated, auth.principal.UserID)
+			if auditErr != nil {
+				return Result{}, auditErr
+			}
+			if tag.RowsAffected() != 1 {
+				return Result{}, errors.New("MCP audit record disappeared before tool commit")
+			}
 		}
 
 		if err = tx.Commit(ctx); err != nil {

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -152,7 +153,7 @@ func parseNativeAssistant(raw string) (nativeAIResult, error) {
 	return out, nil
 }
 
-func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID, message string, attachments []string, delta func(string) error) (nativeAIResult, error) {
+func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID, message string, attachments []string, delta func(string) error) (result nativeAIResult, returnErr error) {
 	if len(message) > 256*1024 || len(attachments) > 16 {
 		return nativeAIResult{}, providerFailure("AI_INPUT_TOO_LARGE", "AI input exceeds the configured budget", false)
 	}
@@ -187,6 +188,19 @@ func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
+	attemptID, err := beginNativeProviderAttempt(ctx, "openai-compatible", c.Model)
+	if err != nil {
+		return nativeAIResult{}, err
+	}
+	settled := false
+	defer func() {
+		if attemptID != "" && !settled {
+			_ = finishNativeProviderAttempt(ctx, attemptID, result.Usage, false, nativeProviderErrorCode(returnErr))
+		}
+	}()
+	if attemptID != "" {
+		req.Header.Set("Idempotency-Key", attemptID)
+	}
 	client := providerHTTPClient(c.Timeout)
 	defer client.CloseIdleConnections()
 	response, err := client.Do(req)
@@ -202,7 +216,15 @@ func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID
 		return nativeAIResult{}, providerFailure(code, fmt.Sprintf("AI provider returned HTTP %d", response.StatusCode), response.StatusCode == 408 || response.StatusCode == 409 || response.StatusCode == 429 || response.StatusCode >= 500)
 	}
 	if strings.Contains(strings.ToLower(response.Header.Get("Content-Type")), "text/event-stream") {
-		return readNativeAIStream(response.Body, delta)
+		result, returnErr = readNativeAIStream(response.Body, delta)
+		if returnErr != nil {
+			return result, returnErr
+		}
+		if returnErr = finishNativeProviderAttempt(ctx, attemptID, result.Usage, true, ""); returnErr != nil {
+			return result, returnErr
+		}
+		settled = true
+		return result, nil
 	}
 	body, err := io.ReadAll(io.LimitReader(response.Body, maxProviderResponse+1))
 	if err != nil {
@@ -220,7 +242,7 @@ func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID
 		return nativeAIResult{}, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "AI provider returned no choices", false)
 	}
 	content := text(obj(obj(choices[0])["message"])["content"])
-	result, err := parseNativeAssistant(content)
+	result, err = parseNativeAssistant(content)
 	if err != nil {
 		return result, err
 	}
@@ -231,7 +253,35 @@ func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID
 	if delta != nil && result.Text != "" {
 		err = delta(result.Text)
 	}
+	if err != nil {
+		return result, err
+	}
+	if err = finishNativeProviderAttempt(ctx, attemptID, result.Usage, true, ""); err != nil {
+		return result, err
+	}
+	settled = true
 	return result, err
+}
+
+func nativeProviderErrorCode(err error) string {
+	if err == nil {
+		return ""
+	}
+	var provider *nativeProviderError
+	if errors.As(err, &provider) {
+		return provider.Code
+	}
+	var api *APIError
+	if errors.As(err, &api) {
+		return api.Code
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "AI_PROVIDER_TIMEOUT"
+	}
+	if errors.Is(err, context.Canceled) {
+		return "AI_PROVIDER_CANCELLED"
+	}
+	return "AI_PROVIDER_ERROR"
 }
 
 // Stream chunks are processed as they arrive. The byte, line and aggregate

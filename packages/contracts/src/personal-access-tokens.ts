@@ -56,15 +56,148 @@ export type CreatePersonalAccessTokenResponse = Static<typeof CreatePersonalAcce
 export const ListPersonalConnectionsResponseSchema = OAuthConnectionListResponseSchema;
 export type ListPersonalConnectionsResponse = Static<typeof ListPersonalConnectionsResponseSchema>;
 
-export const PersonalAIUsageUnavailableResponseSchema = Type.Object(
-  {
-    data: Type.Array(Type.Unknown(), { maxItems: 0 }),
-    availability: Type.Literal("unavailable"),
-    reasonCode: Type.Literal("AI_USAGE_ACCOUNTING_NOT_IMPLEMENTED"),
-  },
-  { $id: "PersonalAIUsageUnavailableResponse", additionalProperties: false },
+const AIUsageCountSchema = Type.Integer({ minimum: 0 });
+const NullableAIUsageCountSchema = Nullable(AIUsageCountSchema);
+
+export const PersonalAIUsageQuerySchema = Type.Object(
+  { babyId: Type.Optional(UuidString) },
+  { $id: "PersonalAIUsageQuery", additionalProperties: false },
 );
-export type PersonalAIUsageUnavailableResponse = Static<typeof PersonalAIUsageUnavailableResponseSchema>;
+
+export const PersonalAIUsageResponseSchema = Type.Object(
+  {
+    availability: Type.Literal("partial"),
+    generatedAt: DateTimeString,
+    timezone: Type.Literal("UTC"),
+    baby: Type.Union([
+      Type.Object({ id: UuidString, nickname: Type.String(), familyId: UuidString, familyName: Type.String() }, { additionalProperties: false }),
+      Type.Null(),
+    ]),
+    coverage: Type.Object(
+      {
+        mcpCalls: Type.Literal("native_go_dispatch_only"),
+        providerAttempts: Type.Literal("native_go_attempt_ledger_only"),
+        unsupportedMetrics: Type.Array(Type.String(), { maxItems: 12 }),
+      },
+      { additionalProperties: false },
+    ),
+    overview: Type.Object(
+      {
+        totalCalls: AIUsageCountSchema,
+        todayCalls: AIUsageCountSchema,
+        last7DaysCalls: AIUsageCountSchema,
+        connectedAgentsCount: AIUsageCountSchema,
+        successRate: Nullable(Type.Number({ minimum: 0, maximum: 100 })),
+        avgDurationMs: NullableAIUsageCountSchema,
+        readCallsCount: AIUsageCountSchema,
+        writeCallsCount: AIUsageCountSchema,
+        manageCallsCount: AIUsageCountSchema,
+        totalRecordsCreatedByAi: NullableAIUsageCountSchema,
+      },
+      { additionalProperties: false },
+    ),
+    connectedAgents: Type.Array(
+      Type.Object(
+        {
+          clientId: Type.String(),
+          agentName: Type.String(),
+          clientName: Type.String(),
+          status: Type.Union([Type.Literal("active"), Type.Literal("idle"), Type.Literal("authorized")]),
+          totalCalls: AIUsageCountSchema,
+          todayCalls: AIUsageCountSchema,
+          successCount: AIUsageCountSchema,
+          errorCount: AIUsageCountSchema,
+          firstSeen: Nullable(DateTimeString),
+          lastSeen: Nullable(DateTimeString),
+          topTool: Type.Union([
+            Type.Object({ toolName: Type.String(), label: Type.String(), count: AIUsageCountSchema }, { additionalProperties: false }),
+            Type.Null(),
+          ]),
+          recordsWritten: NullableAIUsageCountSchema,
+        },
+        { additionalProperties: false },
+      ),
+      { maxItems: 100 },
+    ),
+    toolUsageRanking: Type.Array(
+      Type.Object(
+        {
+          toolName: Type.String(),
+          label: Type.String(),
+          count: AIUsageCountSchema,
+          percentage: Type.Number({ minimum: 0, maximum: 100 }),
+          category: Type.Union([Type.Literal("read"), Type.Literal("write"), Type.Literal("manage")]),
+        },
+        { additionalProperties: false },
+      ),
+      { maxItems: 10 },
+    ),
+    dailyActivityTrend: Type.Array(
+      Type.Object(
+        { date: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }), fullDate: Type.String({ pattern: "^\\d{4}-\\d{2}-\\d{2}$" }), total: AIUsageCountSchema, success: AIUsageCountSchema, error: AIUsageCountSchema },
+        { additionalProperties: false },
+      ),
+      { minItems: 14, maxItems: 14 },
+    ),
+    recentAuditLogs: Type.Array(
+      Type.Object(
+        {
+          id: UuidString,
+          agentName: Type.String(),
+          toolName: Nullable(Type.String()),
+          toolLabel: Type.String(),
+          action: Type.String(),
+          category: Type.Union([Type.Literal("read"), Type.Literal("write"), Type.Literal("manage")]),
+          authResult: Type.Union([Type.Literal("pending"), Type.Literal("success"), Type.Literal("denied"), Type.Literal("error")]),
+          createdAt: DateTimeString,
+          durationMs: NullableAIUsageCountSchema,
+          userName: Type.String(),
+          userRelation: Type.String(),
+          ip: Nullable(Type.String()),
+          errorMessage: Nullable(Type.String()),
+        },
+        { additionalProperties: false },
+      ),
+      { maxItems: 100 },
+    ),
+    aiRuns: Type.Object(
+      { total: AIUsageCountSchema, queued: AIUsageCountSchema, running: AIUsageCountSchema, succeeded: AIUsageCountSchema, failed: AIUsageCountSchema, cancelled: AIUsageCountSchema },
+      { additionalProperties: false },
+    ),
+    providerUsage: Type.Object(
+      {
+        totalAttempts: AIUsageCountSchema,
+        modelCalls: AIUsageCountSchema,
+        asrCalls: AIUsageCountSchema,
+        reportedAttempts: AIUsageCountSchema,
+        unknownAttempts: AIUsageCountSchema,
+        inputTokens: NullableAIUsageCountSchema,
+        outputTokens: NullableAIUsageCountSchema,
+        totalTokens: NullableAIUsageCountSchema,
+        tokenUsageState: Type.Union([Type.Literal("no_calls"), Type.Literal("reported"), Type.Literal("partial"), Type.Literal("unknown")]),
+        costMicros: Type.Null(),
+        currency: Type.Null(),
+        costState: Type.Union([Type.Literal("no_calls"), Type.Literal("unpriced")]),
+      },
+      { additionalProperties: false },
+    ),
+    budget: Type.Object(
+      {
+        availability: Type.Union([Type.Literal("configured"), Type.Literal("not_configured")]),
+        unit: Type.Literal("ai_run_attempt"),
+        period: Type.Literal("utc_day"),
+        periodStart: DateTimeString,
+        limit: NullableAIUsageCountSchema,
+        reservedUnits: NullableAIUsageCountSchema,
+        settledUnits: NullableAIUsageCountSchema,
+        remainingUnits: NullableAIUsageCountSchema,
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { $id: "PersonalAIUsageResponse", additionalProperties: false },
+);
+export type PersonalAIUsageResponse = Static<typeof PersonalAIUsageResponseSchema>;
 
 export const PersonalVoiceTextRunRequestSchema = Type.Object(
   {
