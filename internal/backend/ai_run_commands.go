@@ -482,6 +482,13 @@ func (s *Server) retryNativeAIRun(ctx context.Context, r *Request) (Result, erro
 	if (kind != "ai_chat_run" && kind != "voice_transcription" && kind != "medical_ocr" && kind != "growth_ocr" && kind != "daily_summary_synthesis") || (text(task["status"]) != "failed" && text(task["status"]) != "cancelled") {
 		return Result{}, apiError(409, "CONCURRENCY_CONFLICT", "Only failed or cancelled executable runs can be retried")
 	}
+	requiresConfirmation, _, _, err := nativeAIProviderRetryRisk(ctx, tx, r.Params["id"], 0)
+	if err != nil {
+		return Result{}, err
+	}
+	if requiresConfirmation && (r.HTTP == nil || r.HTTP.URL.Query().Get("confirmPossibleDuplicate") != "true") {
+		return Result{}, apiError(409, "AI_RUN_RETRY_CONFIRMATION_REQUIRED", "Provider work may already have completed; reconcile usage or confirm possible duplicate provider work before retrying")
+	}
 	if _, err = nativeProviderConfiguration(); err != nil {
 		return Result{}, err
 	}

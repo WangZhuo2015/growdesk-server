@@ -587,6 +587,11 @@ def main() -> int:
         # The environment constructor starts from a small allowlist, so no
         # inherited provider/push secrets are available to the child process.
         owned.env.update(
+            GROWDESK_AI_BUDGET_UNIT="ai_run_attempt",
+            GROWDESK_AI_BUDGET_PERIOD="utc_day",
+            GROWDESK_AI_BUDGET_USER_LIMIT="100",
+            GROWDESK_AI_BUDGET_FAMILY_LIMIT="1000",
+            GROWDESK_AI_BUDGET_GLOBAL_LIMIT="10000",
             GROWDESK_AI_PROVIDER="fixture",
             GROWDESK_AI_FIXTURE_RESPONSE='{"text":"test_only_isolated_export_fixture","actions":[]}',
         )

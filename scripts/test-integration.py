@@ -181,6 +181,10 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 GROWDESK_AI_BUDGET_UNIT='ai_run_attempt', GROWDESK_AI_BUDGET_PERIOD='utc_day',
                 GROWDESK_AI_BUDGET_USER_LIMIT='2', GROWDESK_AI_BUDGET_FAMILY_LIMIT='20',
                 GROWDESK_AI_BUDGET_GLOBAL_LIMIT='100')
+            if s3:
+                go_env.update(S3_ENDPOINT=s3identity['endpoint'], S3_BUCKET=s3identity['bucket'],
+                              S3_REGION=s3identity['region'], AWS_ACCESS_KEY_ID=s3identity['accessKeyId'],
+                              AWS_SECRET_ACCESS_KEY=s3identity['secretAccessKey'])
             # Exercise an actual populated upgrade path: apply native 0001-0003,
             # insert a historical OAuth grant in the Go regression test, then
             # apply 0004 through the checksum-tracked runner. The all-migrations
@@ -190,12 +194,16 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
                 command(['go', 'test', '-tags', 'mcp_oauth_integration', '-run', '^TestMCPOAuthLegacyGrantUpgradeIntegration$',
                          '-count=1', './internal/backend'], env=go_env, timeout=300)
             command(['go', 'run', './cmd/growdesk-migrate'], env=go_env, timeout=180)
-            tags = 'mcp_oauth_integration' if suite == 'mcp-oauth' else 'pat_integration,mcp_oauth_integration'
-            tests = '^TestMCPOAuthLifecycleHTTPIntegration$' if suite == 'mcp-oauth' else '^(TestAIUsageAccountingIntegration|TestPersonalAccessTokensHTTPIntegration|TestMCPOAuthLifecycleHTTPIntegration)$'
+            if suite == 'mcp-oauth':
+                tags, tests = 'mcp_oauth_integration', '^TestMCPOAuthLifecycleHTTPIntegration$'
+            elif suite == 'ai-usage':
+                tags, tests = 'pat_integration', '^TestAIUsageAccountingIntegration$'
+            else:
+                tags, tests = 'pat_integration,mcp_oauth_integration', '^(TestAIUsageAccountingIntegration|TestPersonalAccessTokensHTTPIntegration|TestMCPOAuthLifecycleHTTPIntegration)$'
             command(['go', 'test', '-v', '-tags', tags, '-run', tests,
                      '-count=1', './internal/backend'], env=go_env, timeout=300)
-            if suite == 'mcp-oauth':
-                print('Isolated MCP OAuth lifecycle HTTP checks passed.', flush=True)
+            if suite in ('mcp-oauth', 'ai-usage'):
+                print(f'Isolated {suite} HTTP checks passed.', flush=True)
                 return
             command(['python3', 'scripts/legacy-import/test_import_integration.py'], env=env)
             if legacy_care:
@@ -246,7 +254,7 @@ def main(web_root=None, web_ui=False, legacy_web_root=None, legacy_care=False, s
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--suite', choices=['infrastructure', 'mcp-oauth', 'all'], default='all')
+    parser.add_argument('--suite', choices=['infrastructure', 'mcp-oauth', 'ai-usage', 'all'], default='all')
     parser.add_argument('--web-root', type=Path,
                         help='absolute old Web repository containing .next/standalone/server.js')
     parser.add_argument('--web-ui', action='store_true',

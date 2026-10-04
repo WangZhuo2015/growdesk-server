@@ -298,6 +298,35 @@ func nativeAIProviderDispatched(ctx context.Context, q Querier, runID string, at
 	return dispatched, err
 }
 
+// nativeAIProviderRetryRisk reports provider work whose result or billing
+// outcome is not safe to replay automatically. attempt=0 inspects the whole
+// run; a positive attempt narrows the check to one worker lease.
+func nativeAIProviderRetryRisk(ctx context.Context, q Querier, runID string, attempt int64) (risky, reported, unknown bool, err error) {
+	err = q.QueryRow(ctx, `SELECT
+		COALESCE(bool_or(status IN ('dispatched','reported','unknown')),false),
+		COALESCE(bool_or(status='reported'),false),
+		COALESCE(bool_or(status IN ('dispatched','unknown')),false)
+		FROM native_go.ai_provider_attempts WHERE run_id=$1 AND ($2::bigint IS NULL OR attempt=$2)`,
+		runID, nullableAttempt(attempt)).Scan(&risky, &reported, &unknown)
+	return
+}
+
+func nullableAttempt(attempt int64) any {
+	if attempt <= 0 {
+		return nil
+	}
+	return attempt
+}
+
+func nativeProviderKnownRejected(errorCode string) bool {
+	switch errorCode {
+	case "AI_PROVIDER_RATE_LIMITED", "AI_PROVIDER_AUTH_FAILED", "AI_PROVIDER_REQUEST_REJECTED":
+		return true
+	default:
+		return false
+	}
+}
+
 type nativeUsageTracker struct {
 	server *Server
 	lease  nativeTaskLease
@@ -426,6 +455,8 @@ func finishNativeProviderAttempt(ctx context.Context, id string, usage Object, s
 	status := "unknown"
 	if succeeded {
 		status = "reported"
+	} else if nativeProviderKnownRejected(errorCode) {
+		status = "failed"
 	}
 	var errValue any
 	if errorCode != "" {

@@ -46,6 +46,22 @@ func providerFailure(code, message string, retryable bool) error {
 	return &nativeProviderError{Code: code, Message: message, Retryable: retryable}
 }
 
+func nativeProviderHTTPFailure(statusCode int) error {
+	message := fmt.Sprintf("AI provider returned HTTP %d", statusCode)
+	switch {
+	case statusCode == http.StatusTooManyRequests:
+		return providerFailure("AI_PROVIDER_RATE_LIMITED", message, true)
+	case statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden:
+		return providerFailure("AI_PROVIDER_AUTH_FAILED", message, false)
+	case statusCode >= 400 && statusCode < 500 && statusCode != http.StatusRequestTimeout && statusCode != http.StatusConflict:
+		return providerFailure("AI_PROVIDER_REQUEST_REJECTED", message, false)
+	case statusCode == http.StatusRequestTimeout || statusCode == http.StatusConflict || statusCode >= 500:
+		return providerFailure("AI_PROVIDER_HTTP_ERROR", message, true)
+	default:
+		return providerFailure("AI_PROVIDER_HTTP_ERROR", message, false)
+	}
+}
+
 const maxProviderResponse = 4 * 1024 * 1024
 
 func nativeProviderConfiguration() (nativeProviderConfig, error) {
@@ -209,11 +225,7 @@ func callNativeAI(ctx context.Context, c nativeProviderConfig, sessionID, babyID
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		code := "AI_PROVIDER_HTTP_ERROR"
-		if response.StatusCode == 401 || response.StatusCode == 403 {
-			code = "AI_PROVIDER_AUTH_FAILED"
-		}
-		return nativeAIResult{}, providerFailure(code, fmt.Sprintf("AI provider returned HTTP %d", response.StatusCode), response.StatusCode == 408 || response.StatusCode == 409 || response.StatusCode == 429 || response.StatusCode >= 500)
+		return nativeAIResult{}, nativeProviderHTTPFailure(response.StatusCode)
 	}
 	if strings.Contains(strings.ToLower(response.Header.Get("Content-Type")), "text/event-stream") {
 		result, returnErr = readNativeAIStream(response.Body, delta)

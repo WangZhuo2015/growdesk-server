@@ -10806,7 +10806,7 @@
                         ],
                         "properties": {
                           "date": {
-                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                            "pattern": "^\\d{2}-\\d{2}$",
                             "type": "string"
                           },
                           "fullDate": {
@@ -26659,11 +26659,19 @@
     "/api/v1/ai/runs/{id}/retry": {
       "post": {
         "operationId": "retryAiRun",
-        "summary": "Retry failed AI run with a new attempt",
+        "summary": "Retry failed AI run; explicitly confirm possible duplicate provider work when required",
         "tags": [
           "AI"
         ],
         "parameters": [
+          {
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "name": "confirmPossibleDuplicate",
+            "required": false
+          },
           {
             "schema": {
               "format": "uuid",

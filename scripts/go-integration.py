@@ -63,7 +63,7 @@ class OwnedEnvironment:
             sql = directory/'migration.sql'
             if sql.is_file(): self.sql(sql.read_text())
         pg_port, redis_port = self.port(self.pg,5432), self.port(redis,6379)
-        self.env.update(DATABASE_URL=f'postgresql://{self.role}:{self.password}@127.0.0.1:{pg_port}/{self.database}?sslmode=disable', REDIS_URL=f'redis://default:{self.password}@127.0.0.1:{redis_port}/0', JWT_SECRET=self.jwt, SESSION_ENCRYPTION_KEY=self.jwt, GROWDESK_ENV='test', GROWDESK_GO_EXPERIMENTAL='1', DB_POOL_MAX='10', HOST='127.0.0.1')
+        self.env.update(DATABASE_URL=f'postgresql://{self.role}:{self.password}@127.0.0.1:{pg_port}/{self.database}?sslmode=disable', REDIS_URL=f'redis://default:{self.password}@127.0.0.1:{redis_port}/0', JWT_SECRET=self.jwt, SESSION_ENCRYPTION_KEY=self.jwt, GROWDESK_ENV='test', GROWDESK_GO_EXPERIMENTAL='1', GROWDESK_AI_BUDGET_UNIT='ai_run_attempt', GROWDESK_AI_BUDGET_PERIOD='utc_day', GROWDESK_AI_BUDGET_USER_LIMIT='100', GROWDESK_AI_BUDGET_FAMILY_LIMIT='1000', GROWDESK_AI_BUDGET_GLOBAL_LIMIT='10000', DB_POOL_MAX='10', HOST='127.0.0.1')
         return self
     def serve(self, binary):
         with socket.socket() as sock:

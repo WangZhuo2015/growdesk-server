@@ -40,6 +40,21 @@ Initial attempts stopped before the final passing gates and were repaired:
 
 `npm ci` printed an advisory summary of 7 dependency vulnerabilities (2 moderate, 5 high); dependencies were not upgraded as part of this task. Existing Fastify schema warnings in `/api/v1/web/ai/sessions` appeared during the runner and were outside this route change.
 
+## Follow-up reliability fixes (2026-10-04)
+
+Follow-up work is isolated on `codex/ai-usage-reliability-20261004`, based on the usage-accounting head `2b053c1930a2a5a0ed129620434d413035f66e72`. Status remains `IMPLEMENTED_NOT_REVIEWED`; this branch is not merged or deployed.
+
+- The populated AI-usage HTTP response exposed a contract mismatch: the server's `dailyActivityTrend.date` is the dashboard's `MM-DD` label, while `fullDate` carries the ISO calendar date. The generated schema now describes those actual values, and the integration validates the real response against the generated OpenAPI operation.
+- Provider failures now distinguish known rejected HTTP responses from uncertain dispatches. A 429 keeps the safe automatic retry and records a failed provider attempt; authentication and other definitive 4xx rejections are non-retryable. Timeouts, network failures, 408/409, and 5xx responses retain an unknown outcome and stop automatic replay.
+- If a worker lease expires after a provider dispatch, reported result, or unknown outcome, the worker closes the run and settles its budget instead of replaying provider work. The run surfaces `AI_PROVIDER_OUTCOME_UNKNOWN` or `AI_PROVIDER_RESULT_NOT_PERSISTED`; explicit retry requires `confirmPossibleDuplicate=true`.
+- The `retryAiRun` route and generated OpenAPI contract now include the optional `confirmPossibleDuplicate` boolean, so API clients can request an informed retry when duplicate provider work is possible.
+- Standalone Go fixture runners now set explicit, generous internal attempt-budget limits so their isolated transactions are not rejected by the production-required budget guard. The exhausted-budget integration assertion keeps its deliberately low per-user limit.
+- `scripts/test-integration.py --suite ai-usage --s3` runs the focused scenario using owned PostgreSQL/Redis, owned loopback MinIO, and an in-process virtual provider. It verifies a real stored audio object, multipart ASR request and usage, a separate model phase with absent usage kept null/unknown, known-429 retry, timeout no-replay, explicit confirmation, and expired-lease recovery.
+
+The full owned suite exposed an intermittent test-fixture race: `task_outbox.next_dispatch_at` has `TIMESTAMPTZ(3)` precision, so writing the exact `clock_timestamp()` can round the stored value forward by a fraction of a millisecond. An immediate worker-candidate query could then observe no eligible row even though a later state read showed the row due. The failing full-run output is retained at `logs/full-owned-suite-before-timestamp-fix.log`. The test-only dispatch helper now backdates its owned outbox row by one second; it does not change the production queue predicate or replay behavior. The separate timeout case is already terminal and intentionally asserts that a worker poll finds no candidate. Expired reported-result and unknown-outcome leases still assert the intended test run is first eligible before checking that recovery stops without another provider call.
+
+Final-source follow-up checks passed: `go test ./...`; `go vet ./...`; `npm run backend:test:unit` (165/165 tests); `npm run backend:typecheck`; `npm run backend:lint` (ESLint and architecture check); `npm run backend:contracts:check`; Python syntax checks for the edited integration runners; and `git diff --check`. `python3 scripts/test-integration.py --suite ai-usage --s3` passed against owned PostgreSQL/Redis, loopback MinIO, and an in-process virtual provider. After the timestamp fix, `python3 scripts/test-integration.py --suite all` passed, and the focused S3 suite passed again. Each owned runner stopped its test processes and removed its private data directory. No production connection, secret, paid provider, push, or old Web service/database was used.
+
 ## Gaps and boundary
 
 - The plan specifies no user-editable budget protocol and no pricing/rate-card source. Public budget CRUD and currency/token cost claims remain out of scope.
