@@ -1,0 +1,13 @@
+{
+  "revision": "65ccdaac9fb12b749795e7fcbbcd856a02830600",
+  "architecture": "linux/arm64",
+  "cgo": false,
+  "files": {
+    "bin/growdesk-api": "3068befb3594b38bbd851c5737877f9db407905c7294905b1a1d12c68a59f63b",
+    "bin/growdesk-worker": "499253bf1acb7fab7895bee54c804a3052abd7a39b1227da5dae84fe9a5334d3",
+    "bin/growdesk-migrate": "3b9c6d0dfb79d2047a5b74c12d80c72c945d3f5cd34fd9acdf1c6801241f08fa",
+    "server-source.tar.gz": "a1716c9bcd7b99609db324f2036b2cb139b77a54b608a145799484ea5fda774b",
+    "production-migration.sql": "5e0f7eac2ce1fd35cb8f3b8af97803ccddb5a023e55038ec2b4db0f04b5d4203",
+    "migration_sql.py": "69e6d7bc6e2b31c1676f4de439f64ffee9753617bb8ab082d24da6a75890e589"
+  }
+}

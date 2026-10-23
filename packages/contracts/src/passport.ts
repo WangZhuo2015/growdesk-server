@@ -224,7 +224,7 @@ export type PassportCard = Static<typeof PassportCardSchema>;
 export const PassportConfirmationMetaSchema = Type.Object(
   {
     planHash: Type.String({ minLength: 1 }),
-    actionIds: Type.Array(UuidString, { minItems: 1 }),
+    actionIds: Type.Array(UuidString, { minItems: 1, maxItems: 1 }),
     expiresAt: DateTimeString,
   },
   { $id: "PassportConfirmationMeta", additionalProperties: false }
@@ -236,6 +236,9 @@ export const PresentPassportCardEventSchema = Type.Object(
   {
     v: Type.Literal(1),
     type: Type.Literal("card.present"),
+    // Optional to keep older gateway payloads valid; the gateway now emits it
+    // and firmware can fail closed when correlating cards to the active turn.
+    turnId: Type.Optional(Type.String({ minLength: 1, maxLength: 63 })),
     runId: UuidString,
     card: PassportCardSchema,
     confirmation: PassportConfirmationMetaSchema,

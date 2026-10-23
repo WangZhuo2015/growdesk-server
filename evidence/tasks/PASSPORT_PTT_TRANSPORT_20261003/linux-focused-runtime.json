@@ -1,0 +1,10 @@
+{
+  "platform": "linux/arm64",
+  "binary_sha256": "5109737af428b35f754ce0aa304a29ebf63bc29028d8a0d0eec91a7db295a4b7",
+  "exit_code": 0,
+  "groups_passed": 3,
+  "env_i": true,
+  "db_provider_credentials_inherited": false,
+  "db_or_provider_calls": false,
+  "service_deployed": false
+}

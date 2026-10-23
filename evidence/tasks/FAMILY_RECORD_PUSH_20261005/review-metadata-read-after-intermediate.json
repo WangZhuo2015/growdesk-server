@@ -1,0 +1,37 @@
+{
+  "scope": "device fanout isolation and strict metadata read compatibility",
+  "phase": "after_fix",
+  "productionConnections": 0,
+  "pushRequests": 0,
+  "externalAIRequests": 0,
+  "sourceSha256": {
+    "internal/backend/family_notifications.go": "70147c5c4d30464caa5435ae349f34838076e4e4cd905b8f4ac17ddd2d6a23e0",
+    "internal/backend/native_snapshots.go": "0345e1bd85f37ecb3edcc7df32d2be4afd3700eac81f42b8fa890cbbb7abbc0e",
+    "internal/backend/ai_run_commands.go": "a20a86b387401336f3a798402125938c60e94fc9ac6df3efa1a0406813729ca7",
+    "internal/backend/native_tasks.go": "b971e7b1db10cd08eb7e636677da9847df7703ed968d7bd0c6e458208188df3c"
+  },
+  "createdServices": [
+    "postgresql"
+  ],
+  "exercised": "actual Go handlers, current user/baby authorization, Passport record transaction, task queue and failure state, task read/cancel, AI task idempotent replay on fresh owned PostgreSQL 18; no HTTP server or worker/provider process",
+  "exitCode": 1,
+  "ownedDatabase": "test_growdesk_d90251e34233",
+  "role": "test_app_d90251e34233",
+  "cases": [
+    {
+      "name": "TestReviewNativeTaskReadCancelMetadata",
+      "passed": true
+    },
+    {
+      "name": "TestReviewAIReplayMetadata",
+      "passed": false
+    }
+  ],
+  "cleanup": {
+    "status": "cleaned",
+    "database": "test_growdesk_d90251e34233",
+    "appRole": "test_app_d90251e34233",
+    "privateDirectoryRemoved": true,
+    "errors": []
+  }
+}

@@ -1,0 +1,507 @@
+diff --git a/scripts/review/check-family-push.py b/scripts/review/check-family-push.py
+index 0ce81ac..b063eb5 100644
+--- a/scripts/review/check-family-push.py
++++ b/scripts/review/check-family-push.py
+@@ -29,7 +29,7 @@ import urllib.parse
+ import uuid
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ 
+-TASK_ID = "FAMILY_RECORD_PUSH_20261005"
++TASK_ID = "FULL_PUSH_CONTENT_20261006"
+ ROOT = Path(__file__).resolve().parents[2]
+ KIND = "family_record_notification"
+ 
+@@ -111,11 +111,12 @@ class PushFixture:
+           const plain=Buffer.concat([decipher.update(ciphertext.subarray(0,-16)),decipher.final()]);
+           let end=plain.length-1; while(end>=0 && plain[end]===0) end--;
+           if(plain[end]!==2) process.exit(1);
+-          const payload=JSON.parse(plain.subarray(0,end).toString('utf8'));
++          const json=plain.subarray(0,end).toString('utf8');
++          const payload=JSON.parse(json);
+           const allowed=['eventKind','familyId','babyId','actorId','entityType','entityId','operation','recordVersion','eventKey','url'];
+           const privateFree=Object.keys(payload.data).every(k=>allowed.includes(k));
+           process.stdout.write(JSON.stringify({decrypted:true,privacySafe:privateFree,
+-            genericTitle:payload.title==='家庭动态',genericBody:payload.body==='有新的照护记录',
++            title:payload.title,body:payload.body,wireBytes:Buffer.byteLength(json,'utf8'),
+             url:payload.url,data:payload.data,tag:payload.tag}));
+         """
+         try:
+@@ -145,6 +146,7 @@ class Journey:
+         self.active_case = None
+         self.test_users = 0
+         self.eligible_peer_requests = 0
++        self.baseline_mode = False
+ 
+     def call(self, method, path, status, body=None, account=None, key=None):
+         data = self.http.expect(method, path, status, body, token=account and account["accessToken"], key=key,
+@@ -158,15 +160,17 @@ class Journey:
+             "username": name, "password": "test_password_" + secrets.token_hex(16),
+             "displayName": name, "deviceLabel": "test_family_push"})
+         account["id"] = account["user"]["id"]
++        account["expectedDisplayName"] = name
+         assert uuid.UUID(account["id"]).version == 4
+         self.test_users += 1
+         return account
+ 
+     def setup(self):
+         self.actor, self.recipient, self.unassigned = [self.account(label) for label in ("actor", "reader", "unassigned")]
+-        self.family = self.call("POST", "/api/v1/families", 201, {"name": self.prefix + "_family", "timeZone": "UTC"}, self.actor)
++        self.family = self.call("POST", "/api/v1/families", 201, {"name": self.prefix + "_family", "timeZone": "America/Los_Angeles"}, self.actor)
+         self.baby = self.call("POST", "/api/v1/families/" + self.family["id"] + "/babies", 201, {
+             "name": self.prefix + "_baby", "birthDate": "2025-01-01", "gender": "girl"}, self.actor)
++        self.baby["expectedDisplayName"] = self.prefix + "_baby"
+         for account in (self.recipient, self.unassigned):
+             invite = self.call("POST", "/api/v1/families/" + self.family["id"] + "/invites", 201, {}, self.actor)
+             self.call("POST", "/api/v1/families/join", 200, {"inviteCode": invite["inviteCode"]}, account)
+@@ -252,7 +256,7 @@ class Journey:
+             quote(outbox_id) + "," + quote(kind) + "," + quote(task_id) + ",1," + quote(payload) + "::jsonb,'native-initial','active',NOW()-INTERVAL '1 hour',NOW()-INTERVAL '1 hour');")
+         return task_id
+ 
+-    def event(self, record_id, kind="feeding", version=1, operation="create"):
++    def event(self, record_id, kind="feeding", version=1, operation="create", allow_legacy=False):
+         rows = self.sql_json("SELECT COALESCE(jsonb_agg(jsonb_build_object('id',t.id,'input',o.payload->'__native')),'[]'::jsonb) "
+                              "FROM task_executions t JOIN task_outbox o ON o.aggregate_id=t.id WHERE t.kind=" + quote(KIND) +
+                              " AND o.payload->'__native'->'familyRecord'->>'recordId'=" + quote(record_id) +
+@@ -262,10 +266,17 @@ class Journey:
+         assert len(rows) == 1, "committed_event_task_not_unique"
+         event = rows[0]
+         head = self.task(event["id"])
+-        assert head["owner_scope"] == "family:" + self.family["id"], "event_owner_not_family"
++        assert head["owner_scope"] == "family:" + event["input"]["familyId"], "event_owner_not_family"
+         assert head["input"].get("userId", "") == "", "event_depends_on_actor_session"
+-        raw = json.dumps(head["input"])
+-        assert "test_private_record" not in raw and "amountMl" not in raw, "private_content_in_retained_event"
++        family_record = head["input"]["familyRecord"]
++        snapshot = family_record.get("contentSnapshot")
++        if snapshot is not None:
++            assert snapshot.get("version") == 1 and isinstance(snapshot.get("title"), str) and snapshot["title"], "event_content_snapshot_invalid"
++            assert isinstance(snapshot.get("body"), str) and snapshot["body"], "event_content_snapshot_invalid"
++        else:
++            assert self.baseline_mode or allow_legacy, "new_event_missing_content_snapshot"
++        allowed_fields = {"actorId", "kind", "recordId", "operation", "version", "eventKey", "contentSnapshot"}
++        assert set(family_record).issubset(allowed_fields), "record_fields_leaked_outside_snapshot"
+         return event
+ 
+     def children(self, event):
+@@ -279,41 +290,72 @@ class Journey:
+         return self.sql_json("SELECT COALESCE(jsonb_agg(to_jsonb(n)),'[]'::jsonb) FROM notifications n WHERE event_key=" +
+                              quote(event["input"]["familyRecord"]["eventKey"]) + ";")
+ 
+-    def fanout(self, event, recipients=1):
++    def fanout(self, event, recipients=1, recipient=None):
+         self.once()
++        return self.assert_fanout(event, recipients=recipients, recipient=recipient)
++
++    def assert_fanout(self, event, recipients=1, recipient=None):
++        recipient = recipient or self.recipient
+         head = self.task(event["id"])
+         assert head["status"] == "succeeded", "family_fanout_not_succeeded"
+         assert head["dispatch"] == "closed", "fanout_outbox_not_closed"
+         notes = self.notification_rows(event)
+         children = self.children(event)
+         assert len(notes) == recipients and len(children) == recipients, "unexpected_fanout_count"
++        if recipients == 0:
++            return children
++        snapshot = children[0]["input"]["familyRecord"].get("contentSnapshot")
+         for note in notes:
+-            assert note["user_id"] == self.recipient["id"], "actor_or_unassigned_received_notification"
+-            assert note["title"] == "家庭动态" and note["body"] == "有新的照护记录", "private_record_in_notification"
++            assert note["user_id"] == recipient["id"], "actor_or_unassigned_received_notification"
++            if snapshot is None:
++                if event.get("allowLegacySnapshot"):
++                    assert "旧记录版本" in note["body"] and "当前记录版本" in note["body"], "legacy_notification_fallback_missing_version_context"
++                else:
++                    assert self.baseline_mode and note["title"] == "家庭动态" and note["body"] == "有新的照护记录", "legacy_notification_without_snapshot_unexpected"
++            else:
++                assert note["title"] == snapshot["title"] and note["body"] == snapshot["body"], "inbox_content_does_not_match_frozen_snapshot"
+             assert note["data"]["entityId"] == event["input"]["familyRecord"]["recordId"], "notification_record_mismatch"
+             assert note["data"]["url"] == "/notifications", "notification_route_missing"
+             changes = int(self.runner.psql("SELECT count(*) FROM user_changes WHERE user_id=" + quote(note["user_id"]) +
+                                          " AND entity_type='notification' AND entity_id=" + quote(note["id"]) + ";"))
+             assert changes == 1, "notification_user_change_not_unique"
+         for child in children:
+-            assert child["owner_scope"] == "user:" + self.recipient["id"], "delivery_owner_not_recipient"
+-            assert child["input"]["userId"] == self.recipient["id"], "delivery_input_owner_mismatch"
++            assert child["owner_scope"] == "user:" + recipient["id"], "delivery_owner_not_recipient"
++            assert child["input"]["userId"] == recipient["id"], "delivery_input_owner_mismatch"
+         return children
+ 
+-    def delivered(self, event):
+-        children = self.fanout(event)
+-        before = self.fixture.count(self.recipient["pushPath"])
++    def delivered(self, event, recipient=None):
++        recipient = recipient or self.recipient
++        children = self.fanout(event, recipient=recipient)
++        before = self.fixture.count(recipient["pushPath"])
+         self.once()
+         child = self.task(children[0]["id"])
++        assert self.fixture.count(recipient["pushPath"]) == before + 1, "provider_request_missing_or_duplicate"
++        self.assert_delivery(event, child, recipient)
++        return child
++
++    def assert_delivery(self, event, child, recipient=None):
++        recipient = recipient or self.recipient
+         assert child["status"] == "succeeded" and child["result_ref"]["delivered"] is True, "provider_acceptance_not_recorded"
+-        assert self.fixture.count(self.recipient["pushPath"]) == before + 1, "provider_request_missing_or_duplicate"
+-        receipt = self.fixture.requests[-1]
++        event_key = event["input"]["familyRecord"]["eventKey"]
++        receipt = next(item for item in reversed(self.fixture.requests)
++                       if item["path"] == recipient["pushPath"] and item["payload"]["data"]["eventKey"] == event_key)
+         assert receipt["encrypted"] and receipt["status"] == 201, "actual_webpush_request_invalid"
+         payload = receipt["payload"]
+-        assert payload["privacySafe"] and payload["genericTitle"] and payload["genericBody"], "push_contains_private_record"
++        assert payload["privacySafe"], "push_metadata_contains_private_record"
++        assert payload["wireBytes"] <= 3072, "push_wire_payload_exceeds_3072_utf8_bytes"
++        snapshot = child["input"]["familyRecord"].get("contentSnapshot")
++        if snapshot is None:
++            assert self.baseline_mode and payload["title"] == "家庭动态" and payload["body"] == "有新的照护记录", "legacy_push_without_snapshot_unexpected"
++        else:
++            assert payload["title"] == snapshot["title"], "push_title_does_not_match_frozen_snapshot"
++            if payload["body"] != snapshot["body"]:
++                marker = "…点击查看完整内容"
++                assert payload["body"].endswith(marker) and snapshot["body"].startswith(payload["body"][:-len(marker)]), "push_body_is_neither_full_nor_clipped_snapshot"
+         assert payload["tag"] == child["input"]["notificationId"], "push_tag_not_stable_notification"
+         assert payload["data"]["eventKey"] == event["input"]["familyRecord"]["eventKey"], "push_event_identity_mismatch"
+-        return child
++        self.last_delivered_payload = payload
++        return payload
+ 
+     def case(self, name, action):
+         self.active_case = name
+@@ -384,25 +426,38 @@ class Journey:
+                 process.wait(timeout=5)
+ 
+     def baseline(self):
++        self.baseline_mode = True
+         self.setup()
+         before = self.inventory()
+-        self.feeding("baseline")
++        row = self.feeding("baseline_detail_probe")
+         after = self.inventory()
+         assert after["records"] == before["records"] + 1, "record_transaction_not_committed"
+         assert after["changes"] == before["changes"] + 1, "family_change_not_committed"
+-        self.once()
++        event = self.event(row["id"])
++        child = self.delivered(event)
++        payload = self.last_delivered_payload
++        details = ["发生时间：", "类型：瓶喂", "奶量：120 毫升", "备注：test_private_record_baseline_detail_probe"]
++        details_present = all(fragment in payload["body"] for fragment in details)
+         delta = {name: after[name] - before[name] for name in before}
+         self.report["baseline"] = {"recordHttpStatus": 201, "recipientSubscriptionPresent": True,
+-                                   "delta": delta, "missingEventObserved": delta["familyTasks"] == 0,
+-                                   "fixtureRequests": self.fixture.count()}
+-        self.report["cases"].append({"name": "committed REST record queues a family notification task",
+-                                      "passed": delta["familyTasks"] == 1, "expected": 1, "actual": delta["familyTasks"]})
+-        assert delta["familyTasks"] == 1, "family_notification_task_missing"
++                                   "delta": delta, "familyTaskObserved": delta["familyTasks"] == 1,
++                                   "fixtureRequests": self.fixture.count(), "decryptedTitle": payload["title"],
++                                   "decryptedBodyWasGeneric": payload["body"] == "有新的照护记录",
++                                   "detailedBodyFieldsPresent": details_present,
++                                   "notificationId": child["input"]["notificationId"]}
++        self.report["cases"].append({"name": "baseline encrypted push contains detailed family record content",
++                                      "passed": details_present, "expected": details,
++                                      "actual": {"genericBody": payload["body"] == "有新的照护记录",
++                                                 "allDetailsPresent": details_present}})
++        assert details_present, "push_body_missing_full_record_details"
+ 
+     def fixed(self):
+         self.setup()
+         self.case("preference HTTP defaults, validation and baby authorization", self.check_preferences)
+         self.case("REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted", self.check_primary)
++        self.case("six record kinds carry complete event-time content through create/update/delete/restore", self.check_six_kind_content)
++        self.case("legacy pending family event without content snapshot uses a version-safe fallback", self.check_legacy_pending_snapshot)
++        self.case("family and baby content stays isolated across real tenants", self.check_cross_tenant_content)
+         self.case("REST care update/delete and sleep/diaper create enqueue distinct events", self.check_care)
+         self.case("common REST supplement and sync growth create/update/delete/restore enqueue and replay", self.check_common)
+         self.case("changed idempotency body and stale baseVersion roll back without a notification event", self.check_conflict)
+@@ -439,7 +494,7 @@ class Journey:
+         global_pref = self.call("GET", "/api/v1/me/notification-preferences", 200, account=self.recipient)
+         baby_pref = self.call("GET", "/api/v1/me/notification-preferences?babyId=" + self.baby["id"], 200, account=self.recipient)
+         assert global_pref == {"babyId": None, "timeZone": "UTC", "kinds": {"family_record": True}, "quietHours": None}, "global_default_invalid"
+-        assert baby_pref == {**global_pref, "babyId": self.baby["id"]}, "baby_default_invalid"
++        assert baby_pref == {**global_pref, "babyId": self.baby["id"], "timeZone": "America/Los_Angeles"}, "baby_default_invalid"
+         self.call("GET", "/api/v1/me/notification-preferences", 401)
+         self.call("GET", "/api/v1/me/notification-preferences?babyId=" + self.baby["id"], 403, account=self.unassigned)
+         count_before = int(self.runner.psql("SELECT count(*) FROM notification_preferences;"))
+@@ -471,7 +526,8 @@ class Journey:
+         for account in (self.actor, self.unassigned):
+             assert self.call("GET", "/api/v1/notifications?limit=100", 200, account=account) == [], "excluded_recipient_inbox_not_empty"
+         return {"record201Committed": True, "oneEventOnReplay": True, "provider201": True,
+-                "encryptedPayloadDecryptedByOwnedReceiver": True, "privateRecordContentsAbsent": True,
++                "encryptedPayloadDecryptedByOwnedReceiver": True, "metadataContainsNoRecordFieldsOrCredentials": True,
++                "recordDetailsMatchFrozenSnapshot": True,
+                 "notificationId": child["input"]["notificationId"], "repeatWorkerRequests": 0}
+ 
+     def check_care(self):
+@@ -510,6 +566,207 @@ class Journey:
+         return {"commonREST": "supplement", "realSync": "growthMeasurement", "syncReplayTaskDelta": 0,
+                 "syncOperations": ["create", "update", "delete", "restore"]}
+ 
++    def sync_record(self, record_id, wire_kind, operation, version, payload, actor=None, family=None, baby=None):
++        actor, family, baby = actor or self.actor, family or self.family, baby or self.baby
++        command = {"commandId": str(uuid.uuid4()), "familyId": family["id"], "babyId": baby["id"],
++                   "entityType": wire_kind, "entityId": record_id, "operation": operation,
++                   "baseVersion": None if version == 1 else str(version - 1),
++                   "clientCreatedAt": "2026-10-06T15:15:00Z", "payload": payload}
++        result = self.call("POST", "/api/v1/sync/commands", 200, {"commands": [command]}, actor)["results"][0]
++        assert result["status"] == "applied" and result["version"] == str(version), "full_content_sync_command_not_applied"
++        return result
++
++    def assert_snapshot(self, event, actor, baby, title_action, record_name, fragments, note):
++        native = event["input"]
++        family_record = native["familyRecord"]
++        snapshot = family_record.get("contentSnapshot")
++        assert snapshot is not None and snapshot["version"] == 1, "record_event_snapshot_missing"
++        assert native["familyId"] == self.family["id"] and native["babyId"] == self.baby["id"], "snapshot_family_scope_mismatch"
++        assert family_record["actorId"] == actor["id"], "snapshot_actor_mismatch"
++        actor_name = actor.get("expectedDisplayName") or actor.get("displayName") or actor.get("user", {}).get("displayName") or actor.get("username")
++        baby_name = baby.get("expectedDisplayName") or baby.get("name") or baby.get("nickname")
++        assert snapshot["title"] == f"{actor_name}为{baby_name}{title_action}{record_name}记录", "snapshot_title_missing_actor_baby_or_operation"
++        body = snapshot["body"]
++        for fragment in fragments:
++            assert fragment in body, "snapshot_body_missing_structured_field"
++        assert body.endswith("备注：" + note), "snapshot_note_missing_or_not_last"
++        return {"title": snapshot["title"], "snapshotUtf8Bytes": len(body.encode("utf-8")),
++                "structuredFieldsChecked": len(fragments) + 1, "noteLast": True}
++
++    def check_six_kind_content(self):
++        item = self.call("POST", "/api/v1/food/items", 201, {
++            "familyId": self.family["id"], "name": self.prefix + "_sweet_potato", "category": "vegetable",
++            "allergenRisk": "low", "recommendedAgeMonths": 6, "tried": True}, self.actor)
++        assert item["name"] == self.prefix + "_sweet_potato" and item["id"].startswith("custom_"), "test_food_library_item_not_http_created"
++        profiles = [
++            {"kind": "feeding", "wire": "feeding", "name": "喂奶", "create": {
++                "feedingType": "formula", "occurredAt": "2026-10-06T15:15:00Z", "amountMl": "0", "leftMinutes": 0,
++                "rightMinutes": 12, "spitUp": False, "notes": "test_full_create_feeding"}, "update": {
++                "feedingType": "formula", "occurredAt": "2026-10-06T16:15:00Z", "amountMl": "135", "leftMinutes": 4,
++                "rightMinutes": 14, "spitUp": True, "notes": "test_full_update_feeding"},
++             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "吐奶：否"],
++             "updateFields": ["发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "类型：配方奶", "奶量：135 毫升", "左侧时长：4 分钟", "右侧时长：14 分钟", "吐奶：是"]},
++            {"kind": "sleep", "wire": "sleep", "name": "睡眠", "create": {
++                "sleepType": "nap", "startedAt": "2026-10-06T15:15:00Z", "endedAt": "2026-10-06T16:15:00Z",
++                "nightWakingCount": 0, "notes": "test_full_create_sleep"}, "update": {
++                "sleepType": "night", "startedAt": "2026-10-06T16:15:00Z", "endedAt": "2026-10-06T17:45:00Z",
++                "nightWakingCount": 1, "notes": "test_full_update_sleep"},
++             "createFields": ["开始时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：白天小睡", "结束时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次"],
++             "updateFields": ["开始时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "类型：夜间睡眠", "结束时间：2026-10-06 10:45:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 30 分钟", "夜醒次数：1 次"]},
++            {"kind": "diaper", "wire": "diaper", "name": "尿布", "create": {
++                "diaperType": "both", "occurredAt": "2026-10-06T15:15:00Z", "poopColor": "brown",
++                "poopConsistency": "soft", "notes": "test_full_create_diaper"}, "update": {
++                "diaperType": "poop", "occurredAt": "2026-10-06T16:20:00Z", "poopColor": "green",
++                "poopConsistency": "soft", "notes": "test_full_update_diaper"},
++             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：尿便都有", "便便颜色：棕色", "便便性状：柔软"],
++             "updateFields": ["发生时间：2026-10-06 09:20:00 -07:00（America/Los_Angeles）", "类型：便便", "便便颜色：绿色", "便便性状：柔软"]},
++            {"kind": "food", "wire": "foodLog", "name": "辅食", "create": {
++                "recordDate": "2026-10-06", "occurredAt": "2026-10-06T15:15:00Z", "mealType": "lunch",
++                "foodItemIds": [item["id"]], "portionDescription": "test_portion_2tbsp", "reaction": "like",
++                "notes": "test_full_create_food"}, "update": {
++                "recordDate": "2026-10-06", "occurredAt": "2026-10-06T16:30:00Z", "mealType": "dinner",
++                "foodItemIds": [item["id"]], "portionDescription": "test_updated_portion_3tbsp", "reaction": "normal",
++                "notes": "test_full_update_food"},
++             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "记录日期：2026-10-06", "餐次：午餐", "食物：" + item["name"], "份量：test_portion_2tbsp", "接受度：喜欢"],
++             "updateFields": ["发生时间：2026-10-06 09:30:00 -07:00（America/Los_Angeles）", "记录日期：2026-10-06", "餐次：晚餐", "食物：" + item["name"], "份量：test_updated_portion_3tbsp", "接受度：一般"]},
++            {"kind": "supplement", "wire": "supplementRecord", "name": "补剂", "create": {
++                "supplementName": "test_vitamin_d", "occurredAt": "2026-10-06T15:15:00Z", "amount": "1 tablet",
++                "dose": "0", "unitName": "ml", "notes": "test_full_create_supplement"}, "update": {
++                "supplementName": "test_vitamin_d_updated", "occurredAt": "2026-10-06T16:15:00Z", "amount": "2 tablets",
++                "dose": "2.5", "unitName": "ml", "notes": "test_full_update_supplement"},
++             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "补剂：test_vitamin_d", "用量：1 tablet", "剂量：0 ml"],
++             "updateFields": ["发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "补剂：test_vitamin_d_updated", "用量：2 tablets", "剂量：2.5 ml"]},
++            {"kind": "growth", "wire": "growthMeasurement", "name": "生长测量", "create": {
++                "measurementDate": "2026-10-06", "weightKg": "9.40", "heightCm": "75.5", "headCircumferenceCm": "45.0",
++                "notes": "test_full_create_growth"}, "update": {
++                "measurementDate": "2026-10-07", "weightKg": "9.8", "heightCm": "76.1", "headCircumferenceCm": "45.2",
++                "notes": "test_full_update_growth"},
++             "createFields": ["测量日期：2026-10-06", "体重：9.4", "身长：75.5 厘米", "头围：45"],
++             "updateFields": ["测量日期：2026-10-07", "体重：9.8", "身长：76.1 厘米", "头围：45.2"]},
++        ]
++        operation_names = {"create": "新增", "update": "更新", "delete": "删除", "restore": "恢复"}
++        events, case_evidence = [], []
++        for profile in profiles:
++            record_id = str(uuid.uuid4())
++            self.sync_record(record_id, profile["wire"], "create", 1, profile["create"])
++            created = self.event(record_id, kind=profile["kind"], version=1, operation="create")
++            case_evidence.append(self.assert_snapshot(created, self.actor, self.baby, operation_names["create"], profile["name"], profile["createFields"], profile["create"]["notes"]))
++            events.append(created)
++            self.sync_record(record_id, profile["wire"], "update", 2, profile["update"])
++            updated = self.event(record_id, kind=profile["kind"], version=2, operation="update")
++            case_evidence.append(self.assert_snapshot(updated, self.actor, self.baby, operation_names["update"], profile["name"], profile["updateFields"], profile["update"]["notes"]))
++            events.append(updated)
++            self.sync_record(record_id, profile["wire"], "delete", 3, {})
++            deleted = self.event(record_id, kind=profile["kind"], version=3, operation="delete")
++            case_evidence.append(self.assert_snapshot(deleted, self.actor, self.baby, operation_names["delete"], profile["name"], profile["updateFields"], profile["update"]["notes"]))
++            events.append(deleted)
++            self.sync_record(record_id, profile["wire"], "restore", 4, {})
++            restored = self.event(record_id, kind=profile["kind"], version=4, operation="restore")
++            case_evidence.append(self.assert_snapshot(restored, self.actor, self.baby, operation_names["restore"], profile["name"], profile["updateFields"], profile["update"]["notes"]))
++            events.append(restored)
++
++        # Every create snapshot is still the original transaction's content,
++        # even though all six underlying records have since been updated,
++        # deleted and restored before any notification worker runs.
++        for profile, event in zip(profiles, events[::4]):
++            snapshot_body = event["input"]["familyRecord"]["contentSnapshot"]["body"]
++            assert profile["create"]["notes"] in snapshot_body and profile["update"]["notes"] not in snapshot_body, "later_record_mutation_contaminated_committed_snapshot"
++        self.once(count=len(events))
++        children_by_key = {}
++        for event in events:
++            children_by_key[event["input"]["familyRecord"]["eventKey"]] = self.assert_fanout(event)
++        self.once(count=len(events))
++        for event in events:
++            event_key = event["input"]["familyRecord"]["eventKey"]
++            child = self.task(children_by_key[event_key][0]["id"])
++            self.assert_delivery(event, child)
++
++        long_note = "长备注" * 333
++        long_record_id = str(uuid.uuid4())
++        self.sync_record(long_record_id, "feeding", "create", 1, {**profiles[0]["create"], "notes": long_note})
++        long_event = self.event(long_record_id)
++        long_snapshot = long_event["input"]["familyRecord"]["contentSnapshot"]
++        assert long_snapshot["body"].endswith("备注：" + long_note), "long_snapshot_note_was_truncated"
++        long_child = self.delivered(long_event)
++        long_payload = self.last_delivered_payload
++        marker = "…点击查看完整内容"
++        assert long_payload["wireBytes"] <= 3072 and long_payload["body"].endswith(marker), "long_push_body_missing_explicit_wire_clip"
++        assert long_snapshot["body"].startswith(long_payload["body"][:-len(marker)]), "wire_clip_changed_structured_body_prefix"
++        for fragment in profiles[0]["createFields"]:
++            assert fragment in long_payload["body"], "wire_clip_removed_structured_fact_before_notes"
++        inbox = self.call("GET", "/api/v1/notifications?limit=100", 200, account=self.recipient)
++        inbox_item = next((note for note in inbox if note["id"] == long_child["input"]["notificationId"]), None)
++        assert inbox_item is not None and inbox_item["body"] == long_snapshot["body"] and inbox_item["body"].endswith("备注：" + long_note), "inbox_body_not_full_snapshot"
++        return {"recordKinds": [profile["kind"] for profile in profiles], "operationsPerKind": ["create", "update", "delete", "restore"],
++                "snapshotAssertions": len(case_evidence), "allSnapshotsCapturedBeforeLaterMutations": True,
++                "all24ActualEncryptedPushesMatchedSnapshot": True, "longSnapshotUtf8Bytes": len(long_snapshot["body"].encode("utf-8")),
++                "longPushWireBytes": long_payload["wireBytes"], "longPushClippedWithMarker": True,
++                "inboxRetainedFullBody": True, "titleBodyChecks": case_evidence}
++
++    def check_legacy_pending_snapshot(self):
++        original_note, current_note = "test_legacy_original_snapshot", "test_legacy_current_record"
++        record = self.feeding("legacy_pending", key="test_legacy_create_" + str(uuid.uuid4()))
++        old = self.event(record["id"])
++        self.runner.psql("UPDATE task_outbox SET payload=payload #- '{__native,familyRecord,contentSnapshot}' WHERE aggregate_id=" + quote(old["id"]) + " AND phase_key='native-initial';")
++        updated = self.call("PATCH", self.baby_path("/records/feeding/" + record["id"]), 200,
++                            {"baseVersion": record["version"], "amountMl": "145", "notes": current_note}, self.actor,
++                            "test_legacy_update_" + str(uuid.uuid4()))
++        assert updated["version"] == "2", "legacy_current_record_update_failed"
++        old = self.event(record["id"], version=1, operation="create", allow_legacy=True)
++        old["allowLegacySnapshot"] = True
++        current = self.event(record["id"], version=2, operation="update")
++        assert old["input"]["familyRecord"].get("contentSnapshot") is None, "legacy_snapshot_fixture_not_removed"
++        assert current["input"]["familyRecord"]["contentSnapshot"]["body"].endswith("备注：" + current_note), "current_event_snapshot_missing_after_legacy_pending"
++        self.once(count=2)
++        old_children = self.assert_fanout(old)
++        current_children = self.assert_fanout(current)
++        note = next(item for item in self.notification_rows(old) if item["user_id"] == self.recipient["id"])
++        assert "旧记录版本 1" in note["body"] and "当前记录版本 2" in note["body"], "legacy_pending_did_not_use_version_safe_fallback"
++        assert original_note not in note["body"] and current_note not in note["body"], "legacy_fallback_misattributed_current_record_content"
++        child = old_children[0]
++        assert child["input"]["familyRecord"]["contentSnapshot"]["body"] == note["body"], "legacy_fallback_push_snapshot_mismatch"
++        self.once(count=2)
++        self.assert_delivery(old, self.task(child["id"]))
++        self.assert_delivery(current, self.task(current_children[0]["id"]))
++        return {"legacyPendingWithoutSnapshot": True, "currentRecordVersion": updated["version"],
++                "fallbackIdentifiesOldAndCurrentVersions": True, "oldOrNewNotesNotMisattributed": True}
++
++    def check_cross_tenant_content(self):
++        other_actor, other_reader = self.account("other_family_actor"), self.account("other_family_reader")
++        other_family = self.call("POST", "/api/v1/families", 201, {"name": self.prefix + "_other_family", "timeZone": "America/Los_Angeles"}, other_actor)
++        other_baby = self.call("POST", "/api/v1/families/" + other_family["id"] + "/babies", 201, {
++            "name": self.prefix + "_other_baby", "birthDate": "2025-02-01", "gender": "boy"}, other_actor)
++        invite = self.call("POST", "/api/v1/families/" + other_family["id"] + "/invites", 201, {}, other_actor)
++        self.call("POST", "/api/v1/families/join", 200, {"inviteCode": invite["inviteCode"]}, other_reader)
++        self.call("POST", "/api/v1/babies/" + other_baby["id"] + "/members", 201,
++                  {"userId": other_reader["id"], "role": "member"}, other_actor, "test_other_family_grant_" + str(uuid.uuid4()))
++        self.device(other_actor, "other_actor")
++        self.device(other_reader, "other_reader")
++        cross_id = str(uuid.uuid4())
++        cross_command = {"commandId": str(uuid.uuid4()), "familyId": other_family["id"], "babyId": other_baby["id"],
++                         "entityType": "feeding", "entityId": cross_id, "operation": "create", "baseVersion": None,
++                         "clientCreatedAt": "2026-10-06T15:15:00Z", "payload": {"feedingType": "formula",
++                         "occurredAt": "2026-10-06T15:15:00Z", "amountMl": "200", "notes": "test_cross_family_attempt"}}
++        rejected = self.call("POST", "/api/v1/sync/commands", 200, {"commands": [cross_command]}, self.actor)["results"][0]
++        assert rejected["status"] == "error", "client_supplied_foreign_family_scope_authorized_write"
++        assert int(self.runner.psql("SELECT count(*) FROM feeding_records WHERE id=" + quote(cross_id) + ";")) == 0, "cross_family_record_write_persisted"
++        self.call("GET", self.baby_path("/records/feeding"), 403, account=other_actor)
++        self.call("GET", "/api/v1/babies/" + other_baby["id"] + "/records/feeding", 403, account=self.actor)
++        other_id = str(uuid.uuid4())
++        self.sync_record(other_id, "feeding", "create", 1, {"feedingType": "formula", "occurredAt": "2026-10-06T15:15:00Z",
++            "amountMl": "210", "notes": "test_other_tenant_private_marker"}, actor=other_actor, family=other_family, baby=other_baby)
++        other_event = self.event(other_id)
++        primary_before = self.fixture.count(self.recipient["pushPath"])
++        self.delivered(other_event, recipient=other_reader)
++        assert self.fixture.count(self.recipient["pushPath"]) == primary_before, "foreign_family_event_reached_primary_push_subscription"
++        primary_inbox = self.call("GET", "/api/v1/notifications?limit=100", 200, account=self.recipient)
++        assert all("test_other_tenant_private_marker" not in note["body"] for note in primary_inbox), "foreign_family_record_leaked_into_primary_inbox"
++        other_inbox = self.call("GET", "/api/v1/notifications?limit=100", 200, account=other_reader)
++        assert any("test_other_tenant_private_marker" in note["body"] for note in other_inbox), "authorized_other_family_inbox_missing_own_content"
++        return {"clientSuppliedForeignScopeWriteRejected": True, "crossFamilyReadForbidden": True,
++                "otherFamilyRecipientReceivedOwnEvent": True, "primaryFamilyReceivedNoForeignPushOrInboxBody": True,
++                "extraTestUsers": 2}
++
+     def check_conflict(self):
+         key = "test_conflict_" + str(uuid.uuid4())
+         row = self.feeding("conflict", key)
+@@ -1039,9 +1296,7 @@ def snapshot_baseline(runtime, runner, server_root, head):
+     return hashlib.sha256(archive).hexdigest()
+ 
+ 
+-def snapshot_fixed(runtime, runner, server_root):
+-    source = runner.private / "fixed-source"
+-    source.mkdir()
++def fixed_source_manifest(runtime, server_root):
+     tracked = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                                       cwd=server_root, env=runtime.clean_env()).decode().split("\0")
+     inputs = {}
+@@ -1058,13 +1313,25 @@ def snapshot_fixed(runtime, runner, server_root):
+         if original.is_symlink() or not original.is_file():
+             raise RuntimeError("fixed_source_link_or_file_rejected")
+         raw = original.read_bytes()
++        inputs[name] = hashlib.sha256(raw).hexdigest()
++    return inputs
++
++
++def snapshot_fixed(runtime, runner, server_root):
++    source = runner.private / "fixed-source"
++    source.mkdir()
++    inputs = fixed_source_manifest(runtime, server_root)
++    for name in sorted(inputs):
++        original = server_root / name
++        raw = original.read_bytes()
+         target = source / name
+         target.parent.mkdir(parents=True, exist_ok=True)
+         target.write_bytes(raw)
+-        inputs[name] = hashlib.sha256(raw).hexdigest()
+     runtime.SERVER_ROOT = source
+     digest = hashlib.sha256(json.dumps(inputs, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+-    return {"immutableInputsSha256": digest, "inputs": inputs}
++    return {"freezeCommit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=server_root,
++                                                      env=runtime.clean_env(), text=True).strip(),
++            "immutableInputsSha256": digest, "inputs": inputs}
+ 
+ 
+ def start_api(runtime, runner, fixture, head):
+@@ -1180,6 +1447,24 @@ def main():
+             report["failure"]["case"] = journey.active_case
+         print("FAIL family push owned acceptance: " + stage + " (" + type(error).__name__ + ")", flush=True)
+     finally:
++        if args.phase == "fixed" and report.get("source", {}).get("inputs"):
++            try:
++                expected = report["source"]["inputs"]
++                current = fixed_source_manifest(runtime, server_root)
++                drift = sorted(name for name in set(expected) | set(current) if expected.get(name) != current.get(name))
++                head_after = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=server_root,
++                                                     env=runtime.clean_env(), text=True).strip()
++                if head_after != report["source"]["freezeCommit"]:
++                    drift.append("HEAD")
++                report["source"]["drift"] = drift
++                report["source"]["headAfter"] = head_after
++                report["source"]["immutableInputsSha256After"] = hashlib.sha256(
++                    json.dumps(current, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
++                if drift:
++                    code = 1
++            except Exception as error:
++                report["source"]["drift"] = ["verification_failed:" + type(error).__name__]
++                code = 1
+         if journey:
+             stop_errors = []
+             for process in journey.worker_processes:

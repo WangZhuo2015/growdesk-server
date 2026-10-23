@@ -1,0 +1,13 @@
+{
+  "provenance": {
+    "schemaVersion": 1,
+    "sourceGitSha": "5c8156d464d0c6e8fd005d46fc9b6f097069da7b",
+    "sourceDirty": false,
+    "buildId": "ikYlLMtxhPEegRmWPdspb",
+    "artifactSha256": "02a8ba746d61ac5149dd40d63ad0a6e93a50fa46a895463fd70b11686e3cc7d6",
+    "builtAt": "2026-10-06T09:25:17.233Z"
+  },
+  "preservedPassportRoutes": true,
+  "pushRoutesPresent": true,
+  "nextVersion": "16.3.6"
+}

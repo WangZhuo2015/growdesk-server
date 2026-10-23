@@ -1,0 +1,10 @@
+{
+  "growdesk-api-linux-arm64": {
+    "sha256": "9ae41d1fdddf3a605a95bed61d4a7249eb3e2c47bed388d96ba9d95a4065f7d9",
+    "size_bytes": 27406054
+  },
+  "local-voice-linux-arm64.test": {
+    "sha256": "1c38f9dd2cd44778d3cca6d85adf179970d133dce8e1220b26c014d16b2dff3a",
+    "size_bytes": 27229989
+  }
+}

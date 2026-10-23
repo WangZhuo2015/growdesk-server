@@ -31,20 +31,57 @@ func(e *nativeProviderError)Error()string{return e.Message}
 func providerFailure(code,message string,retryable bool)error{return &nativeProviderError{Code:code,Message:message,Retryable:retryable}}
 const maxProviderResponse = 4*1024*1024
 
-func nativeProviderConfiguration()(nativeProviderConfig,error){
-	c:=nativeProviderConfig{Mode:strings.ToLower(strings.TrimSpace(os.Getenv("GROWDESK_AI_PROVIDER"))),Timeout:10*time.Second,Model:strings.TrimSpace(os.Getenv("GROWDESK_AI_MODEL")),ASRModel:strings.TrimSpace(os.Getenv("GROWDESK_ASR_MODEL"))}
-	if raw:=os.Getenv("GROWDESK_AI_TIMEOUT_MS");raw!=""{n,e:=strconv.ParseInt(raw,10,64);if e!=nil||n<100||n>180000{return c,apiError(500,"AI_PROVIDER_CONFIG_INVALID","AI timeout must be between 100 and 180000 milliseconds")};c.Timeout=time.Duration(n)*time.Millisecond}
-	if c.Mode=="fixture"{c.Fixture=os.Getenv("GROWDESK_AI_FIXTURE_RESPONSE");if c.Fixture==""{c.Fixture=os.Getenv("GROWDESK_AI_FIXTURE_TEXT")};if c.Fixture!=""{return c,nil}}
-	if c.Mode=="openai"||c.Mode=="compat"{c.Mode="openai-compatible"}
-	if c.Mode=="openai-compatible"{
-		c.APIKey=strings.TrimSpace(os.Getenv("GROWDESK_AI_API_KEY"));if c.APIKey==""{c.APIKey=strings.TrimSpace(os.Getenv("AI_API_KEY"))};if c.APIKey==""{c.APIKey=strings.TrimSpace(os.Getenv("OPENAI_API_KEY"))}
-		u,err:=url.Parse(strings.TrimSpace(os.Getenv("GROWDESK_AI_BASE_URL")))
-		if err==nil&&u.Hostname()!=""&&(u.Scheme=="https"||u.Scheme=="http")&&u.User==nil&&u.RawQuery==""&&u.Fragment==""&&c.APIKey!=""{
-			u.Path=strings.TrimRight(u.Path,"/");if !strings.HasSuffix(u.Path,"/chat/completions"){u.Path+="/chat/completions"};c.Endpoint=u.String()
-			if c.Model==""{c.Model="gpt-4o-mini"};if c.ASRModel==""{c.ASRModel="whisper-1"};return c,nil
+func nativeProviderConfiguration() (nativeProviderConfig, error) {
+	c := nativeProviderConfig{Mode: strings.ToLower(strings.TrimSpace(os.Getenv("GROWDESK_AI_PROVIDER"))),
+		Timeout: 10 * time.Second, Model: firstConfigured("GROWDESK_AI_MODEL", "AI_MODEL", "OPENAI_MODEL", "OPENROUTER_MODEL"),
+		ASRModel: strings.TrimSpace(os.Getenv("GROWDESK_ASR_MODEL"))}
+	if raw := os.Getenv("GROWDESK_AI_TIMEOUT_MS"); raw != "" {
+		n, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || n < 100 || n > 180000 {
+			return c, apiError(500, "AI_PROVIDER_CONFIG_INVALID", "AI timeout must be between 100 and 180000 milliseconds")
+		}
+		c.Timeout = time.Duration(n) * time.Millisecond
+	}
+	if c.Mode == "fixture" {
+		c.Fixture = os.Getenv("GROWDESK_AI_FIXTURE_RESPONSE")
+		if c.Fixture == "" {
+			c.Fixture = os.Getenv("GROWDESK_AI_FIXTURE_TEXT")
+		}
+		if c.Fixture != "" {
+			return c, nil
 		}
 	}
-	return c,apiError(503,"AI_PROVIDER_NOT_CONFIGURED","Configure an approved AI provider, or an explicit isolated-test fixture")
+	base := firstConfigured("GROWDESK_AI_BASE_URL", "AI_BASE_URL", "OPENAI_BASE_URL")
+	// The old Web explicitly selected a compatible host by AI_BASE_URL. Keep
+	// that convention without choosing a host from a key alone or reading its
+	// separate .env/profile files. New GrowDesk settings retain precedence.
+	if c.Mode == "" && firstConfigured("AI_BASE_URL", "OPENAI_BASE_URL") != "" {
+		c.Mode = "openai-compatible"
+	}
+	if c.Mode == "openai" || c.Mode == "compat" {
+		c.Mode = "openai-compatible"
+	}
+	if c.Mode == "openai-compatible" {
+		c.APIKey = firstConfigured("GROWDESK_AI_API_KEY", "AI_API_KEY", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
+		u, err := url.Parse(base)
+		if err == nil && u.Hostname() != "" && (u.Scheme == "https" || u.Scheme == "http") &&
+			u.User == nil && u.RawQuery == "" && u.Fragment == "" && c.APIKey != "" {
+			u.Path = strings.TrimRight(u.Path, "/")
+			if !strings.HasSuffix(u.Path, "/chat/completions") {
+				u.Path += "/chat/completions"
+			}
+			u.RawPath = ""
+			c.Endpoint = u.String()
+			if c.Model == "" {
+				c.Model = "gpt-4o-mini"
+			}
+			if c.ASRModel == "" {
+				c.ASRModel = "whisper-1"
+			}
+			return c, nil
+		}
+	}
+	return c, apiError(503, "AI_PROVIDER_NOT_CONFIGURED", "Configure the approved chat provider on the Go service; speech recognition is configured separately")
 }
 
 func providerHTTPClient(timeout time.Duration)*http.Client{

@@ -1,0 +1,134 @@
+{
+  "status": "LOCAL_ONLY_PRESERVED",
+  "excludedFileCount": 21,
+  "excludedBytes": 512845897,
+  "note": "Original generated binaries and compressed build archives remain on the workstation. Source snapshots, textual reports and checksums are tracked separately.",
+  "files": [
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/growdesk-api-linux-arm64",
+      "bytes": 27313698,
+      "kind": "ELF build binary",
+      "sha256": "a52ae5146e5e1176ab68cd603b871688f3986f9f4aeaf9d2644d80ae8e963a56"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/growdesk-voice-api-linux-arm64",
+      "bytes": 27398700,
+      "kind": "ELF build binary",
+      "sha256": "e63dd47f967a6e2863dc05697a40ba9bb2609f3df7d2426293d16acf11923b43"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/growdesk-voice-api-linux-arm64.gz",
+      "bytes": 12308802,
+      "kind": "compressed build/source archive",
+      "sha256": "5bac73cb7d217b910f21a0c62f66a5583953867765a27e2baf984634dc44135d"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/local-asr-linux-arm64.test",
+      "bytes": 26792246,
+      "kind": "ELF build binary",
+      "sha256": "163244431e97cedac03a7fc440d11b17b83448b023e25a804d20db5ef6591b36"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/local-voice-linux-arm64.test",
+      "bytes": 27138951,
+      "kind": "ELF build binary",
+      "sha256": "44ef36ce1925489b4d1ad12a16c422e509e9d10f5aa3ee1497fbfee179c49684"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/sherpa-voice-api-linux-arm64",
+      "bytes": 27404818,
+      "kind": "ELF build binary",
+      "sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/sherpa-voice-api-linux-arm64.gz",
+      "bytes": 12350502,
+      "kind": "compressed build/source archive",
+      "sha256": "21af70c49239fab42dbba2d5ed4d041a3c453a3f4ba220bfc81333aab2f88ede"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/sherpa-voice-linux-arm64.test",
+      "bytes": 27156627,
+      "kind": "ELF build binary",
+      "sha256": "f365003e46ad3b7366791c1965a948cb78561ebc06dea5daa90dccc4829d19a3"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/sherpa-voice-linux-arm64.test.gz",
+      "bytes": 12375964,
+      "kind": "compressed build/source archive",
+      "sha256": "f71a9765c9926ea09b3ae977bb7b19b2185525d4aab7b59e5b27770e595f4341"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/_before-selector-review/growdesk-api-linux-arm64",
+      "bytes": 27637604,
+      "kind": "ELF build binary",
+      "sha256": "3c1fc20233d2c3722321a0660f44be0fd2df399e664013cd42f0372e0feff43e"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/_before-selector-review/growdesk-api.before-imperative-linux-arm64",
+      "bytes": 27638388,
+      "kind": "ELF build binary",
+      "sha256": "fb9bcc8511fdfe3427631374d4abfe8a11d0cd202fd1e879e4ac807279434841"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/_before-selector-review/local-voice-linux-arm64.test",
+      "bytes": 27415457,
+      "kind": "ELF build binary",
+      "sha256": "9db8f71477d6f9130969239084d7e1256d454da3027df24977421a451467d951"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/growdesk-api-final.gz",
+      "bytes": 12488193,
+      "kind": "compressed build/source archive",
+      "sha256": "4574316616fe93e885cd87ed2e5340420f337f880f2473f732b632ebac9c3437"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/growdesk-api-linux-arm64",
+      "bytes": 27640516,
+      "kind": "ELF build binary",
+      "sha256": "80cc6c2f14932d13116b4d67fdf720365b71635031277083614c43cb58458562"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/local-voice-linux-arm64.test",
+      "bytes": 27416817,
+      "kind": "ELF build binary",
+      "sha256": "4b252721a0b0ecf16d42484bec994b05d08e93f3a063d9bd721b26f6b2cc0455"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/voice-gate.tar.gz",
+      "bytes": 25061994,
+      "kind": "compressed build/source archive",
+      "sha256": "b2cc4da8527acfa05ddeef2ad63ba770dd12ca96a882bea2ffb7a5d0a74d0d8b"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_PTT_TRANSPORT_20261003/artifacts/growdesk-api-linux-arm64",
+      "bytes": 27556276,
+      "kind": "ELF build binary",
+      "sha256": "ad76c14be814ba45806457c380626eff6a9672abbe6deed6ffc73e2db6c79937"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_PTT_TRANSPORT_20261003/artifacts/stream-diagnostics-darwin-arm64.test",
+      "bytes": 27815202,
+      "kind": "Mach-O build binary",
+      "sha256": "1f128cd8b512f29164ffce81b827ab1fdade188a3bf781671b35918c72dafe82"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_PTT_TRANSPORT_20261003/artifacts/stream-diagnostics-linux-arm64.test",
+      "bytes": 27299099,
+      "kind": "ELF build binary",
+      "sha256": "5109737af428b35f754ce0aa304a29ebf63bc29028d8a0d0eec91a7db295a4b7"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_SHORT_TURN_20261003/artifacts/growdesk-api-linux-arm64",
+      "bytes": 27406054,
+      "kind": "ELF build binary",
+      "sha256": "9ae41d1fdddf3a605a95bed61d4a7249eb3e2c47bed388d96ba9d95a4065f7d9"
+    },
+    {
+      "path": "evidence/tasks/PASSPORT_SHORT_TURN_20261003/artifacts/local-voice-linux-arm64.test",
+      "bytes": 27229989,
+      "kind": "ELF build binary",
+      "sha256": "1c38f9dd2cd44778d3cca6d85adf179970d133dce8e1220b26c014d16b2dff3a"
+    }
+  ]
+}

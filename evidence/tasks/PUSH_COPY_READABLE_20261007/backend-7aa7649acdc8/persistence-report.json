@@ -1,0 +1,253 @@
+{
+  "taskId": "PUSH_COPY_READABLE_20261007",
+  "runId": "7aa7649acdc8",
+  "phase": "baseline",
+  "probe": "family-push",
+  "passed": false,
+  "cases": [
+    {
+      "name": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "passed": false
+    }
+  ],
+  "aiEmptyReplayExpectedStatus": 202,
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "75a495f8ae706448670ed45b5505185a9afb197ee42e65a67945a0d07575d72c",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-push-copy-20261007",
+    "head": "6c2ca252dddc2bd6791c7f428d1ee225241c346e",
+    "baselineArchiveSha256": "ff6dddf8743ffb4b3f977358d58bae6812b641775d66ea9dd807c3de407d5cfc"
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql",
+    "0004_family_notifications.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_7aa7649acdc8",
+    "role": "test_app_7aa7649acdc8",
+    "superuser": false,
+    "postgresPort": 62245,
+    "redisPort": 62246,
+    "apiPort": 62249,
+    "pushFixturePort": 62286,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "baselineRed": {
+    "actualHttpWriteAndPersistedRow": true,
+    "actualWorkerDelivered": true,
+    "encryptedWebPushDecrypted": true,
+    "inboxAndWireBodiesEqual": true,
+    "rawScreenshotEnvelopeVisibleInAllChannels": true,
+    "rawLegacyPortionVisible": true,
+    "redundantSameDayRecordDateVisible": true,
+    "missingReadableFields": [
+      "食物：test_食物南瓜",
+      "份量：大部分",
+      "喜欢程度：5/5",
+      "进食状态：开心",
+      "异常情况：无异常"
+    ],
+    "decryptedBody": "发生时间：2026-10-07 07:15:00 +08:00（Asia/Shanghai）；记录日期：2026-10-07；餐次：午餐；食物项 ID：test_食物南瓜；份量：most；备注：[growdesk-web-food:v1]{\"notes\":null,\"observations\":{\"acceptance\":5,\"babyState\":\"happy\",\"hasAbnormal\":false}}",
+    "expectedReadableFragments": [
+      "发生时间：2026-10-07 07:15",
+      "食物：test_食物南瓜",
+      "份量：大部分",
+      "喜欢程度：5/5",
+      "进食状态：开心",
+      "异常情况：无异常"
+    ]
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "AssertionError",
+    "code": "screenshot_readability_expectation_missing",
+    "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON"
+  },
+  "worker": {
+    "actualNativeRuns": 2,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "testUsers": 4,
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/be6735d8-e114-42d2-897f-6e55bbaa7ae9/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/be6735d8-e114-42d2-897f-6e55bbaa7ae9/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/be6735d8-e114-42d2-897f-6e55bbaa7ae9/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/3aea737e-cf89-4df8-9444-ce1a5e1b3937/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/cd89d35e-7d0e-4e2b-932b-582d93945350/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/7e9cb7f2-7914-40af-bd5d-d25ef3eee2f2/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/31981d27-e514-4eac-82a9-7472cbc7f9c9/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baseline screenshot-shaped legacy food values are leaked as raw JSON",
+      "status": 200,
+      "errorCode": null
+    }
+  ],
+  "fixture": {
+    "requests": [
+      {
+        "path": "/test_7aa7649acdc8_readable_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "db8277bb87605ba02e2701fc94be4851",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_7aa7649acdc8_actor为test_family_push_7aa7649acdc8_readable_baby新增辅食记录",
+          "body": "发生时间：2026-10-07 07:15:00 +08:00（Asia/Shanghai）；记录日期：2026-10-07；餐次：午餐；食物项 ID：test_食物南瓜；份量：most；备注：[growdesk-web-food:v1]{\"notes\":null,\"observations\":{\"acceptance\":5,\"babyState\":\"happy\",\"hasAbnormal\":false}}",
+          "wireBytes": 888,
+          "url": "/notifications",
+          "data": {
+            "actorId": "0508c722-f628-40b3-859a-4fbb2785632e",
+            "babyId": "4573bec5-6eae-4a88-a9f0-00aaa53431f8",
+            "entityId": "4c0e2393-0060-43b8-bdcd-988f5abc31d8",
+            "entityType": "food",
+            "eventKey": "family_record:002279f3ede2e1fbd8ee58c27a0a050d720172a6d29f53a4223a77d6ef4a5147",
+            "eventKind": "family_record",
+            "familyId": "51475fe9-4822-4e85-81c6-09359fef948f",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "b65f777d-d798-51df-bf04-b0d684848790"
+        }
+      }
+    ],
+    "count": 1,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "PUSH_COPY_READABLE_20261007",
+    "runId": "7aa7649acdc8",
+    "status": "cleaned",
+    "database": "test_growdesk_7aa7649acdc8",
+    "appRole": "test_app_7aa7649acdc8",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

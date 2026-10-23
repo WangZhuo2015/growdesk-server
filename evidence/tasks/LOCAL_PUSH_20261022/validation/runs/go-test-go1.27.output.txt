@@ -1,0 +1,1 @@
+go: golang.org/toolchain@v0.0.1-go1.27.0.darwin-arm64: verifying module: checksum database disabled by GOSUMDB=off

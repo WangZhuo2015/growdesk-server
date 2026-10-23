@@ -1,0 +1,17 @@
+{
+  "taskId": "FULL_PUSH_CONTENT_20261006",
+  "runId": "921d1832a1c0",
+  "status": "cleaned",
+  "database": "test_growdesk_921d1832a1c0",
+  "appRole": "test_app_921d1832a1c0",
+  "privateDirectoryRemoved": true,
+  "resources": [
+    "owned PostgreSQL cluster",
+    "test database and non-superuser role",
+    "owned Redis process",
+    "owned Go API process",
+    "explicitly joined native workers",
+    "owned loopback HTTP push fixture"
+  ],
+  "errors": []
+}

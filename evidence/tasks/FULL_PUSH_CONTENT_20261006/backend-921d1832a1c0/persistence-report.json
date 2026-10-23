@@ -1,0 +1,220 @@
+{
+  "taskId": "FULL_PUSH_CONTENT_20261006",
+  "runId": "921d1832a1c0",
+  "phase": "baseline",
+  "probe": "family-push",
+  "passed": false,
+  "cases": [
+    {
+      "name": "baseline encrypted push contains detailed family record content",
+      "passed": false,
+      "expected": [
+        "发生时间：",
+        "类型：瓶喂",
+        "奶量：120 毫升",
+        "备注：test_private_record_baseline_detail_probe"
+      ],
+      "actual": {
+        "genericBody": true,
+        "allDetailsPresent": false
+      }
+    }
+  ],
+  "aiEmptyReplayExpectedStatus": 202,
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "0fb379f5a159d65d4495eb9a854110506ab3c4ffe0c2444a913555be5251c7bb",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-push-details-20261006",
+    "head": "65ccdaac9fb12b749795e7fcbbcd856a02830600",
+    "baselineArchiveSha256": "c1f401295dc3c1a197d63604707a2a38f37cd26da9b68f2d53f409339e2f3c5c"
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql",
+    "0004_family_notifications.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_921d1832a1c0",
+    "role": "test_app_921d1832a1c0",
+    "superuser": false,
+    "postgresPort": 57615,
+    "redisPort": 57616,
+    "apiPort": 57619,
+    "pushFixturePort": 57652,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "baseline": {
+    "recordHttpStatus": 201,
+    "recipientSubscriptionPresent": true,
+    "delta": {
+      "records": 1,
+      "changes": 1,
+      "familyTasks": 1,
+      "deliveries": 0,
+      "notifications": 0,
+      "outbox": 1,
+      "timeline": 1,
+      "receipts": 1,
+      "supplementRecords": 0,
+      "growthRecords": 0,
+      "familyCursor": 1
+    },
+    "familyTaskObserved": true,
+    "fixtureRequests": 1,
+    "decryptedTitle": "家庭动态",
+    "decryptedBodyWasGeneric": true,
+    "detailedBodyFieldsPresent": false,
+    "notificationId": "c0ca9b64-5a4d-59b0-9b9b-794f29a5f664"
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "AssertionError",
+    "code": "push_body_missing_full_record_details"
+  },
+  "worker": {
+    "actualNativeRuns": 2,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "testUsers": 3,
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/db458fff-79c3-4655-a3fd-4120e1643997/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/db458fff-79c3-4655-a3fd-4120e1643997/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/db458fff-79c3-4655-a3fd-4120e1643997/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/56bfecda-981a-407b-a02a-b5ca914719c3/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/d42d9f4c-6dd6-4a19-a814-e1ae29cfd04a/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/9f5c841c-397f-4498-b682-63b423fce72e/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/a5700ada-4178-4665-9982-8f3cdfd2c859/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/56bfecda-981a-407b-a02a-b5ca914719c3/records/feeding",
+      "status": 201,
+      "errorCode": null
+    }
+  ],
+  "fixture": {
+    "requests": [
+      {
+        "path": "/test_921d1832a1c0_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "8ef25ad301f9b12897d78aeffa0a350e",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "家庭动态",
+          "body": "有新的照护记录",
+          "wireBytes": 536,
+          "url": "/notifications",
+          "data": {
+            "actorId": "7979f3e0-d025-4602-bbb1-9ce008d3aca6",
+            "babyId": "56bfecda-981a-407b-a02a-b5ca914719c3",
+            "entityId": "ea189ea2-1434-4144-a528-912c724c74b8",
+            "entityType": "feeding",
+            "eventKey": "family_record:243cdc066df693faf303b661ce3d0bc61c0e9df2b20086f1ca88484cd07e1edf",
+            "eventKind": "family_record",
+            "familyId": "db458fff-79c3-4655-a3fd-4120e1643997",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "c0ca9b64-5a4d-59b0-9b9b-794f29a5f664"
+        }
+      }
+    ],
+    "count": 1,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "FULL_PUSH_CONTENT_20261006",
+    "runId": "921d1832a1c0",
+    "status": "cleaned",
+    "database": "test_growdesk_921d1832a1c0",
+    "appRole": "test_app_921d1832a1c0",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

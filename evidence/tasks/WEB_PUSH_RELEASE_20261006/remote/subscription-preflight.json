@@ -1,0 +1,138 @@
+{
+  "exit": 0,
+  "metadata": {
+    "web_device_summary": {
+      "total": 5,
+      "valid_full_json": 4
+    },
+    "row_counts": [
+      {
+        "table_name": "notifications",
+        "count": 0
+      },
+      {
+        "table_name": "task_outbox",
+        "count": 0
+      },
+      {
+        "table_name": "task_executions",
+        "count": 4
+      }
+    ],
+    "role_privileges": [
+      {
+        "table_name": "notifications",
+        "privilege_type": "DELETE"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "SELECT"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "table_name": "notifications",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "DELETE"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "SELECT"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "table_name": "push_devices",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "DELETE"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "SELECT"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "table_name": "task_executions",
+        "privilege_type": "UPDATE"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "DELETE"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "INSERT"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "REFERENCES"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "SELECT"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "TRIGGER"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "TRUNCATE"
+      },
+      {
+        "table_name": "task_outbox",
+        "privilege_type": "UPDATE"
+      }
+    ]
+  },
+  "error": ""
+}

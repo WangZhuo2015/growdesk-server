@@ -1,0 +1,25 @@
+{
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "reviews": [
+    {
+      "reviewer": "physical_buttons_review",
+      "scope": "ASR config/silence/prompt/parsing; canonical six-kind card normalization and confirmation body; precise decimals and food catalog scope",
+      "open_findings": 0,
+      "tests_run_by_reviewer": false
+    },
+    {
+      "reviewer": "gateway_current_status",
+      "scope": "Frame/replay/turn publication/playback and provider boundaries; final local-sherpa Go runner/Python script; root-owned runtime inventory",
+      "open_findings": 0,
+      "tests_run_by_reviewer": false,
+      "remote_metadata_inventory_performed": true
+    },
+    {
+      "reviewer": "gateway_current_status/espeak_options",
+      "scope": "Independent final local-sherpa fixed script and runner trust/resource/cancellation boundaries",
+      "open_findings": 0,
+      "tests_run_by_reviewer": false
+    }
+  ],
+  "root_tests": "Full Go race, real Linux ASR/TTS/PCM roundtrip and resource/cancellation checks, 10 actual-engine timeout repeats, isolated PostgreSQL create/replay/revocation/catalog tests, contracts; actual device microphone/AI/playback still pending"
+}

@@ -1,0 +1,15 @@
+{
+  "from": "evidence/tasks/PASSPORT_PTT_TRANSPORT_20261003/artifacts/short-turn-pre-change-baseline",
+  "to": "evidence/tasks/PASSPORT_PTT_TRANSPORT_20261003/artifacts/_short-turn-pre-change-baseline",
+  "reason": "Old incomplete code evidence copy was discovered by go test ./... as an application package",
+  "files_preserved": true,
+  "file_count": 6,
+  "hashes": {
+    "BASELINE.md": "577bbd1455bf28026b9d118d899386f5de54ee478e72e3edece9c55d9cb0f836",
+    "internal/backend/native_media.go": "8c58a440738891e5af07f7e2c0d71c2f2f3b18b9100c388c56582b5d95f427ce",
+    "internal/backend/asr_local.go": "3676bee8f4e1f26b9fa23dd75615afc640a3282e1da13e1951c69045db6484f9",
+    "internal/backend/asr_local_test.go": "1b34fb7244c4b33c2cb7a0e6c9b2063f121b62a0b661d814d94e764ba3a48af2",
+    "internal/backend/passport_asr_test.go": "53333cb0e4c04cc831d85c20b5d4a078754cd68d42e0fce3b59ae29751b2c33b",
+    "internal/backend/asr_local_linux_test.go": "4052b1ede512b1d4846f4c1dd2d44c2968665ccc54fa9e8664ba15be16da5e91"
+  }
+}

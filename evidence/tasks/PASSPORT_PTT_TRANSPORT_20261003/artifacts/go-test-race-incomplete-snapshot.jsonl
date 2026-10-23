@@ -1,0 +1,35 @@
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"# github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"cmd/growdesk-api/main.go:18:2: no required module provides package github.com/WangZhuo2015/growdesk-server; to add it:\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"\tgo get github.com/WangZhuo2015/growdesk-server\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-fail"}
+{"Time":"2026-10-03T07:58:47.415792-07:00","Action":"start","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api"}
+{"Time":"2026-10-03T07:58:47.415862-07:00","Action":"output","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api","Output":"FAIL\tgithub.com/WangZhuo2015/growdesk-server/cmd/growdesk-api [setup failed]\n","OutputType":"frame"}
+{"Time":"2026-10-03T07:58:47.415877-07:00","Action":"fail","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api","Elapsed":0,"FailedBuild":"github.com/WangZhuo2015/growdesk-server"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"# github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"cmd/growdesk-api/main.go:18:2: no required module provides package github.com/WangZhuo2015/growdesk-server; to add it:\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"\tgo get github.com/WangZhuo2015/growdesk-server\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-fail"}
+{"Time":"2026-10-03T07:58:47.415968-07:00","Action":"start","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate"}
+{"Time":"2026-10-03T07:58:47.415974-07:00","Action":"output","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate","Output":"FAIL\tgithub.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate [setup failed]\n","OutputType":"frame"}
+{"Time":"2026-10-03T07:58:47.415983-07:00","Action":"fail","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate","Elapsed":0,"FailedBuild":"github.com/WangZhuo2015/growdesk-server"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"# github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"cmd/growdesk-api/main.go:18:2: no required module provides package github.com/WangZhuo2015/growdesk-server; to add it:\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"\tgo get github.com/WangZhuo2015/growdesk-server\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-fail"}
+{"Time":"2026-10-03T07:58:47.416054-07:00","Action":"start","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler"}
+{"Time":"2026-10-03T07:58:47.416059-07:00","Action":"output","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler","Output":"FAIL\tgithub.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler [setup failed]\n","OutputType":"frame"}
+{"Time":"2026-10-03T07:58:47.416064-07:00","Action":"fail","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler","Elapsed":0,"FailedBuild":"github.com/WangZhuo2015/growdesk-server"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"# github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"cmd/growdesk-api/main.go:18:2: no required module provides package github.com/WangZhuo2015/growdesk-server; to add it:\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"\tgo get github.com/WangZhuo2015/growdesk-server\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-fail"}
+{"Time":"2026-10-03T07:58:47.416154-07:00","Action":"start","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker"}
+{"Time":"2026-10-03T07:58:47.416159-07:00","Action":"output","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker","Output":"FAIL\tgithub.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker [setup failed]\n","OutputType":"frame"}
+{"Time":"2026-10-03T07:58:47.416164-07:00","Action":"fail","Package":"github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker","Elapsed":0,"FailedBuild":"github.com/WangZhuo2015/growdesk-server"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"# github.com/WangZhuo2015/growdesk-server/internal/backend\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"cmd/growdesk-api/main.go:18:2: no required module provides package github.com/WangZhuo2015/growdesk-server; to add it:\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-output","Output":"\tgo get github.com/WangZhuo2015/growdesk-server\n"}
+{"ImportPath":"github.com/WangZhuo2015/growdesk-server","Action":"build-fail"}
+{"Time":"2026-10-03T07:58:47.416231-07:00","Action":"start","Package":"github.com/WangZhuo2015/growdesk-server/internal/backend"}
+{"Time":"2026-10-03T07:58:47.416235-07:00","Action":"output","Package":"github.com/WangZhuo2015/growdesk-server/internal/backend","Output":"FAIL\tgithub.com/WangZhuo2015/growdesk-server/internal/backend [setup failed]\n","OutputType":"frame"}
+{"Time":"2026-10-03T07:58:47.416238-07:00","Action":"fail","Package":"github.com/WangZhuo2015/growdesk-server/internal/backend","Elapsed":0,"FailedBuild":"github.com/WangZhuo2015/growdesk-server"}

@@ -1,0 +1,21 @@
+{
+  "statuses": {
+    "https://baby.zwang.fun/notifications": 200,
+    "https://baby.zwang.fun/sw.js": 200,
+    "https://baby.zwang.fun/family/passport": 200,
+    "https://baby.zwang.fun/api/push/vapid-key": 401,
+    "https://baby.zwang.fun/api/passport/devices": 401,
+    "https://ampere.zwang.fun:8443/health/ready": 200
+  },
+  "apiReadiness": {
+    "status": "ok",
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    }
+  },
+  "noAuthenticatedProductionTest": true,
+  "noProductionWriteOrTestPush": true
+}

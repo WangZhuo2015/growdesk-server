@@ -1,0 +1,169 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "runId": "a16999690900",
+  "phase": "baseline",
+  "probe": "ai-empty-replay",
+  "passed": false,
+  "cases": [
+    {
+      "name": "original HEAD empty-attachment AI replay should return 202",
+      "expected": 202,
+      "actual": 409,
+      "passed": false
+    }
+  ],
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "3a9b2fd52de7d15ffd26d27af01be7e80b2171352a6aa12c16c9b72bb4e160eb",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-family-push-20261005",
+    "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "baselineArchiveSha256": "48d955260e9b067bf6b4d1f5419ab722df0fb2919becb159a0a2447c82bdf38d"
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_a16999690900",
+    "role": "test_app_a16999690900",
+    "superuser": false,
+    "postgresPort": 59595,
+    "redisPort": 59596,
+    "apiPort": 59599,
+    "pushFixturePort": 59635,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "aiEmptyReplayProbe": {
+    "createHTTP": 202,
+    "replayHTTP": 409,
+    "errorCode": "CLIENT_MESSAGE_CONFLICT",
+    "AIWorkerRuns": 0
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "AssertionError",
+    "code": "original_ai_empty_attachment_replay_failed"
+  },
+  "worker": {
+    "actualNativeRuns": 0,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "testUsers": 3,
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/246fbab6-b664-445d-b52a-69a1c16836c9/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/246fbab6-b664-445d-b52a-69a1c16836c9/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/246fbab6-b664-445d-b52a-69a1c16836c9/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/dbd4c371-0a05-492a-843b-78612cf29a14/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/69f2fdf3-e806-425a-978d-a85893e16c66/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/dd6ebe46-fd92-4b1a-8474-39700f980adc/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/77f7b497-02c6-4272-bee9-7089c3e947c4/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/ai/sessions",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/ai/sessions/6edcf957-796d-460b-a76d-e6d9fed59696/runs",
+      "status": 202,
+      "errorCode": null
+    }
+  ],
+  "fixture": {
+    "requests": [],
+    "count": 0,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "FAMILY_RECORD_PUSH_20261005",
+    "runId": "a16999690900",
+    "status": "cleaned",
+    "database": "test_growdesk_a16999690900",
+    "appRole": "test_app_a16999690900",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

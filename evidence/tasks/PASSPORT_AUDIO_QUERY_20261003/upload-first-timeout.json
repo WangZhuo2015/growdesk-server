@@ -1,0 +1,6 @@
+{
+  "command": "scp two compiled artifacts",
+  "timeout_seconds": 80,
+  "result": "TimeoutExpired before offline helper execution",
+  "production_binary_replaced": false
+}

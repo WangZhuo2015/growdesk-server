@@ -1,0 +1,16 @@
+{
+  "scannedFiles": 476,
+  "findings": [],
+  "repositoryVisibility": "PUBLIC",
+  "scope": "Original modified/new files excluding 21 generated binary/archive artifacts",
+  "additionalReview": {
+    "jsonFindings": "No non-test token/password/secret/DSN values or personal contact details found in reviewed JSON evidence. Runtime metadata is for loopback isolated test instances.",
+    "persistenceIdentifiers": "Twelve UUID identifier findings were traced to isolated loopback PostgreSQL databases/roles and test_ fixture helpers; IDs are not usernames.",
+    "emailRegexFalsePositives": [
+      "Go toolchain module cache paths containing @v",
+      "SSH username@hostname references without authentication secrets",
+      "synthetic test@host URL userinfo rejection fixtures"
+    ],
+    "scopeLimit": "Focused commit screening, not a security certification."
+  }
+}

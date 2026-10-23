@@ -1,0 +1,16 @@
+{
+  "taskId": "IOS_WEB_PARITY_20261002",
+  "runId": "84ff7262f462",
+  "status": "cleaned",
+  "database": "test_growdesk_84ff7262f462",
+  "appRole": "test_app_84ff7262f462",
+  "privateDirectoryRemoved": true,
+  "resources": [
+    "owned PostgreSQL cluster",
+    "test database and roles",
+    "owned Redis process",
+    "owned MinIO process and bucket",
+    "owned Go API process"
+  ],
+  "errors": []
+}

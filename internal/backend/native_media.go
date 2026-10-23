@@ -12,32 +12,76 @@ import (
 	"net/textproto"
 	"os"
 	"strings"
+	"unicode"
 )
 
 func providerReadJSON(ctx context.Context, client *http.Client, request *http.Request) (Object, error) {
+	return providerReadJSONFor(ctx, client, request, "ASR")
+}
+
+// Both audio and Passport chat use the same bounded response/status boundary.
+// Domain is supplied only by these server-owned adapters, never by a client.
+func providerReadJSONFor(ctx context.Context, client *http.Client, request *http.Request, domain string) (Object, error) {
+	label := "Speech provider"
+	if domain == "AI" {
+		label = "AI provider"
+	}
+	prefix := domain + "_PROVIDER_"
 	response, err := client.Do(request)
 	if err != nil {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
-		return nil, providerFailure("AI_PROVIDER_NETWORK_ERROR", "Provider request failed", true)
+		providerErr := nativeProviderRequestError(ctx, err)
+		if errors.Is(providerErr, context.Canceled) {
+			return nil, providerErr
+		}
+		var failure *nativeProviderError
+		if errors.As(providerErr, &failure) {
+			code, message := prefix+"NETWORK_ERROR", label+" connection failed"
+			if failure.Code == "AI_PROVIDER_TIMEOUT" {
+				code, message = prefix+"TIMEOUT", label+" request timed out"
+			}
+			return nil, providerFailure(code, message, failure.Retryable)
+		}
+		return nil, providerFailure(prefix+"NETWORK_ERROR", label+" connection failed", true)
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, providerFailure("AI_PROVIDER_HTTP_ERROR", fmt.Sprintf("Provider returned HTTP %d", response.StatusCode), response.StatusCode == 408 || response.StatusCode == 429 || response.StatusCode >= 500)
+		code, message := prefix+"HTTP_ERROR", fmt.Sprintf("%s returned HTTP %d", label, response.StatusCode)
+		if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+			code, message = prefix+"AUTH_FAILED", fmt.Sprintf("%s authentication failed (HTTP %d)", label, response.StatusCode)
+		}
+		retryable := response.StatusCode == http.StatusRequestTimeout || response.StatusCode == http.StatusConflict || response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= 500
+		return nil, providerFailure(code, message, retryable)
 	}
 	raw, err := io.ReadAll(io.LimitReader(response.Body, maxProviderResponse+1))
 	if err != nil {
-		return nil, err
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return nil, providerFailure(prefix+"RESPONSE_READ_FAILED", label+" response could not be read", true)
 	}
 	if len(raw) > maxProviderResponse {
-		return nil, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "Provider response exceeds byte budget", false)
+		return nil, providerFailure(prefix+"INVALID_RESPONSE", label+" response exceeds byte budget", false)
 	}
 	var result Object
 	if err = decodeJSON(raw, &result); err != nil || result == nil {
-		return nil, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "Provider returned invalid JSON", false)
+		return nil, providerFailure(prefix+"INVALID_RESPONSE", label+" returned invalid JSON", false)
 	}
 	return result, nil
+}
+
+func validateASRTranscript(transcript string) (string, error) {
+	if len(transcript) > 256*1024 {
+		return "", providerFailure("ASR_PROVIDER_INVALID_RESPONSE", "Transcription is missing or too large", false)
+	}
+	for _, r := range transcript {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) {
+			return transcript, nil
+		}
+	}
+	return "", providerFailure("ASR_PROVIDER_NO_SPEECH", "No speech was recognized; please speak again", false)
 }
 func nativeFileBytes(file *os.File, maximum int64) ([]byte, error) {
 	if _, err := file.Seek(0, io.SeekStart); err != nil {
@@ -97,12 +141,22 @@ func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConf
 	if !strings.HasPrefix(text(metadata["mime_type"]), "audio/") {
 		return "", invalid("Voice input is not audio")
 	}
+	if c.Mode == "local" {
+		local, enabled, err := localASRConfiguration()
+		if err != nil {
+			return "", err
+		}
+		if !enabled {
+			return "", providerFailure("ASR_PROVIDER_NOT_CONFIGURED", "The local recognizer configuration is unavailable", false)
+		}
+		return transcribeLocalASR(ctx, local, file, text(metadata["mime_type"]))
+	}
 	if c.Mode == "fixture" {
 		text := os.Getenv("GROWDESK_ASR_FIXTURE_TEXT")
 		if text == "" {
 			return "", providerFailure("ASR_PROVIDER_NOT_CONFIGURED", "An explicit ASR fixture is required", false)
 		}
-		return text, nil
+		return validateASRTranscript(text)
 	}
 	// Build multipart into an owned mode-0600 bounded file. This avoids a
 	// producer goroutine blocked forever when an HTTP client stops reading.
@@ -162,10 +216,10 @@ func (s *Server) transcribeNativeAudio(ctx context.Context, c nativeProviderConf
 		return "", err
 	}
 	transcript, ok := response["text"].(string)
-	if !ok || strings.TrimSpace(transcript) == "" || len(transcript) > 256*1024 {
+	if !ok {
 		return "", providerFailure("ASR_PROVIDER_INVALID_RESPONSE", "Transcription is missing or too large", false)
 	}
-	return transcript, nil
+	return validateASRTranscript(transcript)
 }
 
 func (s *Server) callNativeVisualAI(ctx context.Context, c nativeProviderConfig, input nativeTaskInput, message string, delta func(string) error) (nativeAIResult, error) {

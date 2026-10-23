@@ -1,0 +1,2319 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "runId": "e8c705a15195",
+  "phase": "fixed",
+  "probe": "family-push",
+  "passed": true,
+  "cases": [
+    {
+      "name": "preference HTTP defaults, validation and baby authorization",
+      "passed": true,
+      "evidence": {
+        "defaults": {
+          "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+          "kinds": {
+            "family_record": true
+          },
+          "quietHours": null,
+          "timeZone": "UTC"
+        },
+        "invalidInputsRejected": 4,
+        "unauthorizedBabyRejected": true
+      }
+    },
+    {
+      "name": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "passed": true,
+      "evidence": {
+        "record201Committed": true,
+        "oneEventOnReplay": true,
+        "provider201": true,
+        "encryptedPayloadDecryptedByOwnedReceiver": true,
+        "privateRecordContentsAbsent": true,
+        "notificationId": "9694a4ee-e755-5949-9fb6-852b4be4f3be",
+        "repeatWorkerRequests": 0
+      }
+    },
+    {
+      "name": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "passed": true,
+      "evidence": {
+        "RESTKinds": [
+          "feeding",
+          "sleep",
+          "diaper"
+        ],
+        "operations": [
+          "create",
+          "update",
+          "delete"
+        ]
+      }
+    },
+    {
+      "name": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "passed": true,
+      "evidence": {
+        "commonREST": "supplement",
+        "realSync": "growthMeasurement",
+        "syncReplayTaskDelta": 0,
+        "syncOperations": [
+          "create",
+          "update",
+          "delete",
+          "restore"
+        ]
+      }
+    },
+    {
+      "name": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "passed": true,
+      "evidence": {
+        "HTTP409": 2,
+        "HTTP400": 1,
+        "recordTimelineCursorReceiptOutboxUnchanged": true
+      }
+    },
+    {
+      "name": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "passed": true,
+      "evidence": {
+        "actualDatabaseFaultInjection": "owned PostgreSQL trigger raises during outbox insert",
+        "cases": [
+          {
+            "kind": "feeding",
+            "failureHTTP": 500,
+            "allPersistenceUnchanged": true,
+            "sameKeyRetry": 201
+          },
+          {
+            "kind": "supplement",
+            "failureHTTP": 500,
+            "allPersistenceUnchanged": true,
+            "sameKeyRetry": 201
+          }
+        ]
+      }
+    },
+    {
+      "name": "concurrent native workers and repeated workers do not duplicate notification or delivery",
+      "passed": true,
+      "evidence": {
+        "actualWorkerProcessesConcurrent": 2,
+        "notifications": 1,
+        "providerRequests": 1,
+        "deliveryFence": 1
+      }
+    },
+    {
+      "name": "current global preference disabled before fanout produces no recipient artifacts",
+      "passed": true,
+      "evidence": {
+        "currentPreferenceApplied": true,
+        "notifications": 0,
+        "deliveryTasks": 0,
+        "providerRequests": 0
+      }
+    },
+    {
+      "name": "baby preference overrides global and disables delivery after fanout",
+      "passed": true,
+      "evidence": {
+        "babyOverrideGlobal": true,
+        "skippedReason": "preferences_disabled",
+        "providerRequests": 0
+      }
+    },
+    {
+      "name": "baby permission revoked between fanout and delivery rejects recipient",
+      "passed": true,
+      "evidence": {
+        "actualHTTPBabyRevoke": true,
+        "skippedReason": "scope_revoked",
+        "providerRequests": 0
+      }
+    },
+    {
+      "name": "real loopback provider 503 records retry, same topic survives accepted retry",
+      "passed": true,
+      "evidence": {
+        "providerStatuses": [
+          503,
+          201
+        ],
+        "attempts": 2,
+        "stableCollapseTopic": true
+      }
+    },
+    {
+      "name": "real loopback provider 403 is terminal and retains valid subscription",
+      "passed": true,
+      "evidence": {
+        "providerStatus": 403,
+        "task": "failed",
+        "deviceRetained": true
+      }
+    },
+    {
+      "name": "real loopback provider 410 removes the confirmed expired subscription",
+      "passed": true,
+      "evidence": {
+        "providerStatus": 410,
+        "expiredDeviceRows": 0,
+        "realHTTPRebindDelivered": true
+      }
+    },
+    {
+      "name": "legacy invalid family timezone falls back to UTC without losing notification",
+      "passed": true,
+      "evidence": {
+        "legacyFamilyTimeZone": "test_Invalid/Zone",
+        "effectiveDefaultTimeZone": "UTC",
+        "actualProviderAccepted": true
+      }
+    },
+    {
+      "name": "oversized recipient retains inbox error while later recipient still receives push",
+      "passed": true,
+      "evidence": {
+        "savedDeviceRows": 65,
+        "oversizedRecipientOrderedBeforeOther": true,
+        "oversizedInboxAndUserChange": true,
+        "oversizedDeliveryTasks": 0,
+        "oversizedProviderRequests": 0,
+        "explicitRecipientError": {
+          "code": "NOTIFICATION_DEVICE_LIMIT",
+          "delivered": false,
+          "deviceLimit": 64,
+          "notificationId": "a6c080be-b36b-586f-8711-eee876bb17d5",
+          "devicesObservedAtLeast": 65
+        },
+        "laterRecipientAcceptedRequests": 1,
+        "fanoutComplete": true
+      }
+    },
+    {
+      "name": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "passed": true,
+      "evidence": {
+        "POST": 202,
+        "ownedManifestGETQueued": 200,
+        "otherPrincipalManifestGET": [
+          404,
+          404
+        ],
+        "ownedManifestGETReady": 200,
+        "persistedPageCount": 12,
+        "actualSnapshotWorker": true,
+        "dormantTaskAndPageHandlersNotClaimedAsHTTP": true
+      }
+    },
+    {
+      "name": "cross-midnight quiet hours defer child before fanout claim without a provider request",
+      "passed": true,
+      "evidence": {
+        "realIanaTimeZone": "Etc/GMT+2",
+        "quietHours": {
+          "start": "22:00",
+          "end": "07:00"
+        },
+        "nextDispatchAt": "2026-10-06T02:00:00-07:00",
+        "attempt": 0,
+        "providerRequests": 0
+      }
+    },
+    {
+      "name": "new quiet preference after fanout requeues only that delivery without spending retry budget",
+      "passed": true,
+      "evidence": {
+        "realIanaTimeZone": "Etc/GMT+2",
+        "quietHours": {
+          "start": "22:00",
+          "end": "07:00"
+        },
+        "nextDispatchAt": "2026-10-06T02:00:00-07:00",
+        "attemptBefore": 0,
+        "attemptAfterFirstClaim": 1,
+        "attemptAfterRepeatWorker": 1,
+        "providerRequests": 0
+      }
+    },
+    {
+      "name": "one quiet recipient does not delay the other eligible recipient",
+      "passed": true,
+      "evidence": {
+        "actualHTTPBabyGrant": true,
+        "notificationRecipients": 2,
+        "quietRecipientRequests": 0,
+        "nonquietRecipientAcceptedRequests": 1,
+        "quietRecipientAttempt": 0,
+        "unassignedRequestsWhileIneligible": 0
+      }
+    },
+    {
+      "name": "committed family event still fans out after actor leaves family",
+      "passed": true,
+      "evidence": {
+        "record201BeforeDeparture": true,
+        "actualHTTPAdminTransfer": true,
+        "actualHTTPActorDeparture": true,
+        "actorActiveFamilyMemberships": 0,
+        "familyOwnedEventSucceeded": true,
+        "recipientProvider201": true
+      }
+    },
+    {
+      "name": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "passed": true,
+      "evidence": {
+        "code": "PREEXISTING_AI_EMPTY_ATTACHMENT_REPLAY_409",
+        "createHTTP": 202,
+        "replayHTTP": 409,
+        "sameClientMessageReplay202Verified": false,
+        "regressionCriterion": "no metadata 500; original HEAD also returned CLIENT_MESSAGE_CONFLICT",
+        "messageRows": 1,
+        "runRows": 1,
+        "outboxRows": 1,
+        "changedMessageHTTP": 409,
+        "provider": "explicit fixture config",
+        "AIWorkerRuns": 0,
+        "retainedTaskAttempt": 0
+      }
+    }
+  ],
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "3a9b2fd52de7d15ffd26d27af01be7e80b2171352a6aa12c16c9b72bb4e160eb",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-family-push-20261005",
+    "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "immutableInputsSha256": "2567c40b34781f84744bc817a6e95738d29d83d117d4ff1f75c7a7c8812715a9",
+    "inputs": {
+      "apps/api/src/knowledge/books-data.ts": "44ce4d56137631b02e161444f65dd7b8ba0e485ca3f2d1fcbbf784b8f1ae3e52",
+      "apps/api/src/knowledge/legacy-reference-data.ts": "995b42c1217ff3d58eecb1c560b6b83d6c6bc3a2ad503399f7ca59493a5c9345",
+      "assets.go": "b7825976bed4e607359ed79f2a2899d20f1f6912dfacc7d7bf6eac73e212b549",
+      "cmd/growdesk-api/main.go": "f3084924a3b1d935be11edb89a874da523350785418455dc443a8b243ab524d0",
+      "cmd/growdesk-api/main_test.go": "5b5c2352debddee953d0515ee62b1e21a761d35e67ca3ec8338ad0156d4b722c",
+      "cmd/growdesk-api/transport_test.go": "f0a5a37b19369d364f09fbf78665e99a949885bb1627eb45d90a86578004f067",
+      "cmd/growdesk-migrate/main.go": "e98606a35dc8872e0568a5f89a7df7eded5a18d9bd5a8637aa541f6366f99bbd",
+      "cmd/growdesk-scheduler/main.go": "bc9a28abe6aeb3776e1961dc3178dfdcef15cb71f9b9e25596bc14c25d71150f",
+      "cmd/growdesk-worker/main.go": "ac6fbe5fa717c9ffeaec98338290aafa771676f18a62ce7d78d2bebf11f7174a",
+      "contracts/openapi.json": "b39b937812548f00d5afeed4a00fa5176a9236611b386b5a6bd01df66bf9e2ce",
+      "go.mod": "5f107a29e7154b98b2d97d5957f6ef9a0be49208caf61f0c1f057a8d2bc2288d",
+      "go.sum": "2d1754664cca36fb45a969eddc781a9f8ae261c337fa99faaff3b7c1ba57183c",
+      "growth_assets.go": "5b2522ca087d35ff4138b32316bceaad694fa782e05a7fd1ee3978d8de396471",
+      "internal/backend/ai_history.go": "7238d769e6c3b180c2c76931bed5257fb164357e75077d9f87939c120bc0726b",
+      "internal/backend/ai_provider.go": "3768fcbf023c34cd6626c6e6d89fa1b7ddf679b35f8b3a386ed7476f2546feae",
+      "internal/backend/ai_run_commands.go": "a20a86b387401336f3a798402125938c60e94fc9ac6df3efa1a0406813729ca7",
+      "internal/backend/ai_run_reads.go": "d4e0c5137b32d5d2dc5383befab6495943890d13cd681f694daae5c250ac806e",
+      "internal/backend/attachments.go": "d36b2c5223f72fb4744a91d4be04aedfed7606da8e72140c9c303131c8d29d77",
+      "internal/backend/auth.go": "fc11dc10b89bb2fc057791d9fd3c8778535ed2eda463b270f83da71c216a6657",
+      "internal/backend/auth_login.go": "5ecc9e4e3d77863223718da8d83122c7b17a05c88c122f73af93dbd228d91046",
+      "internal/backend/baby.go": "f9eaf2c24a89594bb0481311a2ab1306a9c70d083dd9b1eb94b0905a2d956569",
+      "internal/backend/bff.go": "0d3f58e8013374aa66816234cf04ea96afa1d53b97afbb487c4c9c823758d573",
+      "internal/backend/bff_binding.go": "f9ba7e6255b9667730169c46a305db4499e063135ff6ea9a1a4688b4b501a28a",
+      "internal/backend/books.go": "660ddc8687d0279815faea3046b24caf058bf486a8660737eba536acd3d7ba09",
+      "internal/backend/care.go": "10cfcd1772e6b76f08a798d70e61393c712928dc2c08f5037cb617183a50b5fb",
+      "internal/backend/clinical_transaction.go": "a6e2548dbe5df16b1e66ebd03248519ae396fb3941a4d4373441c67ef502800e",
+      "internal/backend/companion_common.go": "1ae529d071dae9c9a9febe92ebe050932c58f8c3a6586b12a8337ed933184dea",
+      "internal/backend/companion_test.go": "a3e0f61dc6e631044b97c914c66b92bbf1de1367dac65aa24261da11cae4c489",
+      "internal/backend/compatibility_errors.go": "4d18526cc6e9efa9adf6aacbc60455c0b695da0bf67df36860550371a756cf8f",
+      "internal/backend/config.go": "35123d770ccf13ee74abd7442b3ec80ebd138d426adb9b932c91f69eac86e862",
+      "internal/backend/contract.go": "c568803690ba2703e6c2395908c63c2c27a9fc61a80cfe8355a810691d7cfa59",
+      "internal/backend/contract_nullable.go": "595faedb98a58732a54537be0c0362a5012fcc1cf974aa374b681f9720d1e122",
+      "internal/backend/contract_nullable_test.go": "053c3d58c503886f97e29f2dd23115dc301d4d7c31505b8df64deac13c2f72bb",
+      "internal/backend/contract_unknown_test.go": "6778494f82d65e57620ea46c1bbc6ccd3edc4d5a53790512cce352219cfbc3df",
+      "internal/backend/db.go": "2146dcb4e99140c4842da8429272081449a0809062f5cd67eb3042eb3be0dc3a",
+      "internal/backend/document_receipt.go": "b0ce47b27336c8e538d28012a2892a71dd3ff019b0363db7209d59fc5ecce266",
+      "internal/backend/domain_test.go": "c57627799b82129df3d6d0244089115148166b1bc4d298b537ecb9812fb41c61",
+      "internal/backend/errors.go": "4ee9937eaa4fc7c7fb377958fbdf8f138eab8b7269d0957780cc57e260973014",
+      "internal/backend/family.go": "f201e6cb17428a2d889149269ddd0415ede5d0db3cbf52ea4be11f46bdd3676d",
+      "internal/backend/family_notifications.go": "70147c5c4d30464caa5435ae349f34838076e4e4cd905b8f4ac17ddd2d6a23e0",
+      "internal/backend/family_notifications_preferences.go": "cac54030a16a0d547daa37c20c4bcd359649df339982931907747e3570b79756",
+      "internal/backend/family_notifications_test.go": "c42d0332550b0fc8b4690e41d6454d3e9d4ad7409ce7d9f40c4694b4f6189962",
+      "internal/backend/food_library.go": "b831d85d69d1de2b9d2a2cadf44e8b60a0e2599a3959687cc7eff9d2a24763fd",
+      "internal/backend/food_library_errors.go": "d50e609b8fa1877a7838196244d31d10b833c889c946c857c6a3c897ac6e68c6",
+      "internal/backend/food_library_errors_test.go": "e2bc74b5a54fb74ba41cc1c892c014639f3f90736998134412d322cbebc2396e",
+      "internal/backend/food_library_test.go": "9e6a584bfab6e8ba886acf9da9cf04fe6199c6a88ba6238499d820cf49a4aecb",
+      "internal/backend/food_plan.go": "4c4ab5f839fcf05ee2bd61d7d64017d0ddff320cef1f47f72d70a851c1afb196",
+      "internal/backend/food_plan_test.go": "1f5f6267c6ec951d4239f0da1235ccb6b13d2ddaf28732f17ad04286e2c0c98d",
+      "internal/backend/formula_products.go": "9d18eb32525610e2d65cc5157536fa95d60c453a06a0d147565e0bf3ca923434",
+      "internal/backend/foundation_test.go": "05be90f57cbb02a9aecb34367cca21be0207fc08064f5cd7fc99d5ea10d8e790",
+      "internal/backend/growth.go": "95038efebc247005bb8f8922be562855c11bec85a33f7dfdb509611543aa24aa",
+      "internal/backend/growth_standards.go": "53a640ff541940f877e000054f7863afd4598dcf113d9d0c931163b03cab3850",
+      "internal/backend/growth_test.go": "3866c71465c8ecc97a83d9514a569877b0dbae1ab40743472b70680392bad684",
+      "internal/backend/knowledge.go": "56247d47a4b39a8108bd49a813daf2008d2163364b8bac28b2828b3c5687fd41",
+      "internal/backend/knowledge_number_review_test.go": "618e37a37fd0ef1cd17bc7011545cd3be8a928aa051502b5a058baa17e78e92f",
+      "internal/backend/knowledge_query.go": "10d0b500214ad36e99dcbdf443163743b9804572471647c4ac02d0f17d872b06",
+      "internal/backend/knowledge_query_test.go": "cc661da54ff6609dc04afb45b4487cb14b88e9215f1ddf30b6ac54f9cf66a3c5",
+      "internal/backend/knowledge_test.go": "c5fe80fe3ef7b5c96aef60ee7d3869d3b0aa54ab7184fb124e624b8a930da9c7",
+      "internal/backend/legacy_attachment.go": "81ea4a0d901499ce1b856da28b8d3bc258f72e3a00ad9a24733dc49d27563499",
+      "internal/backend/legacy_web_token.go": "5305d8c94f0b1472c3f29d8b9fab66db81f13da129955be7ef2c0b7721902ec2",
+      "internal/backend/legacy_web_token_test.go": "61b0c62c5e1dca63340957eb6f6517f6ca9e214e63b0fde3f2d356bb0d00737d",
+      "internal/backend/mcp_mutation_scope.go": "3eed1081566b5e8fd6aa4dad041780f8ee4277a133457441e65b8595ef29253e",
+      "internal/backend/mcp_mutation_scope_test.go": "593182f81d610581c8e04f7f74a22706c34af5c86d7cfdae2ac286167e67a991",
+      "internal/backend/mcp_oauth.go": "ce3a5d94f685328a42543d5a75d223873a0e7b724cf177550dc6021eeac89e4c",
+      "internal/backend/medical_projections.go": "85513fb25768a053772ad17dcd66fc3a67011813c0b338ac7635a2621b90d83b",
+      "internal/backend/medical_reports.go": "eccf5be6e2a82b137c2c78646e5184eb7e1527dca63f48d91f26c87ca557774d",
+      "internal/backend/medical_reports_test.go": "a1ab3f448595163a655065366dcb65daf7cc8cb6cbca63a73ca77f9d5dfdbc19",
+      "internal/backend/native_canonical.go": "ae2575adbe39a2f8d733ee09b687a5b6afd08e2a8916fe3408f23acbe2b9fbee",
+      "internal/backend/native_exports.go": "5b4b569c621ff226c954a9ffc01bd775d07fa52d1b79919cce9212413ad6ec7c",
+      "internal/backend/native_media.go": "38d603b13293f2f289705ef0c934a302276f3c21d7ec7c64def1b4fa24789f5b",
+      "internal/backend/native_migrations.go": "57691c9c24c9e7e3cf23dab05005884859e79fa313c01873fd5baf9a268ef995",
+      "internal/backend/native_object_cleanup.go": "d5a0c1fbf44354c9e93009fa7a7592ed7a9073199581d0b597a5cbce6f081ae5",
+      "internal/backend/native_processors.go": "f3ce21f9bf888e68231de84a37ef4b8f26597b8c2d1b4d3eb610f438eaad86a6",
+      "internal/backend/native_push.go": "f500d6f787642ef10922da60a2036bdde2ddbfed1ed39a0d3c4c7543a7fc0727",
+      "internal/backend/native_push_test.go": "b9278aaab0f52c1a0f66c7bd27f1e669415a631c725b3df6f6cb02cd5007247e",
+      "internal/backend/native_snapshot_catalogs.go": "3b26411ce022d9e9e6c69835fc6caffdb6db8dce836d628f8e18557866ecfe5a",
+      "internal/backend/native_snapshots.go": "0345e1bd85f37ecb3edcc7df32d2be4afd3700eac81f42b8fa890cbbb7abbc0e",
+      "internal/backend/native_sync_test.go": "70d203528b0612ea3d83092cb359c6c0997954aede7982d5ac618089e09eeb30",
+      "internal/backend/native_tasks.go": "b971e7b1db10cd08eb7e636677da9847df7703ed968d7bd0c6e458208188df3c",
+      "internal/backend/notifications.go": "08c9df6b4d462971bc6d9a0f65e76462b50fbafbd216775e1c2de382c10b9d53",
+      "internal/backend/nutrition_records.go": "43fc866738850f7edb42d13ebaadd3c9b0cb650576d53d97ba2d2de9b8364051",
+      "internal/backend/nutrition_records_test.go": "d5f726be9f4778b37c38040d9d19be69c9c48fae14012648f704b41dfc1a3588",
+      "internal/backend/object_store.go": "3b9be70bf1a28968abe9de166d278dc02eeb1346419c81cfffdba79a30df90b2",
+      "internal/backend/passport_auth.go": "37dca7c254dbe5fb1cd339d46e84186d506b330b6f0140065db490896dfe94ae",
+      "internal/backend/passport_cards.go": "fc203d285c697dd458f46b570aeab3d41fc13fedbb7f9fa5edc5291816ae8806",
+      "internal/backend/passport_confirmation.go": "330e05032a4a905977c7498546c64239a04bcdac543656af7fe069ed55e66475",
+      "internal/backend/passport_confirmation_test.go": "04002ee8b75ed003525a7418573bca65a0e0f98332b01039d60aaa228f5a3a1d",
+      "internal/backend/passport_devices.go": "9e5b1ccad88e8fca36544ee7eeffaa47ebb127553ff5cfe405284fde673aa045",
+      "internal/backend/passport_pairing.go": "26e9332ea94cc566a0c7f14a90c43f45b37dd522d7a0d7d0521ba889f4e9dc8a",
+      "internal/backend/passport_revocation_integration_test.go": "10f5aa46025275b8161f6f44bc97cbb6054824eeb158619e4d8176ef26375951",
+      "internal/backend/passport_test.go": "ccd9f58c49c3b57a2c821719c6a1ef5bf9e4904a0fedd648929b34c1d0d5d1e7",
+      "internal/backend/passport_ws.go": "4eb6b1d50ee2ac0776384a434a090667ad03603a65abb17bba52842630544e6d",
+      "internal/backend/provider_request_error.go": "7b7a597b234e42a53fdcb2cd29f79a970d8ca5cd0b292480aa45873de975403d",
+      "internal/backend/provider_request_error_test.go": "17275dd8dca6363f2dea84ace4c9f7e983d5f556a40c3bdd1049066712e7fbbc",
+      "internal/backend/provider_storage_test.go": "fe49e0d8de959ea5536980f340034ca7ec0abb60d1ed84ac12e4c3e925b6f813",
+      "internal/backend/read_snapshot.go": "c00a226e139dc5ffb65f0b3186bca78dca6f80af2b3cc9864b3eea133a5893ab",
+      "internal/backend/record_mutation.go": "dcad4240a9cd699342b03ab8f049afe45029abd2aedf4a3603158de830f04c20",
+      "internal/backend/record_snapshots.go": "440a5855302577707b0b727badc5d4cb6c8eed5098c7559d6201c9854b81403c",
+      "internal/backend/record_snapshots_test.go": "13a4aef1443a92104b0fba4ab3762145d7a39cb1cfa77eb982cac964b3f8e34c",
+      "internal/backend/refresh.go": "8036eec1a5c0d66ece6a9b0b66ce119b4fb329f161fc9c13c6a906ccb7f78f72",
+      "internal/backend/register.go": "d0bc5c5fcbeae8d5091f94db38628d3102a585fd06754a1f0ca31bc0b416b5c9",
+      "internal/backend/request_normalization.go": "02ba037142bae522897300a07fbe6588c477510dad3364f3942f91947f717e10",
+      "internal/backend/request_zero_test.go": "d84daab33f02d77a51b11d4ed52c4eba419a261ebf4f453def2a28f614a46504",
+      "internal/backend/review_security_test.go": "e593815f030680bb8f0dc0e08671230b6934c76d21045fb741c98d34d6e9a660",
+      "internal/backend/route_aliases.go": "42eb688a6f085cb5863b37be5405010ba57f59a95e5d3e25d58fd3f7be0bed00",
+      "internal/backend/samples.go": "35bd5e2131d2e53f6fb6eb08f2d5d2795f25ced5aa02253f63088bdfc296a2f6",
+      "internal/backend/samples_access_test.go": "e8d28df5d656276c726e9153c998b1ed944c0071ac22ac814b058acb44c17c3b",
+      "internal/backend/scalar_receipt.go": "1fe62d61bca197b7539ac8af7c3173b093fc100ec4d6045702bef170007ed5c9",
+      "internal/backend/scalar_receipt_test.go": "8a524502b777282b0caa55fc3d2fd592d713f8b1de6ae518e99f9bdda3febb9f",
+      "internal/backend/scope.go": "44c04fa190b929cbb2010c38405a514d39ef9e7c5def67da71f9055db05e8fd4",
+      "internal/backend/server.go": "4d41db891502714a548cb9656b1c5e593b5e0ab3d7262bb08a878a9e50a86337",
+      "internal/backend/session_crypto.go": "20b30227725b9613b4a4e88c799fb62ca3f4194a78857bfca3dfe3c1dbf2080f",
+      "internal/backend/snapshot_codec.go": "bcec643382edb32593135c87460915ce59b136d9950fb27be29619cf4f762b8e",
+      "internal/backend/supplement_catalog.go": "732d8206d68e74e36730c9d14584e5f009cbdcbac25304c5d4da8765a4800111",
+      "internal/backend/supplement_catalog_test.go": "9908ba02be00d35f7dacd9ab97c1d641bccd4054e5901a7cca2a4c66fa5efabd",
+      "internal/backend/sync_commands.go": "41fc7d57e05b4efd307d32f20a56ec74ff4e4d1b77474965c9e2be66362e0f61",
+      "internal/backend/sync_feed.go": "385dcbdec962fcff56a7b47297c5180f2d229b4c30123fd88623186d6fdc02bf",
+      "internal/backend/sync_feed_test.go": "b6f62b95f77ac24cc720a318f88b41e21f88ca7feabf113cc8c293288c7a7681",
+      "internal/backend/vaccine_catalog.go": "8105a18ff5853ca4c73029a67fd48f8a7ee225219eab79bd6cb85796c33750bf",
+      "internal/backend/vaccine_records.go": "27355710d1299126d86e1d17f8a888a30cb7e20ee6826775b0904a4cd2a6c93b",
+      "internal/backend/vaccine_records_test.go": "a4471ed048e1633f2c1c5b5ebf7297d473a4437328ccde168125435ee6b56b08",
+      "internal/backend/voice_logs.go": "9fa3ea2ab63c0960eac266e82869284839e0211a285e904ada0959f671fe8001",
+      "internal/backend/web_ai_sessions.go": "2e79706ac3c58d4d2658ed97f72eb31baf11939ae25e960836e55cef45685818",
+      "knowledge_assets.go": "224b5600f65cd378a37fa7920dabb3f9fb4c3a3006d1a30c24cd828e96e011ce",
+      "native/migrations/0001_oauth.sql": "bde35d470380232f00de11ec794c01d586a17c1782b24176c154dcc824986481",
+      "native/migrations/0002_object_cleanup.sql": "ab219547e33f576baecb31652e89f02006efdc977f7d423447817a1ae51aa19a",
+      "native/migrations/0003_passport.sql": "6f4b5d04a9c9b4cfcb2cb3a28ec2c3b9bb3648f8acd1785c895443f532c3a8ab",
+      "native/migrations/0004_family_notifications.sql": "1dcb0e81c4f4b0a44595b30129990325e69a82c79efc215f6ab4a19f742c4a88",
+      "native_assets.go": "1d9150cb199ed4325ab3f9de055c712efa07bcf7b1b27d4b457f16beac57d579",
+      "packages/domain/src/who-growth-standards.ts": "20e3ea52f809e83675afd20f4029aa7088cc4a17c7e1d92af40090c2fd0409e3",
+      "prisma/migrations/202609120001_identity/migration.sql": "ec4c833a4b1f050779592cd5a23a9a81a80b9f1dc76ad25959848779b0e16835",
+      "prisma/migrations/202609120002_foundation/migration.sql": "3132876a61c864357373db7bebc3fd8eeeefff39b28115e1bf38352c8a8f5f04",
+      "prisma/migrations/202609120003_care_feeding/migration.sql": "ba93b3204e218b7f51f841ee8a9de41ea7236b72266a8a1e5565817ec1d40570",
+      "prisma/migrations/202609120004_care_diaper/migration.sql": "0a1b43fbd2a94365f906cee5e66a54a453682dce8147759cc098fb0ce2414bf4",
+      "prisma/migrations/202609120005_care_sleep/migration.sql": "58d78edd567184f29b9c355cfa6c60cbf333c358532dde1f09fe67a6242c5271",
+      "prisma/migrations/202609120006_care_food/migration.sql": "fe2673c3686c7201c8350ead0945beb807157b7cdc5f7acd0b95f81443a5c130",
+      "prisma/migrations/202609120007_care_supplement/migration.sql": "445f7cc55623ab81300159856fa1fac5d57e0610dbc85f71b9f62ba3bb620f37",
+      "prisma/migrations/202609120008_care_growth/migration.sql": "4c24af432c22284699307a4a2cfd0c56361a76ba9b3c13e998a5bbe494dcd495",
+      "prisma/migrations/202609120009_bff_sessions/migration.sql": "d980eceab173b5816e08cdbc45f6a169c2841cef7f389c698f578efb989f24d6",
+      "prisma/migrations/202609120010_attachments_medical_vaccines/migration.sql": "ae9ff7aaaf708908d4401acd6c11e0e27a8e05275d4c6d0650ffd260a33a5af2",
+      "prisma/migrations/202609130011_tasks_and_ai/migration.sql": "4d7c41ee671aecc0dd354aa57dca6f90cb7333e9eac35978154164ae48522d7d",
+      "prisma/migrations/202609130012_legacy_mixed_feeding/migration.sql": "2a30abaed1cef832d7c26bdfc140cc3d341be9158b40a4ce760711d74d13ae77",
+      "prisma/migrations/202609140013_medical_items/migration.sql": "1c0e5b2efc7d39bfc303065f603d1b39c4903979bb79bd061251d37ed632b2c3",
+      "prisma/migrations/202609140014_book_status/migration.sql": "8e0679abf84b4ce618b6ba2a53b4154fcb65a74711a52291f30eca9245b62105",
+      "prisma/migrations/202609190015_food_reference_seed/migration.sql": "55c40962c3b7ed1bf13a2ea752ae86ddfe3ccfde952492328be5d68204d82423",
+      "prisma/migrations/202609190016_food_plan_version/migration.sql": "2f0b0ddb8c4b16a46ff68705325acc3f642ce0ffe0d30101781b6e5506a40ec4",
+      "prisma/migrations/202609190017_supplement_record_actor/migration.sql": "fb375769ca0d594bcd9b1bf35f1921dcc98038e81c9f8a2c75abecd3c1cf1e98",
+      "prisma/migrations/202609190018_legacy_care_promotion/migration.sql": "41d746e5dda16cc85cab4c515cee78b8860d8407c7bc7d2f9a242486bb512361",
+      "prisma/migrations/202609190019_growth_promotion/migration.sql": "6c5be3029d5dcf17d91ae0f6fe979e3c285f23e8f375459feb282bc6b082b311",
+      "prisma/migrations/202609190020_food_promotion/migration.sql": "49f4c45207dede606524e625fcd2c610e8a801158c5dc2182520c61897637fcb",
+      "prisma/migrations/202609190021_supplement_vaccine_promotion/migration.sql": "7affdcf67d61531ead722a59072f7933a17449ce8e9238c9e2a39fb0fc2637bf",
+      "prisma/migrations/202609190022_agent_voice_logs/migration.sql": "37efbf0eae233a74fb7806321ddbb58d9b4f347103b4812a7a6c6368b45ce90b",
+      "prisma/migrations/202609190023_record_snapshots/migration.sql": "5fada66a874168e9e131d4f927bc00b21144d0f45195a461d8cff29aeaa91310",
+      "prisma/migrations/202609190024_ai_archive_entries/migration.sql": "1d5c74fd000ec24f29a28b8a5b5642c50186de7893a4cf99da507417446e4adf",
+      "prisma/migrations/202609200025_ai_input_attachments/migration.sql": "f6d9e9008374b324fb88b42e272b6f805f7c13196c7b1870e9541814592c997b"
+    }
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql",
+    "0004_family_notifications.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_e8c705a15195",
+    "role": "test_app_e8c705a15195",
+    "superuser": false,
+    "postgresPort": 59722,
+    "redisPort": 59723,
+    "apiPort": 59726,
+    "pushFixturePort": 59759,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "knownLimitations": [
+    {
+      "code": "PREEXISTING_AI_EMPTY_ATTACHMENT_REPLAY_409",
+      "createHTTP": 202,
+      "replayHTTP": 409,
+      "sameClientMessageReplay202Verified": false,
+      "regressionCriterion": "no metadata 500; original HEAD also returned CLIENT_MESSAGE_CONFLICT"
+    }
+  ],
+  "worker": {
+    "actualNativeRuns": 63,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "finalInventory": {
+    "records": 17,
+    "changes": 27,
+    "familyTasks": 27,
+    "deliveries": 27,
+    "notifications": 28,
+    "outbox": 56,
+    "timeline": 22,
+    "receipts": 27,
+    "supplementRecords": 2,
+    "growthRecords": 1,
+    "familyCursor": 27
+  },
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/bd51a0c9-5552-4ace-9b48-13269b0e9e44/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/3c429535-48a0-4076-b625-b8ff89a1949a/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/3cf56fe8-39f7-480b-a03b-d97f475092e6/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 401,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 403,
+      "errorCode": "BABY_ACCESS_DENIED"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "FST_ERR_VALIDATION"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 403,
+      "errorCode": "BABY_ACCESS_DENIED"
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 409,
+      "errorCode": "IDEMPOTENCY_KEY_REUSED"
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 409,
+      "errorCode": "CONCURRENCY_CONFLICT"
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 400,
+      "errorCode": "FST_ERR_VALIDATION"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 500,
+      "errorCode": "INTERNAL_ERROR"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 500,
+      "errorCode": "P2039"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "concurrent native workers and repeated workers do not duplicate notification or delivery",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "current global preference disabled before fanout produces no recipient artifacts",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "current global preference disabled before fanout produces no recipient artifacts",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "current global preference disabled before fanout produces no recipient artifacts",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby preference overrides global and disables delivery after fanout",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby permission revoked between fanout and delivery rejects recipient",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "baby permission revoked between fanout and delivery rejects recipient",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "baby permission revoked between fanout and delivery rejects recipient",
+      "status": 403,
+      "errorCode": "BABY_ACCESS_DENIED"
+    },
+    {
+      "case": "baby permission revoked between fanout and delivery rejects recipient",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "real loopback provider 503 records retry, same topic survives accepted retry",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "real loopback provider 403 is terminal and retains valid subscription",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "real loopback provider 410 removes the confirmed expired subscription",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "real loopback provider 410 removes the confirmed expired subscription",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "real loopback provider 410 removes the confirmed expired subscription",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy invalid family timezone falls back to UTC without losing notification",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "oversized recipient retains inbox error while later recipient still receives push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "status": 202,
+      "errorCode": null
+    },
+    {
+      "case": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "status": 404,
+      "errorCode": "RECORD_NOT_FOUND"
+    },
+    {
+      "case": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "owned snapshot manifest GET queued then actual worker ready preserves principal isolation",
+      "status": 404,
+      "errorCode": "RECORD_NOT_FOUND"
+    },
+    {
+      "case": "cross-midnight quiet hours defer child before fanout claim without a provider request",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "cross-midnight quiet hours defer child before fanout claim without a provider request",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "cross-midnight quiet hours defer child before fanout claim without a provider request",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "new quiet preference after fanout requeues only that delivery without spending retry budget",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "new quiet preference after fanout requeues only that delivery without spending retry budget",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "one quiet recipient does not delay the other eligible recipient",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "one quiet recipient does not delay the other eligible recipient",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "one quiet recipient does not delay the other eligible recipient",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "one quiet recipient does not delay the other eligible recipient",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "one quiet recipient does not delay the other eligible recipient",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 404,
+      "errorCode": "FAMILY_NOT_FOUND"
+    },
+    {
+      "case": "committed family event still fans out after actor leaves family",
+      "status": 403,
+      "errorCode": "FAMILY_ACCESS_DENIED"
+    },
+    {
+      "case": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "status": 202,
+      "errorCode": null
+    },
+    {
+      "case": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "status": 409,
+      "errorCode": "CLIENT_MESSAGE_CONFLICT"
+    },
+    {
+      "case": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "status": 409,
+      "errorCode": "CLIENT_MESSAGE_CONFLICT"
+    },
+    {
+      "case": "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+      "status": 200,
+      "errorCode": null
+    }
+  ],
+  "testUsers": 4,
+  "fixture": {
+    "requests": [
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "b890201b1937a14560699200983088f7",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "9554afdf-1301-4e31-8740-343bda64c240",
+            "entityType": "feeding",
+            "eventKey": "family_record:2973c3361f6bbe0a7bd18831acd43cde3c96dfcb0d10264fde44fd2dd7509e16",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "9694a4ee-e755-5949-9fb6-852b4be4f3be"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "041da7a3a038b62ac3e296b8c570d7df",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "9554afdf-1301-4e31-8740-343bda64c240",
+            "entityType": "feeding",
+            "eventKey": "family_record:2dc05ad5e048b7658fb778295ff8192e7dfe98f628855509bcbaa7db1faf51ad",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "0f1a4edf-ef12-5054-9648-6651a1c18faf"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "4ab7412389ec0a00cc7273c9ce34181e",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "9554afdf-1301-4e31-8740-343bda64c240",
+            "entityType": "feeding",
+            "eventKey": "family_record:267084d294139100e7523fcd01c27b57adaa92e067f61ae2236a573afff98167",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "8522411d-819a-5f1a-866b-982a01baaf9d"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "e75d8603fa4605e2f6e6adb7b061564c",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "981f2a33-e834-487a-ae90-fa8467bf7ae6",
+            "entityType": "sleep",
+            "eventKey": "family_record:b5cd14b8708704fb6420c02b966adb123b4b4c6b6ad903f9dbec8e3c2cf55d63",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "3ad0b01b-c817-5b52-b4ef-debbc29c5282"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "81f99f892841fb6f1f69a3142c7d8051",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "5506d71a-70ad-4619-95c3-27cc446bb53e",
+            "entityType": "diaper",
+            "eventKey": "family_record:5aec5795ed50c3a5fd7b02233ed0d589fc9eb26f0c1cb5fb59b7017e05e5d5ee",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "700ea537-e33f-596c-a08c-1a44089f74ac"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f795e311fbbdd4e79c40616601a7b400",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "ade6e698-d01d-4cef-976f-ed4c6b34b89e",
+            "entityType": "supplement",
+            "eventKey": "family_record:279699ba5098473d41c77179a650274ea8ab465cfbe5d6b86e2fdd4a4b5c18aa",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "5d230463-9aa4-5f63-9e46-b0fa5b746722"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "e2fe9c8a0336b38115d643da9ef923f1",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "6dd0b7a4-c619-44be-8142-1c78451c2e91",
+            "entityType": "growth",
+            "eventKey": "family_record:bb964e0c84bd2d8d0dfb6a3e0d441be1901ff04f612b2d887e17d82bd1f7333f",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "0bf7e54b-ea7b-5312-b339-e3a394ac18e1"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "9aade078372880e1741be1cc610af88a",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "6dd0b7a4-c619-44be-8142-1c78451c2e91",
+            "entityType": "growth",
+            "eventKey": "family_record:75b584386f5c92aa44fb773a6dbbfd457f98e18f9609dc0bf9243477d67f2e85",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "560877b8-99ff-5ca9-afb3-0d0bb126d546"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "2223a44a01a88fef1adc8a4221b22ad9",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "6dd0b7a4-c619-44be-8142-1c78451c2e91",
+            "entityType": "growth",
+            "eventKey": "family_record:b0d618739574563fd7d55db86100e2d61cbed9c17fbdb9f174aa66817914734c",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "e4c954bd-00f8-50cd-b233-b4f211820be7"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "83fe46b331238f614ac6269ffdd9d93d",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "6dd0b7a4-c619-44be-8142-1c78451c2e91",
+            "entityType": "growth",
+            "eventKey": "family_record:b4f789c3b687a0895707d5c43d5228ef1255da1786c1fed4e166077e8b24a256",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "4fdd9fef-2146-5b45-bdd1-a73f605441b7"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "6b0bb322fec0b34348884b7a24a9412b",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "134051e5-ad32-480e-9c23-c1f4e12ee711",
+            "entityType": "feeding",
+            "eventKey": "family_record:a950d46efd0473144f81a83277a80f3734103027af1f390e6e5212972caf05cf",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "7f31004c-af3e-5f9f-aa4d-8299b458a8b9"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "c6e273708241db87f69a0e2f4b54f515",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "96b3a461-fd83-4107-a8fe-b378cb1dda88",
+            "entityType": "feeding",
+            "eventKey": "family_record:ab1276febcfd96b17bfd7d0d2d0fcdee5c46e0e35e7b78b3715f6dbb9914b3f2",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "9b11e85a-e826-50d9-9ab2-acf865262291"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "d75eeb38ed32cb1ceba0ecd9e5d71474",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "87a92311-d55f-4ddd-b7db-7960a10ed1c8",
+            "entityType": "supplement",
+            "eventKey": "family_record:e18ab226b71df5f60d28713a0761ec014246816c58b2855000dcaa3487972684",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "0580e030-d5ed-5e69-8146-129fc11fbbe6"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "49b86ddc3c1726fd28eee271d58b8719",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "8de2a69d-6ced-4c7f-a654-922ede05db21",
+            "entityType": "feeding",
+            "eventKey": "family_record:59a4e2038aa3217b29521b42b36b54e0277891830994e3b16284b35383ce759c",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "7fe968f2-9179-5b19-bfd4-4adac6deb6f1"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "c4c7a370e27ae99ac61523baeb9cc2cc",
+        "status": 503,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "1c6af7e9-373b-408f-95b5-4eaf3d491161",
+            "entityType": "feeding",
+            "eventKey": "family_record:a7f7c02b89e9c2f749b32bd5a00e5b4f18d0797c6cd9cf3bad239d2672f856d6",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "6a6ea6fd-917b-5f3f-99d0-f462c2573e12"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "c4c7a370e27ae99ac61523baeb9cc2cc",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "1c6af7e9-373b-408f-95b5-4eaf3d491161",
+            "entityType": "feeding",
+            "eventKey": "family_record:a7f7c02b89e9c2f749b32bd5a00e5b4f18d0797c6cd9cf3bad239d2672f856d6",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "6a6ea6fd-917b-5f3f-99d0-f462c2573e12"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "1a667e8a0816a460fe0de298f0c0b8b1",
+        "status": 403,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "c7750b78-cd15-4b2e-b07b-4f643da5fd0e",
+            "entityType": "feeding",
+            "eventKey": "family_record:8dcd1fbe7a3db9b97a9a0f4c773728f4a1d34d6d6591ac18c2bf2cc47a082eb5",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "4391d85a-dca5-5b64-810e-595d41b65958"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "aaa24e98dee64d1bedad18cb579b8b14",
+        "status": 410,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "7a079303-7fe6-4438-a101-732e517e3f70",
+            "entityType": "feeding",
+            "eventKey": "family_record:cdd73c5d56882580a8898779b00b0e17b1bd006f9ee7a9f6c8f0cd2b5519637d",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "f18e7c72-db41-57fe-93d0-9ca2eadc13b8"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader_rebound",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f46e9da1bbacee7bb884702b9675fa21",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "687b4266-aac0-47d7-94d2-d4b4561ab7e9",
+            "entityType": "feeding",
+            "eventKey": "family_record:8673f95090912e27ab6de559e66c77712665c8afbd88eb121466f50c83173b4d",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "969dc441-fe31-512f-b95f-9f6f25ad081a"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_legacy_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "9e0f322702c26d0de4022673e612f210",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "852e88ed-fabc-45e6-aa76-6c782b26e862",
+            "entityType": "feeding",
+            "eventKey": "family_record:61ae6ac7e49772b8d43e92805848c856113c9c0453599fdf865dd558e2d0b27d",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "926cdce6-82a1-553e-a7a6-d8f6873159e7"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_unassigned",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "9a2bc6177d5164e7f4451e918a7887b6",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "431324b0-1701-4e4a-bd60-8676bb7ce86b",
+            "entityType": "feeding",
+            "eventKey": "family_record:2aafb5dbf9c4fad396176c8c31880383044d434d6b8e1ab36d8f3abc362b36b5",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "d9651248-2da6-5f18-a629-6b3e025e88c3"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_unassigned",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "bf8757b36938099f019b7519323562fa",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "b3b25bc6-fa33-4300-9b73-62b534d5356c",
+            "entityType": "feeding",
+            "eventKey": "family_record:bdd5671e21ab2f5af03348c8f06148157c7445c2b9d87f3202be22f3be751155",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "2453883f-d330-5c93-8e2e-aa255baab9ca"
+        }
+      },
+      {
+        "path": "/test_e8c705a15195_reader_rebound",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "a020136647a022edf5f86d3d9417ccb1",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "genericTitle": true,
+          "genericBody": true,
+          "url": "/notifications",
+          "data": {
+            "actorId": "bc9b203b-e456-4c49-bf1b-1e1e2a38892a",
+            "babyId": "12d1a4ae-62b4-4d1d-bb73-63d8c7d2de5e",
+            "entityId": "ed48764e-e098-4316-8ae0-c9b75b742bf8",
+            "entityType": "feeding",
+            "eventKey": "family_record:04617300c29445b25b49a10b2f909910bf9ce29d1bbe69c0e590c8851bafa15f",
+            "eventKind": "family_record",
+            "familyId": "2f00c5ff-be0b-4c21-b4c8-712ecc58d4e1",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "553ce7a2-e3eb-5f74-b069-787b0967bc57"
+        }
+      }
+    ],
+    "count": 23,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "FAMILY_RECORD_PUSH_20261005",
+    "runId": "e8c705a15195",
+    "status": "cleaned",
+    "database": "test_growdesk_e8c705a15195",
+    "appRole": "test_app_e8c705a15195",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

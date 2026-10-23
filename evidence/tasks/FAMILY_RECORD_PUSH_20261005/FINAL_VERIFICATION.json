@@ -1,0 +1,244 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "finalRunId": "e8c705a15195",
+  "sourceSha256": "2567c40b34781f84744bc817a6e95738d29d83d117d4ff1f75c7a7c8812715a9",
+  "sourceInputs": 155,
+  "sourceDrift": [],
+  "scriptShaMatches": true,
+  "ownedRunShaMatches": true,
+  "pythonSyntaxValid": true,
+  "caseCriteriaPassed": 21,
+  "caseCount": 21,
+  "httpAssertionCount": 233,
+  "actualNativeWorkerRuns": 63,
+  "actualWebpushRequests": 23,
+  "allRecordedOwnedPortsStopped": true,
+  "portChecks": [
+    {
+      "runId": "09e9d2fe0815",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 56665,
+      "listening": false
+    },
+    {
+      "runId": "09e9d2fe0815",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 56666,
+      "listening": false
+    },
+    {
+      "runId": "09e9d2fe0815",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 56669,
+      "listening": false
+    },
+    {
+      "runId": "09e9d2fe0815",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 56702,
+      "listening": false
+    },
+    {
+      "runId": "37426b95194e",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 57382,
+      "listening": false
+    },
+    {
+      "runId": "37426b95194e",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 57383,
+      "listening": false
+    },
+    {
+      "runId": "37426b95194e",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 57386,
+      "listening": false
+    },
+    {
+      "runId": "37426b95194e",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 57425,
+      "listening": false
+    },
+    {
+      "runId": "4b6321a44477",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 56449,
+      "listening": false
+    },
+    {
+      "runId": "4b6321a44477",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 56450,
+      "listening": false
+    },
+    {
+      "runId": "4b6321a44477",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 56453,
+      "listening": false
+    },
+    {
+      "runId": "4b6321a44477",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 56484,
+      "listening": false
+    },
+    {
+      "runId": "4bb4b6bf26d7",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 58657,
+      "listening": false
+    },
+    {
+      "runId": "4bb4b6bf26d7",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 58658,
+      "listening": false
+    },
+    {
+      "runId": "4bb4b6bf26d7",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 58661,
+      "listening": false
+    },
+    {
+      "runId": "4bb4b6bf26d7",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 58694,
+      "listening": false
+    },
+    {
+      "runId": "84ff7262f462",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 55859,
+      "listening": false
+    },
+    {
+      "runId": "84ff7262f462",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 55860,
+      "listening": false
+    },
+    {
+      "runId": "84ff7262f462",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 55863,
+      "listening": false
+    },
+    {
+      "runId": "84ff7262f462",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 55894,
+      "listening": false
+    },
+    {
+      "runId": "a16999690900",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 59595,
+      "listening": false
+    },
+    {
+      "runId": "a16999690900",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 59596,
+      "listening": false
+    },
+    {
+      "runId": "a16999690900",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 59599,
+      "listening": false
+    },
+    {
+      "runId": "a16999690900",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 59635,
+      "listening": false
+    },
+    {
+      "runId": "b4d8425ee110",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 57562,
+      "listening": false
+    },
+    {
+      "runId": "b4d8425ee110",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 57563,
+      "listening": false
+    },
+    {
+      "runId": "b4d8425ee110",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 57566,
+      "listening": false
+    },
+    {
+      "runId": "b4d8425ee110",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 57601,
+      "listening": false
+    },
+    {
+      "runId": "e8c705a15195",
+      "service": "postgresPort",
+      "host": "127.0.0.1",
+      "port": 59722,
+      "listening": false
+    },
+    {
+      "runId": "e8c705a15195",
+      "service": "redisPort",
+      "host": "127.0.0.1",
+      "port": 59723,
+      "listening": false
+    },
+    {
+      "runId": "e8c705a15195",
+      "service": "apiPort",
+      "host": "127.0.0.1",
+      "port": 59726,
+      "listening": false
+    },
+    {
+      "runId": "e8c705a15195",
+      "service": "pushFixturePort",
+      "host": "127.0.0.1",
+      "port": 59759,
+      "listening": false
+    }
+  ],
+  "knownLimitation": "original HEAD and final empty-attachment AI replay409; 202 replay not verified"
+}

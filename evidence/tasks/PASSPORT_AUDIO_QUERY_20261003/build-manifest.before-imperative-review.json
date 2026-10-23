@@ -1,0 +1,32 @@
+[
+  {
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "/Users/wangzhuo/Documents/GitHub/growdesk-server/evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/growdesk-api-linux-arm64",
+      "./cmd/growdesk-api"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.4
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-c",
+      "-o",
+      "/Users/wangzhuo/Documents/GitHub/growdesk-server/evidence/tasks/PASSPORT_AUDIO_QUERY_20261003/artifacts/local-voice-linux-arm64.test",
+      "./internal/backend"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.79
+  },
+  {
+    "source_frozen": true,
+    "artifacts": {
+      "growdesk-api-linux-arm64": "fb9bcc8511fdfe3427631374d4abfe8a11d0cd202fd1e879e4ac807279434841",
+      "local-voice-linux-arm64.test": "4b252721a0b0ecf16d42484bec994b05d08e93f3a063d9bd721b26f6b2cc0455"
+    }
+  }
+]

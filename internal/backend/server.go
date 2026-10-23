@@ -232,7 +232,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			slotReleased = true
 		}
 		if err := result.Stream(w); err != nil {
-			s.Log.Warn("stream interrupted", "operationId", route.OperationID, "requestId", requestID)
+			s.logStreamInterruption(route.OperationID, requestID, isWebSocket, err)
 		}
 		return
 	}

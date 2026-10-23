@@ -1,0 +1,32 @@
+{
+  "scope": "family notification system delivery quota",
+  "phase": "after_fix",
+  "productionConnections": 0,
+  "pushRequests": 0,
+  "sourceSha256File": "internal/backend/native_tasks.go",
+  "sourceSha256": "b971e7b1db10cd08eb7e636677da9847df7703ed968d7bd0c6e458208188df3c",
+  "createdServices": [
+    "postgresql"
+  ],
+  "exercised": "actual Go notification creation, current user/baby authorization and task enqueue on a fresh owned PostgreSQL 18 database; no HTTP server or worker started",
+  "exitCode": 0,
+  "ownedDatabase": "test_growdesk_26db99273feb",
+  "role": "test_app_26db99273feb",
+  "cases": [
+    {
+      "name": "64 real quiet system deliveries allow authorized user submission",
+      "passed": true
+    },
+    {
+      "name": "64 real active user submissions still reject the 65th with HTTP-class 429",
+      "passed": true
+    }
+  ],
+  "cleanup": {
+    "status": "cleaned",
+    "database": "test_growdesk_26db99273feb",
+    "appRole": "test_app_26db99273feb",
+    "privateDirectoryRemoved": true,
+    "errors": []
+  }
+}

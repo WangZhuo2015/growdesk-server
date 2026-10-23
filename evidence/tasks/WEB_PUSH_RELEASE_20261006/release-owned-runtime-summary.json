@@ -1,0 +1,26 @@
+{
+  "report": "../../FAMILY_RECORD_PUSH_20261005/backend-90811005d84a/persistence-report.json",
+  "runId": "90811005d84a",
+  "passed": true,
+  "cases": 23,
+  "immutableInputsSha256": "d931e5486f93e6fb15febba9e30cf5ba58dc1fae7209a59f7085e98ae21290aa",
+  "sourceInputs": 198,
+  "sourceDrift": [],
+  "cleanup": {
+    "taskId": "FAMILY_RECORD_PUSH_20261005",
+    "runId": "90811005d84a",
+    "status": "cleaned",
+    "database": "test_growdesk_90811005d84a",
+    "appRole": "test_app_90811005d84a",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

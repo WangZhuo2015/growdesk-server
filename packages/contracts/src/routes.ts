@@ -161,6 +161,9 @@ import {
   UnregisterPushDeviceResponseSchema,
   NotificationListResponseSchema,
   MarkNotificationReadResponseSchema,
+  NotificationPreferencesQuerySchema,
+  PutNotificationPreferencesRequestSchema,
+  NotificationPreferencesResponseSchema,
 } from "./devices.js";
 import {
   FormulaProductResponseSchema,
@@ -1473,6 +1476,27 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     implementationStatus: "PLANNED_SH06",
     params: IdParam,
     responses: { 200: MarkNotificationReadResponseSchema, 401: ApiErrorRef, 404: ApiErrorRef },
+  },
+
+  {
+    method: "GET",
+    path: "/api/v1/me/notification-preferences",
+    operationId: "getNotificationPreferences",
+    summary: "Get effective user or baby notification preferences",
+    tags: ["Notifications"],
+    implementationStatus: "PLANNED_SH06",
+    querystring: NotificationPreferencesQuerySchema,
+    responses: { 200: NotificationPreferencesResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
+  },
+  {
+    method: "PUT",
+    path: "/api/v1/me/notification-preferences",
+    operationId: "putNotificationPreferences",
+    summary: "Replace user or authorized baby notification preferences",
+    tags: ["Notifications"],
+    implementationStatus: "PLANNED_SH06",
+    body: PutNotificationPreferencesRequestSchema,
+    responses: { 200: NotificationPreferencesResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 17. Nutrition & Food Library (SH-04N / SH-04FO)

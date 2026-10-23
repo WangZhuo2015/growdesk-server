@@ -1,0 +1,10 @@
+{
+  "actual_linux_suite": "PASS",
+  "helper_exit_code": 0,
+  "top_level_tests": 35,
+  "skips": 0,
+  "source_frozen": true,
+  "real_tts_pcm_asr_roundtrip_passed": true,
+  "empty_local_output_no_speech_passed": true,
+  "posthoc_initial_metadata_assertion": "incorrect nonexistent test name; corrected by inspecting all actual RUN/PASS pairs without rerunning or changing tests"
+}

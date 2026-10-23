@@ -1,0 +1,17 @@
+{
+  "taskId": "PUSH_COPY_READABLE_20261007",
+  "runId": "c2a0ca562a4d",
+  "status": "cleaned",
+  "database": "test_growdesk_c2a0ca562a4d",
+  "appRole": "test_app_c2a0ca562a4d",
+  "privateDirectoryRemoved": true,
+  "resources": [
+    "owned PostgreSQL cluster",
+    "test database and non-superuser role",
+    "owned Redis process",
+    "owned Go API process",
+    "explicitly joined native workers",
+    "owned loopback HTTP push fixture"
+  ],
+  "errors": []
+}

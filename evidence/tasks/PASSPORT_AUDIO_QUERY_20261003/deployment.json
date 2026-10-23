@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 5.85,
+  "expected_api_sha256": "80cc6c2f14932d13116b4d67fdf720365b71635031277083614c43cb58458562",
+  "binary_only": true,
+  "configuration_contents_not_read": true,
+  "configuration_metadata_unchanged": true
+}

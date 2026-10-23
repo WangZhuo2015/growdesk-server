@@ -1,0 +1,185 @@
+{
+  "note": "Raw command, output and exit-code bytes retained with .txt suffixes; original build binaries are not copied.",
+  "files": [
+    {
+      "originalFile": "baseline-hash-check.command",
+      "savedFile": "runs/baseline-hash-check.command.txt"
+    },
+    {
+      "originalFile": "baseline-hash-check.exit_code",
+      "savedFile": "runs/baseline-hash-check.exit_code.txt"
+    },
+    {
+      "originalFile": "baseline-hash-check.log",
+      "savedFile": "runs/baseline-hash-check.output.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-api.command",
+      "savedFile": "runs/cross-linux-arm64-api.command.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-api.exit_code",
+      "savedFile": "runs/cross-linux-arm64-api.exit_code.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-api.log",
+      "savedFile": "runs/cross-linux-arm64-api.output.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-migrate.command",
+      "savedFile": "runs/cross-linux-arm64-migrate.command.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-migrate.exit_code",
+      "savedFile": "runs/cross-linux-arm64-migrate.exit_code.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-migrate.log",
+      "savedFile": "runs/cross-linux-arm64-migrate.output.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-scheduler.command",
+      "savedFile": "runs/cross-linux-arm64-scheduler.command.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-scheduler.exit_code",
+      "savedFile": "runs/cross-linux-arm64-scheduler.exit_code.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-scheduler.log",
+      "savedFile": "runs/cross-linux-arm64-scheduler.output.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-worker.command",
+      "savedFile": "runs/cross-linux-arm64-worker.command.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-worker.exit_code",
+      "savedFile": "runs/cross-linux-arm64-worker.exit_code.txt"
+    },
+    {
+      "originalFile": "cross-linux-arm64-worker.log",
+      "savedFile": "runs/cross-linux-arm64-worker.output.txt"
+    },
+    {
+      "originalFile": "go-build.command",
+      "savedFile": "runs/go-build.command.txt"
+    },
+    {
+      "originalFile": "go-build.exit_code",
+      "savedFile": "runs/go-build.exit_code.txt"
+    },
+    {
+      "originalFile": "go-build.log",
+      "savedFile": "runs/go-build.output.txt"
+    },
+    {
+      "originalFile": "go-test-go1.27.command",
+      "savedFile": "runs/go-test-go1.27.command.txt"
+    },
+    {
+      "originalFile": "go-test-go1.27.exit_code",
+      "savedFile": "runs/go-test-go1.27.exit_code.txt"
+    },
+    {
+      "originalFile": "go-test-go1.27.log",
+      "savedFile": "runs/go-test-go1.27.output.txt"
+    },
+    {
+      "originalFile": "go-test-local-toolchain.command",
+      "savedFile": "runs/go-test-local-toolchain.command.txt"
+    },
+    {
+      "originalFile": "go-test-local-toolchain.exit_code",
+      "savedFile": "runs/go-test-local-toolchain.exit_code.txt"
+    },
+    {
+      "originalFile": "go-test-local-toolchain.log",
+      "savedFile": "runs/go-test-local-toolchain.output.txt"
+    },
+    {
+      "originalFile": "go-test.command",
+      "savedFile": "runs/go-test.command.txt"
+    },
+    {
+      "originalFile": "go-test.exit_code",
+      "savedFile": "runs/go-test.exit_code.txt"
+    },
+    {
+      "originalFile": "go-test.log",
+      "savedFile": "runs/go-test.output.txt"
+    },
+    {
+      "originalFile": "go-vet.command",
+      "savedFile": "runs/go-vet.command.txt"
+    },
+    {
+      "originalFile": "go-vet.exit_code",
+      "savedFile": "runs/go-vet.exit_code.txt"
+    },
+    {
+      "originalFile": "go-vet.log",
+      "savedFile": "runs/go-vet.output.txt"
+    },
+    {
+      "originalFile": "ts-contracts-check.command",
+      "savedFile": "runs/ts-contracts-check.command.txt"
+    },
+    {
+      "originalFile": "ts-contracts-check.exit_code",
+      "savedFile": "runs/ts-contracts-check.exit_code.txt"
+    },
+    {
+      "originalFile": "ts-contracts-check.log",
+      "savedFile": "runs/ts-contracts-check.output.txt"
+    },
+    {
+      "originalFile": "ts-lint.command",
+      "savedFile": "runs/ts-lint.command.txt"
+    },
+    {
+      "originalFile": "ts-lint.exit_code",
+      "savedFile": "runs/ts-lint.exit_code.txt"
+    },
+    {
+      "originalFile": "ts-lint.log",
+      "savedFile": "runs/ts-lint.output.txt"
+    },
+    {
+      "originalFile": "ts-test-guard.command",
+      "savedFile": "runs/ts-test-guard.command.txt"
+    },
+    {
+      "originalFile": "ts-test-guard.exit_code",
+      "savedFile": "runs/ts-test-guard.exit_code.txt"
+    },
+    {
+      "originalFile": "ts-test-guard.log",
+      "savedFile": "runs/ts-test-guard.output.txt"
+    },
+    {
+      "originalFile": "ts-typecheck.command",
+      "savedFile": "runs/ts-typecheck.command.txt"
+    },
+    {
+      "originalFile": "ts-typecheck.exit_code",
+      "savedFile": "runs/ts-typecheck.exit_code.txt"
+    },
+    {
+      "originalFile": "ts-typecheck.log",
+      "savedFile": "runs/ts-typecheck.output.txt"
+    },
+    {
+      "originalFile": "ts-unit.command",
+      "savedFile": "runs/ts-unit.command.txt"
+    },
+    {
+      "originalFile": "ts-unit.exit_code",
+      "savedFile": "runs/ts-unit.exit_code.txt"
+    },
+    {
+      "originalFile": "ts-unit.log",
+      "savedFile": "runs/ts-unit.output.txt"
+    }
+  ]
+}

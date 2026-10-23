@@ -1,0 +1,70 @@
+{
+  "cmd/growdesk-worker/main.go": {
+    "sha256": "6a49bd4dd9b62b3c1a6094162e01f04e077ba3b470960c73397a3e9556eabb32",
+    "source": "frozen push task"
+  },
+  "contracts/openapi.json": {
+    "sha256": "b39b937812548f00d5afeed4a00fa5176a9236611b386b5a6bd01df66bf9e2ce",
+    "source": "frozen push task"
+  },
+  "internal/backend/ai_run_commands.go": {
+    "sha256": "830ae9eef35d66292dc43bb660835bf8ae14105644ba1b7d5e791834175ac270",
+    "source": "production-preserving original"
+  },
+  "internal/backend/care.go": {
+    "sha256": "10cfcd1772e6b76f08a798d70e61393c712928dc2c08f5037cb617183a50b5fb",
+    "source": "frozen push task"
+  },
+  "internal/backend/family_notifications.go": {
+    "sha256": "91708e87088e9341e801eaf9645d5775fb316c7a5622c82ece6476d88cdb4fb1",
+    "source": "frozen push task"
+  },
+  "internal/backend/family_notifications_preferences.go": {
+    "sha256": "cac54030a16a0d547daa37c20c4bcd359649df339982931907747e3570b79756",
+    "source": "frozen push task"
+  },
+  "internal/backend/family_notifications_test.go": {
+    "sha256": "c42d0332550b0fc8b4690e41d6454d3e9d4ad7409ce7d9f40c4694b4f6189962",
+    "source": "frozen push task"
+  },
+  "internal/backend/foundation_test.go": {
+    "sha256": "05be90f57cbb02a9aecb34367cca21be0207fc08064f5cd7fc99d5ea10d8e790",
+    "source": "frozen push task"
+  },
+  "internal/backend/native_processors.go": {
+    "sha256": "75fe495db5ea1c9135bff41437d1bb5ac98db24e56e8b7356474f1003bd06ffb",
+    "source": "production-preserving original"
+  },
+  "internal/backend/native_push.go": {
+    "sha256": "f500d6f787642ef10922da60a2036bdde2ddbfed1ed39a0d3c4c7543a7fc0727",
+    "source": "frozen push task"
+  },
+  "internal/backend/native_snapshots.go": {
+    "sha256": "0345e1bd85f37ecb3edcc7df32d2be4afd3700eac81f42b8fa890cbbb7abbc0e",
+    "source": "frozen push task"
+  },
+  "internal/backend/native_tasks.go": {
+    "sha256": "ec5f4afcf394cbdb0f0ee1b49c6ba46f77101f26a0b1a1a965e1e36ea2bd8ed8",
+    "source": "frozen push task"
+  },
+  "internal/backend/notifications.go": {
+    "sha256": "08c9df6b4d462971bc6d9a0f65e76462b50fbafbd216775e1c2de382c10b9d53",
+    "source": "frozen push task"
+  },
+  "internal/backend/record_mutation.go": {
+    "sha256": "dcad4240a9cd699342b03ab8f049afe45029abd2aedf4a3603158de830f04c20",
+    "source": "frozen push task"
+  },
+  "native/migrations/0004_family_notifications.sql": {
+    "sha256": "1dcb0e81c4f4b0a44595b30129990325e69a82c79efc215f6ab4a19f742c4a88",
+    "source": "frozen push task"
+  },
+  "packages/contracts/src/devices.ts": {
+    "sha256": "d244f182ae0a9d76dfa69ab5ed4090d2530470af686c17fbc72db8176ced74c6",
+    "source": "frozen push task"
+  },
+  "packages/contracts/src/routes.ts": {
+    "sha256": "882d5d47c787458d983ad949edcde28c6e98410940398d9e18a2406e315393ab",
+    "source": "frozen push task"
+  }
+}

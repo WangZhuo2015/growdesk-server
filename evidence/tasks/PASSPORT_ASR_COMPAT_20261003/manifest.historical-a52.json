@@ -1,0 +1,39 @@
+{
+  "recorded_at_utc": "2026-10-03T09:55:05.583681+00:00",
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "artifact": {
+    "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/growdesk-api-linux-arm64",
+    "sha256": "a52ae5146e5e1176ab68cd603b871688f3986f9f4aeaf9d2644d80ae8e963a56",
+    "size_bytes": 27313698,
+    "target": "linux/arm64",
+    "cgo_enabled": false
+  },
+  "validation": {
+    "go_test_race_all": {
+      "exit_code": 0,
+      "log": "go-test-race.final.log"
+    },
+    "linux_production_prlimit_with_controlled_helper": {
+      "exit_code": 0,
+      "log": "linux-prlimit.log"
+    },
+    "openapi": "PASS: 112 paths / 159 operations",
+    "passport_card_contract": "PASS",
+    "git_diff_check": "PASS",
+    "source_hashes_unchanged_during_final_gate": true,
+    "standards_and_spec_open_findings": 0
+  },
+  "running_service_observed": {
+    "name": "growdesk-api.service",
+    "active": "active",
+    "substate": "running",
+    "pid": 1966743,
+    "n_restarts": 0,
+    "binary_sha256": "b98fe98f297db78c8dfbb8f24474b729e4323a45601289bbb30ae9f8760a551e"
+  },
+  "remote_controlled_test_directory_removed": true,
+  "deployment_performed": false,
+  "production_configuration_read": false,
+  "real_asr_ai_tts_validated": false,
+  "patch_sha256": "16df4eb32fe142f8a7879a46cb662312022c5f9697d97b1c4a83b53e011c8f0a"
+}

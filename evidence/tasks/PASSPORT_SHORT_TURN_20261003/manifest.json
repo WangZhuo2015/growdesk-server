@@ -1,0 +1,162 @@
+{
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "recorded_at_utc": "2026-10-03T13:14:14.225236+00:00",
+  "artifact": {
+    "sha256": "9ae41d1fdddf3a605a95bed61d4a7249eb3e2c47bed388d96ba9d95a4065f7d9",
+    "size_bytes": 27406054
+  },
+  "source_count": 152,
+  "source_frozen": true,
+  "validation": {
+    "full_go_race_exit_code": 0,
+    "real_guarded_pg": {
+      "loopback_only": true,
+      "nondefault_port": 56835,
+      "database": "test_voice_c24230728224",
+      "role": "test_voice_c24230728224",
+      "guard_passed": true,
+      "tests_exit_code": 0,
+      "fixture_counts_after": "0|0|0|0",
+      "temporary_cluster_removed": true
+    },
+    "real_linux": {
+      "actual_linux_suite": "PASS",
+      "helper_exit_code": 0,
+      "top_level_tests": 35,
+      "skips": 0,
+      "source_frozen": true,
+      "real_tts_pcm_asr_roundtrip_passed": true,
+      "empty_local_output_no_speech_passed": true,
+      "posthoc_initial_metadata_assertion": "incorrect nonexistent test name; corrected by inspecting all actual RUN/PASS pairs without rerunning or changing tests"
+    },
+    "independent_review": {
+      "reviewer": "short_turn_peer_review",
+      "open_findings": 0,
+      "tests_run_by_reviewer": false
+    }
+  },
+  "deployment": {
+    "performed": true,
+    "pid": 3678614,
+    "active": "active",
+    "substate": "running",
+    "n_restarts": 0,
+    "public_anonymous_ws": 401,
+    "configuration_unchanged": true,
+    "verified_at_utc": "2026-10-03 12:47:29 UTC",
+    "rollback_directory": "/home/ubuntu/growdesk/releases/passport-short-turn-20261003.HpwUp7VM",
+    "prior_binary_sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921",
+    "initial_immediate_attempt_rolled_back": true
+  },
+  "firmware_candidate": {
+    "full_bin_sha256": "893574d8533ca51672b9e6493250fbb7f5919be35573265060dbc70114020199",
+    "app_elf_sha256": "c2cd56ede333759c836ba03f61c33eca0eace024fc84e6ce890f00e596f20cc5",
+    "flash_performed": true,
+    "approval_requested": true,
+    "intended_write": "application only at 0x10000; preserve NVS/PHY",
+    "approval_received": "ok",
+    "app_bin_sha256": "1c377a5044f7430ebcf174eb41c6c452f2bbb166d9d49d10f14d7ef7535bb647",
+    "flash_exit_code": 0,
+    "flash_readback_hash_verified": true,
+    "flash_elapsed_seconds": 20.38,
+    "flash_evidence": "/Users/wangzhuo/Documents/GitHub/growdesk-iot/build/device-tests/passport-20261003-short-turn-fixed",
+    "runtime_capture": "COMPLETE",
+    "runtime_result": {
+      "elapsed_seconds": 600.1,
+      "expected_monitor_open_resets": 1,
+      "unexpected_resets": 0,
+      "panic": 0,
+      "connected": 1,
+      "ready": 1,
+      "disconnects": 0,
+      "error_log_lines": 0,
+      "elf_prefix_matched": true,
+      "stored_key_map_active": true,
+      "physical_turn_observed": false,
+      "screen_microphone_ai_speaker_acceptance": "NOT RUN: no operator action/response observed",
+      "historical_ws_failure_cause": "UNDETERMINED",
+      "serial_capture_exit_code": 0,
+      "serial_port_closed": true
+    }
+  },
+  "historical_transport_failure_cause": "UNDETERMINED",
+  "pending": [
+    "device visible key-setup exit and persistence",
+    "actual mic/AI/speaker turn",
+    "typed transport error/reproduction",
+    "genuine physical record confirmation"
+  ],
+  "incremental_patch_sha256": "5d83f2fd8a6bd9dca118676c9b28a4c815a34422ac047e5094046adc80d64f4d",
+  "reconnect_followup_candidate": {
+    "status": "IMPLEMENTED_NOT_REVIEWED",
+    "recorded_at_utc": "2026-10-03T13:41:47.979702+00:00",
+    "full_gate": {
+      "exit_code": 0,
+      "elapsed_seconds": 92.53,
+      "source_count": 211,
+      "source_frozen": true
+    },
+    "archive_verify_exit_code": 0,
+    "full_bin_sha256": "e8c606433cc93fc5ba63349fd12354b38bfbb93d6aa5bcb3315dada2f98124ed",
+    "app_bin_sha256": "08c4e0771ada4dfbeebd7dae37e2389deeafd375da150e4979b8c4314cd93685",
+    "app_elf_sha256": "db55db5172aa7eaf86d0f2bde2c6454267850cad2803cc5775d980e4894aab13",
+    "app_size_bytes": 4688416,
+    "partition_table_unchanged": true,
+    "independent_scoped_review": {
+      "reviewer": "short_turn_peer_review",
+      "open_findings": 0,
+      "reviewer_tests_run": false
+    },
+    "controller_asan_ubsan_exit_code": 0,
+    "ws_asan_ubsan_exit_code": 0,
+    "callback_entry_frame_bytes": 272,
+    "ws_task_stack_bytes": 6144,
+    "incremental_patch_sha256": "65f0119d09545df62ab60c09469e34767f0157ed36d8e2dab71b95443048c88a",
+    "device_read_only_discovery": {
+      "port": "/dev/cu.usbmodem2101",
+      "vid": 12346,
+      "pid": 4097
+    },
+    "flash_performed": true,
+    "new_exact_flash_consent": "APPROVED with standing same-device application-only authorization",
+    "proposed_write": "only FoloToy-AI-Passport.bin at 0x10000; preserve bootloader, partition table, NVS, PHY, Wi-Fi, pairing, button mapping",
+    "historical_transport_failure_cause": "UNDETERMINED",
+    "approval_requested_at_utc": "2026-10-03T13:43:03.566025+00:00",
+    "standing_routine_flash_authorization": "Same connected device, routine verified application-only fixes and testing, preserve user settings; no repeated approval required. Full chip erase or unrelated destructive changes are not inferred.",
+    "flash_result": {
+      "exit_code": 0,
+      "elapsed_seconds": 20.54,
+      "app_only": true,
+      "offset": "0x10000",
+      "readback_hash_verified": true,
+      "evidence": "/Users/wangzhuo/Documents/GitHub/growdesk-iot/build/device-tests/passport-20261003-reconnect-owner",
+      "bounded_capture": "IN PROGRESS"
+    }
+  },
+  "standing_device_write_authorization": "User: 批准,之后可以不问我; same-device routine verified application-only fixes and testing, preserve settings.",
+  "latest_physical_ptt_transport": {
+    "status": "FAIL",
+    "layer": "physical_device_ptt_transport",
+    "installed_bundle_sha256": "e8c606433cc93fc5ba63349fd12354b38bfbb93d6aa5bcb3315dada2f98124ed",
+    "observation_seconds": 600.04,
+    "counts": {
+      "reset": 1,
+      "panic": 0,
+      "connected": 2,
+      "disconnected": 1,
+      "ready": 2,
+      "errors": 3
+    },
+    "initial_ready_seconds": 16.94,
+    "ptt_listening_seconds": 513.98,
+    "first_failure_seconds": 516.83,
+    "first_failure": "transport_poll_write(0): writable wait timeout before the failing frame header/payload writes",
+    "recovery_ready_seconds": 545.37,
+    "recovery_seconds": 28.54,
+    "backend_correlation": "two stream interrupted warnings match failure and first retry interruption; old logger omitted actual error",
+    "original_network_root_cause": "UNDETERMINED",
+    "voice_asr_ai_speaker": "NOT_PASSED",
+    "serial_port": "CLOSED",
+    "user_priority": "Fix connection before requesting more voice testing"
+  }
+}

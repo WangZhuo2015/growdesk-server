@@ -1,0 +1,12 @@
+{
+  "loopback_only": true,
+  "nondefault_port": 57472,
+  "database": "test_passport_query_23537bd9b714",
+  "role": "test_passport_query_23537bd9b714",
+  "guard_passed": true,
+  "test_exit_code": 0,
+  "test_suite": "persistent Passport voice-record PostgreSQL integration suite",
+  "test_exit_expected": 0,
+  "tenant_counts_after_test": "0|0|0|0",
+  "temporary_cluster_removed": true
+}

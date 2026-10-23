@@ -1,0 +1,816 @@
+diff --git a/internal/backend/family_notification_content.go b/internal/backend/family_notification_content.go
+new file mode 100644
+index 0000000..50433fe
+--- /dev/null
++++ b/internal/backend/family_notification_content.go
+@@ -0,0 +1,487 @@
++package backend
++
++import (
++	"context"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"strings"
++	"time"
++
++	"github.com/jackc/pgx/v5"
++)
++
++const familyNotificationSnapshotVersion = 1
++
++type familyNotificationSnapshot struct {
++	Version int    `json:"version"`
++	Title   string `json:"title"`
++	Body    string `json:"body"`
++}
++
++type familyNotificationRecordContent struct {
++	Kind, Operation, ActorName, BabyName, TimeZone string
++	Record                                         Object
++	FoodItemNames                                  []string
++	FormulaName                                    string
++	FormulaID                                      string
++	SupplementProductName                          string
++}
++
++func familyNotificationOperationName(operation string) string {
++	switch operation {
++	case "create":
++		return "新增"
++	case "update":
++		return "更新"
++	case "delete":
++		return "删除"
++	case "restore":
++		return "恢复"
++	default:
++		return "更新"
++	}
++}
++
++func familyNotificationRecordName(kind string) string {
++	switch kind {
++	case "feeding":
++		return "喂奶"
++	case "sleep":
++		return "睡眠"
++	case "diaper":
++		return "尿布"
++	case "food":
++		return "辅食"
++	case "supplement":
++		return "补剂"
++	case "growth":
++		return "生长测量"
++	default:
++		return "照护"
++	}
++}
++
++func validFamilyNotificationSnapshot(snapshot *familyNotificationSnapshot) bool {
++	return snapshot != nil && snapshot.Version == familyNotificationSnapshotVersion && strings.TrimSpace(snapshot.Title) != "" && strings.TrimSpace(snapshot.Body) != ""
++}
++
++func renderFamilyNotificationSnapshot(content familyNotificationRecordContent) familyNotificationSnapshot {
++	actor := familyNotificationDisplayValue(content.ActorName, "家庭成员")
++	baby := familyNotificationDisplayValue(content.BabyName, "宝宝")
++	title := actor + "为" + baby + familyNotificationOperationName(content.Operation) + familyNotificationRecordName(content.Kind) + "记录"
++	zone, zoneName := familyNotificationLocation(content.TimeZone)
++	parts := make([]string, 0, 12)
++	record := content.Record
++
++	addTime := func(label, key string) {
++		if value := record[key]; familyNotificationValuePresent(value) {
++			parts = append(parts, label+familyNotificationTimestamp(value, zone, zoneName))
++		}
++	}
++	addText := func(label, key string) {
++		if value := familyNotificationDisplayValue(text(record[key]), ""); value != "" {
++			parts = append(parts, label+value)
++		}
++	}
++	addNumeric := func(label, key, unit string) {
++		if value := record[key]; value != nil && text(value) != "" {
++			parts = append(parts, label+familyNotificationNumber(value)+unit)
++		}
++	}
++	addNote := func() {
++		if note := familyNotificationNote(text(record["notes"])); note != "" {
++			parts = append(parts, "备注："+note)
++		}
++	}
++
++	switch content.Kind {
++	case "feeding":
++		addTime("发生时间：", "occurred_at")
++		if value := familyNotificationEnum(text(record["feeding_type"]), map[string]string{
++			"breast": "亲喂", "bottle": "瓶喂", "formula": "配方奶", "mixed": "混合喂养",
++		}); value != "" {
++			parts = append(parts, "类型："+value)
++		}
++		addNumeric("奶量：", "amount_ml", " 毫升")
++		addNumeric("左侧时长：", "left_minutes", " 分钟")
++		addNumeric("右侧时长：", "right_minutes", " 分钟")
++		addNumeric("总时长：", "duration_minutes", " 分钟")
++		if content.FormulaName != "" {
++			parts = append(parts, "奶粉："+familyNotificationDisplayValue(content.FormulaName, ""))
++		} else if content.FormulaID != "" {
++			parts = append(parts, "奶粉产品 ID："+content.FormulaID)
++		}
++		if value := record["spit_up"]; familyNotificationValuePresent(value) {
++			parts = append(parts, "吐奶："+familyNotificationYesNo(value))
++		}
++		addNote()
++	case "sleep":
++		addTime("开始时间：", "started_at")
++		if value := familyNotificationEnum(text(record["sleep_type"]), map[string]string{"nap": "白天小睡", "night": "夜间睡眠"}); value != "" {
++			parts = append(parts, "类型："+value)
++		}
++		addTime("结束时间：", "ended_at")
++		if duration := familyNotificationSleepDuration(record["started_at"], record["ended_at"]); duration != "" {
++			parts = append(parts, "睡眠时长："+duration)
++		}
++		addNumeric("夜醒次数：", "night_waking_count", " 次")
++		if !familyNotificationValuePresent(record["ended_at"]) {
++			parts = append(parts, "状态：进行中")
++		}
++		addNote()
++	case "diaper":
++		addTime("发生时间：", "occurred_at")
++		if value := familyNotificationEnum(text(record["diaper_type"]), map[string]string{"pee": "尿尿", "poop": "便便", "both": "尿便都有"}); value != "" {
++			parts = append(parts, "类型："+value)
++		}
++		parts = addEnumText(parts, "便便颜色：", record["poop_color"], map[string]string{
++			"yellow": "黄色", "brown": "棕色", "green": "绿色", "black": "黑色", "white": "白色", "red": "红色",
++		})
++		parts = addEnumText(parts, "便便性状：", record["poop_consistency"], map[string]string{
++			"watery": "稀水样", "loose": "稀软", "soft": "柔软", "formed": "成形", "hard": "干硬", "mucus": "有黏液", "bloody": "带血",
++		})
++		addNote()
++	case "food":
++		if familyNotificationValuePresent(record["occurred_at"]) {
++			addTime("发生时间：", "occurred_at")
++			if date := familyNotificationDisplayValue(text(record["record_date"]), ""); date != "" {
++				parts = append(parts, "记录日期："+date)
++			}
++		} else if date := familyNotificationDisplayValue(text(record["record_date"]), ""); date != "" {
++			parts = append(parts, "记录日期："+date)
++		}
++		if value := familyNotificationEnum(text(record["meal_type"]), map[string]string{"breakfast": "早餐", "lunch": "午餐", "dinner": "晚餐", "snack": "加餐"}); value != "" {
++			parts = append(parts, "餐次："+value)
++		}
++		if len(content.FoodItemNames) > 0 {
++			parts = append(parts, "食物："+strings.Join(content.FoodItemNames, "、"))
++		} else if ids := familyNotificationStringList(record["food_item_ids"]); len(ids) > 0 {
++			parts = append(parts, "食物项 ID："+strings.Join(ids, "、"))
++		}
++		addText("份量：", "portion_description")
++		parts = addEnumText(parts, "接受度：", record["reaction"], map[string]string{"like": "喜欢", "normal": "一般", "dislike": "不喜欢"})
++		addNote()
++	case "supplement":
++		addTime("发生时间：", "occurred_at")
++		addText("补剂：", "supplement_name")
++		if content.SupplementProductName != "" {
++			parts = append(parts, "产品："+familyNotificationDisplayValue(content.SupplementProductName, ""))
++		} else if id := text(record["product_id"]); id != "" {
++			parts = append(parts, "产品 ID："+id)
++		}
++		addText("用量：", "amount")
++		if value := record["dose"]; value != nil && text(value) != "" {
++			unit := text(record["unit_name"])
++			if unit != "" {
++				unit = " " + unit
++			}
++			parts = append(parts, "剂量："+familyNotificationNumber(value)+unit)
++		}
++		addNote()
++	case "growth":
++		if date := familyNotificationDisplayValue(text(record["measurement_date"]), ""); date != "" {
++			parts = append(parts, "测量日期："+date)
++		}
++		addNumeric("体重：", "weight_kg", " 千克")
++		addNumeric("身长：", "height_cm", " 厘米")
++		addNumeric("头围：", "head_circumference_cm", " 厘米")
++		if attachment := text(record["attachment_id"]); attachment != "" {
++			parts = append(parts, "包含测量照片：是")
++		}
++		addNote()
++	}
++
++	body := strings.Join(parts, "；")
++	if body == "" {
++		body = "此记录暂无可显示的详细字段。"
++	}
++	return familyNotificationSnapshot{Version: familyNotificationSnapshotVersion, Title: title, Body: body}
++}
++
++func addEnumText(parts []string, label string, value any, names map[string]string) []string {
++	if !familyNotificationValuePresent(value) {
++		return parts
++	}
++	return append(parts, label+familyNotificationEnum(text(value), names))
++}
++
++func familyNotificationSleepDuration(start, end any) string {
++	if !familyNotificationValuePresent(start) || !familyNotificationValuePresent(end) {
++		return ""
++	}
++	startedAt, startErr := asTime(start)
++	endedAt, endErr := asTime(end)
++	if startErr != nil || endErr != nil || endedAt.Before(startedAt) {
++		return ""
++	}
++	minutes := int(endedAt.Sub(startedAt).Minutes())
++	if minutes < 60 {
++		return fmt.Sprintf("%d 分钟", minutes)
++	}
++	return fmt.Sprintf("%d 小时 %d 分钟", minutes/60, minutes%60)
++}
++
++func familyNotificationEnum(value string, names map[string]string) string {
++	if value == "" {
++		return ""
++	}
++	if name, ok := names[value]; ok {
++		return name
++	}
++	return familyNotificationDisplayValue(value, "")
++}
++
++func familyNotificationYesNo(value any) string {
++	switch value := value.(type) {
++	case bool:
++		if value {
++			return "是"
++		}
++		return "否"
++	}
++	switch strings.ToLower(strings.TrimSpace(text(value))) {
++	case "true", "1", "yes":
++		return "是"
++	case "mild":
++		return "轻微"
++	case "false", "0", "no":
++		return "否"
++	default:
++		return familyNotificationDisplayValue(text(value), "")
++	}
++}
++
++func familyNotificationNumber(value any) string {
++	if number, ok := value.(json.Number); ok {
++		value = number.String()
++	}
++	return text(decimalValue(value))
++}
++
++func familyNotificationValuePresent(value any) bool {
++	if value == nil {
++		return false
++	}
++	switch value := value.(type) {
++	case string:
++		return strings.TrimSpace(value) != ""
++	case time.Time:
++		return !value.IsZero()
++	case bool:
++		return true
++	default:
++		return text(value) != ""
++	}
++}
++
++func familyNotificationDisplayValue(value, fallback string) string {
++	value = strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
++	if value == "" {
++		return fallback
++	}
++	return value
++}
++
++func familyNotificationNote(value string) string { return strings.TrimSpace(value) }
++
++func familyNotificationLocation(zoneName string) (*time.Location, string) {
++	zoneName = familyNotificationDisplayValue(zoneName, "UTC")
++	location, err := time.LoadLocation(zoneName)
++	if err != nil {
++		return time.UTC, "UTC"
++	}
++	return location, zoneName
++}
++
++func familyNotificationTimestamp(value any, location *time.Location, zoneName string) string {
++	instant, err := asTime(value)
++	if err != nil {
++		return familyNotificationDisplayValue(text(value), "")
++	}
++	return instant.In(location).Format("2006-01-02 15:04:05 -07:00") + "（" + zoneName + "）"
++}
++
++func familyNotificationStringList(value any) []string {
++	switch values := value.(type) {
++	case []string:
++		return append([]string(nil), values...)
++	case []any:
++		result := make([]string, 0, len(values))
++		for _, value := range values {
++			if item := text(value); item != "" {
++				result = append(result, item)
++			}
++		}
++		return result
++	default:
++		return nil
++	}
++}
++
++func legacyFamilyNotificationSnapshot(event familyRecordEvent, content familyNotificationRecordContent) familyNotificationSnapshot {
++	if content.Record != nil && integer(content.Record["version"]) == event.Version {
++		content.Kind, content.Operation = event.Kind, event.Operation
++		return renderFamilyNotificationSnapshot(content)
++	}
++
++	actor := familyNotificationDisplayValue(content.ActorName, "家庭成员")
++	baby := familyNotificationDisplayValue(content.BabyName, "宝宝")
++	title := actor + "为" + baby + familyNotificationOperationName(event.Operation) + familyNotificationRecordName(event.Kind) + "记录"
++	body := fmt.Sprintf("此通知对应旧记录版本 %d。", event.Version)
++	if content.Record == nil {
++		body += "原始记录已不存在，无法恢复当时详情。"
++	} else {
++		currentVersion := integer(content.Record["version"])
++		if currentVersion > 0 {
++			body += fmt.Sprintf("当前记录版本 %d 已变化；打开通知查看当前内容。", currentVersion)
++		} else {
++			body += "当前记录版本未知；打开通知查看当前内容。"
++		}
++	}
++	return familyNotificationSnapshot{Version: familyNotificationSnapshotVersion, Title: title, Body: body}
++}
++
++func familyNotificationRecordTable(kind string) (string, bool) {
++	tables := map[string]string{
++		"feeding": "feeding_records", "sleep": "sleep_records", "diaper": "diaper_records",
++		"food": "food_records", "supplement": "supplement_records", "growth": "growth_measurements",
++	}
++	table, ok := tables[kind]
++	return table, ok
++}
++
++func loadFamilyNotificationRecord(ctx context.Context, q Querier, familyID, babyID, kind, recordID string) (Object, error) {
++	table, ok := familyNotificationRecordTable(kind)
++	if !ok {
++		return nil, errors.New("unsupported family notification record kind")
++	}
++	return one(ctx, q, "SELECT to_jsonb(r) FROM "+pgx.Identifier{table}.Sanitize()+" r WHERE r.id=$1 AND r.family_id=$2 AND r.baby_id=$3", recordID, familyID, babyID)
++}
++
++func loadFamilyNotificationIdentity(ctx context.Context, q Querier, actorID, familyID, babyID string) (actor, baby, zone string, err error) {
++	err = q.QueryRow(ctx, `SELECT COALESCE(NULLIF(u.display_name,''),NULLIF(u.username,''),'家庭成员'),
++		COALESCE(NULLIF(b.nickname,''),'宝宝'),COALESCE(NULLIF(f.timezone,''),'UTC')
++		FROM babies b JOIN families f ON f.id=b.family_id LEFT JOIN users u ON u.id=$1
++		WHERE b.id=$2 AND b.family_id=$3`, actorID, babyID, familyID).Scan(&actor, &baby, &zone)
++	return
++}
++
++func familyNotificationNames(ctx context.Context, q Querier, scope Scope, record Object) ([]string, string, string, error) {
++	foodNames := []string(nil)
++	if ids := familyNotificationStringList(record["food_item_ids"]); len(ids) > 0 {
++		rows, err := many(ctx, q, `SELECT to_jsonb(x) FROM food_library_items x
++			WHERE x.id=ANY($1::text[]) AND (x.family_id IS NULL OR x.family_id=$2)`, ids, scope.FamilyID)
++		if err != nil {
++			return nil, "", "", err
++		}
++		names := make(map[string]string, len(rows))
++		for _, row := range rows {
++			if id, name := text(row["id"]), familyNotificationDisplayValue(text(row["name"]), ""); id != "" && name != "" {
++				names[id] = name
++			}
++		}
++		for _, id := range ids {
++			if name := names[id]; name != "" {
++				foodNames = append(foodNames, name)
++			}
++		}
++	}
++	formulaName, supplementName := "", ""
++	if id := text(record["formula_product_id"]); id != "" {
++		err := q.QueryRow(ctx, `SELECT concat_ws(' ',NULLIF(brand,''),name) FROM formula_products WHERE id=$1 AND family_id=$2`, id, scope.FamilyID).Scan(&formulaName)
++		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
++			return nil, "", "", err
++		}
++	}
++	if id := text(record["product_id"]); id != "" {
++		err := q.QueryRow(ctx, `SELECT concat_ws(' ',NULLIF(brand,''),name) FROM supplement_products WHERE id=$1 AND family_id=$2`, id, scope.FamilyID).Scan(&supplementName)
++		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
++			return nil, "", "", err
++		}
++	}
++	return foodNames, formulaName, supplementName, nil
++}
++
++func familyNotificationSnapshotFromRecord(ctx context.Context, q Querier, actorID string, scope Scope, event familyRecordEvent, requireMatchingVersion bool) (familyNotificationSnapshot, error) {
++	record, err := loadFamilyNotificationRecord(ctx, q, scope.FamilyID, scope.BabyID, event.Kind, event.RecordID)
++	if errors.Is(err, pgx.ErrNoRows) {
++		if requireMatchingVersion {
++			return familyNotificationSnapshot{}, errors.New("committed family notification record is missing")
++		}
++		record = nil
++	} else if err != nil {
++		return familyNotificationSnapshot{}, err
++	}
++	actor, baby, zone, err := loadFamilyNotificationIdentity(ctx, q, actorID, scope.FamilyID, scope.BabyID)
++	if err != nil {
++		return familyNotificationSnapshot{}, err
++	}
++	content := familyNotificationRecordContent{Kind: event.Kind, Operation: event.Operation, ActorName: actor, BabyName: baby, TimeZone: zone, Record: record}
++	if record != nil {
++		version := integer(record["version"])
++		if requireMatchingVersion && version != event.Version {
++			return familyNotificationSnapshot{}, errors.New("persisted family notification record version does not match event")
++		}
++		if !requireMatchingVersion && version != event.Version {
++			return legacyFamilyNotificationSnapshot(event, content), nil
++		}
++		foodNames, formulaName, supplementName, err := familyNotificationNames(ctx, q, scope, record)
++		if err != nil {
++			return familyNotificationSnapshot{}, err
++		}
++		content.FoodItemNames, content.FormulaName, content.SupplementProductName = foodNames, formulaName, supplementName
++		content.FormulaID = text(record["formula_product_id"])
++	}
++	if record == nil {
++		return legacyFamilyNotificationSnapshot(event, content), nil
++	}
++	return renderFamilyNotificationSnapshot(content), nil
++}
++
++func familyPushWirePayload(title, body string, data Object, tag string, budget int) (Object, []byte, bool, error) {
++	return familyPushBoundedPayload(body, budget, func(body string) Object {
++		return Object{"title": title, "body": body, "data": data, "tag": tag, "url": "/notifications"}
++	})
++}
++
++func familyAPNSWirePayload(title, body, notificationID string, data Object, budget int) (Object, []byte, bool, error) {
++	return familyPushBoundedPayload(body, budget, func(body string) Object {
++		return Object{"aps": Object{"alert": Object{"title": title, "body": body}, "sound": "default"}, "notificationId": notificationID, "data": data}
++	})
++}
++
++func familyPushBoundedPayload(body string, budget int, payloadForBody func(string) Object) (Object, []byte, bool, error) {
++	if budget <= 0 || payloadForBody == nil {
++		return nil, nil, false, errors.New("invalid family push payload budget")
++	}
++	payload := payloadForBody(body)
++	raw, err := jsonBytes(payload)
++	if err != nil || len(raw) <= budget {
++		return payload, raw, false, err
++	}
++	const suffix = "…点击查看完整内容"
++	runes := []rune(body)
++	low, high := 0, len(runes)
++	var best Object
++	var bestRaw []byte
++	for low <= high {
++		middle := low + (high-low)/2
++		candidateBody := string(runes[:middle]) + suffix
++		candidate := payloadForBody(candidateBody)
++		encoded, encodeErr := jsonBytes(candidate)
++		if encodeErr != nil {
++			return nil, nil, false, encodeErr
++		}
++		if len(encoded) <= budget {
++			best, bestRaw = candidate, encoded
++			low = middle + 1
++		} else {
++			high = middle - 1
++		}
++	}
++	if best == nil {
++		return nil, nil, false, errors.New("family push metadata exceeds wire budget")
++	}
++	return best, bestRaw, true, nil
++}
+diff --git a/internal/backend/family_notification_content_test.go b/internal/backend/family_notification_content_test.go
+new file mode 100644
+index 0000000..bb7eded
+--- /dev/null
++++ b/internal/backend/family_notification_content_test.go
+@@ -0,0 +1,135 @@
++package backend
++
++import (
++	"encoding/json"
++	"strings"
++	"testing"
++	"time"
++	"unicode/utf8"
++)
++
++func TestRenderFamilyNotificationSnapshotIncludesPersistedRecordDetails(t *testing.T) {
++	at := time.Date(2026, 10, 6, 15, 15, 0, 0, time.UTC)
++	tests := []struct {
++		name, kind, operation string
++		wantTitle             string
++		record                Object
++		foodNames             []string
++		formulaName           string
++		want                  []string
++	}{
++		{
++			name: "feeding preserves enum, zero values, amount, product, spit up, note and timezone",
++			kind: "feeding", operation: "create", formulaName: "test_formula_name",
++			wantTitle: "测试家长为测试宝宝新增喂奶记录",
++			record:    Object{"occurred_at": at, "feeding_type": "formula", "amount_ml": json.Number("0.000"), "left_minutes": 0, "right_minutes": 12, "spit_up": "false", "notes": "test_feeding_note"},
++			want:      []string{"配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "test_formula_name", "吐奶：否", "test_feeding_note", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++		},
++		{
++			name: "sleep keeps zero waking count and interval",
++			kind: "sleep", operation: "update",
++			wantTitle: "测试家长为测试宝宝更新睡眠记录",
++			record:    Object{"sleep_type": "night", "started_at": at.Add(-time.Hour), "ended_at": at, "night_waking_count": 0, "notes": "test_sleep_note"},
++			want:      []string{"夜间睡眠", "开始时间：2026-10-06 07:15:00 -07:00（America/Los_Angeles）", "结束时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次", "test_sleep_note"},
++		},
++		{
++			name: "diaper keeps type, color, consistency and note",
++			kind: "diaper", operation: "delete",
++			wantTitle: "测试家长为测试宝宝删除尿布记录",
++			record:    Object{"diaper_type": "both", "occurred_at": at, "poop_color": "brown", "poop_consistency": "soft", "notes": "test_diaper_note"},
++			want:      []string{"尿便都有", "便便颜色：棕色", "便便性状：柔软", "test_diaper_note"},
++		},
++		{
++			name: "food resolves item names and keeps portion reaction and note",
++			kind: "food", operation: "restore",
++			wantTitle: "测试家长为测试宝宝恢复辅食记录",
++			record:    Object{"record_date": "2026-10-06", "meal_type": "lunch", "occurred_at": at, "portion_description": "test_half_bowl", "reaction": "like", "notes": "test_food_note"},
++			foodNames: []string{"test_pear", "test_oat"},
++			want:      []string{"午餐", "食物：test_pear、test_oat", "test_half_bowl", "接受度：喜欢", "test_food_note", "记录日期：2026-10-06", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++		},
++		{
++			name: "supplement keeps amount dose unit and note",
++			kind: "supplement", operation: "create",
++			wantTitle: "测试家长为测试宝宝新增补剂记录",
++			record:    Object{"supplement_name": "test_vitamin_d", "occurred_at": at, "amount": "0 mL", "dose": json.Number("0.00000"), "unit_name": "mL", "notes": "test_supplement_note"},
++			want:      []string{"test_vitamin_d", "用量：0 mL", "剂量：0 mL", "test_supplement_note", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++		},
++		{
++			name: "growth keeps zero-valued measurements and date-only clock",
++			kind: "growth", operation: "create",
++			wantTitle: "测试家长为测试宝宝新增生长测量记录",
++			record:    Object{"measurement_date": "2026-10-06", "weight_kg": json.Number("0.00"), "height_cm": json.Number("72.0"), "head_circumference_cm": json.Number("0.0"), "notes": "test_growth_note"},
++			want:      []string{"测量日期：2026-10-06", "体重：0 千克", "身长：72 厘米", "头围：0 厘米", "test_growth_note"},
++		},
++	}
++	for _, test := range tests {
++		t.Run(test.name, func(t *testing.T) {
++			snapshot := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++				Kind: test.kind, Operation: test.operation, ActorName: "测试家长", BabyName: "测试宝宝",
++				TimeZone: "America/Los_Angeles", Record: test.record, FoodItemNames: test.foodNames, FormulaName: test.formulaName,
++			})
++			if snapshot.Version != 1 || snapshot.Title != test.wantTitle {
++				t.Fatalf("unexpected immutable title: %+v", snapshot)
++			}
++			for _, part := range test.want {
++				if !strings.Contains(snapshot.Body, part) {
++					t.Errorf("body %q does not include %q", snapshot.Body, part)
++				}
++			}
++			if strings.Contains(snapshot.Body, "test_pear、test_oat") && strings.Index(snapshot.Body, "test_food_note") < strings.Index(snapshot.Body, "食物：") {
++				t.Fatal("notes must follow structured details so wire truncation retains event facts")
++			}
++		})
++	}
++}
++
++func TestLegacyFamilyNotificationFallbackNeverUsesLaterRecordVersion(t *testing.T) {
++	event := familyRecordEvent{ActorID: "actor", Kind: "feeding", RecordID: "record", Operation: "update", Version: 1}
++	input := familyNotificationRecordContent{Kind: "feeding", Operation: "update", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "UTC", Record: Object{
++		"version": 2, "feeding_type": "formula", "occurred_at": time.Date(2026, 10, 7, 1, 2, 3, 0, time.UTC), "amount_ml": "999", "notes": "test_future_note",
++	}}
++	snapshot := legacyFamilyNotificationSnapshot(event, input)
++	if strings.Contains(snapshot.Body, "999") || strings.Contains(snapshot.Body, "test_future_note") || !strings.Contains(snapshot.Body, "旧记录版本 1") || !strings.Contains(snapshot.Body, "当前记录版本 2") {
++		t.Fatalf("legacy event incorporated a later record state: %+v", snapshot)
++	}
++	event.Version = 2
++	snapshot = legacyFamilyNotificationSnapshot(event, input)
++	if !strings.Contains(snapshot.Body, "奶量：999 毫升") || !strings.Contains(snapshot.Body, "test_future_note") {
++		t.Fatalf("matching legacy record version did not provide its scoped detail: %+v", snapshot)
++	}
++	input.Record = nil
++	event.Version = 1
++	snapshot = legacyFamilyNotificationSnapshot(event, input)
++	if !strings.Contains(snapshot.Body, "原始记录已不存在") || strings.Contains(snapshot.Body, "999") {
++		t.Fatalf("missing legacy record fallback is unclear or invents details: %+v", snapshot)
++	}
++}
++
++func TestFamilyNotificationSnapshotPreservesNoteWhitespaceAndLineBreaks(t *testing.T) {
++	note := " 第一行\n第二行  保留连续空格\n第三行 "
++	snapshot := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++		Kind: "feeding", Operation: "create", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "UTC",
++		Record: Object{"feeding_type": "formula", "amount_ml": "120", "notes": note},
++	})
++	if !strings.HasSuffix(snapshot.Body, "备注："+strings.TrimSpace(note)) || strings.Contains(snapshot.Body, "第一行 第二行") {
++		t.Fatalf("inbox snapshot normalized meaningful note whitespace: %q", snapshot.Body)
++	}
++}
++
++func TestFamilyPushPayloadClipsUnicodeWithinWireBudgetWithoutChangingInboxSnapshot(t *testing.T) {
++	fullBody := "发生时间：2026-10-06 08:15:00 +08:00（Asia/Shanghai）；奶量：120 毫升；备注：" + strings.Repeat("宝宝喜欢吃苹果🍎", 400)
++	snapshot := familyNotificationSnapshot{Version: 1, Title: "测试家长为测试宝宝新增喂奶记录", Body: fullBody}
++	payload, raw, clipped, err := familyPushWirePayload(snapshot.Title, snapshot.Body, Object{"eventKey": "test_event_key", "recordVersion": "1"}, "test_notification_id", 3072)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if !clipped || len(raw) > 3072 || !utf8.Valid(raw) || !strings.Contains(text(payload["body"]), "…点击查看完整内容") {
++		t.Fatalf("wire payload was not safely clipped: bytes=%d clipped=%t body=%q", len(raw), clipped, payload["body"])
++	}
++	if !strings.Contains(text(payload["body"]), "奶量：120 毫升") || payload["data"] == nil || !strings.Contains(string(raw), "test_event_key") {
++		t.Fatalf("clipping dropped a structured fact or stable metadata: %s", raw)
++	}
++	if snapshot.Body != fullBody || !strings.HasSuffix(snapshot.Body, strings.Repeat("宝宝喜欢吃苹果🍎", 400)) {
++		t.Fatal("wire clipping mutated the full inbox snapshot")
++	}
++}
+diff --git a/internal/backend/family_notifications.go b/internal/backend/family_notifications.go
+index 5d7f02b..9051fe2 100644
+--- a/internal/backend/family_notifications.go
++++ b/internal/backend/family_notifications.go
+@@ -18,15 +18,16 @@ const familyRecipientBatch = 32
+ const familyRecipientLimit = 1024
+ const familyDeviceLimit = 64
+ 
+-// Only committed care events can construct this input. It deliberately does not
+-// retain record contents or an actor-owned session/lease.
++// Only committed care events can construct this input. It retains a versioned,
++// human-readable snapshot rather than raw record rows, with no actor session/lease.
+ type familyRecordEvent struct {
+-	ActorID   string `json:"actorId"`
+-	Kind      string `json:"kind"`
+-	RecordID  string `json:"recordId"`
+-	Operation string `json:"operation"`
+-	Version   int64  `json:"version"`
+-	EventKey  string `json:"eventKey"`
++	ActorID         string                      `json:"actorId"`
++	Kind            string                      `json:"kind"`
++	RecordID        string                      `json:"recordId"`
++	Operation       string                      `json:"operation"`
++	Version         int64                       `json:"version"`
++	EventKey        string                      `json:"eventKey"`
++	ContentSnapshot *familyNotificationSnapshot `json:"contentSnapshot,omitempty"`
+ }
+ 
+ func familyRecordKind(kind string) bool {
+@@ -58,6 +59,9 @@ func validFamilyRecordInput(input nativeTaskInput) bool {
+ 	if input.Version != 1 || event == nil || !actionUUID.MatchString(input.FamilyID) || !actionUUID.MatchString(input.BabyID) || !actionUUID.MatchString(event.ActorID) || !actionUUID.MatchString(event.RecordID) || !familyRecordKind(event.Kind) || event.Version < 1 {
+ 		return false
+ 	}
++	if event.ContentSnapshot != nil && !validFamilyNotificationSnapshot(event.ContentSnapshot) {
++		return false
++	}
+ 	switch event.Operation {
+ 	case "create", "update", "delete", "restore":
+ 	default:
+@@ -102,6 +106,14 @@ func enqueueFamilyRecordNotification(ctx context.Context, tx pgx.Tx, actor strin
+ 	if !validFamilyRecordInput(input) {
+ 		return errors.New("invalid committed family record event")
+ 	}
++	snapshot, err := familyNotificationSnapshotFromRecord(ctx, tx, actor, scope, *input.FamilyRecord, true)
++	if err != nil {
++		return err
++	}
++	input.FamilyRecord.ContentSnapshot = &snapshot
++	if !validFamilyRecordInput(input) {
++		return errors.New("invalid committed family notification snapshot")
++	}
+ 	return enqueueFamilyTask(ctx, tx, familyStableID("event/"+input.FamilyRecord.EventKey), familyRecordNotificationKind, "family:"+scope.FamilyID, input, time.Now().UTC())
+ }
+ 
+@@ -144,6 +156,18 @@ func publishNotificationUserChange(ctx context.Context, tx pgx.Tx, user, kind, i
+ }
+ 
+ func (s *Server) executeFamilyRecordNotification(ctx context.Context, lease nativeTaskLease) error {
++	if !validFamilyRecordInput(lease.Input) {
++		return errors.New("invalid family record notification input")
++	}
++	if lease.Input.FamilyRecord.ContentSnapshot == nil {
++		input := lease.Input
++		snapshot, err := familyNotificationSnapshotFromRecord(ctx, s.DB, input.FamilyRecord.ActorID, Scope{FamilyID: input.FamilyID, BabyID: input.BabyID}, *input.FamilyRecord, false)
++		if err != nil {
++			return err
++		}
++		input.FamilyRecord.ContentSnapshot = &snapshot
++		lease.Input = input
++	}
+ 	progress, err := one(ctx, s.DB, `SELECT COALESCE(t.progress,'{}'::jsonb) FROM task_executions t WHERE id=$1`, lease.ID)
+ 	if err != nil {
+ 		return err
+@@ -267,14 +291,23 @@ func (s *Server) publishFamilyRecipient(ctx context.Context, lease nativeTaskLea
+ }
+ 
+ func (s *Server) createFamilyRecipientNotification(ctx context.Context, tx pgx.Tx, input nativeTaskInput, pref familyNotificationPreference) error {
++	if input.FamilyRecord == nil || !validFamilyNotificationSnapshot(input.FamilyRecord.ContentSnapshot) {
++		return errors.New("family notification is missing its immutable content snapshot")
++	}
+ 	id := familyStableID("notification/" + input.UserID + "/" + input.FamilyRecord.EventKey)
+ 	data, err := jsonText(familyNotificationData(input))
+ 	if err != nil {
+ 		return err
+ 	}
+ 	row, err := one(ctx, tx, `INSERT INTO notifications(id,user_id,event_key,title,body,data,created_at)
+-		VALUES($1,$2,$3,'家庭动态','有新的照护记录',$4::jsonb,NOW()) ON CONFLICT(id) DO NOTHING RETURNING to_jsonb(notifications)`, id, input.UserID, input.FamilyRecord.EventKey, data)
++		VALUES($1,$2,$3,$4,$5,$6::jsonb,NOW()) ON CONFLICT(id) DO UPDATE SET
++		title=EXCLUDED.title,body=EXCLUDED.body
++		WHERE notifications.title='家庭动态' AND notifications.body='有新的照护记录'
++		RETURNING to_jsonb(notifications)`, id, input.UserID, input.FamilyRecord.EventKey,
++		input.FamilyRecord.ContentSnapshot.Title, input.FamilyRecord.ContentSnapshot.Body, data)
+ 	if errors.Is(err, pgx.ErrNoRows) {
++		// Preserve any already detailed notification. Its delivery outbox rows
++		// were committed alongside it, so replay is a no-op.
+ 		return nil
+ 	}
+ 	if err != nil {
+diff --git a/internal/backend/family_notifications_test.go b/internal/backend/family_notifications_test.go
+index 92e34c5..827d528 100644
+--- a/internal/backend/family_notifications_test.go
++++ b/internal/backend/family_notifications_test.go
+@@ -17,9 +17,19 @@ func testFamilyEvent() nativeTaskInput {
+ func TestFamilyNotificationStableEventIdentity(t *testing.T) {
+ 	input := testFamilyEvent()
+ 	key := input.FamilyRecord.EventKey
++	input.FamilyRecord.ContentSnapshot = &familyNotificationSnapshot{Version: 1, Title: "测试标题", Body: "测试完整正文"}
++	if familyRecordEventKey(input) != key || !validFamilyRecordInput(input) {
++		t.Fatal("content snapshot changed event identity or invalidated the event")
++	}
+ 	if !validFamilyRecordInput(input) || !actionUUID.MatchString(familyStableID("event/"+key)) || familyRecordEventKey(input) != key {
+ 		t.Fatal("committed event identity is invalid or unstable")
+ 	}
++	row := Object{"kind": familyRecordNotificationKind, "type": familyRecordNotificationKind, "payload_version": 1,
++		"owner_scope": "family:" + input.FamilyID, "payload": Object{"__native": input}}
++	decoded, err := decodeNativeTaskInput(row)
++	if err != nil || decoded.FamilyRecord.ContentSnapshot == nil || decoded.FamilyRecord.ContentSnapshot.Body != "测试完整正文" {
++		t.Fatalf("immutable content snapshot did not survive task serialization: %+v %v", decoded, err)
++	}
+ 	input.FamilyRecord.Version++
+ 	if familyRecordEventKey(input) == key || validFamilyRecordInput(input) {
+ 		t.Fatal("new version reused the event identity")
+diff --git a/internal/backend/native_push.go b/internal/backend/native_push.go
+index d4e92c2..edb3759 100644
+--- a/internal/backend/native_push.go
++++ b/internal/backend/native_push.go
+@@ -259,9 +259,6 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
+ 		return errors.New("native push client is not initialized")
+ 	}
+ 	payload := Object{"title": notification["title"], "body": notification["body"], "data": notification["data"], "tag": lease.Input.NotificationID}
+-	if lease.Input.FamilyRecord != nil {
+-		payload = Object{"title": "家庭动态", "body": "有新的照护记录", "data": familyNotificationData(lease.Input), "tag": lease.Input.NotificationID, "url": "/notifications"}
+-	}
+ 	switch platform {
+ 	case "web":
+ 		sub, e := nativePushSubscription(text(device["token"]))
+@@ -275,13 +272,18 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
+ 		if e = validateVAPID(public, private, subject); e != nil {
+ 			return e
+ 		}
+-		raw, e := jsonBytes(payload)
++		var raw []byte
++		if lease.Input.FamilyRecord != nil {
++			_, raw, _, e = familyPushWirePayload(text(notification["title"]), text(notification["body"]), obj(notification["data"]), lease.Input.NotificationID, 3072)
++		} else {
++			raw, e = jsonBytes(payload)
++			if e == nil && len(raw) > 3072 {
++				e = invalid("Push payload exceeds budget")
++			}
++		}
+ 		if e != nil {
+ 			return e
+ 		}
+-		if len(raw) > 3072 {
+-			return invalid("Push payload exceeds budget")
+-		}
+ 		digest := sha256.Sum256([]byte(lease.Input.NotificationID))
+ 		response, err = webpush.SendNotificationWithContext(ctx, raw, sub, &webpush.Options{HTTPClient: client, Subscriber: subject, VAPIDPublicKey: public, VAPIDPrivateKey: private, TTL: 300, Topic: hex.EncodeToString(digest[:16])})
+ 	case "ios":
+@@ -308,13 +310,18 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
+ 		if e != nil {
+ 			return e
+ 		}
+-		raw, e := jsonBytes(Object{"aps": Object{"alert": Object{"title": notification["title"], "body": notification["body"]}, "sound": "default"}, "notificationId": lease.Input.NotificationID, "data": notification["data"]})
++		var raw []byte
++		if lease.Input.FamilyRecord != nil {
++			_, raw, _, e = familyAPNSWirePayload(text(notification["title"]), text(notification["body"]), lease.Input.NotificationID, obj(notification["data"]), 4096)
++		} else {
++			raw, e = jsonBytes(Object{"aps": Object{"alert": Object{"title": notification["title"], "body": notification["body"]}, "sound": "default"}, "notificationId": lease.Input.NotificationID, "data": notification["data"]})
++			if e == nil && len(raw) > 4096 {
++				e = invalid("APNs payload exceeds budget")
++			}
++		}
+ 		if e != nil {
+ 			return e
+ 		}
+-		if len(raw) > 4096 {
+-			return invalid("APNs payload exceeds budget")
+-		}
+ 		request, e := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(raw))
+ 		if e != nil {
+ 			return e

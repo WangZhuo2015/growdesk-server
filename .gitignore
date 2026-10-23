@@ -54,3 +54,9 @@ scratch/**/logfile
 # Python verification runner artifacts
 __pycache__/
 *.pyc
+
+# Local Passport build/test binaries and compressed build archives.
+# Keep source snapshots, checksums, reports and text evidence in Git.
+/evidence/tasks/PASSPORT_*/artifacts/**/*-linux-arm64
+/evidence/tasks/PASSPORT_*/artifacts/**/*.test
+/evidence/tasks/PASSPORT_*/artifacts/**/*.gz

@@ -1,0 +1,35 @@
+{
+  "api_binary": {
+    "build_exit_code": 0,
+    "cgo_enabled": false,
+    "path": "growdesk-api-linux-arm64",
+    "platform": "linux/arm64",
+    "sha256": "ad76c14be814ba45806457c380626eff6a9672abbe6deed6ffc73e2db6c79937"
+  },
+  "full_race_suite": {
+    "exit_code": 0,
+    "failed": 0,
+    "host": "darwin/arm64",
+    "passed": 346,
+    "skipped": 4,
+    "test_database_env": "unset"
+  },
+  "host_test_binary": {
+    "build_exit_code": 0,
+    "focused_run_exit_code": 0,
+    "path": "stream-diagnostics-darwin-arm64.test",
+    "platform": "darwin/arm64",
+    "sha256": "1f128cd8b512f29164ffce81b827ab1fdade188a3bf781671b35918c72dafe82"
+  },
+  "linux_test_binary": {
+    "build_exit_code": 0,
+    "cgo_enabled": false,
+    "execution": "not run",
+    "path": "stream-diagnostics-linux-arm64.test",
+    "platform": "linux/arm64",
+    "runtime_filter": "^(TestClassifyStreamInterruption|TestServeHTTPLogsSafeUnknownHTTPStreamError|TestServeHTTPLogsWebSocketCloseCodeWithoutReason)$",
+    "sha256": "5109737af428b35f754ce0aa304a29ebf63bc29028d8a0d0eec91a7db295a4b7"
+  },
+  "source_snapshot": "source_snapshot",
+  "toolchain": "go1.27.0 (cached toolchain executable)"
+}

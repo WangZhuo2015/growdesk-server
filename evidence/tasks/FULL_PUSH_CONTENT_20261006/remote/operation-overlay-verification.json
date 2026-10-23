@@ -1,0 +1,6 @@
+{
+  "activationSha256": "22c17c3bf89ca3cd26be965452c0f0e03d8c4123d6471306d45c47c219ef75d4",
+  "allBundleHashesVerified": true,
+  "serverSourcePatchOnly": true,
+  "rollbackBinaryHashAssertions": true
+}

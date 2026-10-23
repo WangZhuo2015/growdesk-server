@@ -1,0 +1,92 @@
+{
+  "recorded_at_utc": "2026-10-03T11:44:17.712044+00:00",
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "artifact": {
+    "path": "evidence/tasks/PASSPORT_ASR_COMPAT_20261003/artifacts/sherpa-voice-api-linux-arm64",
+    "sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921",
+    "size_bytes": 27404818,
+    "target": "linux/arm64",
+    "cgo_enabled": false
+  },
+  "validation": {
+    "go_test_race_all": {
+      "exit_code": 0,
+      "log": "go-test-race.private-tts-final.log"
+    },
+    "real_offline_voice": {
+      "exit_code": 0,
+      "log": "linux-local-sherpa-voice.retested.log",
+      "focused_timeout_passes": 10,
+      "skipped": 0,
+      "canonical_sentence_exact": true,
+      "quantity_140_ml_preserved": true,
+      "quantity_first_word_misrecognition_observed": true,
+      "source_frozen": true,
+      "api_production_match": "private-tts-api-production.match.json",
+      "helper_sha256": "f365003e46ad3b7366791c1965a948cb78561ebc06dea5daa90dccc4829d19a3"
+    },
+    "isolated_postgresql": {
+      "exit_code": 0,
+      "named_suites": 3,
+      "log": "pg-acceptance.log",
+      "cleanup": "0|0|0|0; cluster stopped and removed"
+    },
+    "openapi": "PASS: 112 paths /159 operations",
+    "passport_card_contract": "PASS: no skips",
+    "production_source_match": {
+      "unchanged": true,
+      "file_count": 96,
+      "helper_only_changed": [
+        "internal/backend/passport_tts_local_linux_test.go"
+      ],
+      "api_sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921"
+    },
+    "current_linux_helper_sha256": "f365003e46ad3b7366791c1965a948cb78561ebc06dea5daa90dccc4829d19a3"
+  },
+  "deployment_performed": true,
+  "running_service_observed": {
+    "name": "growdesk-api.service",
+    "binary_sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921",
+    "pid": 3435230,
+    "n_restarts": 0,
+    "active": "active",
+    "substate": "running",
+    "start_timestamp_utc": "2026-10-03 11:36:26 UTC",
+    "anonymous_passport_ws_status": 401,
+    "selected_runtime_configuration_matches_prepared": true
+  },
+  "rollback": {
+    "directory": "/home/ubuntu/growdesk/releases/passport-voice-20261003.53x7uqn0",
+    "binary_sha256": "b98fe98f297db78c8dfbb8f24474b729e4323a45601289bbb30ae9f8760a551e",
+    "current_original_config_preserved": true
+  },
+  "authorized_selected_configuration_read": true,
+  "secret_values_printed": false,
+  "original_asr_environment_modified": false,
+  "voice_fixture_enabled_on_service": false,
+  "device_observation": {
+    "path": "/Users/wangzhuo/Documents/GitHub/growdesk-iot/build/device-tests/passport-20261003-existing-voice/runtime-summary.json",
+    "duration_seconds": 600.13,
+    "counts": {
+      "reset_lines": 1,
+      "panic_lines": 0,
+      "ws_connected": 2,
+      "ws_disconnected": 1,
+      "gateway_ready": 2,
+      "error_lines": 4
+    },
+    "expected_usb_reset_count": 1,
+    "expected_service_restart_disconnects": 1,
+    "expected_transport_error_lines": 4,
+    "reconnected_ready_seconds": 4.82,
+    "unplanned_resets": 0,
+    "unplanned_disconnects": 0,
+    "real_microphone_turn_observed": false
+  },
+  "pending_acceptance": [
+    "User actual physical middle-key voice turn / real AI response / audible playback",
+    "Visual key mapping persistence",
+    "Physical genuine record confirmation"
+  ],
+  "patch_sha256": "fe1580318f77072236e9c5f804543ca44c4c91212331ec31f0ff959da5d2fab0"
+}

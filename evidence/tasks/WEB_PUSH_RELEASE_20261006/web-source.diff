@@ -1,0 +1,2516 @@
+diff --git a/app/api/push/test/route.ts b/app/api/push/test/route.ts
+index cea9d11..5033d46 100644
+--- a/app/api/push/test/route.ts
++++ b/app/api/push/test/route.ts
+@@ -5,69 +5,76 @@ import { requireAuth } from "@/lib/api-helpers";
+ import { PUSH_CONFIG, GROWDESK_CONFIG } from "@/lib/config";
+ import { resolveBffSession } from "@/lib/growdesk/session";
+ import { growdeskFetch } from "@/lib/growdesk/client";
++import { verifyBffCsrf } from "@/lib/growdesk/csrf";
++import { nativePushSubscription } from "@/lib/growdesk/push-bridge";
++import { BridgeError, bridgeErrorResponse, requireData } from "@/lib/growdesk/bridge-protocol";
+ import crypto from "node:crypto";
+ 
+ export async function POST(request: Request) {
+   try {
+     if (GROWDESK_CONFIG.enabled) {
++      const csrfError = verifyBffCsrf(request, { enforceInTest: true });
++      if (csrfError) return csrfError;
+       const bffSession = await resolveBffSession(request);
+       if (!bffSession) {
+         return NextResponse.json({ error: "Unauthorized: 会话无效或已过期" }, { status: 401 });
+       }
+ 
+-      const body = await request.json().catch(() => ({}));
+-      const endpoint = body?.subscription?.endpoint ? String(body.subscription.endpoint).trim() : "";
+-
+-      if (endpoint) {
+-        const installationId = crypto.createHash("sha256").update(endpoint).digest("hex").slice(0, 32);
+-        try {
+-          await growdeskFetch(`/api/v1/devices/${installationId}/push`, {
+-            method: "PUT",
+-            accessToken: bffSession.accessToken,
+-            body: {
+-              token: endpoint,
+-              platform: "web",
+-              environment: "production",
+-            },
+-          });
+-        } catch {}
++      const body = await request.json().catch(() => null);
++      const subscription = nativePushSubscription(body?.subscription);
++      // A test send is still a server-side request. Only browser push services
++      // may receive it; arbitrary client URLs must never become an SSRF target.
++      const endpoint = new URL(subscription.endpoint);
++      const host = endpoint.hostname.toLowerCase();
++      const allowedHost = host === "fcm.googleapis.com" ||
++        host === "updates.push.services.mozilla.com" || host.endsWith(".push.services.mozilla.com") ||
++        host === "web.push.apple.com" || host.endsWith(".web.push.apple.com") ||
++        host.endsWith(".notify.windows.com");
++      if (!allowedHost || (endpoint.port && endpoint.port !== "443")) {
++        throw new BridgeError(400, "INVALID_PUSH_SUBSCRIPTION", "不支持此推送服务地址，请重新绑定设备");
+       }
+-
+       const publicKey = PUSH_CONFIG.publicKey;
+       const privateKey = PUSH_CONFIG.privateKey;
+-      if (publicKey && privateKey && body?.subscription?.endpoint && body?.subscription?.keys) {
+-        try {
+-          webPush.setVapidDetails(PUSH_CONFIG.subject, publicKey, privateKey);
+-          const payload = JSON.stringify({
+-            title: "🔔 宝宝成长助手 · 测试推送成功！",
+-            body: `尊敬的 ${bffSession.user.displayName || bffSession.user.username}，您的设备推送已成功就绪 ✨`,
+-            url: "/notifications",
+-          });
+-          await webPush.sendNotification(body.subscription, payload, { urgency: "high" });
+-          return NextResponse.json({
+-            success: true,
+-            sent: 1,
+-            failed: 0,
+-            message: "测试推送已成功发送至当前设备！请检查手机锁屏或系统通知栏 ✨",
+-          });
+-        } catch (err: any) {
+-          return NextResponse.json({
+-            success: true,
+-            sent: 0,
+-            failed: 1,
+-            simulated: true,
+-            message: `推送发送被拦截 (${err?.message || "网络限制"})，但设备凭据已成功注册至 GrowDesk 服务端 ✨`,
+-          });
+-        }
++      if (!publicKey || !privateKey) {
++        throw new BridgeError(503, "PUSH_NOT_CONFIGURED", "服务端尚未配置推送密钥，无法发送推送");
+       }
+ 
++      const installationId = crypto.createHash("sha256").update(subscription.endpoint).digest("hex").slice(0, 32);
++      const registration = requireData(await growdeskFetch<{ success: boolean }>(`/api/v1/devices/${installationId}/push`, {
++        method: "PUT", accessToken: bffSession.accessToken,
++        body: {
++          token: JSON.stringify(subscription), platform: "web", environment: "production",
++          deviceLabel: "Baby Panel Web",
++        },
++      }));
++      if (registration.success !== true) {
++        throw new BridgeError(502, "UPSTREAM_INVALID_RESPONSE", "服务端未确认推送订阅，请重试");
++      }
++      try {
++        await webPush.sendNotification(subscription, JSON.stringify({
++          title: "宝宝成长助手 · 测试通知", body: "这是一条测试通知，设备推送通道可用。", url: "/notifications",
++        }), {
++          urgency: "high", timeout: 10_000,
++          vapidDetails: { subject: PUSH_CONFIG.subject, publicKey, privateKey },
++        });
++      } catch (error) {
++        const pushError = error as webPush.WebPushError & { code?: string };
++        const status = pushError.statusCode;
++        if (status === 404 || status === 410) {
++          throw new BridgeError(400, "PUSH_SUBSCRIPTION_GONE", "设备推送凭据已失效，请点击「重新绑定设备」");
++        }
++        if (status === 401 || status === 403) {
++          throw new BridgeError(502, "PUSH_AUTH_FAILED", `推送服务鉴权失败(${status})，请检查服务端推送配置`);
++        }
++        if (pushError.code === "ETIMEDOUT" || /timeout|timed out/i.test(pushError.message || "")) {
++          throw new BridgeError(504, "PUSH_GATEWAY_TIMEOUT", "连接推送网关超时，请稍后重试");
++        }
++        throw new BridgeError(502, "PUSH_DELIVERY_FAILED", "推送服务未接受测试通知，请稍后重试");
++      }
+       return NextResponse.json({
+-        success: true,
+-        sent: 1,
+-        failed: 0,
+-        simulated: true,
+-        message: "测试推送模拟发送成功，GrowDesk 设备绑定有效 ✨",
+-      });
++        success: true, sent: 1, failed: 0,
++        message: "推送服务已接受测试通知，请查看系统通知栏",
++      }, { headers: { "cache-control": "no-store" } });
+     }
+ 
+     const auth = await requireAuth(request);
+@@ -207,6 +214,7 @@ export async function POST(request: Request) {
+       message: "测试通知已发出，请检查系统通知栏",
+     });
+   } catch (error) {
++    if (GROWDESK_CONFIG.enabled) return bridgeErrorResponse(error);
+     console.error("POST /api/push/test error:", error);
+     return NextResponse.json(
+       { error: "发送测试推送失败" },
+diff --git a/app/layout.tsx b/app/layout.tsx
+index 0e6f699..19ac03f 100644
+--- a/app/layout.tsx
++++ b/app/layout.tsx
+@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
+ import "./globals.css";
+ import { ToastProvider } from "@/components/ui/Toast";
+ import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
++import { PushSubscriptionRecovery } from "@/components/notifications/PushSubscriptionRecovery";
+ 
+ export const metadata: Metadata = {
+   title: "宝宝成长工作台",
+@@ -55,6 +56,7 @@ export default function RootLayout({
+       </head>
+       <body className="antialiased">
+         <ServiceWorkerRegistrar />
++        <PushSubscriptionRecovery />
+         <ToastProvider>
+           <div className="app-wrapper">{children}</div>
+         </ToastProvider>
+diff --git a/app/notifications/page.tsx b/app/notifications/page.tsx
+index e38829e..4d1ade8 100644
+--- a/app/notifications/page.tsx
++++ b/app/notifications/page.tsx
+@@ -1,6 +1,6 @@
+ "use client";
+ 
+-import { useEffect, useState, useCallback } from "react";
++import { useEffect, useState, useCallback, useRef } from "react";
+ import { useRouter } from "next/navigation";
+ import {
+   Bell,
+@@ -22,19 +22,23 @@ import { useToast } from "@/components/ui/Toast";
+ import { InstallGuideModal } from "@/components/ui/InstallGuideModal";
+ import { useNotificationInbox } from "@/lib/hooks/useNotificationInbox";
+ import type { NotificationViewItem as NotificationItem } from "@/lib/notification-actions";
+-
+-/** 将 VAPID Base64 字符串转换为浏览器 PushManager 必需的 Uint8Array */
+-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+-  const base64 = (base64String + padding)
+-    .replace(/-/g, "+")
+-    .replace(/_/g, "/");
+-  const rawData = window.atob(base64);
+-  const outputArray = new Uint8Array(rawData.length);
+-  for (let i = 0; i < rawData.length; ++i) {
+-    outputArray[i] = rawData.charCodeAt(i);
+-  }
+-  return outputArray;
++import { useBabyStore } from "@/stores/useBabyStore";
++import {
++  getPushRegistration,
++  PushClientError,
++  pushErrorMessage,
++  recoverExistingPushSubscription,
++  sendTestPush,
++  syncPushSubscription,
++} from "@/lib/push-client";
++
++function currentPushPermission(): string {
++  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
++  const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
++    (navigator as { standalone?: boolean }).standalone === true;
++  if (isIos && !isStandalone) return "ios_not_standalone";
++  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) return "unsupported";
++  return Notification.permission;
+ }
+ 
+ export default function NotificationsPage() {
+@@ -43,6 +47,11 @@ export default function NotificationsPage() {
+   const [showInstallGuide, setShowInstallGuide] = useState(false);
+   const [testingPush, setTestingPush] = useState(false);
+   const [enablingPush, setEnablingPush] = useState(false);
++  const [checkingPush, setCheckingPush] = useState(false);
++  const [pushError, setPushError] = useState<string | null>(null);
++  const [pushStatus, setPushStatus] = useState<string | null>(null);
++  const pushAction = useRef(false);
++  const pushBusy = checkingPush || enablingPush || testingPush;
+   const { showToast } = useToast();
+   const reportNotificationError = useCallback((message: string) => showToast(message, "error"), [showToast]);
+   const {
+@@ -50,93 +59,60 @@ export default function NotificationsPage() {
+     markRead, dismiss, clearAll, error: notificationError,
+   } = useNotificationInbox(true, reportNotificationError);
+ 
+-  /** 强制生成最新有效的推送订阅并同步至服务端 */
+-  const subscribeFresh = useCallback(
+-    async (readyReg: ServiceWorkerRegistration): Promise<PushSubscription | null> => {
+-      try {
+-        const keyRes = await fetch("/api/push/vapid-key");
+-        if (!keyRes.ok) throw new Error("获取推送公钥失败");
+-        const { publicKey } = await keyRes.json();
+-
+-        // 先退订本地旧的或失效的订阅凭据，防止 key 漂移冲突
+-        const oldSub = await readyReg.pushManager.getSubscription();
+-        if (oldSub) {
+-          await oldSub.unsubscribe().catch(() => {});
+-        }
+-
+-        // 获取全新的当前有效订阅（必须传 Uint8Array）
+-        const appServerKey = urlBase64ToUint8Array(publicKey);
+-        const newSub = await readyReg.pushManager.subscribe({
+-          userVisibleOnly: true,
+-          applicationServerKey: appServerKey as unknown as BufferSource,
+-        });
+-
+-        // 立即上传并绑定到当前用户
+-        const subRes = await fetch("/api/push/subscribe", {
+-          method: "POST",
+-          headers: { "Content-Type": "application/json" },
+-          body: JSON.stringify(newSub.toJSON()),
+-        });
+-        if (!subRes.ok) {
+-          const errData = await subRes.json().catch(() => ({}));
+-          throw new Error(errData.error || "保存推送订阅失败");
+-        }
+-
+-        setPushEnabled(true);
+-        return newSub;
+-      } catch (e) {
+-        console.error("subscribeFresh error:", e);
+-        return null;
+-      }
+-    },
+-    []
+-  );
+-
+   const checkAndSyncPush = useCallback(async () => {
+-    if (typeof window === "undefined") return;
+-
+-    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+-    const isStandalone =
+-      window.matchMedia("(display-mode: standalone)").matches ||
+-      (window.navigator as { standalone?: boolean }).standalone === true;
+-
+-    if (isIos && !isStandalone) {
+-      setPushPermission("ios_not_standalone");
+-      setPushEnabled(false);
+-      return;
++    if (typeof window === "undefined" || pushAction.current) return;
++    pushAction.current = true;
++    let unsubscribeIdentity: (() => void) | undefined;
++    setCheckingPush(true);
++    setPushEnabled(false);
++    setPushError(null);
++    setPushStatus(null);
++    try {
++      const permission = currentPushPermission();
++      setPushPermission(permission);
++      if (permission !== "granted") return;
++      const identity = useBabyStore.getState();
++      const expectedUserId = identity.user?.id;
++      if (identity.authLoading || !expectedUserId) return;
++      let identityCurrent = true;
++      unsubscribeIdentity = useBabyStore.subscribe((state) => {
++        if (state.authLoading || state.user?.id !== expectedUserId) identityCurrent = false;
++      });
++      const result = await recoverExistingPushSubscription({
++        permission,
++        pushSupported: true,
++        standaloneEligible: true,
++        expectedUserId,
++        isCurrent: () => {
++          const current = useBabyStore.getState();
++          return identityCurrent && !current.authLoading && current.user?.id === expectedUserId;
++        },
++        getRegistration: () => getPushRegistration(navigator.serviceWorker, true),
++      });
++      setPushEnabled(result === "synced");
++    } catch (error) {
++      setPushError(pushErrorMessage(error));
++    } finally {
++      unsubscribeIdentity?.();
++      pushAction.current = false;
++      setCheckingPush(false);
+     }
++  }, []);
+ 
+-    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+-      setPushPermission("unsupported");
+-      setPushEnabled(false);
+-      return;
++  const ensurePushPermission = async () => {
++    let permission = currentPushPermission();
++    setPushPermission(permission);
++    if (permission === "ios_not_standalone") {
++      setShowInstallGuide(true);
++      throw new PushClientError("iOS 需先添加到主屏幕，从桌面图标打开后重试");
+     }
+-
+-    const perm = Notification.permission;
+-    setPushPermission(perm);
+-
+-    if (perm === "granted") {
+-      try {
+-        const reg = await navigator.serviceWorker.ready;
+-        const sub = await reg.pushManager.getSubscription();
+-        if (sub) {
+-          setPushEnabled(true);
+-          // 自动向后端同步当前用户与设备订阅绑定
+-          fetch("/api/push/subscribe", {
+-            method: "POST",
+-            headers: { "Content-Type": "application/json" },
+-            body: JSON.stringify(sub.toJSON()),
+-          }).catch(() => {});
+-        } else {
+-          setPushEnabled(false);
+-        }
+-      } catch {
+-        setPushEnabled(false);
+-      }
+-    } else {
+-      setPushEnabled(false);
++    if (permission === "unsupported") throw new PushClientError("当前浏览器不支持推送通知，请使用支持推送的浏览器");
++    if (permission === "default") {
++      permission = await Notification.requestPermission();
++      setPushPermission(permission);
+     }
+-  }, []);
++    if (permission !== "granted") throw new PushClientError("通知权限未开启，请在浏览器设置中允许通知后重试");
++  };
+ 
+   const handleDismiss = useCallback(async (id: string, e?: React.MouseEvent) => {
+     e?.stopPropagation();
+@@ -148,98 +124,54 @@ export default function NotificationsPage() {
+   }, [checkAndSyncPush]);
+ 
+   const handleEnablePush = async () => {
+-    if (enablingPush) return;
++    if (pushAction.current) return;
++    pushAction.current = true;
+     setEnablingPush(true);
++    setPushEnabled(false);
++    setPushError(null);
++    setPushStatus(null);
+     try {
+-      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+-      const isStandalone =
+-        window.matchMedia("(display-mode: standalone)").matches ||
+-        (window.navigator as { standalone?: boolean }).standalone === true;
+-      if (isIos && !isStandalone) {
+-        showToast("iOS 需先「添加到主屏幕」，从桌面图标打开才能开启推送");
+-        setShowInstallGuide(true);
+-        return;
+-      }
+-
+-      if (!("Notification" in window)) {
+-        showToast("您的浏览器不支持推送通知");
+-        return;
+-      }
+-
+-      const permission = await Notification.requestPermission();
+-      setPushPermission(permission);
+-
+-      if (permission !== "granted") {
+-        showToast("推送权限未开启，请在浏览器设置中允许通知", "error");
+-        return;
+-      }
+-
+-      if (!("serviceWorker" in navigator)) {
+-        showToast("您的浏览器不支持 Service Worker");
+-        return;
+-      }
+-
+-      const registration = await navigator.serviceWorker.register("/sw.js");
+-      await registration.update();
+-      const readyReg = await navigator.serviceWorker.ready;
+-
+-      const newSub = await subscribeFresh(readyReg);
+-      if (newSub) {
+-        showToast("设备推送已绑定并就绪 ✨", "success");
+-      } else {
+-        showToast("绑定失败，请检查网络设置", "error");
+-      }
++      await ensurePushPermission();
++      const registration = await getPushRegistration(navigator.serviceWorker, true);
++      const subscription = await syncPushSubscription(registration, true);
++      if (!subscription) throw new PushClientError("设备尚未绑定，请先开启推送通知");
++      setPushEnabled(true);
++      setPushStatus("设备已绑定，可发送测试通知检查当前设备");
++      showToast("设备推送已绑定 ✨", "success");
+     } catch (error) {
+-      console.error("Push subscription error:", error);
+-      showToast("开启推送通知失败，请重试", "error");
++      const message = pushErrorMessage(error);
++      setPushError(message);
++      showToast(message, "error");
+     } finally {
++      pushAction.current = false;
+       setEnablingPush(false);
+     }
+   };
+ 
+   const handleSendTestPush = async () => {
+-    if (testingPush) return;
++    if (pushAction.current) return;
++    pushAction.current = true;
+     setTestingPush(true);
++    setPushEnabled(false);
++    setPushError(null);
++    setPushStatus(null);
+     try {
+-      let subPayload: any = null;
+-
+-      if ("serviceWorker" in navigator && "Notification" in window) {
+-        if (Notification.permission === "default") {
+-          const perm = await Notification.requestPermission();
+-          setPushPermission(perm);
+-        }
+-
+-        if (Notification.permission === "granted") {
+-          const readyReg = await navigator.serviceWorker.ready;
+-          let sub = await readyReg.pushManager.getSubscription();
+-          if (!sub) {
+-            sub = await subscribeFresh(readyReg);
+-          }
+-          if (sub) {
+-            subPayload = sub.toJSON();
+-          }
+-        }
+-      }
+-
+-      const res = await fetch("/api/push/test", {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ subscription: subPayload }),
+-      });
+-      const data = await res.json();
+-
+-      if (res.ok) {
+-        setPushEnabled(true);
+-        showToast("测试推送已发出，请查看手机/电脑系统通知栏 ✨", "success");
+-      } else {
+-        if (res.status === 400 && data.error?.includes("失效")) {
+-          setPushEnabled(false);
+-        }
+-        showToast(data.error || "发送测试推送失败", "error");
+-      }
+-    } catch {
+-      showToast("网络请求失败，请稍后重试", "error");
++      await ensurePushPermission();
++      const registration = await getPushRegistration(navigator.serviceWorker, true);
++      const subscription = await syncPushSubscription(registration, true);
++      if (!subscription) throw new PushClientError("设备尚未绑定，请先开启推送通知");
++      setPushEnabled(true);
++      await sendTestPush(subscription);
++      const message = "推送服务已接受测试通知，请查看系统通知栏；若未显示，请检查系统通知设置";
++      setPushStatus(message);
++      showToast(message, "success");
++    } catch (error) {
++      if (error instanceof PushClientError && error.code === "PUSH_SUBSCRIPTION_GONE") setPushEnabled(false);
++      const message = pushErrorMessage(error);
++      setPushError(message);
++      showToast(message, "error");
+     } finally {
++      pushAction.current = false;
+       setTestingPush(false);
+     }
+   };
+@@ -286,7 +218,11 @@ export default function NotificationsPage() {
+                   <p className="text-sm font-bold text-text-primary">设备推送通知</p>
+                   {pushEnabled ? (
+                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-mint bg-mint/10 px-2 py-0.5 rounded-full">
+-                      <CheckCircle size={12} /> 已开启
++                      <CheckCircle size={12} /> 已绑定
++                    </span>
++                  ) : checkingPush ? (
++                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-text-muted bg-gray-100 px-2 py-0.5 rounded-full">
++                      检查绑定中...
+                     </span>
+                   ) : pushPermission === "denied" ? (
+                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">
+@@ -298,23 +234,35 @@ export default function NotificationsPage() {
+                     </span>
+                   ) : (
+                     <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-text-muted bg-gray-100 px-2 py-0.5 rounded-full">
+-                      未开启
++                      未绑定
+                     </span>
+                   )}
+                 </div>
+                 <p className="text-xs text-text-muted mt-0.5 leading-relaxed">
+                   {pushEnabled
+-                    ? "家人提交或修改记录时，手机锁屏状态下将实时弹出通知"
++                    ? "设备已绑定，可接收已配置的推送通知；可发送测试通知检查当前设备"
+                     : pushPermission === "denied"
+-                      ? "浏览器通知权限被禁用，请点击地址栏锁头图标允许"
++                      ? "通知权限被禁用，请在浏览器或系统设置中允许通知"
+                       : pushPermission === "ios_not_standalone"
+                         ? "iOS Safari 需先添加到主屏幕打开，即可开启系统锁屏推送"
+-                        : "开启后家人提交或修改记录将实时收到系统推送"}
++                        : pushPermission === "unsupported"
++                          ? "当前浏览器不支持系统推送通知"
++                          : "开启后绑定当前设备，可发送测试通知检查系统通知设置"}
+                 </p>
+               </div>
+             </div>
+           </div>
+ 
++          {pushError && (
++            <div role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-700 space-y-1">
++              <p>{pushError}</p>
++              <p>处理后可点击「开启推送通知」或「发送测试推送」重试。</p>
++            </div>
++          )}
++          {pushStatus && (
++            <p role="status" className="text-xs text-text-secondary leading-relaxed">{pushStatus}</p>
++          )}
++
+           {/* Action buttons row */}
+           <div className="pt-2 border-t border-divider/50 flex flex-wrap items-center justify-end gap-2">
+             {pushPermission === "ios_not_standalone" && (
+@@ -335,6 +283,7 @@ export default function NotificationsPage() {
+                   checkAndSyncPush();
+                   showToast("请在浏览器设置中开启通知权限后刷新页面", "info");
+                 }}
++                disabled={pushBusy}
+                 className="px-3.5 py-1.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold btn-press shadow-button transition-all cursor-pointer flex items-center gap-1.5"
+               >
+                 <RefreshCw size={13} />
+@@ -342,11 +291,11 @@ export default function NotificationsPage() {
+               </button>
+             )}
+ 
+-            {/* Re-bind / Enable button is ALWAYS available */}
++            {/* Sync an existing binding or enable this device. */}
+             <button
+               type="button"
+               onClick={handleEnablePush}
+-              disabled={enablingPush}
++              disabled={pushBusy}
+               className={`px-3.5 py-1.5 rounded-full text-xs font-bold btn-press shadow-button transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 ${
+                 pushEnabled
+                   ? "bg-gray-100 hover:bg-gray-200 text-text-primary border border-divider"
+@@ -354,14 +303,14 @@ export default function NotificationsPage() {
+               }`}
+             >
+               <RefreshCw size={12} className={enablingPush ? "animate-spin" : ""} />
+-              <span>{enablingPush ? "绑定中..." : pushEnabled ? "重新绑定设备" : "开启推送通知"}</span>
++              <span>{checkingPush ? "检查中..." : enablingPush ? "绑定中..." : pushEnabled ? "重新绑定设备" : "开启推送通知"}</span>
+             </button>
+ 
+-            {/* Test button is always visible & interactive */}
++            {/* Sending first confirms this device's binding. */}
+             <button
+               type="button"
+               onClick={handleSendTestPush}
+-              disabled={testingPush}
++              disabled={pushBusy}
+               className="px-3.5 py-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold btn-press transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+             >
+               <Send size={13} />
+diff --git a/components/notifications/PushSubscriptionRecovery.tsx b/components/notifications/PushSubscriptionRecovery.tsx
+new file mode 100644
+index 0000000..c9b24c5
+--- /dev/null
++++ b/components/notifications/PushSubscriptionRecovery.tsx
+@@ -0,0 +1,105 @@
++"use client";
++
++import { usePathname } from "next/navigation";
++import { useEffect, useRef } from "react";
++import { getPushRegistration, recoverExistingPushSubscription } from "@/lib/push-client";
++import { useBabyStore } from "@/stores/useBabyStore";
++
++function pushEnvironment() {
++  if (typeof window === "undefined" || !("Notification" in window) ||
++    !("serviceWorker" in navigator) || !("PushManager" in window)) {
++    return { permission: "unsupported", supported: false, standaloneEligible: false };
++  }
++
++  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
++  const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
++    (navigator as Navigator & { standalone?: boolean }).standalone === true;
++  return {
++    permission: Notification.permission,
++    supported: true,
++    standaloneEligible: !isIos || isStandalone,
++  };
++}
++
++/** Quietly restore the server-side binding for a subscription the browser already owns. */
++export function PushSubscriptionRecovery() {
++  const pathname = usePathname();
++  const generation = useRef(0);
++
++  useEffect(() => {
++    let mounted = true;
++    let runningGeneration: number | null = null;
++    let lastUserId = useBabyStore.getState().user?.id ?? null;
++    let lastAuthLoading = useBabyStore.getState().authLoading;
++
++    const recover = () => {
++      if (!mounted || runningGeneration !== null) return;
++      const environment = pushEnvironment();
++      if (environment.permission !== "granted" || !environment.supported || !environment.standaloneEligible) return;
++
++      const initialState = useBabyStore.getState();
++      const expectedUserId = initialState.user?.id;
++      if (initialState.authLoading || !expectedUserId) {
++        const attemptGeneration = ++generation.current;
++        runningGeneration = attemptGeneration;
++        void initialState.fetchUser().catch(() => null).finally(() => {
++          if (runningGeneration === attemptGeneration) runningGeneration = null;
++          const current = useBabyStore.getState();
++          if (mounted && generation.current === attemptGeneration && !current.authLoading && current.user?.id) {
++            queueMicrotask(recover);
++          }
++        });
++        return;
++      }
++
++      const attemptGeneration = ++generation.current;
++      runningGeneration = attemptGeneration;
++      const isCurrent = () => {
++        if (!mounted || generation.current !== attemptGeneration) return false;
++        const current = useBabyStore.getState();
++        return current.user?.id === expectedUserId && !current.authLoading;
++      };
++
++      void recoverExistingPushSubscription({
++        permission: environment.permission,
++        pushSupported: environment.supported,
++        standaloneEligible: environment.standaloneEligible,
++        expectedUserId,
++        isCurrent,
++        getRegistration: () => getPushRegistration(navigator.serviceWorker, true),
++      }).catch(() => {
++        // A passive recovery failure is intentionally quiet. Focus, visibility,
++        // route changes, or a later page load can retry without a permission prompt.
++      }).finally(() => {
++        if (runningGeneration === attemptGeneration) runningGeneration = null;
++      });
++    };
++
++    const unsubscribe = useBabyStore.subscribe((state) => {
++      const userId = state.user?.id ?? null;
++      if (userId === lastUserId && state.authLoading === lastAuthLoading) return;
++      lastUserId = userId;
++      lastAuthLoading = state.authLoading;
++      generation.current++;
++      runningGeneration = null;
++      if (!state.authLoading && userId) queueMicrotask(recover);
++    });
++
++    const onVisible = () => {
++      if (document.visibilityState === "visible") recover();
++    };
++    window.addEventListener("focus", recover);
++    document.addEventListener("visibilitychange", onVisible);
++    recover();
++
++    return () => {
++      mounted = false;
++      generation.current++;
++      unsubscribe();
++      window.removeEventListener("focus", recover);
++      document.removeEventListener("visibilitychange", onVisible);
++    };
++  }, [pathname]);
++
++  return null;
++}
+diff --git a/lib/growdesk/notification-parity.ts b/lib/growdesk/notification-parity.ts
+index 30dfd1d..ac9f32f 100644
+--- a/lib/growdesk/notification-parity.ts
++++ b/lib/growdesk/notification-parity.ts
+@@ -556,10 +556,10 @@ export async function fetchGrowDeskNotificationItems(
+   extended = false,
+ ): Promise<NotificationItem[]> {
+   const rawRemote = await fetchCompleteList<unknown>(fetchApi, token, "/api/v1/notifications");
+-  const remote = rawRemote
++  const canonicalRemote = rawRemote
+     .map(item => validateCanonicalNotification(item, userId, scope))
+-    .filter((item): item is CanonicalNotification => item !== null)
+-    .map(item => projectNotificationReadState(fromGrowDeskNotification(item), item, extended));
++    .filter((item): item is CanonicalNotification => item !== null);
++  const remote = canonicalRemote.map(item => projectNotificationReadState(fromGrowDeskNotification(item), item, extended));
+ 
+   if (!scope) {
+     const seen = new Set<string>();
+@@ -604,7 +604,25 @@ export async function fetchGrowDeskNotificationItems(
+     supplement: supplements.map(raw => scopedRecord(raw, "补剂", scope)),
+     growth: growths.map(raw => scopedRecord(raw, "生长", scope)),
+   };
+-  const familyItems = buildFamilyRecordNotifications(recordsByKind, scope, members, clock, nowMs);
++  // A durable server event owns its UUID and multi-device read state. Keep
++  // record-derived fallback only when no event represents the current version;
++  // historical events and older backends must remain visible independently.
++  const represented = new Set<string>();
++  for (const notification of canonicalRemote) {
++    const data = notification.data;
++    if (!data || data.eventKind !== "family_record" || !/^family_record:[0-9a-f]{64}$/.test(notification.eventKey) ||
++      data.eventKey !== notification.eventKey || data.familyId !== scope.familyId || data.babyId !== scope.babyId ||
++      typeof data.entityId !== "string" || typeof data.recordVersion !== "string" || !/^[1-9]\d*$/.test(data.recordVersion)) continue;
++    const descriptor = RECORD_KINDS.find(item => item.kind === data.entityType);
++    if (!descriptor || !["create", "update", "delete", "restore"].includes(String(data.operation))) continue;
++    const record = recordsByKind[descriptor.kind].find(item => item.id === data.entityId);
++    if (!record || String(record.version) !== data.recordVersion) continue;
++    const id = `family-${descriptor.idKind}-${record.id}`;
++    represented.add(id);
++    represented.add(`${id}-updated`);
++  }
++  const familyItems = buildFamilyRecordNotifications(recordsByKind, scope, members, clock, nowMs)
++    .filter(item => !represented.has(item.id));
+   const dailyItems = buildDailyReminderNotifications(recordsByKind, scope, clock, nowMs);
+   const planData = requireData(foodPlan);
+   if (!isObject(planData)) invalidResponse("GrowDesk 返回的食物计划无效");
+diff --git a/lib/growdesk/push-bridge.ts b/lib/growdesk/push-bridge.ts
+index 8bfbd1c..ffb6000 100644
+--- a/lib/growdesk/push-bridge.ts
++++ b/lib/growdesk/push-bridge.ts
+@@ -27,10 +27,12 @@ function endpointOf(value: unknown): string {
+     if (parsed.protocol !== "https:" || !parsed.hostname || parsed.username || parsed.password || parsed.hash) {
+       invalid("推送地址必须为不含凭证的 HTTPS URL");
+     }
++    // Forward the exact URL that was validated. web-push uses legacy url.parse,
++    // which interprets non-canonical strings (for example https:/host) differently.
++    return parsed.href;
+   } catch {
+     invalid("推送地址必须为有效的 HTTPS URL");
+   }
+-  return endpoint;
+ }
+ 
+ function keyOf(value: unknown, size: number): string {
+diff --git a/lib/push-client.ts b/lib/push-client.ts
+new file mode 100644
+index 0000000..029b296
+--- /dev/null
++++ b/lib/push-client.ts
+@@ -0,0 +1,282 @@
++const PUSH_WAIT_MS = 8_000;
++const PUSH_REQUEST_MS = 10_000;
++
++export class PushClientError extends Error {
++  constructor(message: string, readonly code?: string) {
++    super(message);
++    this.name = "PushClientError";
++  }
++}
++
++export function pushErrorMessage(error: unknown): string {
++  if (error instanceof Error) {
++    if (error.name === "NotAllowedError") return "通知权限未开启，请在浏览器设置中允许通知";
++    if (error.name === "TimeoutError" || error.name === "AbortError") return "推送请求超时，请检查网络后重试";
++    return error.message;
++  }
++  return "推送操作失败，请检查网络后重试";
++}
++
++async function bounded<T>(operation: Promise<T>, message: string, timeoutMs: number): Promise<T> {
++  let timer: ReturnType<typeof setTimeout> | undefined;
++  try {
++    return await Promise.race([
++      operation,
++      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new PushClientError(message)), timeoutMs); }),
++    ]);
++  } finally {
++    clearTimeout(timer);
++  }
++}
++
++/** ready alone never settles if this origin has no active registration. */
++export async function getPushRegistration(
++  workers: Pick<ServiceWorkerContainer, "getRegistration" | "register" | "ready">,
++  create = false,
++  timeoutMs = PUSH_WAIT_MS,
++): Promise<ServiceWorkerRegistration> {
++  return bounded((async () => {
++    let registration = await workers.getRegistration();
++    if (!registration) {
++      if (!create) throw new PushClientError("尚未注册推送服务，请点击开启推送通知重试");
++      registration = await workers.register("/sw.js", { updateViaCache: "none" });
++    }
++    return registration.active?.state === "activated" ? registration : await workers.ready;
++  })(), "推送服务启动超时，请刷新页面后重试", timeoutMs);
++}
++
++async function responseData(response: Response): Promise<Record<string, unknown>> {
++  const value: unknown = await response.json().catch(() => null);
++  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
++}
++
++// Use AbortController so older browsers supporting Web Push can also time out
++// requests without depending on the newer AbortSignal.timeout API.
++async function pushRequest(
++  fetcher: typeof fetch,
++  url: string,
++  init: RequestInit = {},
++  timeoutMs = PUSH_REQUEST_MS,
++) {
++  const controller = new AbortController();
++  const timer = setTimeout(() => controller.abort(), timeoutMs);
++  try {
++    const response = await fetcher(url, { ...init, signal: controller.signal });
++    const data = await responseData(response);
++    if (controller.signal.aborted) throw new PushClientError("推送请求超时，请检查网络后重试");
++    return { response, data };
++  } finally {
++    clearTimeout(timer);
++  }
++}
++
++function serverError(response: Response, data: Record<string, unknown>, fallback: string): PushClientError {
++  const error = data.error;
++  const message = typeof error === "string" ? error
++    : error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message
++      : response.status === 401 ? "登录已过期，请重新登录后重试"
++        : response.status === 403 ? "推送请求被拒绝，请刷新页面后重试"
++          : fallback;
++  return new PushClientError(message, typeof data.code === "string" ? data.code : undefined);
++}
++
++function decodeKey(value: unknown): Uint8Array<ArrayBuffer> {
++  if (typeof value !== "string" || !/^[A-Za-z0-9_-]+={0,2}$/.test(value)) {
++    throw new PushClientError("推送公钥配置无效，请联系管理员检查推送设置");
++  }
++  try {
++    const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
++    const raw = atob(base64 + "=".repeat((4 - base64.length % 4) % 4));
++    const bytes = new Uint8Array(raw.length);
++    for (let index = 0; index < raw.length; index++) bytes[index] = raw.charCodeAt(index);
++    if (bytes.length !== 65 || bytes[0] !== 4) throw new Error("invalid key");
++    return bytes;
++  } catch {
++    throw new PushClientError("推送公钥配置无效，请联系管理员检查推送设置");
++  }
++}
++
++function sameKey(existing: ArrayBuffer, expected: Uint8Array): boolean {
++  const bytes = new Uint8Array(existing);
++  return bytes.length === expected.length && bytes.every((value, index) => value === expected[index]);
++}
++
++export function isPassivePushRecoveryEligible(
++  permission: string,
++  pushSupported: boolean,
++  standaloneEligible: boolean,
++): boolean {
++  return permission === "granted" && pushSupported && standaloneEligible;
++}
++
++export interface PassivePushRecoveryOptions {
++  permission: string;
++  pushSupported: boolean;
++  standaloneEligible: boolean;
++  getRegistration: () => Promise<Pick<ServiceWorkerRegistration, "pushManager"> | null>;
++  /** A locally known identity is only a consistency check; the API session remains authoritative. */
++  expectedUserId: string;
++  isCurrent?: () => boolean;
++  fetcher?: typeof fetch;
++  timeoutMs?: number;
++}
++
++export type PassivePushRecoveryResult = "synced" | "skipped";
++
++async function authorizedUserId(fetcher: typeof fetch, timeoutMs: number): Promise<string | null> {
++  const { response, data } = await pushRequest(fetcher, "/api/auth/me", { cache: "no-store" }, timeoutMs);
++  if (!response.ok || !data.user || typeof data.user !== "object" || Array.isArray(data.user)) return null;
++  const userId = (data.user as Record<string, unknown>).id;
++  return typeof userId === "string" && userId.length > 0 ? userId : null;
++}
++
++function completeSubscriptionJson(value: unknown): boolean {
++  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
++  const json = value as Record<string, unknown>;
++  if (typeof json.endpoint !== "string" || !json.endpoint.trim()) return false;
++  if (!json.keys || typeof json.keys !== "object" || Array.isArray(json.keys)) return false;
++  const keys = json.keys as Record<string, unknown>;
++  return typeof keys.p256dh === "string" && keys.p256dh.length > 0 &&
++    typeof keys.auth === "string" && keys.auth.length > 0;
++}
++
++/**
++ * Restore the server binding for a browser subscription that already exists.
++ * This path never asks for permission, subscribes, unsubscribes, or rotates a key.
++ */
++export async function recoverExistingPushSubscription(
++  options: PassivePushRecoveryOptions,
++): Promise<PassivePushRecoveryResult> {
++  if (!isPassivePushRecoveryEligible(options.permission, options.pushSupported, options.standaloneEligible)) {
++    return "skipped";
++  }
++
++  const expectedUserId = options.expectedUserId.trim();
++  if (!expectedUserId) return "skipped";
++
++  const fetcher = options.fetcher ?? fetch;
++  const timeoutMs = options.timeoutMs ?? PUSH_WAIT_MS;
++  const isCurrent = options.isCurrent ?? (() => true);
++  if (!isCurrent()) return "skipped";
++
++  const initialUserId = await authorizedUserId(fetcher, timeoutMs);
++  if (!initialUserId || !isCurrent() || initialUserId !== expectedUserId) {
++    return "skipped";
++  }
++
++  const registration = await bounded(
++    Promise.resolve().then(options.getRegistration),
++    "推送服务启动超时，请稍后重试",
++    timeoutMs,
++  );
++  if (!isCurrent() || !registration) return "skipped";
++
++  const subscription = await bounded(
++    registration.pushManager.getSubscription(),
++    "读取推送订阅超时，请稍后重试",
++    timeoutMs,
++  );
++  // Auth changes during either browser wait invalidate this run before it can
++  // read the key or upload a subscription under a later account's cookie.
++  if (!isCurrent() || !subscription) return "skipped";
++
++  const { response: keyResponse, data: keyData } = await pushRequest(
++    fetcher,
++    "/api/push/vapid-key",
++    { cache: "no-store" },
++    timeoutMs,
++  );
++  if (!isCurrent()) return "skipped";
++  if (!keyResponse.ok) throw serverError(keyResponse, keyData, "获取推送公钥失败，请稍后重试");
++  const key = decodeKey(keyData.publicKey);
++
++  // Passive recovery must never replace a local subscription. If this browser
++  // cannot expose its VAPID key, or it differs from the server key, leave it
++  // untouched and let the user choose an explicit recovery action.
++  const existingKey = subscription.options?.applicationServerKey;
++  if (!existingKey || !sameKey(existingKey, key)) return "skipped";
++  const subscriptionJson = subscription.toJSON();
++  if (!completeSubscriptionJson(subscriptionJson)) {
++    throw new PushClientError("浏览器返回的推送订阅不完整，未修改现有订阅");
++  }
++
++  const latestUserId = await authorizedUserId(fetcher, timeoutMs);
++  if (!isCurrent() || latestUserId !== initialUserId || latestUserId !== expectedUserId) {
++    return "skipped";
++  }
++
++  // The server derives ownership from its validated session. The browser ID is
++  // never sent in this request, and the complete current subscription is kept.
++  const { response, data } = await pushRequest(fetcher, "/api/push/subscribe", {
++    method: "POST",
++    headers: { "Content-Type": "application/json" },
++    body: JSON.stringify(subscriptionJson),
++  }, timeoutMs);
++  if (!response.ok || data.success !== true) {
++    throw serverError(response, data, "服务端未确认设备绑定，请稍后重试");
++  }
++  return isCurrent() ? "synced" : "skipped";
++}
++
++/** A local subscription is usable only after the server confirms this binding. */
++export async function syncPushSubscription(
++  registration: Pick<ServiceWorkerRegistration, "pushManager">,
++  allowCreate = false,
++  fetcher: typeof fetch = fetch,
++  timeoutMs = PUSH_WAIT_MS,
++): Promise<PushSubscription | null> {
++  let subscription = await bounded(registration.pushManager.getSubscription(), "读取推送订阅超时，请刷新页面后重试", timeoutMs);
++  if (!subscription && !allowCreate) return null;
++  const { response: keyResponse, data: keyData } = await pushRequest(fetcher, "/api/push/vapid-key", { cache: "no-store" });
++  if (!keyResponse.ok) throw serverError(keyResponse, keyData, "获取推送公钥失败，请稍后重试");
++  const key = decodeKey(keyData.publicKey);
++
++  // Some older browsers do not expose the existing key. Keep that subscription
++  // rather than destructively guessing that it changed.
++  const existingKey = subscription?.options?.applicationServerKey;
++  if (subscription && existingKey && !sameKey(existingKey, key)) {
++    const removed = await bounded(subscription.unsubscribe(), "更新推送订阅超时，请刷新页面后重试", timeoutMs);
++    if (!removed) throw new PushClientError("更新推送订阅失败，请刷新页面后重试");
++    subscription = null;
++  }
++  if (!subscription) {
++    subscription = await bounded(
++      registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }),
++      "创建推送订阅超时，请刷新页面后重试", timeoutMs,
++    );
++  }
++  const { response, data } = await pushRequest(fetcher, "/api/push/subscribe", {
++    method: "POST", headers: { "Content-Type": "application/json" },
++    body: JSON.stringify(subscription.toJSON()),
++  });
++  if (!response.ok || data.success !== true) {
++    throw serverError(response, data, "服务端未确认设备绑定，请点击开启推送通知重试");
++  }
++  return subscription;
++}
++
++/** Acceptance by a push provider still does not prove display on a device. */
++export async function sendTestPush(subscription: PushSubscription, fetcher: typeof fetch = fetch, timeoutMs = PUSH_WAIT_MS): Promise<void> {
++  const { response, data } = await pushRequest(fetcher, "/api/push/test", {
++    method: "POST", headers: { "Content-Type": "application/json" },
++    body: JSON.stringify({ subscription: subscription.toJSON() }),
++  });
++  if (!response.ok) {
++    const error = serverError(response, data, "发送测试推送失败，请稍后重试");
++    // A provider-confirmed expired endpoint cannot recover by uploading the
++    // same local subscription. Only this explicit code permits its removal.
++    if (error.code === "PUSH_SUBSCRIPTION_GONE") {
++      try {
++        const removed = await bounded(subscription.unsubscribe(), "移除失效推送订阅超时", timeoutMs);
++        if (!removed) throw new Error("removal failed");
++      } catch {
++        throw new PushClientError("推送订阅已失效，但旧订阅未能移除；请在浏览器设置中重置本站通知权限后重试", error.code);
++      }
++    }
++    throw error;
++  }
++  if (data.simulated === true) throw new PushClientError("当前为模拟推送，未向系统通知栏发送；请联系管理员配置真实推送");
++  if (data.success !== true || typeof data.sent !== "number" || !Number.isSafeInteger(data.sent) || data.sent <= 0) {
++    throw serverError(response, data, "推送服务未接受测试通知，请稍后重试或联系管理员检查推送设置");
++  }
++}
+diff --git a/scripts/review/check-push-browser.mjs b/scripts/review/check-push-browser.mjs
+new file mode 100644
+index 0000000..1a8af79
+--- /dev/null
++++ b/scripts/review/check-push-browser.mjs
+@@ -0,0 +1,228 @@
++import assert from "node:assert/strict";
++import { writeFile } from "node:fs/promises";
++import path from "node:path";
++import { chromium } from "playwright";
++import { expect } from "@playwright/test";
++
++// Synthetic UI coverage only: no real permission prompt, push registration,
++// authentication, database write, or push provider request is exercised.
++const origin = new URL(process.env.TEST_PUSH_WEB || "");
++assert.equal(origin.protocol, "http:");
++assert.equal(origin.hostname, "127.0.0.1");
++assert.ok(origin.port && !["3088", "3089", "5432", "6379"].includes(origin.port));
++const ownerPid = Number(process.env.TEST_PUSH_SERVER_PID);
++assert.ok(Number.isSafeInteger(ownerPid) && ownerPid > 1, "Require the owned local Next server PID");
++process.kill(ownerPid, 0);
++const resultPath = process.env.TEST_PUSH_RESULT;
++assert.ok(resultPath && path.isAbsolute(resultPath));
++const publicKey = Buffer.from([4, ...Array(64).fill(7)]).toString("base64url");
++const rotatedKey = Buffer.from([4, ...Array(64).fill(8)]).toString("base64url");
++const report = { passed: false, synthetic: true, browser: "chromium", cases: [], failure: null };
++const browser = await chromium.launch({ headless: true });
++
++async function scenario(options, check) {
++  const context = await browser.newContext({ baseURL: origin.origin, serviceWorkers: "block" });
++  const calls = [];
++  const state = {
++    binding: { status: 200, body: { success: true } },
++    test: { status: 200, body: { success: true, sent: 1, simulated: false } },
++    publicKey,
++    ...options,
++  };
++  try {
++    await context.route("**/*", async route => {
++      const request = route.request();
++      const url = new URL(request.url());
++      if (url.origin !== origin.origin) return route.abort();
++      if (!url.pathname.startsWith("/api/")) return route.continue();
++      if (url.pathname.startsWith("/api/push/")) calls.push({ path: url.pathname, method: request.method(), body: request.postDataJSON() });
++      const baby = { id: "test_push_baby", familyId: "test_push_family", nickname: "test_push_baby", birthDate: "2025-01-01", gender: "female" };
++      const values = {
++        "/api/auth/me": { user: { id: "test_push_user", username: "test_push_user", displayName: "test_push_user" }, family: { id: "test_push_family", name: "test_push_family", babies: [baby] }, baby },
++        "/api/notifications": [],
++        "/api/app-config": { swDisabled: false },
++        "/api/push/vapid-key": { publicKey: state.publicKey },
++      };
++      const response = url.pathname === "/api/push/subscribe" ? state.binding
++        : url.pathname === "/api/push/test" ? state.test
++          : Object.hasOwn(values, url.pathname) ? { status: 200, body: values[url.pathname] }
++            : { status: 418, body: { error: "test_push_unexpected_api" } };
++      return route.fulfill({ status: response.status, contentType: "application/json", body: JSON.stringify(response.body) });
++    });
++    await context.addInitScript(({ key, missingRegistration, permission, removal, missingSubscription, stalledRead, stalledSubscribe }) => {
++      const counters = { subscribe: 0, unsubscribe: 0, permission: 0 };
++      window.testPushCounters = counters;
++      let currentPermission = permission;
++      Object.defineProperty(window, "Notification", { configurable: true, value: {
++        get permission() { return currentPermission; },
++        requestPermission: async () => { counters.permission++; currentPermission = permission; return permission; },
++      } });
++      function subscription(bytes) {
++        const endpoint = "https://push.example.invalid/test_push_endpoint_" + counters.subscribe;
++        return {
++          endpoint,
++          options: { applicationServerKey: bytes.buffer },
++          toJSON: () => ({ endpoint, expirationTime: null, keys: { p256dh: "test_push_p256dh", auth: "test_push_auth" } }),
++          unsubscribe: async () => {
++            counters.unsubscribe++;
++            if (removal === "stall") return new Promise(() => {});
++            if (removal === "reject") throw new Error("test_push_removal_rejected");
++            if (removal === "false") return false;
++            current = null;
++            return true;
++          },
++        };
++      }
++      const bytes = Uint8Array.from(atob(key.replace(/-/g, "+").replace(/_/g, "/")), char => char.charCodeAt(0));
++      let current = missingSubscription ? null : subscription(bytes);
++      const registration = {
++        active: missingRegistration ? null : { state: "activated" },
++        pushManager: {
++          getSubscription: async () => stalledRead ? await new Promise(() => {}) : current,
++          subscribe: async options => {
++            counters.subscribe++;
++            if (stalledSubscribe) return new Promise(() => {});
++            current = subscription(new Uint8Array(options.applicationServerKey));
++            return current;
++          },
++        },
++        update: async () => {},
++        addEventListener: () => {},
++      };
++      Object.defineProperty(navigator, "serviceWorker", { configurable: true, value: {
++        ready: missingRegistration ? new Promise(() => {}) : Promise.resolve(registration),
++        register: async () => registration,
++        getRegistration: async () => missingRegistration ? undefined : registration,
++        getRegistrations: async () => [],
++        addEventListener: () => {},
++        removeEventListener: () => {},
++      } });
++    }, {
++      key: options.existingKey || publicKey, missingRegistration: Boolean(options.missingRegistration),
++      permission: options.permission || "granted", removal: options.removal || "success",
++      missingSubscription: Boolean(options.missingSubscription), stalledRead: Boolean(options.stalledRead),
++      stalledSubscribe: Boolean(options.stalledSubscribe),
++    });
++    const page = await context.newPage();
++    await page.goto("/notifications");
++    await expect(page.getByText("设备推送通知", { exact: true })).toBeVisible();
++    await check(page, state, calls);
++  } finally {
++    await context.close();
++  }
++}
++const pass = name => { report.cases.push(name); console.log("PASS " + name); };
++const alert = (page, text) => page.getByRole("alert").filter({ hasText: text });
++
++try {
++  await scenario({ binding: { status: 503, body: { error: "test_push_binding_outage" } } }, async (page, state, calls) => {
++    await expect(alert(page, "test_push_binding_outage")).toBeVisible();
++    await expect(page.getByText("已绑定", { exact: true })).toHaveCount(0);
++    await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++    await expect(alert(page, "test_push_binding_outage")).toBeVisible();
++    assert.equal(calls.filter(call => call.path === "/api/push/test").length, 0);
++    state.binding = { status: 200, body: { success: true } };
++    await page.getByRole("button", { name: "开启推送通知", exact: true }).click();
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    await expect(alert(page, "test_push_binding_outage")).toHaveCount(0);
++    assert.deepEqual(await page.evaluate(() => window.testPushCounters), { subscribe: 0, unsubscribe: 0, permission: 0 });
++    pass("failed automatic sync stays unbound with a persistent error; retry reuses the subscription");
++  });
++  await scenario({ binding: { status: 200, body: { success: false } } }, async page => {
++    await expect(alert(page, "服务端未确认设备绑定")).toBeVisible();
++    await expect(page.getByText("已绑定", { exact: true })).toHaveCount(0);
++    pass("HTTP 200 without success true does not confirm binding");
++  });
++  await scenario({}, async (page, state) => {
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    await page.getByRole("button", { name: "重新绑定设备", exact: true }).click();
++    await expect(page.getByRole("button", { name: "重新绑定设备", exact: true })).toBeEnabled();
++    assert.deepEqual(await page.evaluate(() => window.testPushCounters), { subscribe: 0, unsubscribe: 0, permission: 0 });
++    for (const [body, message] of [
++      [{ success: true, sent: 0, simulated: false }, "推送服务未接受测试通知"],
++      [{ success: true, sent: 1, simulated: true }, "当前为模拟推送"],
++      [{ success: false, sent: 1, simulated: false }, "推送服务未接受测试通知"],
++    ]) {
++      state.test = { status: 200, body };
++      await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++      await expect(alert(page, message)).toBeVisible();
++    }
++    state.test = { status: 200, body: { success: true, sent: 1, simulated: false } };
++    await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++    await expect(page.getByRole("status").filter({ hasText: "推送服务已接受测试通知" })).toBeVisible();
++    await expect(page.getByText(/家人提交或修改记录/)).toHaveCount(0);
++    pass("same-key rebind keeps the subscription; test success requires a real positive accepted count");
++  });
++  await scenario({ publicKey: rotatedKey }, async page => {
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    assert.deepEqual(await page.evaluate(() => window.testPushCounters), { subscribe: 1, unsubscribe: 1, permission: 0 });
++    pass("a changed VAPID key replaces the old subscription once before syncing");
++  });
++  await scenario({}, async (page, state, calls) => {
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    const previousEndpoint = calls.find(call => call.path === "/api/push/subscribe").body.endpoint;
++    state.test = { status: 400, body: { error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" } };
++    await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++    await expect(alert(page, "推送订阅已失效")).toBeVisible();
++    await expect(page.getByText("已绑定", { exact: true })).toHaveCount(0);
++    await page.getByRole("button", { name: "开启推送通知", exact: true }).click();
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    assert.notEqual(calls.filter(call => call.path === "/api/push/subscribe").at(-1).body.endpoint, previousEndpoint);
++    assert.deepEqual(await page.evaluate(() => window.testPushCounters), { subscribe: 1, unsubscribe: 1, permission: 0 });
++    pass("a provider-confirmed expired endpoint is removed; retry registers a new endpoint once");
++  });
++  for (const removal of ["false", "reject"]) {
++    await scenario({ removal }, async (page, state) => {
++      await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++      state.test = { status: 400, body: { error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" } };
++      await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++      await expect(alert(page, "重置本站通知权限")).toBeVisible();
++      await expect(page.getByText("已绑定", { exact: true })).toHaveCount(0);
++      pass("confirmed expired subscription stays unbound when browser removal returns " + removal);
++    });
++  }
++  await scenario({ stalledRead: true }, async (page, state, calls) => {
++    await expect(alert(page, "读取推送订阅超时")).toBeVisible({ timeout: 12_000 });
++    await expect(page.getByRole("button", { name: "开启推送通知", exact: true })).toBeEnabled();
++    assert.equal(calls.length, 0);
++    pass("a stalled subscription read releases the page without contacting push APIs");
++  });
++  await scenario({ missingSubscription: true, stalledSubscribe: true }, async (page, state, calls) => {
++    await expect(page.getByText("暂无通知", { exact: true })).toBeVisible();
++    await page.getByRole("button", { name: "开启推送通知", exact: true }).click();
++    await expect(alert(page, "创建推送订阅超时")).toBeVisible({ timeout: 12_000 });
++    await expect(page.getByRole("button", { name: "开启推送通知", exact: true })).toBeEnabled();
++    assert.equal(calls.filter(call => call.path === "/api/push/subscribe").length, 0);
++    pass("a stalled subscription creation releases the button without confirming or uploading");
++  });
++  await scenario({ publicKey: rotatedKey, removal: "stall" }, async (page, state, calls) => {
++    await expect(alert(page, "更新推送订阅超时")).toBeVisible({ timeout: 12_000 });
++    await expect(page.getByRole("button", { name: "开启推送通知", exact: true })).toBeEnabled();
++    assert.equal(calls.filter(call => call.path === "/api/push/subscribe").length, 0);
++    assert.equal((await page.evaluate(() => window.testPushCounters)).subscribe, 0);
++    pass("a stalled key-rotation removal releases the page without creating a replacement");
++  });
++  await scenario({ removal: "stall" }, async (page, state) => {
++    await expect(page.getByText("已绑定", { exact: true })).toBeVisible();
++    state.test = { status: 400, body: { error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" } };
++    await page.getByRole("button", { name: "发送测试推送", exact: true }).click();
++    await expect(alert(page, "重置本站通知权限")).toBeVisible({ timeout: 12_000 });
++    await expect(page.getByText("已绑定", { exact: true })).toHaveCount(0);
++    await expect(page.getByRole("button", { name: "开启推送通知", exact: true })).toBeEnabled();
++    pass("a stalled expired removal still clears the confirmed binding and shows recovery instructions");
++  });
++  await scenario({ missingRegistration: true }, async page => {
++    await expect(alert(page, "尚未注册推送服务")).toBeVisible({ timeout: 10_000 });
++    await page.getByRole("button", { name: "开启推送通知", exact: true }).click();
++    await expect(alert(page, "推送服务启动超时")).toBeVisible({ timeout: 12_000 });
++    await expect(page.getByRole("button", { name: "开启推送通知", exact: true })).toBeEnabled();
++    pass("a missing or inactive worker produces an actionable error and a bounded retry");
++  });
++  report.passed = true;
++} catch (error) {
++  report.failure = { message: error instanceof Error ? error.message : String(error), ariaSnapshot: error.matcherResult?.ariaSnapshot ?? null };
++  throw error;
++} finally {
++  await browser.close();
++  await writeFile(resultPath, JSON.stringify(report, null, 2) + "\n", { mode: 0o600 });
++}
+diff --git a/scripts/review/check-push-persistence.py b/scripts/review/check-push-persistence.py
+new file mode 100644
+index 0000000..38a1e95
+--- /dev/null
++++ b/scripts/review/check-push-persistence.py
+@@ -0,0 +1,185 @@
++#!/usr/bin/env python3
++"""Verify Web push routes against an owned local Go/PostgreSQL/Redis runtime.
++
++Only the external WebPush gateway is replaced. Authentication and device writes
++use the real HTTP API and PostgreSQL. No existing database or .env is loaded.
++"""
++from __future__ import annotations
++
++import argparse
++import datetime as dt
++import hashlib
++import importlib.util
++import json
++import os
++from pathlib import Path
++import re
++import secrets
++import shutil
++import signal
++import subprocess
++import sys
++
++
++WEB_ROOT = Path(__file__).resolve().parents[2]
++TASK_ID = "WEB_PUSH_DELIVERY_20261005"
++EVIDENCE_ROOT = WEB_ROOT / "evidence/tasks" / TASK_ID
++
++
++def main() -> int:
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--baseline", action="store_true", help="Run against the committed pre-fix push/test route; failures remain exit 1")
++    parser.add_argument("--server-root", type=Path)
++    parser.add_argument("--ios-root", type=Path)
++    args = parser.parse_args()
++    # Resolve the original checkout from Git metadata rather than a floating URL.
++    common = Path(subprocess.check_output(["git", "rev-parse", "--git-common-dir"], cwd=WEB_ROOT, text=True).strip())
++    common = common if common.is_absolute() else WEB_ROOT / common
++    workspace = common.resolve().parent.parent
++    server_root = (args.server_root or workspace / "growdesk-server").resolve()
++    ios_root = (args.ios_root or workspace / "growdesk-ios").resolve()
++    helper = ios_root / "scripts/test-cloud-parity.py"
++    if not helper.is_file() or not (server_root / "cmd/growdesk-api/main.go").is_file():
++        raise RuntimeError("owned_runner_source_missing")
++    if not (WEB_ROOT / "node_modules/.bin/tsx").is_file():
++        raise RuntimeError("web_tsx_missing")
++    spec = importlib.util.spec_from_file_location("owned_push_cloud_runtime", helper)
++    if spec is None or spec.loader is None:
++        raise RuntimeError("owned_runner_import_failed")
++    runtime = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = runtime
++    sys.dont_write_bytecode = True
++    spec.loader.exec_module(runtime)
++    runtime.SERVER_ROOT = server_root
++    runtime.EVIDENCE_ROOT = EVIDENCE_ROOT
++    # An explicit cached toolchain avoids automatic network dependency fetches.
++    original_clean_env = runtime.clean_env
++
++    def clean_env(extra=None):
++        return original_clean_env({"GOPROXY": "off", "GOTOOLCHAIN": "go1.27.0", **(extra or {})})
++
++    runtime.clean_env = clean_env
++    # The shared runner also embeds this identity in an S3 bucket name.
++    run_id = secrets.token_hex(6)
++    if not re.fullmatch(r"[a-z0-9_]+", run_id):
++        raise RuntimeError("run_identity_invalid")
++    runner = runtime.OwnedRun(run_id)
++    baseline = WEB_ROOT / "scripts/review" / f"push-test-baseline-{run_id}.ts"
++    result_path = runner.evidence / "route-result.json"
++    route_path = WEB_ROOT / "app/api/push/test/route.ts"
++    outcome = {"taskId": TASK_ID, "runId": run_id, "baseline": args.baseline,
++               "startedAt": dt.datetime.now(dt.timezone.utc).isoformat(),
++               "passed": False, "claim": "real HTTP authentication and PostgreSQL persistence; gateway delivery is intercepted",
++               "physicalDeviceDeliveryVerified": False, "externalPushRequests": 0}
++    return_code = 1
++    cleanup = None
++    stage = "dependency_check"
++    try:
++        for binary, prefix in (("postgres", "postgres (PostgreSQL) 18."), ("redis-server", "Redis server v=8.")):
++            version = runtime.command([runner.executable(binary), "--version"], env=clean_env())
++            if not version.startswith(prefix):
++                raise RuntimeError("isolated_dependency_version_rejected")
++        print("Starting exclusively owned loopback PostgreSQL and Redis.", flush=True)
++        stage = "postgres_init"
++        runner.init_postgres()
++        stage = "redis_init"
++        runner.init_redis()
++        virtual_vapid = json.loads(runtime.command([
++            "node", "--input-type=module", "-e",
++            "import webPush from 'web-push'; process.stdout.write(JSON.stringify(webPush.generateVAPIDKeys()));",
++        ], cwd=WEB_ROOT, env=clean_env()))
++        original_spawn = runner.spawn
++
++        def spawn(name, arguments, *, env=None):
++            if name == "api":
++                env = {**(env or clean_env()), "VAPID_PUBLIC_KEY": virtual_vapid["publicKey"],
++                       "VAPID_PRIVATE_KEY": virtual_vapid["privateKey"],
++                       "VAPID_SUBJECT": "mailto:test_push@example.invalid"}
++            original_spawn(name, arguments, env=env)
++
++        runner.spawn = spawn
++        stage = "go_api_init"
++        runner.init_api()
++        stage = "database_identity_check"
++        expected = f"{runner.database}|{runner.app_role}|false"
++        identity = runner.psql("SELECT current_database() || '|' || current_user || '|' || "
++                               "(SELECT rolsuper::text FROM pg_roles WHERE rolname=current_user);")
++        if identity != expected:
++            raise RuntimeError("owned_postgres_identity_guard_failed")
++        if args.baseline:
++            source = runtime.command(["git", "show", "HEAD:app/api/push/test/route.ts"], cwd=WEB_ROOT, env=clean_env())
++            baseline.write_text(source + "\n", encoding="utf-8")
++            route_path = baseline
++        manifest_path = runner.private / "push-route-manifest.json"
++        runtime.persist_private_json(manifest_path, {
++            "version": 1, "runId": run_id, "ownerPid": os.getpid(),
++            "apiPid": runner.processes["api"].pid, "apiUrl": runner.api_url,
++            "webPort": runner.s3_port, "pgPort": runner.pg_port,
++            "database": runner.database, "role": runner.app_role,
++            "password": runner.pg_app_password, "psql": runner.executable("psql"),
++            "routePath": str(route_path), "resultPath": str(result_path),
++        })
++        node_env = clean_env({
++            "NODE_ENV": "development", "DATABASE_URL": "file:./dev_test.db", "PORT": "3089",
++            "GROWDESK_ENABLED": "true", "GROWDESK_BACKEND": "go", "GROWDESK_API_URL": runner.api_url,
++            "GROWDESK_WEB_ORIGIN": f"http://127.0.0.1:{runner.s3_port}",
++            "VAPID_PUBLIC_KEY": "", "VAPID_PRIVATE_KEY": "", "VAPID_SUBJECT": "mailto:test_push@example.invalid",
++            "OWNED_PUSH_RUN_MANIFEST": str(manifest_path),
++        })
++        # No --test/.env-file flag: lib/config must not load an existing .env.test.
++        stage = "route_checks"
++        completed = subprocess.run(["node", "--import", "tsx", "scripts/review/check-push-persistence.ts"],
++                                   cwd=WEB_ROOT, env=node_env, timeout=120, check=False)
++        return_code = completed.returncode
++        if result_path.is_file():
++            outcome["routeChecks"] = json.loads(result_path.read_text(encoding="utf-8"))
++        outcome.update({
++            "passed": return_code == 0,
++            "source": {"webHead": runtime.command(["git", "rev-parse", "HEAD"], cwd=WEB_ROOT, env=clean_env()),
++                       "goHead": runtime.command(["git", "rev-parse", "HEAD"], cwd=server_root, env=clean_env()),
++                       "routeSha256": hashlib.sha256(route_path.read_bytes()).hexdigest()},
++            "isolation": {"host": "127.0.0.1", "database": runner.database, "role": runner.app_role,
++                          "superuser": False, "postgresPort": runner.pg_port, "redisPort": runner.redis_port,
++                          "apiPort": runner.api_port, "webPort": runner.s3_port,
++                          "resourceOwnership": "new cluster and child processes for this run", "workerStarted": False,
++                          "goVapidConfiguration": "generated virtual key pair; no worker or delivery invoked"},
++        })
++    except (Exception, KeyboardInterrupt) as error:
++        outcome["failureClass"] = type(error).__name__
++        outcome["failureStage"] = stage
++        code = str(error)
++        if re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_:.]{0,160}", code):
++            outcome["failureCode"] = code
++        print(f"Owned push verification failed ({type(error).__name__}).", flush=True)
++        return_code = 1
++    finally:
++        baseline.unlink(missing_ok=True)
++        try:
++            cleanup = runner.cleanup()
++            cleanup.update({"taskId": TASK_ID, "resources": ["owned PostgreSQL cluster and test roles",
++                                                            "owned Redis process", "owned Go API process"]})
++            (runner.evidence / "backend-cleanup.json").write_text(json.dumps(cleanup, indent=2) + "\n", encoding="utf-8")
++        except Exception as error:
++            outcome["cleanupFailureClass"] = type(error).__name__
++            return_code = 1
++        # Retain only sanitized reports, never raw infrastructure logs.
++        if runner.logs.exists():
++            shutil.rmtree(runner.logs)
++        outcome["cleanup"] = cleanup
++        outcome["passed"] = return_code == 0
++        report = runner.evidence / "persistence-report.json"
++        report.write_text(json.dumps(outcome, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
++        print(f"PERSISTENCE_REPORT={report}", flush=True)
++    return return_code
++
++
++if __name__ == "__main__":
++    def interrupted(_signum, _frame):
++        raise KeyboardInterrupt()
++
++    signal.signal(signal.SIGTERM, interrupted)
++    try:
++        raise SystemExit(main())
++    except (Exception, KeyboardInterrupt) as error:
++        print(f"Owned push runner rejected setup ({type(error).__name__}).", flush=True)
++        raise SystemExit(1)
+diff --git a/scripts/review/check-push-persistence.ts b/scripts/review/check-push-persistence.ts
+new file mode 100644
+index 0000000..1f94835
+--- /dev/null
++++ b/scripts/review/check-push-persistence.ts
+@@ -0,0 +1,303 @@
++import assert from "node:assert/strict";
++import { createECDH, createHash, randomBytes } from "node:crypto";
++import { execFileSync } from "node:child_process";
++import { readFile, stat, writeFile } from "node:fs/promises";
++import http from "node:http";
++import path from "node:path";
++import { pathToFileURL } from "node:url";
++import webPush from "web-push";
++
++interface Manifest {
++  version: number; runId: string; ownerPid: number; apiPid: number; apiUrl: string;
++  webPort: number; pgPort: number; database: string; role: string; password: string;
++  psql: string; routePath: string; resultPath: string;
++}
++interface Account { id: string; cookie: string; accessToken: string; }
++const manifestPath = process.env.OWNED_PUSH_RUN_MANIFEST;
++assert.ok(manifestPath && path.isAbsolute(manifestPath), "Owned run manifest required");
++const metadata = await stat(manifestPath);
++assert.equal(metadata.mode & 0o077, 0, "Credentials must be owner-only");
++const manifest: Manifest = JSON.parse(await readFile(manifestPath, "utf8"));
++assert.equal(manifest.version, 1);
++assert.match(manifest.runId, /^[a-z0-9_]+$/);
++assert.equal(manifest.database, "test_growdesk_" + manifest.runId);
++assert.equal(manifest.role, "test_app_" + manifest.runId);
++for (const pid of [manifest.ownerPid, manifest.apiPid]) {
++  assert.ok(Number.isSafeInteger(pid) && pid > 1);
++  process.kill(pid, 0);
++}
++const apiOrigin = new URL(manifest.apiUrl);
++assert.equal(apiOrigin.protocol, "http:");
++assert.equal(apiOrigin.hostname, "127.0.0.1");
++for (const port of [Number(apiOrigin.port), manifest.pgPort, manifest.webPort]) {
++  assert.ok(Number.isSafeInteger(port) && port > 1024 && port <= 65535);
++  assert.ok(![5432, 6379, 3088, 3089].includes(port));
++}
++assert.ok(path.isAbsolute(manifest.psql));
++assert.ok(path.isAbsolute(manifest.routePath));
++const webRoot = path.resolve(import.meta.dirname, "../..");
++assert.ok(manifest.routePath.startsWith(webRoot + path.sep));
++assert.ok(manifest.resultPath.startsWith(path.join(webRoot, "evidence/tasks/WEB_PUSH_DELIVERY_20261005") + path.sep));
++const webOrigin = `http://127.0.0.1:${manifest.webPort}`;
++const originalFetch = globalThis.fetch;
++const observed: { method: string; path: string }[] = [];
++globalThis.fetch = async (input, init) => {
++  const url = new URL(input instanceof Request ? input.url : String(input));
++  if (![apiOrigin.origin, webOrigin].includes(url.origin)) throw new Error("NON_OWNED_NETWORK_REQUEST_REJECTED");
++  observed.push({ method: init?.method || "GET", path: url.pathname });
++  return originalFetch(input, { ...init, redirect: "error" });
++};
++const vapid = webPush.generateVAPIDKeys();
++process.env.VAPID_PUBLIC_KEY = vapid.publicKey;
++process.env.VAPID_PRIVATE_KEY = vapid.privateKey;
++process.env.VAPID_SUBJECT = "mailto:test_push@example.invalid";
++const originalSend = webPush.sendNotification;
++let gatewayMode: "accepted" | "denied" = "accepted";
++let gatewayCalls = 0;
++// The only replaced side effect is the external push gateway. Never invoke the original sender.
++webPush.sendNotification = async () => {
++  gatewayCalls++;
++  if (gatewayMode === "denied") throw Object.assign(new Error("test_gateway_denied"), { statusCode: 403 });
++  return { statusCode: 201, body: "", headers: {} };
++};
++const report = {
++  passed: false, cases: [] as { name: string; passed: boolean; error?: string }[],
++  realAuthentication: false, realPostgreSQL: true,
++  bffRuntime: "owned Node HTTP shim invoking the actual route handlers; Next runtime is not exercised",
++  mockedSideEffects: ["external WebPush gateway sendNotification only"],
++  physicalDeviceDeliveryVerified: false, externalPushRequests: 0,
++  observedHttp: observed, gatewayCalls: 0,
++  familyRecordNotificationProbe: null as null | {
++    recordCommitted: boolean; recipientSubscriptionPresent: boolean;
++    notificationDelta: number; pushTaskDelta: number; familyChangeDelta: number;
++    missingEventObserved: boolean;
++  },
++};
++function sql(statement: string): string {
++  const environment: NodeJS.ProcessEnv = { NODE_ENV: "development" };
++  for (const name of ["PATH", "HOME", "TMPDIR", "LANG", "LC_ALL"]) {
++    if (process.env[name]) environment[name] = process.env[name];
++  }
++  environment.PGPASSWORD = manifest.password;
++  environment.PGCONNECT_TIMEOUT = "5";
++  return execFileSync(manifest.psql, ["-X", "-v", "ON_ERROR_STOP=1", "-A", "-t",
++    "-h", "127.0.0.1", "-p", String(manifest.pgPort), "-U", manifest.role, "-d", manifest.database],
++  { input: statement, encoding: "utf8", env: environment, timeout: 10_000, stdio: ["pipe", "pipe", "pipe"] }).trim();
++}
++assert.equal(sql("SELECT current_database() || '|' || current_user || '|' || (SELECT rolsuper::text FROM pg_roles WHERE rolname=current_user);"),
++  `${manifest.database}|${manifest.role}|false`);
++async function api(method: string, pathname: string, body?: unknown, token?: string, key?: string) {
++  const response = await fetch(apiOrigin.origin + pathname, {
++    method, headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}),
++      ...(key ? { "Idempotency-Key": key } : {}) },
++    ...(body !== undefined ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10_000),
++  });
++  return { status: response.status, data: await response.json() };
++}
++async function account(label: string): Promise<Account> {
++  const username = `test_push_${manifest.runId}_${label}`;
++  const password = "test_password_" + randomBytes(16).toString("hex");
++  const registered = await api("POST", "/api/v1/auth/register", { username, password, displayName: username, deviceLabel: "test_push_persistence" });
++  assert.equal(registered.status, 201, "REAL_REGISTRATION_FAILED");
++  const secret = randomBytes(32).toString("hex");
++  const bound = await api("POST", "/api/v1/auth/bff/session", {
++    username, password, sessionSecretHash: createHash("sha256").update(secret).digest("hex"), deviceLabel: "test_push_bff",
++  });
++  assert.equal(bound.status, 200, "REAL_BFF_SESSION_FAILED");
++  assert.equal(bound.data.data.user.id, registered.data.data.user.id, "BFF_PRINCIPAL_MISMATCH");
++  const me = await api("GET", "/api/v1/me", undefined, bound.data.data.accessToken);
++  assert.equal(me.status, 200, "REAL_ACCESS_TOKEN_REJECTED");
++  assert.equal(me.data.data.id, registered.data.data.user.id, "ACCESS_PRINCIPAL_MISMATCH");
++  assert.match(me.data.data.id, /^[a-f0-9-]{36}$/, "INVALID_SERVER_USER_ID");
++  return { id: me.data.data.id, cookie: `growdesk_web_dev=${secret}`, accessToken: bound.data.data.accessToken };
++}
++async function check(name: string, run: () => Promise<void> | void) {
++  try {
++    await run(); report.cases.push({ name, passed: true }); console.log("PASS " + name);
++  } catch (error) {
++    const message = error instanceof Error ? error.message.split("\n")[0] : "CHECK_FAILED";
++    report.cases.push({ name, passed: false, error: message }); console.log("FAIL " + name);
++  }
++}
++let server: http.Server | undefined;
++try {
++  const testRoute = await import(pathToFileURL(manifest.routePath).href);
++  const subscribeRoute = await import("../../app/api/push/subscribe/route");
++  const handlers = new Map<string, (request: Request) => Promise<Response>>([
++    ["/api/push/subscribe", subscribeRoute.POST], ["/api/push/test", testRoute.POST],
++  ]);
++  server = http.createServer(async (incoming, outgoing) => {
++    try {
++      const chunks: Buffer[] = [];
++      let size = 0;
++      for await (const chunk of incoming) {
++        size += chunk.length;
++        if (size > 16384) throw new Error("REQUEST_TOO_LARGE");
++        chunks.push(chunk);
++      }
++      const pathname = new URL(incoming.url || "/", webOrigin).pathname;
++      const handler = handlers.get(pathname);
++      if (!handler || incoming.method !== "POST") { outgoing.writeHead(404); outgoing.end(); return; }
++      const headers = new Headers();
++      for (const [name, value] of Object.entries(incoming.headers)) {
++        if (value !== undefined) headers.set(name, Array.isArray(value) ? value.join(",") : value);
++      }
++      const response = await handler(new Request(webOrigin + pathname, {
++        method: "POST", headers, body: Buffer.concat(chunks),
++      }));
++      outgoing.writeHead(response.status, Object.fromEntries(response.headers));
++      outgoing.end(Buffer.from(await response.arrayBuffer()));
++    } catch {
++      outgoing.writeHead(500, { "content-type": "application/json" });
++      outgoing.end(JSON.stringify({ error: "TEST_ROUTE_RUNTIME_FAILED" }));
++    }
++  });
++  await new Promise<void>((resolve, reject) => {
++    server!.once("error", reject); server!.listen(manifest.webPort, "127.0.0.1", resolve);
++  });
++  const owner = await account("owner");
++  const outsider = await account("outsider");
++  report.realAuthentication = true;
++  report.cases.push({ name: "real registration, session exchange and Bearer principal", passed: true });
++  const ecdh = createECDH("prime256v1"); ecdh.generateKeys();
++  const subscription = {
++    endpoint: `https://fcm.googleapis.com/fcm/send/test_persistence_${manifest.runId}`,
++    expirationTime: null,
++    keys: { p256dh: ecdh.getPublicKey().toString("base64url"), auth: randomBytes(16).toString("base64url") },
++  };
++  const installation = createHash("sha256").update(subscription.endpoint).digest("hex").slice(0, 32);
++  function row() {
++    const rows = JSON.parse(sql(`SELECT COALESCE(jsonb_agg(to_jsonb(d)),'[]'::jsonb) FROM push_devices d WHERE installation_id='${installation}';`));
++    assert.equal(rows.length, 1, "DEVICE_ROW_COUNT_CHANGED");
++    assert.equal(rows[0].user_id, owner.id, "DEVICE_PRINCIPAL_CHANGED");
++    return rows[0] as { token: string; updated_at: string };
++  }
++  function fullToken() {
++    const value = row();
++    let parsed;
++    try { parsed = JSON.parse(value.token); } catch { throw new Error("PUSH_TEST_DROPPED_ENCRYPTION_KEYS"); }
++    assert.deepEqual(parsed, subscription, "PERSISTED_SUBSCRIPTION_CHANGED");
++    return value;
++  }
++  async function web(pathname: string, body: unknown, cookie = owner.cookie, origin = webOrigin) {
++    const response = await fetch(webOrigin + pathname, {
++      method: "POST", headers: { "content-type": "application/json", origin, ...(cookie ? { cookie } : {}) },
++      body: JSON.stringify(body), signal: AbortSignal.timeout(10_000),
++    });
++    return { status: response.status, data: await response.json() };
++  }
++  await check("subscribe persists full encryption keys through real HTTP and PostgreSQL", async () => {
++    assert.equal((await web("/api/push/subscribe", subscription)).status, 200, "SUBSCRIPTION_FAILED");
++    fullToken();
++  });
++  await check("test push preserves the complete subscription and authenticated owner", async () => {
++    const response = await web("/api/push/test", { subscription, userId: outsider.id });
++    assert.equal(response.status, 200, "TEST_PUSH_REJECTED");
++    assert.equal(response.data.sent, 1, "TEST_PUSH_NOT_ACKNOWLEDGED");
++    assert.equal(response.data.simulated, undefined, "SIMULATED_SUCCESS_RETURNED");
++    fullToken();
++    assert.equal(sql(`SELECT count(*) FROM push_devices WHERE user_id='${outsider.id}';`), "0", "UNTRUSTED_USER_ID_PERSISTED");
++  });
++  await check("anonymous and unknown real sessions cannot overwrite device registration", async () => {
++    const before = row(); const calls = gatewayCalls;
++    for (const cookie of ["", "growdesk_web_dev=" + "f".repeat(64)]) {
++      assert.equal((await web("/api/push/test", { subscription }, cookie)).status, 401, "INVALID_SESSION_ACCEPTED");
++    }
++    assert.deepEqual(row(), before, "UNAUTHORIZED_WRITE");
++    assert.equal(gatewayCalls, calls, "UNAUTHORIZED_SEND");
++  });
++  await check("backend push registration requires a verified Bearer principal", async () => {
++    assert.equal((await api("PUT", `/api/v1/devices/${installation}/push`, {
++      platform: "web", environment: "production", token: JSON.stringify(subscription), userId: owner.id,
++    })).status, 401, "UNAUTHENTICATED_BACKEND_WRITE");
++  });
++  await check("foreign CSRF origin fails before any device write or gateway call", async () => {
++    const before = row(); const calls = gatewayCalls;
++    assert.equal((await web("/api/push/test", { subscription }, owner.cookie, "https://test_attacker.invalid")).status, 403, "FOREIGN_ORIGIN_ACCEPTED");
++    assert.deepEqual(row(), before, "CSRF_DEVICE_WRITE");
++    assert.equal(gatewayCalls, calls, "CSRF_GATEWAY_SEND");
++  });
++  await check("missing current-device subscription fails without mutation or simulated send", async () => {
++    const before = row(); const calls = gatewayCalls;
++    assert.equal((await web("/api/push/test", { subscription: null })).status, 400, "MISSING_SUBSCRIPTION_ACCEPTED");
++    assert.deepEqual(row(), before, "MALFORMED_DEVICE_WRITE");
++    assert.equal(gatewayCalls, calls, "MALFORMED_GATEWAY_SEND");
++  });
++  await check("missing VAPID configuration reports 503 without changing stored subscription", async () => {
++    const before = row(); const calls = gatewayCalls;
++    delete process.env.VAPID_PRIVATE_KEY;
++    try {
++      assert.equal((await web("/api/push/test", { subscription })).status, 503, "MISSING_CONFIG_SIMULATED_SUCCESS");
++      assert.deepEqual(row(), before, "UNCONFIGURED_DEVICE_WRITE");
++      assert.equal(gatewayCalls, calls, "UNCONFIGURED_GATEWAY_SEND");
++    } finally { process.env.VAPID_PRIVATE_KEY = vapid.privateKey; }
++  });
++  await check("gateway 403 is reported as 502 while the real PostgreSQL subscription remains valid", async () => {
++    gatewayMode = "denied";
++    try {
++      const response = await web("/api/push/test", { subscription });
++      assert.equal(response.status, 502, "GATEWAY_FAILURE_SIMULATED_SUCCESS");
++      assert.equal(response.data.success, undefined, "GATEWAY_FAILURE_CLAIMED_SUCCESS");
++      assert.equal(response.data.simulated, undefined, "GATEWAY_FAILURE_SIMULATED");
++      fullToken();
++    } finally { gatewayMode = "accepted"; }
++  });
++  await check("observe notification task inventory after a real family feeding transaction", async () => {
++    const caregiver = await account("caregiver");
++    const family = await api("POST", "/api/v1/families", {
++      name: `test_family_push_${manifest.runId}`, timeZone: "Asia/Shanghai",
++    }, owner.accessToken);
++    assert.equal(family.status, 201, "TEST_FAMILY_CREATION_FAILED");
++    const familyId = family.data.data.id as string;
++    assert.match(familyId, /^[a-f0-9-]{36}$/);
++    const invite = await api("POST", `/api/v1/families/${familyId}/invites`, { expiresInDays: 1 }, owner.accessToken);
++    assert.equal(invite.status, 201, "TEST_INVITE_FAILED");
++    assert.equal((await api("POST", "/api/v1/families/join", { inviteCode: invite.data.data.inviteCode }, caregiver.accessToken)).status,
++      200, "TEST_CAREGIVER_JOIN_FAILED");
++    const baby = await api("POST", `/api/v1/families/${familyId}/babies`, {
++      name: `test_baby_push_${manifest.runId}`, birthDate: "2026-01-02", gender: "girl",
++    }, owner.accessToken);
++    assert.equal(baby.status, 201, "TEST_BABY_CREATION_FAILED");
++    const babyId = baby.data.data.id as string;
++    assert.match(babyId, /^[a-f0-9-]{36}$/);
++    assert.equal((await api("POST", `/api/v1/babies/${babyId}/members`, {
++      userId: caregiver.id, role: "member",
++    }, owner.accessToken)).status, 201, "TEST_BABY_PERMISSION_FAILED");
++    const recipientSubscription = { ...subscription, endpoint: subscription.endpoint + "_caregiver" };
++    assert.equal((await web("/api/push/subscribe", recipientSubscription, caregiver.cookie)).status, 200, "RECIPIENT_SUBSCRIBE_FAILED");
++    assert.equal(sql(`SELECT count(*) FROM push_devices WHERE user_id='${caregiver.id}';`), "1", "RECIPIENT_NOT_REGISTERED");
++    const inventory = () => JSON.parse(sql(`SELECT jsonb_build_object(
++      'notifications',(SELECT count(*) FROM notifications),
++      'pushTasks',(SELECT count(*) FROM task_executions WHERE kind='push_delivery'),
++      'changes',(SELECT count(*) FROM family_changes WHERE family_id='${familyId}'),
++      'records',(SELECT count(*) FROM feeding_records WHERE baby_id='${babyId}'));`));
++    const before = inventory();
++    const created = await api("POST", `/api/v1/babies/${babyId}/records/feeding`, {
++      feedingType: "formula", occurredAt: "2026-05-02T04:00:00Z", amountMl: "120", notes: "test_push_event_probe",
++    }, owner.accessToken, `test_push_record_${manifest.runId}`);
++    assert.equal(created.status, 201, "REAL_FEEDING_TRANSACTION_FAILED");
++    const after = inventory();
++    assert.equal(after.records, before.records + 1, "FEEDING_NOT_COMMITTED");
++    assert.equal(after.changes, before.changes + 1, "FAMILY_CHANGE_NOT_COMMITTED");
++    report.familyRecordNotificationProbe = {
++      recordCommitted: true, recipientSubscriptionPresent: true,
++      notificationDelta: after.notifications - before.notifications,
++      pushTaskDelta: after.pushTasks - before.pushTasks,
++      familyChangeDelta: after.changes - before.changes,
++      missingEventObserved: after.notifications === before.notifications && after.pushTasks === before.pushTasks,
++    };
++  });
++} catch (error) {
++  report.cases.push({ name: "owned route test setup", passed: false, error: error instanceof Error ? error.message.split("\n")[0] : "SETUP_FAILED" });
++} finally {
++  webPush.sendNotification = originalSend;
++  globalThis.fetch = originalFetch;
++  if (server) {
++    server.closeAllConnections();
++    await new Promise<void>(resolve => server!.close(() => resolve()));
++  }
++  report.gatewayCalls = gatewayCalls;
++  report.passed = report.cases.length > 0 && report.cases.every(item => item.passed);
++  await writeFile(manifest.resultPath, JSON.stringify(report, null, 2) + "\n", { mode: 0o600 });
++  if (!report.passed) process.exitCode = 1;
++}
+diff --git a/tests/unit/growdesk-family-push-parity.test.ts b/tests/unit/growdesk-family-push-parity.test.ts
+new file mode 100644
+index 0000000..50f0f10
+--- /dev/null
++++ b/tests/unit/growdesk-family-push-parity.test.ts
+@@ -0,0 +1,72 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import type { BridgeFetch, BridgeResult } from "../../lib/growdesk/bridge-protocol";
++import { fetchGrowDeskNotificationItems } from "../../lib/growdesk/notification-parity";
++
++const scope = { familyId: "test_family_push", babyId: "test_baby_push", birthDate: "2026-03-19" };
++const userId = "test_recipient_push";
++const now = Date.parse("2026-09-19T04:00:00Z");
++const eventKey = `family_record:${"a".repeat(64)}`;
++const record = {
++  id: "test_feeding_push", ...scope, version: "2", feedingType: "formula", amountMl: "120",
++  occurredAt: "2026-09-19T02:00:00Z", createdAt: "2026-09-19T02:00:00Z", updatedAt: "2026-09-19T03:00:00Z",
++  recordedByUserId: "test_actor_push", notes: null,
++};
++
++function remote(overrides: Record<string, unknown> = {}) {
++  return {
++    id: "test_remote_push", userId, eventKey, title: "家庭动态", body: "有新的照护记录",
++    createdAt: "2026-09-19T03:00:00Z", readAt: "2026-09-19T03:30:00Z",
++    data: { eventKind: "family_record", eventKey, entityType: "feeding", entityId: record.id,
++      recordVersion: "2", operation: "update", familyId: scope.familyId, babyId: scope.babyId, ...overrides },
++  };
++}
++
++function fixture(notifications: unknown[]): BridgeFetch {
++  return async <T>(pathname: string): Promise<BridgeResult<T>> => {
++    const path = new URL(pathname, "http://test.invalid").pathname;
++    let data: unknown = [];
++    if (path === "/api/v1/notifications") data = notifications;
++    else if (path === `/api/v1/families/${scope.familyId}`) data = { id: scope.familyId, timeZone: "Asia/Shanghai" };
++    else if (path.endsWith("/members")) data = [];
++    else if (path.endsWith("/records/feeding")) data = [record];
++    else if (path.endsWith("/food-plan")) data = {
++      id: "test_plan_push", babyId: scope.babyId, planData: {}, version: "1",
++      createdAt: "2026-09-19T02:00:00Z", updatedAt: "2026-09-19T02:00:00Z",
++    };
++    const result: BridgeResult<T> & { dataRelease?: unknown } = {
++      ok: true, status: 200, data: data as T, page: { nextCursor: null },
++    };
++    if (path === "/api/v1/development/milestones") result.dataRelease = {
++      id: "test_data_release", title: "test_reference", asOf: "2026-09-19", sources: [{ organization: "test_source" }],
++    };
++    return result;
++  };
++}
++
++async function familyItems(notifications: unknown[]) {
++  return (await fetchGrowDeskNotificationItems(fixture(notifications), "test_token", userId, scope, now, true))
++    .filter(item => item.type === "family");
++}
++
++test("a current authoritative family event replaces the derived duplicate and preserves its remote identity/read state", async () => {
++  const items = await familyItems([remote()]);
++  assert.equal(items.length, 1);
++  assert.equal(items[0].id, "test_remote_push");
++  assert.equal((items[0] as typeof items[0] & { readAt?: string }).readAt, "2026-09-19T03:30:00.000Z");
++});
++
++test("missing, older or mismatched metadata retains the derived family fallback", async () => {
++  for (const value of [undefined, remote({ recordVersion: "1" }), remote({ entityId: "test_other_record" }),
++    remote({ recordVersion: undefined }), remote({ eventKind: "test_other_event" }),
++    remote({ familyId: "test_other_family" }), remote({ babyId: "test_other_baby" })]) {
++    const items = await familyItems(value ? [value] : []);
++    assert.ok(items.some(item => item.id === `family-feeding-${record.id}`));
++  }
++});
++
++test("the current event removes only its derived duplicate, keeping earlier authoritative event identities", async () => {
++  const earlier = { ...remote({ recordVersion: "1", operation: "create" }), id: "test_earlier_event" };
++  const items = await familyItems([earlier, remote()]);
++  assert.deepEqual(items.map(item => item.id).sort(), ["test_earlier_event", "test_remote_push"]);
++});
+diff --git a/tests/unit/growdesk-push-test-route.test.ts b/tests/unit/growdesk-push-test-route.test.ts
+new file mode 100644
+index 0000000..0a17f42
+--- /dev/null
++++ b/tests/unit/growdesk-push-test-route.test.ts
+@@ -0,0 +1,162 @@
++import assert from "node:assert/strict";
++import test, { type TestContext } from "node:test";
++import { createECDH } from "node:crypto";
++import webPush from "web-push";
++import { GROWDESK_CONFIG } from "../../lib/config";
++import { POST } from "../../app/api/push/test/route";
++
++// Route behavior only: transport responses and the push gateway are controlled.
++// This does not claim database/session authorization or physical-device delivery.
++const key = createECDH("prime256v1"); key.generateKeys();
++const subscription = {
++  endpoint: "https://fcm.googleapis.com/fcm/send/test_push_route",
++  expirationTime: null,
++  keys: { p256dh: key.getPublicKey().toString("base64url"), auth: Buffer.alloc(16, 1).toString("base64url") },
++};
++const user = { id: "test_push_user", username: "test_push_user", displayName: "test_push_user" };
++function request(body: unknown = { subscription }, origin = "https://test.invalid") {
++  return new Request("https://test.invalid/api/push/test", {
++    method: "POST", headers: {
++      origin, "content-type": "application/json",
++      cookie: `${GROWDESK_CONFIG.cookieName}=${"a".repeat(64)}`,
++    }, body: JSON.stringify(body),
++  });
++}
++function setup(t: TestContext, registrationStatus = 200) {
++  const env = ["GROWDESK_ENABLED", "GROWDESK_BACKEND", "VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"];
++  const saved = env.map(name => process.env[name]);
++  t.after(() => env.forEach((name, i) => {
++    if (saved[i] === undefined) delete process.env[name]; else process.env[name] = saved[i];
++  }));
++  process.env.GROWDESK_ENABLED = "true";
++  process.env.GROWDESK_BACKEND = "go";
++  const vapid = webPush.generateVAPIDKeys();
++  process.env.VAPID_PUBLIC_KEY = vapid.publicKey;
++  process.env.VAPID_PRIVATE_KEY = vapid.privateKey;
++  const writes: Record<string, unknown>[] = [];
++  let sendCalls = 0;
++  t.mock.method(globalThis, "fetch", async (input: string | URL | Request, init?: RequestInit) => {
++    const path = new URL(String(input)).pathname;
++    if (path === "/api/v1/auth/bff/session") return Response.json({ data: { accessToken: "test_access", user } });
++    assert.match(path, /^\/api\/v1\/devices\/[a-f0-9]{32}\/push$/);
++    assert.equal(new Headers(init?.headers).get("authorization"), "Bearer test_access");
++    writes.push(JSON.parse(String(init?.body)));
++    if (registrationStatus !== 200) return Response.json({ error: { code: "TEST_PUSH_OUTAGE", message: "test registration unavailable" } }, { status: registrationStatus });
++    return Response.json({ data: { success: true } });
++  });
++  t.mock.method(webPush, "sendNotification", async () => {
++    sendCalls++;
++    return { statusCode: 201, body: "", headers: {} };
++  });
++  return { writes, sendCalls: () => sendCalls };
++}
++
++test("test push keeps the full subscription so later background delivery can encrypt", async t => {
++  const state = setup(t);
++  const response = await POST(request());
++  assert.equal(response.status, 200);
++  assert.deepEqual(JSON.parse(String(state.writes[0]?.token)), subscription);
++  assert.equal(state.sendCalls(), 1);
++  const result = await response.json();
++  assert.equal(result.sent, 1);
++  assert.equal(result.simulated, undefined);
++});
++
++test("missing push configuration fails visibly instead of reporting a simulated send", async t => {
++  const state = setup(t);
++  delete process.env.VAPID_PRIVATE_KEY;
++  const response = await POST(request());
++  assert.equal(response.status, 503);
++  assert.equal((await response.json()).code, "PUSH_NOT_CONFIGURED");
++  assert.equal(state.sendCalls(), 0);
++  assert.equal(state.writes.length, 0);
++});
++
++test("registration outages stop a test send and preserve the upstream failure", async t => {
++  const state = setup(t, 503);
++  const response = await POST(request());
++  assert.equal(response.status, 503);
++  assert.equal((await response.json()).code, "TEST_PUSH_OUTAGE");
++  assert.equal(state.sendCalls(), 0);
++});
++
++test("gateway authorization failure is an error, never simulated success", async t => {
++  setup(t);
++  t.mock.method(webPush, "sendNotification", async () => { throw Object.assign(new Error("test gateway denied"), { statusCode: 403 }); });
++  const response = await POST(request());
++  assert.equal(response.status, 502);
++  const result = await response.json();
++  assert.equal(result.success, undefined);
++  assert.equal(result.simulated, undefined);
++  assert.match(result.error, /403/);
++});
++
++test("missing current-device subscription fails before saving or sending", async t => {
++  const state = setup(t);
++  const response = await POST(request({ subscription: null }));
++  assert.equal(response.status, 400);
++  assert.equal(state.sendCalls(), 0);
++  assert.equal(state.writes.length, 0);
++});
++
++test("expired subscriptions and gateway timeouts give actionable errors", async t => {
++  setup(t);
++  let failure: Error & { statusCode?: number; code?: string } = Object.assign(new Error("test gone"), { statusCode: 410 });
++  t.mock.method(webPush, "sendNotification", async () => { throw failure; });
++  const expired = await POST(request());
++  assert.equal(expired.status, 400);
++  assert.equal((await expired.json()).code, "PUSH_SUBSCRIPTION_GONE");
++  failure = Object.assign(new Error("test timed out"), { code: "ETIMEDOUT" });
++  const timeout = await POST(request());
++  assert.equal(timeout.status, 504);
++  assert.equal((await timeout.json()).code, "PUSH_GATEWAY_TIMEOUT");
++});
++
++test("foreign origins are rejected before session or subscription requests", async t => {
++  const state = setup(t);
++  t.mock.method(globalThis, "fetch", async () => assert.fail("must not exchange session for a foreign origin"));
++  assert.equal((await POST(request({ subscription }, "https://test_foreign.invalid"))).status, 403);
++  assert.equal(state.sendCalls(), 0);
++});
++
++test("untrusted push URLs and invalid keys never reach storage or a gateway", async t => {
++  const state = setup(t);
++  for (const invalid of [
++    { ...subscription, endpoint: "https://127.0.0.1/test_internal" },
++    { ...subscription, endpoint: "https://fcm.googleapis.com:8443/test_endpoint" },
++    { ...subscription, endpoint: "https://fcm.googleapis.com.test.invalid/test_endpoint" },
++    { ...subscription, endpoint: "https://notify.windows.com.test.invalid/test_endpoint" },
++    { ...subscription, endpoint: "https://test.notify.windows.com:8443/test_endpoint" },
++    { ...subscription, keys: { ...subscription.keys, auth: "bad" } },
++  ]) {
++    assert.equal((await POST(request({ subscription: invalid }))).status, 400);
++  }
++  assert.equal(state.writes.length, 0);
++  assert.equal(state.sendCalls(), 0);
++});
++
++test("Edge WNS endpoints remain supported for manual test notifications", async t => {
++  const state = setup(t);
++  const edgeSubscription = { ...subscription, endpoint: "https://test.notify.windows.com/w/?token=test_push_route" };
++  const response = await POST(request({ subscription: edgeSubscription }));
++  assert.equal(response.status, 200);
++  assert.deepEqual(JSON.parse(String(state.writes[0].token)), edgeSubscription);
++  assert.equal(state.sendCalls(), 1);
++});
++
++test("the URL validated by the route is also the URL registered and sent", async t => {
++  const state = setup(t);
++  let sentEndpoint = "";
++  t.mock.method(webPush, "sendNotification", async (value: webPush.PushSubscription) => {
++    sentEndpoint = value.endpoint;
++    const requestDetails = webPush.generateRequestDetails(value, "test_payload", {
++      vapidDetails: { publicKey: process.env.VAPID_PUBLIC_KEY!, privateKey: process.env.VAPID_PRIVATE_KEY!, subject: "mailto:test@example.invalid" },
++    });
++    assert.equal(new URL(requestDetails.endpoint).hostname, "fcm.googleapis.com");
++    return { statusCode: 201, body: "", headers: {} };
++  });
++  const response = await POST(request({ subscription: { ...subscription, endpoint: "https:/fcm.googleapis.com/fcm/send/test_push_route" } }));
++  assert.equal(response.status, 200);
++  assert.equal(sentEndpoint, subscription.endpoint);
++  assert.equal(JSON.parse(String(state.writes[0].token)).endpoint, sentEndpoint);
++});
+diff --git a/tests/unit/push-client.test.ts b/tests/unit/push-client.test.ts
+new file mode 100644
+index 0000000..1a8bbe1
+--- /dev/null
++++ b/tests/unit/push-client.test.ts
+@@ -0,0 +1,261 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import { getPushRegistration, PushClientError, pushErrorMessage, sendTestPush, syncPushSubscription } from "../../lib/push-client";
++
++// Browser and HTTP ports are synthetic. These tests exercise the actual client
++// control flow and response handling, not permission, tenancy, or delivery.
++const key = Uint8Array.from([4, ...Array(64).fill(7)]);
++const otherKey = Uint8Array.from([4, ...Array(64).fill(8)]);
++const encoded = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
++
++function fixture(initial: "current" | "old" | "missing" | "unknown" = "current") {
++  const calls: { path: string; body?: unknown }[] = [];
++  const counters = { subscribe: 0, unsubscribe: 0 };
++  const state = {
++    keyResponse: Response.json({ publicKey: encoded(key) }),
++    binding: () => Response.json({ success: true }),
++    test: () => Response.json({ success: true, sent: 1, simulated: false }),
++    removeResult: true,
++    removeError: null as Error | null,
++  };
++  const makeSubscription = (bytes: Uint8Array | null, endpoint: string): PushSubscription => ({
++    endpoint,
++    expirationTime: null,
++    options: { applicationServerKey: bytes ? bytes.slice().buffer : null, userVisibleOnly: true },
++    getKey: () => null,
++    toJSON: () => ({ endpoint, expirationTime: null, keys: { p256dh: "test_push_key", auth: "test_push_auth" } }),
++    unsubscribe: async () => {
++      counters.unsubscribe++;
++      if (state.removeError) throw state.removeError;
++      if (state.removeResult) current = null;
++      return state.removeResult;
++    },
++  });
++  let current = initial === "missing" ? null : makeSubscription(initial === "unknown" ? null : initial === "old" ? otherKey : key, "https://push.example.invalid/test_existing");
++  const registration: Pick<ServiceWorkerRegistration, "pushManager"> = {
++    pushManager: {
++      getSubscription: async () => current,
++      permissionState: async () => "granted",
++      subscribe: async options => {
++        counters.subscribe++;
++        assert.equal(options?.userVisibleOnly, true);
++        const buffer = options?.applicationServerKey;
++        assert.ok(buffer instanceof Uint8Array);
++        assert.deepEqual(buffer, key);
++        current = makeSubscription(key, "https://push.example.invalid/test_new");
++        return current;
++      },
++    },
++  };
++  const fetcher: typeof fetch = async (input, init) => {
++    assert.ok(typeof input === "string" && input.startsWith("/api/push/"));
++    calls.push({ path: input, body: init?.body ? JSON.parse(String(init.body)) : undefined });
++    if (input === "/api/push/vapid-key") return state.keyResponse.clone();
++    if (input === "/api/push/subscribe") return state.binding();
++    if (input === "/api/push/test") return state.test();
++    assert.fail("unexpected client request");
++  };
++  return { registration, fetcher, counters, calls, state, subscription: () => current };
++}
++
++test("same VAPID key reuses and uploads the complete existing subscription", async () => {
++  const f = fixture();
++  const previous = f.subscription();
++  assert.equal(await syncPushSubscription(f.registration, true, f.fetcher), previous);
++  assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++  assert.deepEqual(f.calls.map(call => call.path), ["/api/push/vapid-key", "/api/push/subscribe"]);
++  assert.deepEqual(f.calls[1].body, previous?.toJSON());
++});
++
++test("confirmed VAPID drift rotates once, while unavailable keys preserve the local subscription", async () => {
++  const changed = fixture("old");
++  assert.equal((await syncPushSubscription(changed.registration, true, changed.fetcher))?.endpoint, "https://push.example.invalid/test_new");
++  assert.deepEqual(changed.counters, { subscribe: 1, unsubscribe: 1 });
++  for (const keyResponse of [Response.json({ error: "test_key_outage" }, { status: 503 }), Response.json({ publicKey: "bad" })]) {
++    const f = fixture("old");
++    const previous = f.subscription();
++    f.state.keyResponse = keyResponse;
++    await assert.rejects(() => syncPushSubscription(f.registration, true, f.fetcher));
++    assert.equal(f.subscription(), previous);
++    assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++  }
++});
++
++test("a browser without an exposed VAPID key preserves its subscription", async () => {
++  const f = fixture("unknown");
++  const previous = f.subscription();
++  assert.equal(await syncPushSubscription(f.registration, true, f.fetcher), previous);
++  assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++});
++
++test("auto-check does not create a missing subscription; manual binding does", async () => {
++  const f = fixture("missing");
++  assert.equal(await syncPushSubscription(f.registration, false, f.fetcher), null);
++  assert.equal(f.calls.length, 0);
++  const created = await syncPushSubscription(f.registration, true, f.fetcher);
++  assert.ok(created);
++  assert.deepEqual(f.counters, { subscribe: 1, unsubscribe: 0 });
++});
++
++test("failed removal stops a key rotation before creating or uploading a replacement", async () => {
++  const f = fixture("old");
++  f.state.removeResult = false;
++  await assert.rejects(() => syncPushSubscription(f.registration, true, f.fetcher), /更新推送订阅失败/);
++  assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 1 });
++  assert.equal(f.calls.length, 1);
++});
++
++test("binding requires success true and propagates server or malformed-response failures", async () => {
++  for (const response of [
++    Response.json({ success: false }), Response.json({}), new Response("not-json"),
++    Response.json({ error: "test_sync_outage" }, { status: 503 }),
++    Response.json({ error: { message: "test_nested_denial" } }, { status: 403 }),
++  ]) {
++    const f = fixture();
++    f.state.binding = () => response.clone();
++    await assert.rejects(() => syncPushSubscription(f.registration, true, f.fetcher));
++    assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++  }
++  const f = fixture();
++  f.state.binding = () => Response.json({ error: "test_sync_outage" }, { status: 503 });
++  await assert.rejects(() => syncPushSubscription(f.registration, true, f.fetcher), /test_sync_outage/);
++});
++
++test("test notification rejects simulation and absent, zero, invalid, or unconfirmed sent counts", async () => {
++  for (const body of [
++    {}, { success: true }, { success: true, sent: 0 }, { success: true, sent: "1" },
++    { success: true, sent: -1 }, { success: true, sent: 1.5 },
++    { success: false, sent: 1 }, { success: true, sent: 1, simulated: true },
++  ]) {
++    const f = fixture();
++    f.state.test = () => Response.json(body);
++    await assert.rejects(() => sendTestPush(f.subscription()!, f.fetcher));
++    assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++  }
++});
++
++test("a positive non-simulated accepted count returns successfully with this device payload", async () => {
++  const f = fixture();
++  await sendTestPush(f.subscription()!, f.fetcher);
++  assert.deepEqual(f.calls[0], { path: "/api/push/test", body: { subscription: f.subscription()?.toJSON() } });
++});
++
++test("provider-confirmed expired subscription is removed and a manual retry creates a new endpoint", async () => {
++  const f = fixture();
++  f.state.test = () => Response.json({ error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" }, { status: 400 });
++  await assert.rejects(() => sendTestPush(f.subscription()!, f.fetcher), error => error instanceof PushClientError && error.code === "PUSH_SUBSCRIPTION_GONE");
++  assert.equal(f.subscription(), null);
++  assert.equal((await syncPushSubscription(f.registration, true, f.fetcher))?.endpoint, "https://push.example.invalid/test_new");
++  assert.deepEqual(f.counters, { subscribe: 1, unsubscribe: 1 });
++});
++
++test("ordinary transport failures do not remove an otherwise valid subscription", async () => {
++  const f = fixture();
++  f.state.test = () => Response.json({ error: "test_gateway_outage" }, { status: 503 });
++  await assert.rejects(() => sendTestPush(f.subscription()!, f.fetcher), /test_gateway_outage/);
++  assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 0 });
++});
++
++test("expired cleanup false or rejection retains the gone code and actionable recovery message", async () => {
++  for (const rejects of [false, true]) {
++    const f = fixture();
++    f.state.test = () => Response.json({ error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" }, { status: 400 });
++    f.state.removeResult = false;
++    if (rejects) f.state.removeError = new Error("test_browser_removal_failure");
++    await assert.rejects(() => sendTestPush(f.subscription()!, f.fetcher), error => {
++      assert.ok(error instanceof PushClientError);
++      assert.equal(error.code, "PUSH_SUBSCRIPTION_GONE");
++      assert.match(error.message, /重置本站通知权限/);
++      return true;
++    });
++    assert.ok(f.subscription());
++    assert.deepEqual(f.counters, { subscribe: 0, unsubscribe: 1 });
++  }
++});
++
++function workers(registration?: ServiceWorkerRegistration): Pick<ServiceWorkerContainer, "getRegistration" | "register" | "ready"> {
++  return {
++    getRegistration: async () => registration,
++    register: async () => ({ active: null }) as ServiceWorkerRegistration,
++    ready: new Promise(() => {}),
++  };
++}
++
++test("without registration, passive inspection fails immediately instead of waiting on ready", async () => {
++  await assert.rejects(() => getPushRegistration(workers(), false, 20), /尚未注册推送服务/);
++});
++
++test("new inactive registration has a bounded activation wait; active registration bypasses ready", async () => {
++  await assert.rejects(() => getPushRegistration(workers(), true, 20), /推送服务启动超时/);
++  const active = { active: { state: "activated" } } as ServiceWorkerRegistration;
++  assert.equal(await getPushRegistration(workers(active), false, 20), active);
++});
++
++test("permission and request timeouts have actionable visible messages", () => {
++  assert.match(pushErrorMessage(new DOMException("test", "NotAllowedError")), /浏览器设置/);
++  assert.match(pushErrorMessage(new DOMException("test", "TimeoutError")), /检查网络后重试/);
++});
++
++function deferred<T>() {
++  let resolve!: (value: T) => void;
++  const promise = new Promise<T>(done => { resolve = done; });
++  return { promise, resolve };
++}
++async function watchdog<T>(operation: Promise<T>): Promise<T> {
++  let timer: ReturnType<typeof setTimeout> | undefined;
++  try {
++    return await Promise.race([operation, new Promise<never>((_, reject) => {
++      timer = setTimeout(() => reject(new Error("test watchdog: native operation did not time out")), 180);
++    })]);
++  } finally {
++    clearTimeout(timer);
++  }
++}
++
++test("stalled getSubscription times out; a late result never starts an upload", async () => {
++  const f = fixture();
++  const pending = deferred<PushSubscription | null>();
++  f.registration.pushManager.getSubscription = () => pending.promise;
++  await assert.rejects(() => watchdog(syncPushSubscription(f.registration, true, f.fetcher, 20)), /读取推送订阅超时/);
++  pending.resolve(f.subscription());
++  await new Promise(resolve => setImmediate(resolve));
++  assert.equal(f.calls.length, 0);
++});
++
++test("stalled subscribe times out; a late subscription never gets bound", async () => {
++  const f = fixture("missing");
++  const pending = deferred<PushSubscription>();
++  f.registration.pushManager.subscribe = () => pending.promise;
++  await assert.rejects(() => watchdog(syncPushSubscription(f.registration, true, f.fetcher, 20)), /创建推送订阅超时/);
++  pending.resolve(fixture().subscription()!);
++  await new Promise(resolve => setImmediate(resolve));
++  assert.deepEqual(f.calls.map(call => call.path), ["/api/push/vapid-key"]);
++});
++
++test("stalled key-rotation unsubscribe times out; a late removal never creates or uploads", async () => {
++  const f = fixture("old");
++  const pending = deferred<boolean>();
++  f.subscription()!.unsubscribe = () => pending.promise;
++  await assert.rejects(() => watchdog(syncPushSubscription(f.registration, true, f.fetcher, 20)), /更新推送订阅超时/);
++  pending.resolve(true);
++  await new Promise(resolve => setImmediate(resolve));
++  assert.equal(f.counters.subscribe, 0);
++  assert.deepEqual(f.calls.map(call => call.path), ["/api/push/vapid-key"]);
++});
++
++test("stalled expired cleanup times out with the gone code and browser recovery instructions", async () => {
++  const f = fixture();
++  const pending = deferred<boolean>();
++  f.subscription()!.unsubscribe = () => pending.promise;
++  f.state.test = () => Response.json({ error: "推送订阅已失效", code: "PUSH_SUBSCRIPTION_GONE" }, { status: 400 });
++  await assert.rejects(() => watchdog(sendTestPush(f.subscription()!, f.fetcher, 20)), error => {
++    assert.ok(error instanceof PushClientError);
++    assert.equal(error.code, "PUSH_SUBSCRIPTION_GONE");
++    assert.match(error.message, /重置本站通知权限/);
++    return true;
++  });
++  pending.resolve(true);
++  await new Promise(resolve => setImmediate(resolve));
++  assert.equal(f.counters.subscribe, 0);
++  assert.deepEqual(f.calls.map(call => call.path), ["/api/push/test"]);
++});
+diff --git a/tests/unit/push-recovery.test.ts b/tests/unit/push-recovery.test.ts
+new file mode 100644
+index 0000000..44d4698
+--- /dev/null
++++ b/tests/unit/push-recovery.test.ts
+@@ -0,0 +1,213 @@
++import test from "node:test";
++import assert from "node:assert/strict";
++import {
++  isPassivePushRecoveryEligible,
++  recoverExistingPushSubscription,
++} from "../../lib/push-client";
++
++const key = Uint8Array.from([4, ...Array(64).fill(7)]);
++const otherKey = Uint8Array.from([4, ...Array(64).fill(8)]);
++const encoded = (bytes: Uint8Array) => Buffer.from(bytes).toString("base64url");
++
++function deferred<T>() {
++  let resolve!: (value: T) => void;
++  const promise = new Promise<T>(done => { resolve = done; });
++  return { promise, resolve };
++}
++
++function fixture(subscriptionKey: Uint8Array | null = key) {
++  const calls: { path: string; body?: unknown }[] = [];
++  const counters = { registration: 0, getSubscription: 0, subscribe: 0, unsubscribe: 0 };
++  const state = {
++    authorizedUsers: ["test_user"] as (string | null)[],
++    keyResponse: () => Response.json({ publicKey: encoded(key) }),
++    bindingResponse: () => Response.json({ success: true }),
++    current: true,
++    subscription: null as PushSubscription | null,
++  };
++  const currentSubscription: PushSubscription = {
++    endpoint: "https://push.example.invalid/test_existing",
++    expirationTime: null,
++    options: { applicationServerKey: subscriptionKey?.slice().buffer as ArrayBuffer | null, userVisibleOnly: true },
++    getKey: () => null,
++    toJSON: () => ({
++      endpoint: "https://push.example.invalid/test_existing",
++      expirationTime: null,
++      keys: { p256dh: "test_push_p256dh", auth: "test_push_auth" },
++    }),
++    unsubscribe: async () => {
++      counters.unsubscribe++;
++      return true;
++    },
++  };
++  state.subscription = currentSubscription;
++  const registration = {
++    pushManager: {
++      getSubscription: async () => {
++        counters.getSubscription++;
++        return state.subscription;
++      },
++      subscribe: async () => {
++        counters.subscribe++;
++        return currentSubscription;
++      },
++    },
++  } as unknown as Pick<ServiceWorkerRegistration, "pushManager">;
++  const fetcher: typeof fetch = async (input, init) => {
++    assert.equal(typeof input, "string");
++    const path = String(input);
++    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
++    calls.push({ path, body });
++    if (path === "/api/auth/me") {
++      const userId = state.authorizedUsers.length > 1 ? state.authorizedUsers.shift() : state.authorizedUsers[0];
++      return Response.json({ user: userId ? { id: userId } : null }, { headers: { "cache-control": "no-store" } });
++    }
++    if (path === "/api/push/vapid-key") return state.keyResponse();
++    if (path === "/api/push/subscribe") return state.bindingResponse();
++    assert.fail("unexpected request " + path);
++  };
++  const options = (extra: Partial<Parameters<typeof recoverExistingPushSubscription>[0]> = {}) => ({
++    permission: "granted",
++    pushSupported: true,
++    standaloneEligible: true,
++    expectedUserId: "test_user",
++    isCurrent: () => state.current,
++    getRegistration: async () => {
++      counters.registration++;
++      return registration;
++    },
++    fetcher,
++    timeoutMs: 120,
++    ...extra,
++  });
++  return { calls, counters, state, currentSubscription, registration, fetcher, options };
++}
++
++test("passive recovery is gated by an existing granted permission and supported standalone mode", () => {
++  assert.equal(isPassivePushRecoveryEligible("granted", true, true), true);
++  assert.equal(isPassivePushRecoveryEligible("default", true, true), false);
++  assert.equal(isPassivePushRecoveryEligible("denied", true, true), false);
++  assert.equal(isPassivePushRecoveryEligible("granted", false, true), false);
++  assert.equal(isPassivePushRecoveryEligible("granted", true, false), false);
++});
++
++test("no permission or no authorized session never reads, creates, or removes a subscription", async () => {
++  const denied = fixture();
++  assert.equal(await recoverExistingPushSubscription(denied.options({ permission: "default" })), "skipped");
++  assert.deepEqual(denied.calls, []);
++  assert.deepEqual(denied.counters, { registration: 0, getSubscription: 0, subscribe: 0, unsubscribe: 0 });
++
++  const anonymous = fixture();
++  anonymous.state.authorizedUsers = [null];
++  assert.equal(await recoverExistingPushSubscription(anonymous.options()), "skipped");
++  assert.deepEqual(anonymous.calls.map(call => call.path), ["/api/auth/me"]);
++  assert.deepEqual(anonymous.counters, { registration: 0, getSubscription: 0, subscribe: 0, unsubscribe: 0 });
++
++  const identityNotReady = fixture();
++  assert.equal(await recoverExistingPushSubscription(identityNotReady.options({ expectedUserId: "" })), "skipped");
++  assert.deepEqual(identityNotReady.calls, []);
++  assert.deepEqual(identityNotReady.counters, { registration: 0, getSubscription: 0, subscribe: 0, unsubscribe: 0 });
++
++  const missing = fixture();
++  missing.state.subscription = null;
++  assert.equal(await recoverExistingPushSubscription(missing.options()), "skipped");
++  assert.deepEqual(missing.calls.map(call => call.path), ["/api/auth/me"]);
++  assert.deepEqual(missing.counters, { registration: 1, getSubscription: 1, subscribe: 0, unsubscribe: 0 });
++
++  const staleStore = fixture();
++  assert.equal(await recoverExistingPushSubscription(staleStore.options({ expectedUserId: "test_other_user" })), "skipped");
++  assert.deepEqual(staleStore.calls.map(call => call.path), ["/api/auth/me"]);
++  assert.deepEqual(staleStore.counters, { registration: 0, getSubscription: 0, subscribe: 0, unsubscribe: 0 });
++});
++
++test("same-key recovery uploads the complete existing subscription under the current session", async () => {
++  const f = fixture();
++  assert.equal(await recoverExistingPushSubscription(f.options()), "synced");
++  assert.deepEqual(f.calls.map(call => call.path), [
++    "/api/auth/me", "/api/push/vapid-key", "/api/auth/me", "/api/push/subscribe",
++  ]);
++  assert.deepEqual(f.calls.at(-1)?.body, f.currentSubscription.toJSON());
++  assert.equal(Object.hasOwn(f.calls.at(-1)?.body as object, "userId"), false);
++  assert.deepEqual(f.counters, { registration: 1, getSubscription: 1, subscribe: 0, unsubscribe: 0 });
++});
++
++test("key mismatch or an unexposed key leaves the browser subscription untouched", async () => {
++  for (const subscriptionKey of [otherKey, null]) {
++    const f = fixture(subscriptionKey);
++    assert.equal(await recoverExistingPushSubscription(f.options()), "skipped");
++    assert.equal(f.calls.some(call => call.path === "/api/push/subscribe"), false);
++    assert.deepEqual(f.counters, { registration: 1, getSubscription: 1, subscribe: 0, unsubscribe: 0 });
++  }
++});
++
++test("a session or user change during service-worker/subscription waits prevents any upload", async () => {
++  const f = fixture();
++  const pending = deferred<PushSubscription | null>();
++  const started = deferred<void>();
++  f.registration.pushManager.getSubscription = () => {
++    started.resolve(undefined);
++    return pending.promise;
++  };
++  const recovery = recoverExistingPushSubscription(f.options());
++  await started.promise;
++  f.state.current = false;
++  pending.resolve(f.currentSubscription);
++  assert.equal(await recovery, "skipped");
++  assert.deepEqual(f.calls.map(call => call.path), ["/api/auth/me"]);
++  assert.equal(f.calls.some(call => call.path === "/api/push/subscribe"), false);
++});
++
++test("a different server session discovered before upload cannot receive the old tab subscription", async () => {
++  const f = fixture();
++  f.state.authorizedUsers = ["test_user", "test_other_user"];
++  assert.equal(await recoverExistingPushSubscription(f.options()), "skipped");
++  assert.equal(f.calls.some(call => call.path === "/api/push/subscribe"), false);
++  assert.deepEqual(f.counters, { registration: 1, getSubscription: 1, subscribe: 0, unsubscribe: 0 });
++});
++
++test("a bounded browser wait can fail and a later attempt can recover", async () => {
++  const f = fixture();
++  let stall = true;
++  const options = () => ({
++    ...f.options(),
++    timeoutMs: 20,
++    getRegistration: () => {
++      f.counters.registration++;
++      return stall
++        ? new Promise<Pick<ServiceWorkerRegistration, "pushManager">>(() => {})
++        : Promise.resolve(f.registration);
++    },
++  });
++  await assert.rejects(() => recoverExistingPushSubscription(options()), /推送服务启动超时/);
++  stall = false;
++  assert.equal(await recoverExistingPushSubscription(options()), "synced");
++  assert.equal(f.calls.filter(call => call.path === "/api/push/subscribe").length, 1);
++});
++
++test("repeated tab recoveries send the same endpoint and full keys for an idempotent server upsert", async () => {
++  const f = fixture();
++  const persistedByEndpoint = new Map<string, unknown>();
++  f.state.bindingResponse = () => {
++    const subscriptionCall = [...f.calls].reverse().find(call => call.path === "/api/push/subscribe");
++    const body = subscriptionCall?.body as { endpoint?: string } | undefined;
++    if (body?.endpoint) persistedByEndpoint.set(body.endpoint, subscriptionCall?.body);
++    return Response.json({ success: true });
++  };
++  const [first, second] = await Promise.all([
++    recoverExistingPushSubscription(f.options()),
++    recoverExistingPushSubscription(f.options()),
++  ]);
++  assert.deepEqual([first, second], ["synced", "synced"]);
++  assert.equal(persistedByEndpoint.size, 1);
++  assert.equal(f.calls.filter(call => call.path === "/api/push/subscribe").length, 2);
++  assert.deepEqual(persistedByEndpoint.get("https://push.example.invalid/test_existing"), f.currentSubscription.toJSON());
++});
++
++test("a failed server acknowledgement does not stick and can be retried", async () => {
++  const f = fixture();
++  f.state.bindingResponse = () => Response.json({ error: "test_push_recovery_outage" }, { status: 503 });
++  await assert.rejects(() => recoverExistingPushSubscription(f.options()), /test_push_recovery_outage/);
++  f.state.bindingResponse = () => Response.json({ success: true });
++  assert.equal(await recoverExistingPushSubscription(f.options()), "synced");
++  assert.equal(f.calls.filter(call => call.path === "/api/push/subscribe").length, 2);
++});

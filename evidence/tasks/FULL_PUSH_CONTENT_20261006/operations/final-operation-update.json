@@ -1,0 +1,8 @@
+{
+  "overlayAfterTransport": true,
+  "files": {
+    "activate.py": "22c17c3bf89ca3cd26be965452c0f0e03d8c4123d6471306d45c47c219ef75d4",
+    "bundle-manifest.json": "e9a2b0f796d8546c3f8ea60ee08e00b2ee5045609c0bb35905396f9b3fa3001c"
+  },
+  "rollbackProcessHashesVerifiedOnFailure": true
+}

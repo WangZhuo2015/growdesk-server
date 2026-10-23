@@ -1,0 +1,28 @@
+{
+  "scope": "family notification system delivery quota",
+  "productionConnections": 0,
+  "pushRequests": 0,
+  "exitCode": 1,
+  "ownedDatabase": "test_growdesk_9ce691c782f6",
+  "role": "test_app_9ce691c782f6",
+  "sourceSha256": "a3a71892d7e15f1927d7ee4848f87088a7a959defd33a889f5632bccfc2d3078",
+  "cleanup": {
+    "status": "cleaned",
+    "database": "test_growdesk_9ce691c782f6",
+    "appRole": "test_app_9ce691c782f6",
+    "privateDirectoryRemoved": true,
+    "errors": []
+  },
+  "phase": "before_fix",
+  "findingPriority": "P2",
+  "findingFile": "internal/backend/native_tasks.go",
+  "findingLine": 97,
+  "sourceSha256File": "internal/backend/native_tasks.go",
+  "testName": "TestReviewFamilySystemDeliveryQuota",
+  "expected": "64 quiet system push deliveries must not consume user submission quota",
+  "observed": "TASK_QUOTA_EXCEEDED from actual enqueueNativeTask(sync_snapshot_family) with a currently authorized recipient",
+  "exercised": "actual Go notification creation, active baby authorization and task enqueue on a fresh owned PostgreSQL 18 database; no HTTP server or worker started",
+  "createdServices": [
+    "postgresql"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "api_build_exit_code": 0,
+  "api_build_seconds": 2.06,
+  "source_frozen": true,
+  "api_sha256": "80cc6c2f14932d13116b4d67fdf720365b71635031277083614c43cb58458562",
+  "voice_helper_sha256": "4b252721a0b0ecf16d42484bec994b05d08e93f3a063d9bd721b26f6b2cc0455",
+  "voice_helper_exercises_unchanged_voice_sources": true
+}

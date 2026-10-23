@@ -1,0 +1,13 @@
+{
+  "revision": "ba7abcfb0ffe7253b8bff9322c15ab620a5743a8",
+  "cleanArchiveComparedToGreenInputs": 200,
+  "manifestSha256": "4376f7767acfae2c1c9979d52b0d3a5d6cf6dd8c750beb64bc6be4c1adfeca16",
+  "activationSha256": "0ed88270100f025591a7c77c24d84f4676bf8d546125a575f801ce941df1ae3d",
+  "archiveSha256": "bc5ace982786325453f53dfc3c998577c9b24aa393384558bc96a2b643ad6e5c",
+  "archiveBytes": 24688373,
+  "files": {
+    "bin/growdesk-api": "f0bf9f85bc7e347a2aca6024bbbc846bdbe9d43c5cb710e9092e2a466c802462",
+    "bin/growdesk-worker": "76fb27fc9fdff3ef34359c94759e4d671e0736e42f652d0f721e934a40563c25",
+    "environment-launch.py": "5e662d0308d44d1b7a39a44ddd5a312661c271c5112454de4e7e0458eb5348d3"
+  }
+}

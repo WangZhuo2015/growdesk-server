@@ -1,0 +1,30 @@
+{
+  "publicAssetsMatchDeployedFiles": true,
+  "runtime": {
+    "units": {
+      "growdesk-api": {
+        "MainPID": "905397",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "UnitFileState": "enabled"
+      },
+      "baby-panel": {
+        "MainPID": "905411",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "UnitFileState": "enabled"
+      },
+      "growdesk-notifications-worker": {
+        "MainPID": "905627",
+        "NRestarts": "0",
+        "ActiveState": "active",
+        "SubState": "running",
+        "UnitFileState": "enabled"
+      }
+    },
+    "frozenRuntimeBinariesMatch": true,
+    "onlyNotificationsWorkerProfile": true
+  }
+}

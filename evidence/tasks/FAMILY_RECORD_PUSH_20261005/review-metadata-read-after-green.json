@@ -1,0 +1,73 @@
+{
+  "phase": "after",
+  "productionConnections": 0,
+  "pushRequests": 0,
+  "externalAIRequests": 0,
+  "createdServices": [
+    "postgresql"
+  ],
+  "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "proof": "direct actual Go handlers/helpers and actual authorization/transactions on fresh owned PostgreSQL 18; no HTTP server or worker/provider process",
+  "httpTaskRouteVerified": false,
+  "ai202ReplayVerified": false,
+  "exitCode": 0,
+  "ownedDatabase": "test_growdesk_c3bb55c4afd0",
+  "role": "test_app_c3bb55c4afd0",
+  "cases": [
+    {
+      "name": "TestReviewNativeTaskReadCancelMetadata",
+      "passed": true
+    },
+    {
+      "name": "TestReviewAIReplayMetadataBaselineParity",
+      "passed": true
+    }
+  ],
+  "aiReplayObserved": "CLIENT_MESSAGE_CONFLICT: Message attachments changed",
+  "cleanup": {
+    "status": "cleaned",
+    "database": "test_growdesk_c3bb55c4afd0",
+    "appRole": "test_app_c3bb55c4afd0",
+    "privateDirectoryRemoved": true,
+    "errors": []
+  },
+  "sourceSha256": {
+    "internal/backend/family_notifications.go": "70147c5c4d30464caa5435ae349f34838076e4e4cd905b8f4ac17ddd2d6a23e0",
+    "internal/backend/native_snapshots.go": "0345e1bd85f37ecb3edcc7df32d2be4afd3700eac81f42b8fa890cbbb7abbc0e",
+    "internal/backend/ai_run_commands.go": "a20a86b387401336f3a798402125938c60e94fc9ac6df3efa1a0406813729ca7",
+    "internal/backend/native_tasks.go": "b971e7b1db10cd08eb7e636677da9847df7703ed968d7bd0c6e458208188df3c"
+  },
+  "scope": "strict decoder compatibility for dormant task helper and AI submission handler",
+  "headBaseline": {
+    "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "archiveSha256": "48d955260e9b067bf6b4d1f5419ab722df0fb2919becb159a0a2447c82bdf38d",
+    "phase": "head",
+    "productionConnections": 0,
+    "pushRequests": 0,
+    "externalAIRequests": 0,
+    "createdServices": [
+      "postgresql"
+    ],
+    "proof": "direct actual Go handlers/helpers and actual authorization/transactions on fresh owned PostgreSQL 18; no HTTP server or worker/provider process",
+    "httpTaskRouteVerified": false,
+    "ai202ReplayVerified": false,
+    "exitCode": 0,
+    "ownedDatabase": "test_growdesk_a0c2b049df3b",
+    "role": "test_app_a0c2b049df3b",
+    "cases": [
+      {
+        "name": "TestReviewAIReplayMetadataBaselineParity",
+        "passed": true
+      }
+    ],
+    "aiReplayObserved": "CLIENT_MESSAGE_CONFLICT: Message attachments changed",
+    "cleanup": {
+      "status": "cleaned",
+      "database": "test_growdesk_a0c2b049df3b",
+      "appRole": "test_app_a0c2b049df3b",
+      "privateDirectoryRemoved": true,
+      "errors": []
+    }
+  },
+  "limitation": "HEAD and current Go handler retain the same existing nil-versus-empty attachment 409; only introduced metadata decode failure is closed; no 202 AI replay or public /tasks route claim"
+}

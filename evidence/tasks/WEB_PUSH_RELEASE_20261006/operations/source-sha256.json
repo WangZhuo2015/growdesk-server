@@ -1,0 +1,8 @@
+{
+  "environment-launch.py": "cc6defb08577854abdacc5994c86bc9425981f1443d14395e63106932b767f01",
+  "bundle-manifest.json": "beb1bf5ba904d7c53488f6e1957d54dc03f936e97b6ca9da012cee743e03e1ef",
+  "check_migration.py": "3e9d64bd3485d1620b97f82af94d597346665c6f961ce530431dafc68406d916",
+  "activate.py": "ad5cd127f52ca100376cbd52e8f5195ba7241a431e7f696abd6f516752a309f4",
+  "migration_sql.py": "69e6d7bc6e2b31c1676f4de439f64ffee9753617bb8ab082d24da6a75890e589",
+  "production-migration.sql": "5e0f7eac2ce1fd35cb8f3b8af97803ccddb5a023e55038ec2b4db0f04b5d4203"
+}

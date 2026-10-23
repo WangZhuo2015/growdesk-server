@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -31,6 +29,71 @@ type pendingCardProposal struct {
 	PlanHash  string
 	Action    nativeAIAction
 	ExpiresAt time.Time
+}
+
+func passportCardPresentEvent(turnID, runID string, card PassportCard, planHash, actionID string, expiresAt time.Time) Object {
+	return Object{
+		"v":      1,
+		"type":   "card.present",
+		"turnId": turnID,
+		"runId":  runID,
+		"card":   card,
+		"confirmation": Object{
+			"planHash":  planHash,
+			"actionIds": []string{actionID},
+			"expiresAt": expiresAt.Format(time.RFC3339),
+		},
+	}
+}
+
+type passportCardProjection struct {
+	Action   nativeAIAction
+	Card     PassportCard
+	PlanHash string
+}
+
+func (s *Server) projectValidatedPassportActions(actions []nativeAIAction) (*passportCardProjection, error) {
+	if len(actions) != 1 {
+		return projectPassportActions(actions)
+	}
+	action, card, err := s.normalizeValidatePassportAction(actions[0])
+	if err != nil {
+		return nil, err
+	}
+	projection, err := projectPassportActions([]nativeAIAction{action})
+	if projection != nil {
+		projection.Card = card
+	}
+	return projection, err
+}
+
+// Passport currently displays and confirms one action. Reject a multi-action
+// plan before projecting a partial card or persisting pending confirmation.
+func projectPassportActions(actions []nativeAIAction) (*passportCardProjection, error) {
+	if len(actions) > 1 {
+		return nil, providerFailure("MULTI_ACTION_UNSUPPORTED",
+			"Passport can confirm one record at a time. Please submit one record at a time.", false)
+	}
+	if len(actions) == 0 {
+		return nil, nil
+	}
+
+	action := actions[0]
+	card, err := projectActionToCard(action)
+	if err != nil {
+		return nil, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "Record proposal cannot be displayed faithfully", false)
+	}
+	planHash, err := canonicalNativeHash([]any{Object{
+		"actionId":   action.ActionID,
+		"entityType": action.EntityType,
+		"operation":  action.Operation,
+		"summary":    action.Summary,
+		"payload":    action.Payload,
+	}})
+	if err != nil {
+		return nil, err
+	}
+	return &passportCardProjection{Action: action, Card: card, PlanHash: planHash}, nil
 }
 
 func (s *Server) handlePassportWebSocket(ctx context.Context, r *Request) (Result, error) {
@@ -67,6 +130,7 @@ func (s *Server) handlePassportWebSocket(ctx context.Context, r *Request) (Resul
 }
 
 func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.Conn, principal *PassportPrincipal) error {
+	configurePassportSocket(conn)
 	ctx, cancel := context.WithDeadline(ctx, principal.ExpiresAt)
 	defer cancel()
 	// Closing the socket also wakes an idle ReadMessage at token expiration.
@@ -78,11 +142,17 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 	sendJSON := func(v any) error {
 		writeMu.Lock()
 		defer writeMu.Unlock()
+		if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			return err
+		}
 		return conn.WriteJSON(v)
 	}
 	sendBinary := func(data []byte) error {
 		writeMu.Lock()
 		defer writeMu.Unlock()
+		if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
+			return err
+		}
 		return conn.WriteMessage(websocket.BinaryMessage, data)
 	}
 	sendAccessError := func(err error) {
@@ -113,19 +183,17 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 		currentAudioBuf bytes.Buffer
 		isRecording     bool
 		currentPending  passportPending[pendingCardProposal]
-		ttsCancel       context.CancelFunc
-		ttsCancelMu     sync.Mutex
-		seenTurns       = make(map[string]bool)
+		playback        passportPlaybackControl
+		turnGate        passportTurnGate
+		currentTurn     *passportTurnTicket
+		seenTurns       passportReplay
 	)
 
-	stopTTS := func() {
-		ttsCancelMu.Lock()
-		defer ttsCancelMu.Unlock()
-		if ttsCancel != nil {
-			ttsCancel()
-			ttsCancel = nil
-		}
-	}
+	stopTTS := playback.stop
+	defer func() {
+		turnGate.stop()
+		stopTTS()
+	}()
 
 	for {
 		messageType, message, err := conn.ReadMessage()
@@ -186,16 +254,22 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 				return err
 			}
 			// User pressed OK button to start talking
-			stopTTS() // PTT immediately interrupts any playing TTS
 			turnID := text(frame["turnId"])
 			if turnID == "" {
 				turnID = newID()
 			}
-			if seenTurns[turnID] {
+			accepted, idErr := seenTurns.accept(turnID)
+			if idErr != nil {
+				_ = sendJSON(Object{"v": 1, "type": "error", "code": "INVALID_TURN_ID", "message": "Voice turn ID is too long"})
+				continue
+			}
+			if !accepted {
 				// Idempotency: ignore duplicate turnId
 				continue
 			}
-			seenTurns[turnID] = true
+			stopTTS() // Only an accepted new turn interrupts playback.
+			currentTurn = turnGate.replace(ctx)
+			currentPending.store(nil)
 			currentTurnID = turnID
 			currentAudioBuf.Reset()
 			isRecording = true
@@ -209,11 +283,12 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 				sendAccessError(err)
 				return err
 			}
-			isRecording = false
-			turnID := text(frame["turnId"])
-			if turnID == "" {
-				turnID = currentTurnID
+			turnID, endErr := passportAudioEndTurn(currentTurnID, text(frame["turnId"]))
+			if endErr != nil {
+				_ = sendJSON(Object{"v": 1, "type": "error", "code": "INVALID_TURN_ID", "message": "Audio end does not match the active recording"})
+				continue
 			}
+			isRecording = false
 
 			pcmData := currentAudioBuf.Bytes()
 			if len(pcmData) < 1600 { // less than ~50ms of audio
@@ -225,9 +300,9 @@ func (s *Server) runPassportWebSocketLoop(ctx context.Context, conn *websocket.C
 			wavData := buildWavFile(pcmData, 16000, 1, 16)
 
 			// Process ASR and Agent asynchronously to avoid blocking websocket read loop
-			go func(tID string, wavBytes []byte) {
-				s.processVoiceTurn(ctx, principal, sessionID, babyName, tID, wavBytes, sendJSON, sendBinary, &ttsCancel, &ttsCancelMu, &currentPending)
-			}(turnID, wavData)
+			go func(ticket *passportTurnTicket, tID string, wavBytes []byte) {
+				s.processVoiceTurn(ticket.ctx, principal, sessionID, babyName, tID, wavBytes, sendJSON, sendBinary, &playback, ticket, &currentPending)
+			}(currentTurn, turnID, wavData)
 
 		case "card.confirm":
 			runID := text(frame["runId"])
@@ -296,44 +371,148 @@ func (s *Server) processVoiceTurn(
 	wavBytes []byte,
 	sendJSON func(any) error,
 	sendBinary func([]byte) error,
-	ttsCancelOut *context.CancelFunc,
-	ttsCancelMu *sync.Mutex,
+	playback *passportPlaybackControl,
+	ticket *passportTurnTicket,
 	pendingOut *passportPending[pendingCardProposal],
 ) {
-	config, err := nativeProviderConfiguration()
+	if ctx.Err() != nil {
+		return
+	}
+	publication := func(scope context.Context, fn func() error) error {
+		if ticket != nil {
+			return ticket.publish(scope, fn)
+		}
+		if scope.Err() != nil {
+			return scope.Err()
+		}
+		return fn()
+	}
+	rawJSON, rawBinary := sendJSON, sendBinary
+	sendJSON = func(value any) error {
+		if event, ok := value.(Object); ok && event["type"] == "error" {
+			event["turnId"] = turnID
+		}
+		err := publication(ctx, func() error { return rawJSON(value) })
+		if err == nil {
+			s.logPassportVoiceEvent(value)
+		}
+		return err
+	}
+	sendBinary = func(value []byte) error { return publication(ctx, func() error { return rawBinary(value) }) }
+	// The device waits 60 seconds for a response. Bound recognition + agent work
+	// below that budget so an old job cannot complete after the device retries.
+	processingCtx, stopProcessing := context.WithTimeout(ctx, 55*time.Second)
+	defer stopProcessing()
+	speechConfig, err := nativeSpeechConfiguration()
 	if err != nil {
-		_ = sendJSON(Object{"v": 1, "type": "error", "code": "PROVIDER_ERROR", "message": err.Error()})
+		_ = sendJSON(passportASRErrorEvent(err))
 		return
 	}
 
 	// 1. Transcribe Audio
-	transcript, err := s.transcribePassportWav(ctx, config, wavBytes)
+	transcript, err := s.transcribePassportWav(processingCtx, speechConfig, wavBytes)
 	if err != nil {
-		_ = sendJSON(Object{"v": 1, "type": "error", "code": "ASR_FAILED", "message": "Voice recognition failed"})
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		_ = sendJSON(passportASRErrorEvent(err))
 		return
 	}
 
+	if processingCtx.Err() != nil {
+		return
+	}
 	_ = sendJSON(Object{
 		"v":      1,
 		"type":   "asr.final",
 		"turnId": turnID,
 		"text":   transcript,
 	})
+	config, err := nativeProviderConfiguration()
+	if err != nil {
+		_ = sendJSON(passportAIErrorEvent(err))
+		return
+	}
+	var catalog []Object
+	var recordContext passportVoiceRecordContext
+	queryKinds := passportVoiceRecordQueryKinds(transcript)
+	promptContext := passportAgentPromptContext{TimeZone: "UTC"}
+	if s.DB != nil {
+		catalog, err = s.loadPassportVoiceCatalog(processingCtx, principal)
+		if err != nil {
+			code := "VOICE_CONTEXT_UNAVAILABLE"
+			var scopeErr *APIError
+			if errors.As(err, &scopeErr) && (scopeErr.Status == 401 || scopeErr.Status == 403) {
+				code = scopeErr.Code
+			}
+			_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": "Voice context is unavailable; reconnect or pair the device again"})
+			return
+		}
+		if len(queryKinds) == 0 {
+			timezone, timezoneErr := s.loadPassportVoiceTimeZone(processingCtx, principal)
+			if timezoneErr != nil {
+				code := "VOICE_CONTEXT_UNAVAILABLE"
+				var scopeErr *APIError
+				if errors.As(timezoneErr, &scopeErr) && (scopeErr.Status == 401 || scopeErr.Status == 403) {
+					code = scopeErr.Code
+				}
+				_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": "Voice context is unavailable; reconnect or pair the device again"})
+				return
+			}
+			promptContext.TimeZone = timezone
+		}
+		if len(queryKinds) > 0 {
+			recordContext, err = s.loadPassportVoiceRecordContextForKinds(processingCtx, principal, time.Now().UTC(), queryKinds)
+			if err != nil {
+				s.logPassportVoiceRecordContext("error", passportVoiceRecordContext{})
+				code := "VOICE_CONTEXT_UNAVAILABLE"
+				var scopeErr *APIError
+				if errors.As(err, &scopeErr) && (scopeErr.Status == 401 || scopeErr.Status == 403) {
+					code = scopeErr.Code
+				}
+				_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": "Voice context is unavailable; reconnect or pair the device again"})
+				return
+			}
+			outcome := "loaded"
+			if !recordContext.HasAnyRecords {
+				outcome = "empty"
+			}
+			s.logPassportVoiceRecordContext(outcome, recordContext)
+			promptContext.TimeZone = recordContext.TimeZone
+			promptContext.Records = recordContext.Data
+		}
+		promptContext.FoodCatalog = catalog
+	}
 
 	// 2. Append User Message
 	if sessionID != "" {
-		_, _ = s.DB.Exec(ctx, `INSERT INTO ai_messages(id, session_id, role, content, created_at) VALUES($1, $2, 'user', $3, NOW())`,
+		_, _ = s.DB.Exec(processingCtx, `INSERT INTO ai_messages(id, session_id, role, content, created_at) VALUES($1, $2, 'user', $3, NOW())`,
 			newID(), sessionID, transcript)
 	}
 
 	// 3. Load bounded history (recent 12 messages, max 32KB)
-	historyMessages := s.loadBoundedSessionHistory(ctx, sessionID, 12, 32*1024)
+	historyMessages := s.loadBoundedSessionHistory(processingCtx, sessionID, 12, 32*1024)
 
 	// 4. Call Cloud Agent
 	runID := newID()
-	agentResult, err := s.callPassportAgent(ctx, config, sessionID, principal.BabyID, babyName, transcript, historyMessages)
+	agentResult, err := s.callPassportAgentWithContext(processingCtx, config, sessionID, principal.BabyID, babyName, transcript, historyMessages,
+		promptContext)
 	if err != nil {
-		_ = sendJSON(Object{"v": 1, "type": "error", "code": "AGENT_FAILED", "message": "AI assistant processing failed"})
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		_ = sendJSON(passportAIErrorEvent(err))
+		return
+	}
+
+	// A replaced/cancelled turn must not publish an answer or proposal.
+	if processingCtx.Err() != nil {
+		return
+	}
+	if len(queryKinds) > 0 && len(agentResult.Actions) > 0 {
+		// A query turn is read-only even if the provider ignores its prompt.
+		// Reject before storing assistant history or publishing a confirmation card.
+		_ = sendJSON(Object{"v": 1, "type": "error", "code": "QUERY_ACTION_REJECTED", "message": "Data queries are read-only; no record was created. Please ask the question again."})
 		return
 	}
 
@@ -346,66 +525,65 @@ func (s *Server) processVoiceTurn(
 			"text":   agentResult.Text,
 		})
 		if sessionID != "" {
-			_, _ = s.DB.Exec(ctx, `INSERT INTO ai_messages(id, session_id, role, content, created_at) VALUES($1, $2, 'assistant', $3, NOW())`,
+			_, _ = s.DB.Exec(processingCtx, `INSERT INTO ai_messages(id, session_id, role, content, created_at) VALUES($1, $2, 'assistant', $3, NOW())`,
 				newID(), sessionID, agentResult.Text)
 		}
 	}
 
-	// 6. Project Proposals to Cards
-	if len(agentResult.Actions) > 0 {
-		action := agentResult.Actions[0]
-		card, err := projectActionToCard(action)
-		if err == nil {
-			var rawActions []any
-			for _, a := range agentResult.Actions {
-				rawActions = append(rawActions, Object{
-					"actionId":   a.ActionID,
-					"entityType": a.EntityType,
-					"operation":  a.Operation,
-					"summary":    a.Summary,
-					"payload":    a.Payload,
-				})
-			}
-			planHash, _ := canonicalNativeHash(rawActions)
-			expiry := time.Now().Add(2 * time.Minute)
+	if processingCtx.Err() != nil {
+		return
+	}
 
+	// 6. Project Proposals to Cards. Passport supports one action per card;
+	// never display/confirm only the first item from a larger plan.
+	projection, projectionErr := s.projectValidatedPassportActions(agentResult.Actions)
+	if projectionErr == nil && projection != nil && projection.Action.EntityType == "food" {
+		projectionErr = s.hydratePassportFoodCard(processingCtx, principal, projection)
+	}
+	if projectionErr != nil {
+		code, message := "CARD_PROJECTION_FAILED", "Unable to prepare a record proposal. Please try again."
+		var providerErr *nativeProviderError
+		if errors.As(projectionErr, &providerErr) {
+			code, message = providerErr.Code, providerErr.Message
+		}
+		_ = sendJSON(Object{"v": 1, "type": "error", "code": code, "message": message})
+		return
+	} else if projection != nil {
+		expiry := time.Now().Add(2 * time.Minute)
+		if err := publication(processingCtx, func() error {
 			pendingOut.store(&pendingCardProposal{
 				RunID:     runID,
-				PlanHash:  planHash,
-				Action:    action,
+				PlanHash:  projection.PlanHash,
+				Action:    projection.Action,
 				ExpiresAt: expiry,
 			})
 
-			_ = sendJSON(Object{
-				"v":     1,
-				"type":  "card.present",
-				"runId": runID,
-				"card":  card,
-				"confirmation": Object{
-					"planHash":  planHash,
-					"actionIds": []string{action.ActionID},
-					"expiresAt": expiry.Format(time.RFC3339),
-				},
-			})
+			return rawJSON(passportCardPresentEvent(turnID, runID, projection.Card,
+				projection.PlanHash, projection.Action.ActionID, expiry))
+		}); err != nil {
+			return
 		}
 	}
 
 	// 7. TTS Streaming (Half-duplex)
 	if agentResult.Text != "" {
-		ttsCtx, cancel := context.WithCancel(ctx)
-		ttsCancelMu.Lock()
-		*ttsCancelOut = cancel
-		ttsCancelMu.Unlock()
+		ttsCtx, endPlayback := playback.start(ctx)
+		defer endPlayback()
 
-		defer func() {
-			ttsCancelMu.Lock()
-			*ttsCancelOut = nil
-			ttsCancelMu.Unlock()
-			cancel()
-		}()
-
-		s.streamTTS(ttsCtx, config, turnID, agentResult.Text, sendJSON, sendBinary)
+		s.streamPassportTTS(ttsCtx, config, turnID, agentResult.Text, sendJSON, sendBinary)
 	}
+}
+
+func passportASRErrorEvent(err error) Object {
+	code, message := "ASR_FAILED", "Voice recognition failed"
+	if errors.Is(err, context.DeadlineExceeded) {
+		return Object{"v": 1, "type": "error", "code": "ASR_PROVIDER_TIMEOUT", "message": "Speech recognition timed out"}
+	}
+	var providerErr *nativeProviderError
+	if errors.As(err, &providerErr) && strings.HasPrefix(providerErr.Code, "ASR_PROVIDER_") {
+		code, message = providerErr.Code, providerErr.Message
+	}
+	return Object{"v": 1, "type": "error", "code": code, "message": message}
 }
 
 func (s *Server) loadBoundedSessionHistory(ctx context.Context, sessionID string, maxCount int, maxBytes int) []Object {
@@ -441,35 +619,28 @@ func (s *Server) loadBoundedSessionHistory(ctx context.Context, sessionID string
 	return out
 }
 
-func (s *Server) callPassportAgent(ctx context.Context, c nativeProviderConfig, sessionID, babyID, babyName, userMessage string, history []Object) (nativeAIResult, error) {
+func (s *Server) callPassportAgent(ctx context.Context, c nativeProviderConfig, sessionID, babyID, babyName, userMessage string, history []Object, catalogs ...[]Object) (nativeAIResult, error) {
+	var catalog []Object
+	if len(catalogs) > 0 {
+		catalog = catalogs[0]
+	}
+	return s.callPassportAgentWithContext(ctx, c, sessionID, babyID, babyName, userMessage, history,
+		passportAgentPromptContext{TimeZone: "UTC", FoodCatalog: catalog})
+}
+
+func (s *Server) callPassportAgentWithContext(ctx context.Context, c nativeProviderConfig, sessionID, babyID, babyName, userMessage string, history []Object, promptContext passportAgentPromptContext) (nativeAIResult, error) {
 	if c.Mode == "fixture" {
-		if c.Fixture != "" {
-			return parseNativeAssistant(c.Fixture)
+		if err := ctx.Err(); err != nil {
+			return nativeAIResult{}, err
 		}
-		// Default fixture proposal for tests
-		actionID := newID()
-		return nativeAIResult{
-			Text: fmt.Sprintf("好的，已经为您准备好记录：%s 刚刚喝了 140 毫升配方奶。", babyName),
-			Actions: []nativeAIAction{
-				{
-					ActionID:   actionID,
-					EntityType: "feeding",
-					Operation:  "create",
-					Summary:    "记录喂奶 140 mL",
-					Payload: Object{
-						"type":       "formula",
-						"amountMl":   "140",
-						"occurredAt": time.Now().Format(time.RFC3339),
-					},
-				},
-			},
-		}, nil
+		if c.Fixture == "" {
+			return nativeAIResult{}, providerFailure("AI_PROVIDER_NOT_CONFIGURED", "Explicit fixture content is required", false)
+		}
+		return parsePassportAssistant(c.Fixture)
 	}
 
 	// OpenAI-compatible call with structured tool/system prompt
-	systemPrompt := fmt.Sprintf("You are GrowDesk's private AI assistant for baby '%s'. Return JSON with 'text' and 'actions'. "+
-		"Supported entities: feeding, sleep, diaper, food, supplement, growth. Operation must be 'create'. "+
-		"Actions are proposals only. Never claim database write has finished.", babyName)
+	systemPrompt := passportAgentSystemPromptWithContext(babyName, time.Now(), promptContext)
 
 	var messages []Object
 	messages = append(messages, Object{"role": "system", "content": systemPrompt})
@@ -503,37 +674,51 @@ func (s *Server) callPassportAgent(ctx context.Context, c nativeProviderConfig, 
 	client := providerHTTPClient(c.Timeout)
 	defer client.CloseIdleConnections()
 
-	resp, err := client.Do(req)
+	response, err := providerReadJSONFor(ctx, client, req, "AI")
 	if err != nil {
 		return nativeAIResult{}, err
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxProviderResponse+1))
+	choices, ok := response["choices"].([]any)
+	if !ok || len(choices) == 0 {
+		return nativeAIResult{}, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "AI provider returned no choices", false)
+	}
+	content, ok := obj(obj(choices[0])["message"])["content"].(string)
+	if !ok {
+		return nativeAIResult{}, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "AI provider returned no assistant text", false)
+	}
+	answer, err := parsePassportAssistant(content)
 	if err != nil {
-		return nativeAIResult{}, err
+		return answer, err
 	}
-
-	var objResp Object
-	if err := decodeJSON(body, &objResp); err != nil {
-		return nativeAIResult{}, err
+	if len(answer.Text) > 256*1024 || (strings.TrimSpace(answer.Text) == "" && len(answer.Actions) == 0) {
+		return nativeAIResult{}, providerFailure("AI_PROVIDER_INVALID_RESPONSE", "AI provider returned an empty or oversized answer", false)
 	}
-
-	choices, _ := objResp["choices"].([]any)
-	if len(choices) == 0 {
-		return nativeAIResult{}, errors.New("no completion choices")
-	}
-	content := text(obj(obj(choices[0])["message"])["content"])
-	return parseNativeAssistant(content)
+	return answer, nil
 }
 
 func (s *Server) transcribePassportWav(ctx context.Context, c nativeProviderConfig, wavBytes []byte) (string, error) {
+	if len(wavBytes) == 0 || len(wavBytes) > 960*1024+44 {
+		return "", providerFailure("ASR_INPUT_TOO_LARGE", "Voice input is empty or exceeds the device audio budget", false)
+	}
+	if passportWavIsDigitalSilence(wavBytes) {
+		return "", providerFailure("ASR_PROVIDER_NO_SPEECH", "No sound was recorded; hold the middle key and speak again", false)
+	}
+	if c.Mode == "local" {
+		local, enabled, err := localASRConfiguration()
+		if err != nil {
+			return "", err
+		}
+		if !enabled {
+			return "", providerFailure("ASR_PROVIDER_NOT_CONFIGURED", "The local recognizer configuration is unavailable", false)
+		}
+		return transcribeLocalASR(ctx, local, bytes.NewReader(wavBytes), "audio/wav")
+	}
 	if c.Mode == "fixture" {
 		fixtureText := os.Getenv("GROWDESK_ASR_FIXTURE_TEXT")
 		if fixtureText == "" {
-			fixtureText = "刚喝了 140 毫升配方奶"
+			return "", providerFailure("ASR_PROVIDER_NOT_CONFIGURED", "An explicit ASR fixture is required", false)
 		}
-		return fixtureText, nil
+		return validateASRTranscript(fixtureText)
 	}
 
 	// Real OpenAI-compatible transcription
@@ -548,9 +733,15 @@ func (s *Server) transcribePassportWav(ctx context.Context, c nativeProviderConf
 	if _, err := part.Write(wavBytes); err != nil {
 		return "", err
 	}
-	_ = writer.WriteField("model", c.ASRModel)
-	_ = writer.WriteField("response_format", "json")
-	_ = writer.Close()
+	if err := writer.WriteField("model", c.ASRModel); err != nil {
+		return "", err
+	}
+	if err := writer.WriteField("response_format", "json"); err != nil {
+		return "", err
+	}
+	if err := writer.Close(); err != nil {
+		return "", err
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, &body)
 	if err != nil {
@@ -562,99 +753,15 @@ func (s *Server) transcribePassportWav(ctx context.Context, c nativeProviderConf
 	client := providerHTTPClient(c.Timeout)
 	defer client.CloseIdleConnections()
 
-	resp, err := client.Do(req)
+	result, err := providerReadJSON(ctx, client, req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
-
-	var result Object
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxProviderResponse+1))
-	if err != nil {
-		return "", err
+	transcript, ok := result["text"].(string)
+	if !ok {
+		return "", providerFailure("ASR_PROVIDER_INVALID_RESPONSE", "Transcription is missing or too large", false)
 	}
-	if err := decodeJSON(raw, &result); err != nil {
-		return "", err
-	}
-	transcript := text(result["text"])
-	if transcript == "" {
-		return "", errors.New("empty transcription")
-	}
-	return transcript, nil
-}
-
-func (s *Server) streamTTS(
-	ctx context.Context,
-	c nativeProviderConfig,
-	turnID, textToSpeak string,
-	sendJSON func(any) error,
-	sendBinary func([]byte) error,
-) {
-	sampleRate := 24000
-	_ = sendJSON(Object{
-		"v":      1,
-		"type":   "tts.start",
-		"turnId": turnID,
-		"audioFormat": Object{
-			"codec":      "pcm_s16le",
-			"sampleRate": sampleRate,
-			"channels":   1,
-		},
-	})
-
-	var pcmSource io.ReadCloser
-	if c.Mode == "fixture" {
-		// Generate small 100ms silence/test frames in fixture mode
-		pcmData := make([]byte, sampleRate*2/10) // 100ms of 16-bit mono
-		pcmSource = io.NopCloser(bytes.NewReader(pcmData))
-	} else {
-		endpoint := strings.TrimSuffix(c.Endpoint, "/chat/completions") + "/audio/speech"
-		payload := Object{
-			"model":           "tts-1",
-			"input":           textToSpeak,
-			"voice":           "alloy",
-			"response_format": "pcm", // 24kHz 16-bit mono little-endian
-		}
-		raw, _ := jsonBytes(payload)
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(raw))
-		if err == nil {
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("Authorization", "Bearer "+c.APIKey)
-			client := providerHTTPClient(c.Timeout)
-			resp, err := client.Do(req)
-			if err == nil && resp.StatusCode == 200 {
-				pcmSource = resp.Body
-			}
-		}
-	}
-
-	if pcmSource != nil {
-		defer pcmSource.Close()
-		chunk := make([]byte, 1920) // ~40ms at 24kHz 16-bit mono
-		for {
-			select {
-			case <-ctx.Done():
-				return // Aborted by client interruption!
-			default:
-			}
-			n, err := pcmSource.Read(chunk)
-			if n > 0 {
-				if err := sendBinary(chunk[:n]); err != nil {
-					break
-				}
-				time.Sleep(35 * time.Millisecond) // Approximate real-time streaming pace
-			}
-			if err != nil {
-				break
-			}
-		}
-	}
-
-	_ = sendJSON(Object{
-		"v":      1,
-		"type":   "tts.end",
-		"turnId": turnID,
-	})
+	return validateASRTranscript(transcript)
 }
 
 func buildWavFile(pcmData []byte, sampleRate uint32, channels uint16, bitsPerSample uint16) []byte {

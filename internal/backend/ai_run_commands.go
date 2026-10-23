@@ -117,6 +117,17 @@ func stringList(value any) ([]string, error) {
 	}
 	return out, nil
 }
+
+// Empty attachment lists are semantically identical whether they came from
+// an omitted persisted field (decoded as nil) or an explicit request array.
+// Keep non-empty IDs untouched so attachment changes continue to conflict.
+func canonicalReplayAttachmentIDs(ids []string) []string {
+	if ids == nil {
+		return []string{}
+	}
+	return ids
+}
+
 func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, error) {
 	session, err := ownedCoreAISession(ctx, s.DB, r.Principal.UserID, r.Params["id"], false)
 	if err != nil {
@@ -158,7 +169,7 @@ func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, err
 		if text(previous["session_id"]) != input.SessionID || text(previous["content"]) != input.Message || text(previous["role"]) != "user" {
 			return Result{}, apiError(409, "CLIENT_MESSAGE_CONFLICT", "Message identifier is already used")
 		}
-		existing, err := one(ctx, tx, `SELECT to_jsonb(t)||jsonb_build_object('payload',o.payload) FROM task_executions t
+		existing, err := one(ctx, tx, `SELECT to_jsonb(t)||jsonb_build_object('payload',o.payload,'type',o.type,'payload_version',o.payload_version) FROM task_executions t
 			JOIN task_outbox o ON o.aggregate_id=t.id AND o.phase_key='native-initial'
 			WHERE t.owner_scope=$1 AND o.payload->'__native'->>'clientMessageId'=$2
 			AND o.payload->'__native'->>'sessionId'=$3 LIMIT 1`, "user:"+input.UserID, input.MessageID, input.SessionID)
@@ -172,11 +183,11 @@ func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, err
 		if e != nil {
 			return Result{}, e
 		}
-		oldHash, e := snapshotHash(old.AttachmentIDs)
+		oldHash, e := snapshotHash(canonicalReplayAttachmentIDs(old.AttachmentIDs))
 		if e != nil {
 			return Result{}, e
 		}
-		newHash, e := snapshotHash(input.AttachmentIDs)
+		newHash, e := snapshotHash(canonicalReplayAttachmentIDs(input.AttachmentIDs))
 		if e != nil {
 			return Result{}, e
 		}
@@ -246,6 +257,11 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	}
 	if _, err = nativeProviderConfiguration(); err != nil {
 		return Result{}, err
+	}
+	if kind == "voice_transcription" {
+		if _, err = nativeSpeechConfiguration(); err != nil {
+			return Result{}, speechSubmissionError(err)
+		}
 	}
 	if kind == "daily_summary_synthesis" {
 		input.TargetDate = text(r.Body["targetDate"])

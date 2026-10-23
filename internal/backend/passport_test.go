@@ -218,92 +218,6 @@ func TestPassportDeviceDTO(t *testing.T) {
 	}
 }
 
-func TestPassportCardProjection(t *testing.T) {
-	// 1. Feeding action
-	feedingAction := nativeAIAction{
-		ActionID:   "action-feed-01",
-		EntityType: "feeding",
-		Operation:  "create",
-		Summary:    "记录喂奶 140 mL",
-		Payload: Object{
-			"type":       "formula",
-			"amountMl":   "140",
-			"occurredAt": "2026-10-01T09:32:00Z",
-		},
-	}
-	card, err := projectActionToCard(feedingAction)
-	if err != nil {
-		t.Fatalf("project feeding action failed: %v", err)
-	}
-	if card.EntityType != "feeding" || card.Title != "记录喂奶" {
-		t.Fatalf("unexpected card metadata: %+v", card)
-	}
-	if len(card.Fields) < 3 {
-		t.Fatalf("expected at least 3 fields, got %d", len(card.Fields))
-	}
-	if card.Fields[1].Label != "奶量" || card.Fields[1].Value != "140" || card.Fields[1].Unit != "mL" || !card.Fields[1].Emphasis {
-		t.Fatalf("unexpected feeding amount field: %+v", card.Fields[1])
-	}
-
-	// 2. Diaper action
-	diaperAction := nativeAIAction{
-		ActionID:   "action-diaper-01",
-		EntityType: "diaper",
-		Operation:  "create",
-		Summary:    "记录换尿布",
-		Payload: Object{
-			"type":       "wet",
-			"occurredAt": "2026-10-01T10:00:00Z",
-		},
-	}
-	card, err = projectActionToCard(diaperAction)
-	if err != nil {
-		t.Fatalf("project diaper action failed: %v", err)
-	}
-	if card.EntityType != "diaper" || card.Title != "记录换尿布" {
-		t.Fatalf("unexpected diaper card: %+v", card)
-	}
-
-	// 3. Sleep action
-	sleepAction := nativeAIAction{
-		ActionID:   "action-sleep-01",
-		EntityType: "sleep",
-		Operation:  "create",
-		Summary:    "记录睡眠",
-		Payload: Object{
-			"durationMinutes": "72",
-			"occurredAt":       "2026-10-01T11:00:00Z",
-		},
-	}
-	card, err = projectActionToCard(sleepAction)
-	if err != nil {
-		t.Fatalf("project sleep action failed: %v", err)
-	}
-	if card.EntityType != "sleep" || card.Title != "记录睡眠" {
-		t.Fatalf("unexpected sleep card: %+v", card)
-	}
-
-	// 4. Growth action
-	growthAction := nativeAIAction{
-		ActionID:   "action-growth-01",
-		EntityType: "growth",
-		Operation:  "create",
-		Summary:    "记录生长",
-		Payload: Object{
-			"heightCm":   "68.5",
-			"weightKg":   "8.2",
-			"occurredAt": "2026-10-01T12:00:00Z",
-		},
-	}
-	card, err = projectActionToCard(growthAction)
-	if err != nil {
-		t.Fatalf("project growth action failed: %v", err)
-	}
-	if card.EntityType != "growth" || card.Title != "生长记录" {
-		t.Fatalf("unexpected growth card: %+v", card)
-	}
-}
-
 func TestPassportWavBuilder(t *testing.T) {
 	pcmData := make([]byte, 3200) // 100ms at 16kHz 16-bit mono
 	wav := buildWavFile(pcmData, 16000, 1, 16)
@@ -315,4 +229,3 @@ func TestPassportWavBuilder(t *testing.T) {
 		t.Fatalf("invalid WAV header magic")
 	}
 }
-

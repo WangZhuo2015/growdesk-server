@@ -1,0 +1,25 @@
+{
+  "publicStatuses": {
+    "/notifications": 200,
+    "/family/passport": 200,
+    "/sw.js": 200,
+    "/api/push/vapid-key": 401,
+    "/api/passport/devices": 401
+  },
+  "publicApiReadiness": {
+    "status": "ok",
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    }
+  },
+  "assetSha256": {
+    "/_next/static/chunks/app/layout-31e7a74d8d618835.js": "80768a9d4f34a2297640e67e01dacddb249fde4e9cb15766c8809188a8d63567",
+    "/_next/static/chunks/app/notifications/page-15602cc22e35bd05.js": "a477de60dbf45579dce9568ca9a8865d59dfe1615bdc5764548936c500c50579"
+  },
+  "verifiedAt": 1791279355.8970802,
+  "noAuthenticatedDataAccess": true,
+  "noTestPushSent": true
+}

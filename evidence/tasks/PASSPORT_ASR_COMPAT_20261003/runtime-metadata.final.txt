@@ -1,0 +1,7 @@
+Read-only service metadata and running-executable hash; no environment contents read.
+MainPID=1966743
+NRestarts=0
+ActiveState=active
+SubState=running
+b98fe98f297db78c8dfbb8f24474b729e4323a45601289bbb30ae9f8760a551e  /proc/1966743/exe
+Remote controlled helper directory /tmp/growdesk-asr-validation.pJb5PD verified absent.

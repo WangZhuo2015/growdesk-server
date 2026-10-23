@@ -1,0 +1,2226 @@
+{
+  "taskId": "FULL_PUSH_CONTENT_20261006",
+  "runId": "62ee8284520c",
+  "phase": "fixed",
+  "probe": "family-push",
+  "passed": false,
+  "cases": [
+    {
+      "name": "preference HTTP defaults, validation and baby authorization",
+      "passed": true,
+      "evidence": {
+        "defaults": {
+          "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+          "kinds": {
+            "family_record": true
+          },
+          "quietHours": null,
+          "timeZone": "America/Los_Angeles"
+        },
+        "invalidInputsRejected": 4,
+        "unauthorizedBabyRejected": true
+      }
+    },
+    {
+      "name": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "passed": true,
+      "evidence": {
+        "record201Committed": true,
+        "oneEventOnReplay": true,
+        "provider201": true,
+        "encryptedPayloadDecryptedByOwnedReceiver": true,
+        "metadataContainsNoRecordFieldsOrCredentials": true,
+        "recordDetailsMatchFrozenSnapshot": true,
+        "notificationId": "e3ad2b63-9e99-506b-bdc7-258c092236e6",
+        "repeatWorkerRequests": 0
+      }
+    },
+    {
+      "name": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "passed": true,
+      "evidence": {
+        "recordKinds": [
+          "feeding",
+          "sleep",
+          "diaper",
+          "food",
+          "supplement",
+          "growth"
+        ],
+        "operationsPerKind": [
+          "create",
+          "update",
+          "delete",
+          "restore"
+        ],
+        "snapshotAssertions": 24,
+        "allSnapshotsCapturedBeforeLaterMutations": true,
+        "all24ActualEncryptedPushesMatchedSnapshot": true,
+        "longSnapshotUtf8Bytes": 3184,
+        "longPushWireBytes": 3072,
+        "longPushClippedWithMarker": true,
+        "inboxRetainedFullBody": true,
+        "titleBodyChecks": [
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+            "snapshotUtf8Bytes": 211,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新喂奶记录",
+            "snapshotUtf8Bytes": 213,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除喂奶记录",
+            "snapshotUtf8Bytes": 213,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复喂奶记录",
+            "snapshotUtf8Bytes": 213,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增睡眠记录",
+            "snapshotUtf8Bytes": 251,
+            "structuredFieldsChecked": 6,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新睡眠记录",
+            "snapshotUtf8Bytes": 252,
+            "structuredFieldsChecked": 6,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除睡眠记录",
+            "snapshotUtf8Bytes": 252,
+            "structuredFieldsChecked": 6,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复睡眠记录",
+            "snapshotUtf8Bytes": 252,
+            "structuredFieldsChecked": 6,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增尿布记录",
+            "snapshotUtf8Bytes": 173,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新尿布记录",
+            "snapshotUtf8Bytes": 167,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除尿布记录",
+            "snapshotUtf8Bytes": 167,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复尿布记录",
+            "snapshotUtf8Bytes": 167,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增辅食记录",
+            "snapshotUtf8Bytes": 250,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新辅食记录",
+            "snapshotUtf8Bytes": 258,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除辅食记录",
+            "snapshotUtf8Bytes": 258,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复辅食记录",
+            "snapshotUtf8Bytes": 258,
+            "structuredFieldsChecked": 7,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增补剂记录",
+            "snapshotUtf8Bytes": 167,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新补剂记录",
+            "snapshotUtf8Bytes": 178,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除补剂记录",
+            "snapshotUtf8Bytes": 178,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复补剂记录",
+            "snapshotUtf8Bytes": 178,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增生长测量记录",
+            "snapshotUtf8Bytes": 126,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新生长测量记录",
+            "snapshotUtf8Bytes": 128,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除生长测量记录",
+            "snapshotUtf8Bytes": 128,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          },
+          {
+            "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复生长测量记录",
+            "snapshotUtf8Bytes": 128,
+            "structuredFieldsChecked": 5,
+            "noteLast": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "legacy pending family event without content snapshot uses a version-safe fallback",
+      "passed": true,
+      "evidence": {
+        "legacyPendingWithoutSnapshot": true,
+        "currentRecordVersion": "2",
+        "fallbackIdentifiesOldAndCurrentVersions": true,
+        "oldOrNewNotesNotMisattributed": true
+      }
+    },
+    {
+      "name": "family and baby content stays isolated across real tenants",
+      "passed": true,
+      "evidence": {
+        "clientSuppliedForeignScopeWriteRejected": true,
+        "crossFamilyReadForbidden": true,
+        "otherFamilyRecipientReceivedOwnEvent": true,
+        "primaryFamilyReceivedNoForeignPushOrInboxBody": true,
+        "extraTestUsers": 2
+      }
+    },
+    {
+      "name": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "passed": true,
+      "evidence": {
+        "RESTKinds": [
+          "feeding",
+          "sleep",
+          "diaper"
+        ],
+        "operations": [
+          "create",
+          "update",
+          "delete"
+        ]
+      }
+    },
+    {
+      "name": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "passed": true,
+      "evidence": {
+        "commonREST": "supplement",
+        "realSync": "growthMeasurement",
+        "syncReplayTaskDelta": 0,
+        "syncOperations": [
+          "create",
+          "update",
+          "delete",
+          "restore"
+        ]
+      }
+    },
+    {
+      "name": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "passed": true,
+      "evidence": {
+        "HTTP409": 2,
+        "HTTP400": 1,
+        "recordTimelineCursorReceiptOutboxUnchanged": true
+      }
+    },
+    {
+      "name": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "passed": true,
+      "evidence": {
+        "actualDatabaseFaultInjection": "owned PostgreSQL trigger raises during outbox insert",
+        "cases": [
+          {
+            "kind": "feeding",
+            "failureHTTP": 500,
+            "allPersistenceUnchanged": true,
+            "sameKeyRetry": 201
+          },
+          {
+            "kind": "supplement",
+            "failureHTTP": 500,
+            "allPersistenceUnchanged": true,
+            "sameKeyRetry": 201
+          }
+        ]
+      }
+    },
+    {
+      "name": "concurrent native workers and repeated workers do not duplicate notification or delivery",
+      "passed": true,
+      "evidence": {
+        "actualWorkerProcessesConcurrent": 2,
+        "notifications": 1,
+        "providerRequests": 1,
+        "deliveryFence": 1
+      }
+    },
+    {
+      "name": "current global preference disabled before fanout produces no recipient artifacts",
+      "passed": false
+    }
+  ],
+  "aiEmptyReplayExpectedStatus": 202,
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "ccbb5566f7c33ee680f8213ebe548e76291ff680905bdc724236f86943d810fc",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-push-details-20261006",
+    "head": "8b9edd3be223c2e784bf3ba617d7f11eac27323a",
+    "freezeCommit": "8b9edd3be223c2e784bf3ba617d7f11eac27323a",
+    "immutableInputsSha256": "b2e611dfdc23851892c34774071019903364788f613655f280501758585a3241",
+    "inputs": {
+      "apps/api/src/knowledge/books-data.ts": "44ce4d56137631b02e161444f65dd7b8ba0e485ca3f2d1fcbbf784b8f1ae3e52",
+      "apps/api/src/knowledge/legacy-reference-data.ts": "995b42c1217ff3d58eecb1c560b6b83d6c6bc3a2ad503399f7ca59493a5c9345",
+      "assets.go": "b7825976bed4e607359ed79f2a2899d20f1f6912dfacc7d7bf6eac73e212b549",
+      "cmd/growdesk-api/main.go": "f3084924a3b1d935be11edb89a874da523350785418455dc443a8b243ab524d0",
+      "cmd/growdesk-api/main_test.go": "5b5c2352debddee953d0515ee62b1e21a761d35e67ca3ec8338ad0156d4b722c",
+      "cmd/growdesk-api/transport_test.go": "f0a5a37b19369d364f09fbf78665e99a949885bb1627eb45d90a86578004f067",
+      "cmd/growdesk-migrate/main.go": "e98606a35dc8872e0568a5f89a7df7eded5a18d9bd5a8637aa541f6366f99bbd",
+      "cmd/growdesk-scheduler/main.go": "bc9a28abe6aeb3776e1961dc3178dfdcef15cb71f9b9e25596bc14c25d71150f",
+      "cmd/growdesk-worker/main.go": "6a49bd4dd9b62b3c1a6094162e01f04e077ba3b470960c73397a3e9556eabb32",
+      "contracts/openapi.json": "b39b937812548f00d5afeed4a00fa5176a9236611b386b5a6bd01df66bf9e2ce",
+      "go.mod": "5f107a29e7154b98b2d97d5957f6ef9a0be49208caf61f0c1f057a8d2bc2288d",
+      "go.sum": "2d1754664cca36fb45a969eddc781a9f8ae261c337fa99faaff3b7c1ba57183c",
+      "growth_assets.go": "5b2522ca087d35ff4138b32316bceaad694fa782e05a7fd1ee3978d8de396471",
+      "internal/backend/ai_history.go": "7238d769e6c3b180c2c76931bed5257fb164357e75077d9f87939c120bc0726b",
+      "internal/backend/ai_provider.go": "ce8216a1c8fc08d55f774664b868211862cb8becb6b0bed413b216e981aacf53",
+      "internal/backend/ai_run_commands.go": "830ae9eef35d66292dc43bb660835bf8ae14105644ba1b7d5e791834175ac270",
+      "internal/backend/ai_run_commands_test.go": "0548ab0a7647b3978ff0901564ee06c8078e759e172ddea45db016188fc8e19b",
+      "internal/backend/ai_run_reads.go": "d4e0c5137b32d5d2dc5383befab6495943890d13cd681f694daae5c250ac806e",
+      "internal/backend/asr_configuration.go": "2a211f806b5401cff5d1ab7585c8074051b45c71374d4a471736ee1f6cb89e9d",
+      "internal/backend/asr_configuration_test.go": "f693a425b09791be85a9ea5908833ab1c2bb55e694c8016cb5ed04fffea09edf",
+      "internal/backend/asr_local.go": "6f76040bc522a5505db2811482a3017cf5c23486507edeaf0e1cd5b3ad1184f1",
+      "internal/backend/asr_local_linux.go": "7940fc29432d19787ee0ca46bba5a74a7e61c6cee85a986617f832068d3af539",
+      "internal/backend/asr_local_linux_test.go": "d08de3ac2e8b1c0796a376bfbf6e045d29097d520c62524f8292e5b0e1334c93",
+      "internal/backend/asr_local_nonlinux.go": "8f9a1dd997b5b61ac815e630ce418c009426322faec30c992d5892c79659a136",
+      "internal/backend/asr_local_process_other.go": "9a509a5b6e2c359e80420f1af988da5ea33b3cb1cf0d52dc6e429f0d6006b39c",
+      "internal/backend/asr_local_process_unix.go": "74ec75b378a4af43942b00234dfa7832683b43f3690b0c9e1e49886980e8cccb",
+      "internal/backend/asr_local_test.go": "b27aac6634564e279d102d67e8728b743990ad97161c4d242d567189a9f6c132",
+      "internal/backend/asr_local_unix_test.go": "9299760b3315724e0328b4bf017feac13655770a54534d0c3c8d33fd21bc8b4f",
+      "internal/backend/attachments.go": "d36b2c5223f72fb4744a91d4be04aedfed7606da8e72140c9c303131c8d29d77",
+      "internal/backend/auth.go": "fc11dc10b89bb2fc057791d9fd3c8778535ed2eda463b270f83da71c216a6657",
+      "internal/backend/auth_login.go": "5ecc9e4e3d77863223718da8d83122c7b17a05c88c122f73af93dbd228d91046",
+      "internal/backend/baby.go": "f9eaf2c24a89594bb0481311a2ab1306a9c70d083dd9b1eb94b0905a2d956569",
+      "internal/backend/bff.go": "0d3f58e8013374aa66816234cf04ea96afa1d53b97afbb487c4c9c823758d573",
+      "internal/backend/bff_binding.go": "f9ba7e6255b9667730169c46a305db4499e063135ff6ea9a1a4688b4b501a28a",
+      "internal/backend/books.go": "660ddc8687d0279815faea3046b24caf058bf486a8660737eba536acd3d7ba09",
+      "internal/backend/care.go": "10cfcd1772e6b76f08a798d70e61393c712928dc2c08f5037cb617183a50b5fb",
+      "internal/backend/clinical_transaction.go": "a6e2548dbe5df16b1e66ebd03248519ae396fb3941a4d4373441c67ef502800e",
+      "internal/backend/companion_common.go": "1ae529d071dae9c9a9febe92ebe050932c58f8c3a6586b12a8337ed933184dea",
+      "internal/backend/companion_test.go": "a3e0f61dc6e631044b97c914c66b92bbf1de1367dac65aa24261da11cae4c489",
+      "internal/backend/compatibility_errors.go": "4d18526cc6e9efa9adf6aacbc60455c0b695da0bf67df36860550371a756cf8f",
+      "internal/backend/config.go": "35123d770ccf13ee74abd7442b3ec80ebd138d426adb9b932c91f69eac86e862",
+      "internal/backend/contract.go": "c568803690ba2703e6c2395908c63c2c27a9fc61a80cfe8355a810691d7cfa59",
+      "internal/backend/contract_nullable.go": "595faedb98a58732a54537be0c0362a5012fcc1cf974aa374b681f9720d1e122",
+      "internal/backend/contract_nullable_test.go": "053c3d58c503886f97e29f2dd23115dc301d4d7c31505b8df64deac13c2f72bb",
+      "internal/backend/contract_unknown_test.go": "6778494f82d65e57620ea46c1bbc6ccd3edc4d5a53790512cce352219cfbc3df",
+      "internal/backend/db.go": "2146dcb4e99140c4842da8429272081449a0809062f5cd67eb3042eb3be0dc3a",
+      "internal/backend/document_receipt.go": "b0ce47b27336c8e538d28012a2892a71dd3ff019b0363db7209d59fc5ecce266",
+      "internal/backend/domain_test.go": "c57627799b82129df3d6d0244089115148166b1bc4d298b537ecb9812fb41c61",
+      "internal/backend/errors.go": "4ee9937eaa4fc7c7fb377958fbdf8f138eab8b7269d0957780cc57e260973014",
+      "internal/backend/family.go": "f201e6cb17428a2d889149269ddd0415ede5d0db3cbf52ea4be11f46bdd3676d",
+      "internal/backend/family_notification_content.go": "d590eb661dec42cb72f00789f890f6ba7069f9949cba79ddd3d845ef494696da",
+      "internal/backend/family_notification_content_test.go": "ca36541342aa295ed3e649949d59ee8afedba26c3113c8da3a6f757d6a5875b6",
+      "internal/backend/family_notifications.go": "259c84c05be4defd2548b4f2cc7b37b77beb1bf292c5158c29b9209406f3067b",
+      "internal/backend/family_notifications_preferences.go": "cac54030a16a0d547daa37c20c4bcd359649df339982931907747e3570b79756",
+      "internal/backend/family_notifications_test.go": "681a536b90812c988f90a05c02f2ce115d1ab120e80ac762319d6443d21bf557",
+      "internal/backend/food_library.go": "b831d85d69d1de2b9d2a2cadf44e8b60a0e2599a3959687cc7eff9d2a24763fd",
+      "internal/backend/food_library_errors.go": "d50e609b8fa1877a7838196244d31d10b833c889c946c857c6a3c897ac6e68c6",
+      "internal/backend/food_library_errors_test.go": "e2bc74b5a54fb74ba41cc1c892c014639f3f90736998134412d322cbebc2396e",
+      "internal/backend/food_library_test.go": "9e6a584bfab6e8ba886acf9da9cf04fe6199c6a88ba6238499d820cf49a4aecb",
+      "internal/backend/food_plan.go": "4c4ab5f839fcf05ee2bd61d7d64017d0ddff320cef1f47f72d70a851c1afb196",
+      "internal/backend/food_plan_test.go": "1f5f6267c6ec951d4239f0da1235ccb6b13d2ddaf28732f17ad04286e2c0c98d",
+      "internal/backend/formula_products.go": "9d18eb32525610e2d65cc5157536fa95d60c453a06a0d147565e0bf3ca923434",
+      "internal/backend/foundation_test.go": "05be90f57cbb02a9aecb34367cca21be0207fc08064f5cd7fc99d5ea10d8e790",
+      "internal/backend/growth.go": "95038efebc247005bb8f8922be562855c11bec85a33f7dfdb509611543aa24aa",
+      "internal/backend/growth_standards.go": "53a640ff541940f877e000054f7863afd4598dcf113d9d0c931163b03cab3850",
+      "internal/backend/growth_test.go": "3866c71465c8ecc97a83d9514a569877b0dbae1ab40743472b70680392bad684",
+      "internal/backend/knowledge.go": "56247d47a4b39a8108bd49a813daf2008d2163364b8bac28b2828b3c5687fd41",
+      "internal/backend/knowledge_number_review_test.go": "618e37a37fd0ef1cd17bc7011545cd3be8a928aa051502b5a058baa17e78e92f",
+      "internal/backend/knowledge_query.go": "10d0b500214ad36e99dcbdf443163743b9804572471647c4ac02d0f17d872b06",
+      "internal/backend/knowledge_query_test.go": "cc661da54ff6609dc04afb45b4487cb14b88e9215f1ddf30b6ac54f9cf66a3c5",
+      "internal/backend/knowledge_test.go": "c5fe80fe3ef7b5c96aef60ee7d3869d3b0aa54ab7184fb124e624b8a930da9c7",
+      "internal/backend/legacy_attachment.go": "81ea4a0d901499ce1b856da28b8d3bc258f72e3a00ad9a24733dc49d27563499",
+      "internal/backend/legacy_web_token.go": "5305d8c94f0b1472c3f29d8b9fab66db81f13da129955be7ef2c0b7721902ec2",
+      "internal/backend/legacy_web_token_test.go": "61b0c62c5e1dca63340957eb6f6517f6ca9e214e63b0fde3f2d356bb0d00737d",
+      "internal/backend/mcp_mutation_scope.go": "3eed1081566b5e8fd6aa4dad041780f8ee4277a133457441e65b8595ef29253e",
+      "internal/backend/mcp_mutation_scope_test.go": "593182f81d610581c8e04f7f74a22706c34af5c86d7cfdae2ac286167e67a991",
+      "internal/backend/mcp_oauth.go": "ce3a5d94f685328a42543d5a75d223873a0e7b724cf177550dc6021eeac89e4c",
+      "internal/backend/medical_projections.go": "85513fb25768a053772ad17dcd66fc3a67011813c0b338ac7635a2621b90d83b",
+      "internal/backend/medical_reports.go": "eccf5be6e2a82b137c2c78646e5184eb7e1527dca63f48d91f26c87ca557774d",
+      "internal/backend/medical_reports_test.go": "a1ab3f448595163a655065366dcb65daf7cc8cb6cbca63a73ca77f9d5dfdbc19",
+      "internal/backend/native_canonical.go": "ae2575adbe39a2f8d733ee09b687a5b6afd08e2a8916fe3408f23acbe2b9fbee",
+      "internal/backend/native_exports.go": "5b4b569c621ff226c954a9ffc01bd775d07fa52d1b79919cce9212413ad6ec7c",
+      "internal/backend/native_media.go": "ce913701dd1ae3e1b0aa56b283eb3e29bc20e39af026d64f0726795bdee2a86a",
+      "internal/backend/native_media_test.go": "139ac7e37378da65f0bb2e607c135ebcf14baf129ed089e60ff5cbf448b4fb33",
+      "internal/backend/native_migrations.go": "57691c9c24c9e7e3cf23dab05005884859e79fa313c01873fd5baf9a268ef995",
+      "internal/backend/native_object_cleanup.go": "d5a0c1fbf44354c9e93009fa7a7592ed7a9073199581d0b597a5cbce6f081ae5",
+      "internal/backend/native_processors.go": "75fe495db5ea1c9135bff41437d1bb5ac98db24e56e8b7356474f1003bd06ffb",
+      "internal/backend/native_push.go": "b266194e9a5386d9db1716e3e2e630987c6eb62d063fab925523774110223ff6",
+      "internal/backend/native_push_test.go": "b9278aaab0f52c1a0f66c7bd27f1e669415a631c725b3df6f6cb02cd5007247e",
+      "internal/backend/native_snapshot_catalogs.go": "3b26411ce022d9e9e6c69835fc6caffdb6db8dce836d628f8e18557866ecfe5a",
+      "internal/backend/native_snapshots.go": "0345e1bd85f37ecb3edcc7df32d2be4afd3700eac81f42b8fa890cbbb7abbc0e",
+      "internal/backend/native_sync_test.go": "70d203528b0612ea3d83092cb359c6c0997954aede7982d5ac618089e09eeb30",
+      "internal/backend/native_tasks.go": "ec5f4afcf394cbdb0f0ee1b49c6ba46f77101f26a0b1a1a965e1e36ea2bd8ed8",
+      "internal/backend/notifications.go": "08c9df6b4d462971bc6d9a0f65e76462b50fbafbd216775e1c2de382c10b9d53",
+      "internal/backend/nutrition_records.go": "43fc866738850f7edb42d13ebaadd3c9b0cb650576d53d97ba2d2de9b8364051",
+      "internal/backend/nutrition_records_test.go": "d5f726be9f4778b37c38040d9d19be69c9c48fae14012648f704b41dfc1a3588",
+      "internal/backend/object_store.go": "3b9be70bf1a28968abe9de166d278dc02eeb1346419c81cfffdba79a30df90b2",
+      "internal/backend/passport_agent_prompt.go": "5670f8db2de03e9554e8c67c7021f0ca2a4f7d2901fa00528c12afb44c5a9126",
+      "internal/backend/passport_agent_prompt_test.go": "5791947ad715cd63511b674bbccc69c4b4da51b8b23009700e55653ac3742bb0",
+      "internal/backend/passport_agent_provider_test.go": "22c960186beb671191a5cec1a53ba5afb0da68f21afc66d4fa22c977b9bdfc5d",
+      "internal/backend/passport_asr_test.go": "1ebb8e68f908de0c8e694c8563985d4c27bf3f3216b814f68f1e0e862845df14",
+      "internal/backend/passport_auth.go": "37dca7c254dbe5fb1cd339d46e84186d506b330b6f0140065db490896dfe94ae",
+      "internal/backend/passport_cards.go": "644e3332255fe65053f27ebca2dbdec81acb5a1e1ab0389d87480c3554e0be6c",
+      "internal/backend/passport_cards_schema_test.go": "ee39a62b7a45dd4730dc766ee5a00a6c4c574939b4cff6a6ae92cf0ae3f00937",
+      "internal/backend/passport_catalog_integration_test.go": "91779d4c76366d5f34babf37eeb918f96e1cf2720a0db3e68b0fc9a2c5042242",
+      "internal/backend/passport_confirmation.go": "330e05032a4a905977c7498546c64239a04bcdac543656af7fe069ed55e66475",
+      "internal/backend/passport_confirmation_test.go": "04002ee8b75ed003525a7418573bca65a0e0f98332b01039d60aaa228f5a3a1d",
+      "internal/backend/passport_devices.go": "9e5b1ccad88e8fca36544ee7eeffaa47ebb127553ff5cfe405284fde673aa045",
+      "internal/backend/passport_local_voice_acceptance_linux_test.go": "4a4d9d441c1399f26ecd1851819fec0252aea0e1c7b968cb59f279678c046063",
+      "internal/backend/passport_pairing.go": "26e9332ea94cc566a0c7f14a90c43f45b37dd522d7a0d7d0521ba889f4e9dc8a",
+      "internal/backend/passport_playback.go": "cf6622a8d4272ecc88cebf6c651669659cd06a65de96bcbc977ef8c04699502f",
+      "internal/backend/passport_playback_test.go": "612edad1d8217f8adc0d770b3b9bfae1d027d97ad6969582ed16682e65881501",
+      "internal/backend/passport_records_integration_test.go": "84fbab980a11aed68d9c65b2c2ce7bea2810930acf6d80e4c4c9d32d787df716",
+      "internal/backend/passport_revocation_integration_test.go": "10f5aa46025275b8161f6f44bc97cbb6054824eeb158619e4d8176ef26375951",
+      "internal/backend/passport_short_turn_integration_test.go": "6a321492915ea9dbaee6a313216d25948d8185149eb7031d4d83ffd129fb755b",
+      "internal/backend/passport_silence.go": "d4075b9a80a391594851a3ab7336b0b62d686ac5e0f08192521295bd719e8d15",
+      "internal/backend/passport_silence_test.go": "31472246e4892ceb3c38563709c0426bcdded41a17f604d526cf4857a673c059",
+      "internal/backend/passport_test.go": "0f53b49fbb9bd87aab7f7a87163d269e7a7f7be6f24e3b7a061ebaf612fcfea7",
+      "internal/backend/passport_tts.go": "cda4c2d3972ac82453ef26b03b17e46864c18986322f5d0340c9f845d9a93367",
+      "internal/backend/passport_tts_local.go": "2c8f17a5972609261145fc5b98645e96d8576d527e1e6d61c7a00f777ff186af",
+      "internal/backend/passport_tts_local_linux.go": "3a9e29b5dc176df8129c25bb9e6bed33fe037e043f24374f574bcbb9073e6402",
+      "internal/backend/passport_tts_local_linux_test.go": "1b1d23c6aae66610ba925e2f349d908f38143a2f93798a9f00e224ad3eb1f1de",
+      "internal/backend/passport_tts_local_nonlinux.go": "8244208c887fb32a99e9ab6e8921a9bf08c357561484eff23f24f567b8ed2816",
+      "internal/backend/passport_tts_local_test.go": "e29a73602dea7ff74cac9b5e0f25640a7af0f56c4e60ab5765154db253ffec31",
+      "internal/backend/passport_tts_test.go": "a7c0d9b5853ea236a39ffc8f8c567d56211f750f9f739cfc21518b0f90a808f5",
+      "internal/backend/passport_turns.go": "720b2b38e99e073be6be176edbe79fc361faf2ac2b689ebe39c2870195275629",
+      "internal/backend/passport_turns_test.go": "99f4ed4760023dd24530f3102499cee21ace385301ef5108242b6547200074d2",
+      "internal/backend/passport_voice_catalog.go": "06fe3570126aa10785193a22a0a454b2d972e09d77e9ae65e3d837199162b6d2",
+      "internal/backend/passport_voice_diagnostics.go": "0e93569886241aa91f997b4ec26f13e366eef247207243f1be368215777c4832",
+      "internal/backend/passport_voice_diagnostics_test.go": "74257d93f23c6812b8c1bda90161c0001656360e861099ed9eaf83de2d9e13c1",
+      "internal/backend/passport_voice_query_integration_test.go": "2a9dbed2e13827e7878e06261a2d9f3f17a5fd9067985e49b551820540ce3e11",
+      "internal/backend/passport_voice_records.go": "863c83ed26eee33af7d5a9c8c64bf8d735b107d2f170edf3720f8c57404d6d8c",
+      "internal/backend/passport_voice_records_test.go": "e1bd2941dc657b1537ef795977953a9054d97ab8c84932b56f81249821951ac0",
+      "internal/backend/passport_ws.go": "f3c154b577587bba5c7c44af01b2a86f576931287b683fd0e1e1cd960705bcdd",
+      "internal/backend/passport_ws_test.go": "bf48d036c1bebb9699dca1b9fae4040b490e90ffbac8122e17b7ef9bef82e1f0",
+      "internal/backend/provider_request_error.go": "7b7a597b234e42a53fdcb2cd29f79a970d8ca5cd0b292480aa45873de975403d",
+      "internal/backend/provider_request_error_test.go": "17275dd8dca6363f2dea84ace4c9f7e983d5f556a40c3bdd1049066712e7fbbc",
+      "internal/backend/provider_storage_test.go": "fe49e0d8de959ea5536980f340034ca7ec0abb60d1ed84ac12e4c3e925b6f813",
+      "internal/backend/read_snapshot.go": "c00a226e139dc5ffb65f0b3186bca78dca6f80af2b3cc9864b3eea133a5893ab",
+      "internal/backend/record_mutation.go": "dcad4240a9cd699342b03ab8f049afe45029abd2aedf4a3603158de830f04c20",
+      "internal/backend/record_snapshots.go": "440a5855302577707b0b727badc5d4cb6c8eed5098c7559d6201c9854b81403c",
+      "internal/backend/record_snapshots_test.go": "13a4aef1443a92104b0fba4ab3762145d7a39cb1cfa77eb982cac964b3f8e34c",
+      "internal/backend/refresh.go": "8036eec1a5c0d66ece6a9b0b66ce119b4fb329f161fc9c13c6a906ccb7f78f72",
+      "internal/backend/register.go": "d0bc5c5fcbeae8d5091f94db38628d3102a585fd06754a1f0ca31bc0b416b5c9",
+      "internal/backend/request_normalization.go": "02ba037142bae522897300a07fbe6588c477510dad3364f3942f91947f717e10",
+      "internal/backend/request_zero_test.go": "d84daab33f02d77a51b11d4ed52c4eba419a261ebf4f453def2a28f614a46504",
+      "internal/backend/review_security_test.go": "e593815f030680bb8f0dc0e08671230b6934c76d21045fb741c98d34d6e9a660",
+      "internal/backend/route_aliases.go": "42eb688a6f085cb5863b37be5405010ba57f59a95e5d3e25d58fd3f7be0bed00",
+      "internal/backend/samples.go": "35bd5e2131d2e53f6fb6eb08f2d5d2795f25ced5aa02253f63088bdfc296a2f6",
+      "internal/backend/samples_access_test.go": "e8d28df5d656276c726e9153c998b1ed944c0071ac22ac814b058acb44c17c3b",
+      "internal/backend/scalar_receipt.go": "1fe62d61bca197b7539ac8af7c3173b093fc100ec4d6045702bef170007ed5c9",
+      "internal/backend/scalar_receipt_test.go": "8a524502b777282b0caa55fc3d2fd592d713f8b1de6ae518e99f9bdda3febb9f",
+      "internal/backend/scope.go": "44c04fa190b929cbb2010c38405a514d39ef9e7c5def67da71f9055db05e8fd4",
+      "internal/backend/server.go": "9c7bdc25fdb6091de665c710e251f30f21351c0673003c7ed5d4ebb9c5cfae71",
+      "internal/backend/session_crypto.go": "20b30227725b9613b4a4e88c799fb62ca3f4194a78857bfca3dfe3c1dbf2080f",
+      "internal/backend/snapshot_codec.go": "bcec643382edb32593135c87460915ce59b136d9950fb27be29619cf4f762b8e",
+      "internal/backend/stream_diagnostics.go": "82b24f5e9392adb3b1d7767fae447ad522e43c86dd20a4318daaa96068029261",
+      "internal/backend/stream_diagnostics_test.go": "741d0b9f06935c26e1cdbd19578dae46eb33b9e7b11fdba1e026a50d385947dc",
+      "internal/backend/supplement_catalog.go": "732d8206d68e74e36730c9d14584e5f009cbdcbac25304c5d4da8765a4800111",
+      "internal/backend/supplement_catalog_test.go": "9908ba02be00d35f7dacd9ab97c1d641bccd4054e5901a7cca2a4c66fa5efabd",
+      "internal/backend/sync_commands.go": "41fc7d57e05b4efd307d32f20a56ec74ff4e4d1b77474965c9e2be66362e0f61",
+      "internal/backend/sync_feed.go": "385dcbdec962fcff56a7b47297c5180f2d229b4c30123fd88623186d6fdc02bf",
+      "internal/backend/sync_feed_test.go": "b6f62b95f77ac24cc720a318f88b41e21f88ca7feabf113cc8c293288c7a7681",
+      "internal/backend/vaccine_catalog.go": "8105a18ff5853ca4c73029a67fd48f8a7ee225219eab79bd6cb85796c33750bf",
+      "internal/backend/vaccine_records.go": "27355710d1299126d86e1d17f8a888a30cb7e20ee6826775b0904a4cd2a6c93b",
+      "internal/backend/vaccine_records_test.go": "a4471ed048e1633f2c1c5b5ebf7297d473a4437328ccde168125435ee6b56b08",
+      "internal/backend/voice_logs.go": "9fa3ea2ab63c0960eac266e82869284839e0211a285e904ada0959f671fe8001",
+      "internal/backend/web_ai_sessions.go": "2e79706ac3c58d4d2658ed97f72eb31baf11939ae25e960836e55cef45685818",
+      "knowledge_assets.go": "224b5600f65cd378a37fa7920dabb3f9fb4c3a3006d1a30c24cd828e96e011ce",
+      "native/migrations/0001_oauth.sql": "bde35d470380232f00de11ec794c01d586a17c1782b24176c154dcc824986481",
+      "native/migrations/0002_object_cleanup.sql": "ab219547e33f576baecb31652e89f02006efdc977f7d423447817a1ae51aa19a",
+      "native/migrations/0003_passport.sql": "6f4b5d04a9c9b4cfcb2cb3a28ec2c3b9bb3648f8acd1785c895443f532c3a8ab",
+      "native/migrations/0004_family_notifications.sql": "1dcb0e81c4f4b0a44595b30129990325e69a82c79efc215f6ab4a19f742c4a88",
+      "native_assets.go": "1d9150cb199ed4325ab3f9de055c712efa07bcf7b1b27d4b457f16beac57d579",
+      "packages/domain/src/who-growth-standards.ts": "20e3ea52f809e83675afd20f4029aa7088cc4a17c7e1d92af40090c2fd0409e3",
+      "prisma/migrations/202609120001_identity/migration.sql": "ec4c833a4b1f050779592cd5a23a9a81a80b9f1dc76ad25959848779b0e16835",
+      "prisma/migrations/202609120002_foundation/migration.sql": "3132876a61c864357373db7bebc3fd8eeeefff39b28115e1bf38352c8a8f5f04",
+      "prisma/migrations/202609120003_care_feeding/migration.sql": "ba93b3204e218b7f51f841ee8a9de41ea7236b72266a8a1e5565817ec1d40570",
+      "prisma/migrations/202609120004_care_diaper/migration.sql": "0a1b43fbd2a94365f906cee5e66a54a453682dce8147759cc098fb0ce2414bf4",
+      "prisma/migrations/202609120005_care_sleep/migration.sql": "58d78edd567184f29b9c355cfa6c60cbf333c358532dde1f09fe67a6242c5271",
+      "prisma/migrations/202609120006_care_food/migration.sql": "fe2673c3686c7201c8350ead0945beb807157b7cdc5f7acd0b95f81443a5c130",
+      "prisma/migrations/202609120007_care_supplement/migration.sql": "445f7cc55623ab81300159856fa1fac5d57e0610dbc85f71b9f62ba3bb620f37",
+      "prisma/migrations/202609120008_care_growth/migration.sql": "4c24af432c22284699307a4a2cfd0c56361a76ba9b3c13e998a5bbe494dcd495",
+      "prisma/migrations/202609120009_bff_sessions/migration.sql": "d980eceab173b5816e08cdbc45f6a169c2841cef7f389c698f578efb989f24d6",
+      "prisma/migrations/202609120010_attachments_medical_vaccines/migration.sql": "ae9ff7aaaf708908d4401acd6c11e0e27a8e05275d4c6d0650ffd260a33a5af2",
+      "prisma/migrations/202609130011_tasks_and_ai/migration.sql": "4d7c41ee671aecc0dd354aa57dca6f90cb7333e9eac35978154164ae48522d7d",
+      "prisma/migrations/202609130012_legacy_mixed_feeding/migration.sql": "2a30abaed1cef832d7c26bdfc140cc3d341be9158b40a4ce760711d74d13ae77",
+      "prisma/migrations/202609140013_medical_items/migration.sql": "1c0e5b2efc7d39bfc303065f603d1b39c4903979bb79bd061251d37ed632b2c3",
+      "prisma/migrations/202609140014_book_status/migration.sql": "8e0679abf84b4ce618b6ba2a53b4154fcb65a74711a52291f30eca9245b62105",
+      "prisma/migrations/202609190015_food_reference_seed/migration.sql": "55c40962c3b7ed1bf13a2ea752ae86ddfe3ccfde952492328be5d68204d82423",
+      "prisma/migrations/202609190016_food_plan_version/migration.sql": "2f0b0ddb8c4b16a46ff68705325acc3f642ce0ffe0d30101781b6e5506a40ec4",
+      "prisma/migrations/202609190017_supplement_record_actor/migration.sql": "fb375769ca0d594bcd9b1bf35f1921dcc98038e81c9f8a2c75abecd3c1cf1e98",
+      "prisma/migrations/202609190018_legacy_care_promotion/migration.sql": "41d746e5dda16cc85cab4c515cee78b8860d8407c7bc7d2f9a242486bb512361",
+      "prisma/migrations/202609190019_growth_promotion/migration.sql": "6c5be3029d5dcf17d91ae0f6fe979e3c285f23e8f375459feb282bc6b082b311",
+      "prisma/migrations/202609190020_food_promotion/migration.sql": "49f4c45207dede606524e625fcd2c610e8a801158c5dc2182520c61897637fcb",
+      "prisma/migrations/202609190021_supplement_vaccine_promotion/migration.sql": "7affdcf67d61531ead722a59072f7933a17449ce8e9238c9e2a39fb0fc2637bf",
+      "prisma/migrations/202609190022_agent_voice_logs/migration.sql": "37efbf0eae233a74fb7806321ddbb58d9b4f347103b4812a7a6c6368b45ce90b",
+      "prisma/migrations/202609190023_record_snapshots/migration.sql": "5fada66a874168e9e131d4f927bc00b21144d0f45195a461d8cff29aeaa91310",
+      "prisma/migrations/202609190024_ai_archive_entries/migration.sql": "1d5c74fd000ec24f29a28b8a5b5642c50186de7893a4cf99da507417446e4adf",
+      "prisma/migrations/202609200025_ai_input_attachments/migration.sql": "f6d9e9008374b324fb88b42e272b6f805f7c13196c7b1870e9541814592c997b"
+    },
+    "drift": [],
+    "headAfter": "8b9edd3be223c2e784bf3ba617d7f11eac27323a",
+    "immutableInputsSha256After": "b2e611dfdc23851892c34774071019903364788f613655f280501758585a3241"
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql",
+    "0004_family_notifications.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_62ee8284520c",
+    "role": "test_app_62ee8284520c",
+    "superuser": false,
+    "postgresPort": 58380,
+    "redisPort": 58381,
+    "apiPort": 58384,
+    "pushFixturePort": 58415,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "IndexError",
+    "case": "current global preference disabled before fanout produces no recipient artifacts"
+  },
+  "worker": {
+    "actualNativeRuns": 91,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "testUsers": 5,
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/ded20902-b308-4be8-b4ae-8ae5185ee277/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/ded20902-b308-4be8-b4ae-8ae5185ee277/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/ded20902-b308-4be8-b4ae-8ae5185ee277/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/e40fc7c3-7ca6-499f-ae78-968f1e566f39/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/502f1a3b-2fc5-4a4d-a085-450aa83a48e1/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/e738f43e-f26f-48c8-9cbc-999d59691dc0/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/a903aefd-a1e7-4685-aff2-f0d53365ff7e/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 401,
+      "errorCode": "UNAUTHORIZED"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 403,
+      "errorCode": "BABY_ACCESS_DENIED"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "FST_ERR_VALIDATION"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 400,
+      "errorCode": "INVALID_NOTIFICATION_PREFERENCES"
+    },
+    {
+      "case": "preference HTTP defaults, validation and baby authorization",
+      "status": 403,
+      "errorCode": "BABY_ACCESS_DENIED"
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care create replays once; actor and unassigned member excluded; actual encrypted push accepted",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "six record kinds carry complete event-time content through create/update/delete/restore",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "legacy pending family event without content snapshot uses a version-safe fallback",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "legacy pending family event without content snapshot uses a version-safe fallback",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 403,
+      "errorCode": "FAMILY_ACCESS_DENIED"
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 403,
+      "errorCode": "FAMILY_ACCESS_DENIED"
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "family and baby content stays isolated across real tenants",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "REST care update/delete and sleep/diaper create enqueue distinct events",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "common REST supplement and sync growth create/update/delete/restore enqueue and replay",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 409,
+      "errorCode": "IDEMPOTENCY_KEY_REUSED"
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 409,
+      "errorCode": "CONCURRENCY_CONFLICT"
+    },
+    {
+      "case": "changed idempotency body and stale baseVersion roll back without a notification event",
+      "status": 400,
+      "errorCode": "FST_ERR_VALIDATION"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 500,
+      "errorCode": "INTERNAL_ERROR"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 500,
+      "errorCode": "P2039"
+    },
+    {
+      "case": "actual PostgreSQL outbox failure rolls back care and common record transactions, retry persists once",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "concurrent native workers and repeated workers do not duplicate notification or delivery",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "current global preference disabled before fanout produces no recipient artifacts",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "current global preference disabled before fanout produces no recipient artifacts",
+      "status": 201,
+      "errorCode": null
+    }
+  ],
+  "fixture": {
+    "requests": [
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "5b61b3c8b9ca330a604adcbad95f1220",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_primary",
+          "wireBytes": 753,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ac3a18bd-f560-4972-8a51-ebb50cda7b2a",
+            "entityType": "feeding",
+            "eventKey": "family_record:548db0f78bd02e1154762706e4242f5a3304495e1cc87fa2bd032ff4f0838d0f",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "e3ad2b63-9e99-506b-bdc7-258c092236e6"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ef7d4463ee535df7d70bfa85d4298c6b",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新喂奶记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：135 毫升；左侧时长：4 分钟；右侧时长：14 分钟；吐奶：是；备注：test_full_update_feeding",
+          "wireBytes": 806,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ffc81e93-d28c-49ea-95cf-77c39cdbeef5",
+            "entityType": "feeding",
+            "eventKey": "family_record:473e64ab4f4bd701705106ead86ee71216ebcd7bacb1af94c7dab279da7065b6",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "0f93ab22-6b94-5f1e-b254-907bca6afa14"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "14d531fc0b7cc5d59f68be3783531e6a",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复喂奶记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：135 毫升；左侧时长：4 分钟；右侧时长：14 分钟；吐奶：是；备注：test_full_update_feeding",
+          "wireBytes": 807,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ffc81e93-d28c-49ea-95cf-77c39cdbeef5",
+            "entityType": "feeding",
+            "eventKey": "family_record:3a7912506357c919640d6f253cabe76844439091c17efb079a09fb0aca6d360f",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "8e79e79d-7c6a-536f-9cb0-210339410b01"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f17981acf44499cdebf0cf529124de4b",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增睡眠记录",
+          "body": "开始时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；类型：白天小睡；结束时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；睡眠时长：1 小时 0 分钟；夜醒次数：0 次；备注：test_full_create_sleep",
+          "wireBytes": 842,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "690cda61-128a-4e5d-a865-0f9d472a3354",
+            "entityType": "sleep",
+            "eventKey": "family_record:f72b83535f573fee5af0d3c26b1d2f17486ef2c135ee5c7c93c94c864cb19b7b",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "da3df2ed-7ce4-51bd-89a9-42d0f20d137b"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "687e2a103d9b18babb684c1f91c190c5",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：0 毫升；左侧时长：0 分钟；右侧时长：12 分钟；吐奶：否；备注：test_full_create_feeding",
+          "wireBytes": 804,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ffc81e93-d28c-49ea-95cf-77c39cdbeef5",
+            "entityType": "feeding",
+            "eventKey": "family_record:aca6dc8ce5d9d7071f4be14dddd0b042a40d34874e3180f6bc29e25b3b080786",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "2b49700b-26fc-5af7-9bf8-ffd0856d5eae"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ffb28ea47faf645a95b175bd1ad99af9",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除喂奶记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：135 毫升；左侧时长：4 分钟；右侧时长：14 分钟；吐奶：是；备注：test_full_update_feeding",
+          "wireBytes": 806,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ffc81e93-d28c-49ea-95cf-77c39cdbeef5",
+            "entityType": "feeding",
+            "eventKey": "family_record:13a5ee97fc9f3de7163d77c603f8c3d114f4891aa9fcd25c5faff7f8bf219e88",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "00c0f7e8-c936-5551-ba33-4967b7638a4c"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ac855b11933d827d18c82515b0bbd0db",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除睡眠记录",
+          "body": "开始时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：夜间睡眠；结束时间：2026-10-06 10:45:00 -07:00（America/Los_Angeles）；睡眠时长：1 小时 30 分钟；夜醒次数：1 次；备注：test_full_update_sleep",
+          "wireBytes": 843,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "690cda61-128a-4e5d-a865-0f9d472a3354",
+            "entityType": "sleep",
+            "eventKey": "family_record:b32d7b0c66ded3b4376cfd373edb836ca33860693f38c9540325512e21f168f6",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "34087e74-301f-5b57-8e48-d866e6dad6c5"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "a3aa248cedccb4476e51752078eb9c24",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新睡眠记录",
+          "body": "开始时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：夜间睡眠；结束时间：2026-10-06 10:45:00 -07:00（America/Los_Angeles）；睡眠时长：1 小时 30 分钟；夜醒次数：1 次；备注：test_full_update_sleep",
+          "wireBytes": 843,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "690cda61-128a-4e5d-a865-0f9d472a3354",
+            "entityType": "sleep",
+            "eventKey": "family_record:18d3a0c5f4f01e0d871422fe5bd2460688a71ec681c680705c68e3b0db0eb000",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "ae7530f2-ab6e-58b0-9082-9ee7bd770c68"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "6f1d65dc664e2d9fcbdde7ef729192e7",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增尿布记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；类型：尿便都有；便便颜色：棕色；便便性状：柔软；备注：test_full_create_diaper",
+          "wireBytes": 765,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "49b219f2-fe44-4445-ad18-bf6e032c9269",
+            "entityType": "diaper",
+            "eventKey": "family_record:28c1bd970a0c9434c126bb1c7bdeee47a37864d9aabd091fe70220e30ced95c7",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "4c311c6d-a2c9-5a0d-9eca-e7d2c07d4aaa"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "fe8a847a458dcda3addd1e590b6ce9a0",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新尿布记录",
+          "body": "发生时间：2026-10-06 09:20:00 -07:00（America/Los_Angeles）；类型：便便；便便颜色：绿色；便便性状：柔软；备注：test_full_update_diaper",
+          "wireBytes": 759,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "49b219f2-fe44-4445-ad18-bf6e032c9269",
+            "entityType": "diaper",
+            "eventKey": "family_record:13ee10b54598af296bb50ba2bf51a53db140a567e51642a0a878ecc204d37741",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "c036cf58-4edf-567f-8639-1de7e49a27aa"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f2ee1b23df174f2b71b5128265cc4a65",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复睡眠记录",
+          "body": "开始时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；类型：夜间睡眠；结束时间：2026-10-06 10:45:00 -07:00（America/Los_Angeles）；睡眠时长：1 小时 30 分钟；夜醒次数：1 次；备注：test_full_update_sleep",
+          "wireBytes": 844,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "690cda61-128a-4e5d-a865-0f9d472a3354",
+            "entityType": "sleep",
+            "eventKey": "family_record:002fbf36d20373dd339b1fcfd45a4fa8db16b1779818b233b39670ae76ba08d2",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "13f69f27-d717-56c5-9fec-6ac3d038c41e"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "565e088706ee9dd7d55859188bdc2bd1",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新辅食记录",
+          "body": "发生时间：2026-10-06 09:30:00 -07:00（America/Los_Angeles）；记录日期：2026-10-06；餐次：晚餐；食物：test_family_push_62ee8284520c_sweet_potato；份量：test_updated_portion_3tbsp；接受度：一般；备注：test_full_update_food",
+          "wireBytes": 848,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "84b183a8-9606-471a-b386-35db76226dc6",
+            "entityType": "food",
+            "eventKey": "family_record:619a34c04b18cba71340897f4c156e45f7260b8fa37094c4aacd2dd4c234c1b0",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "691b1490-286d-574c-a45d-7db011e6dcd3"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "376d92756f7c1c4959e98996d9f453b7",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复尿布记录",
+          "body": "发生时间：2026-10-06 09:20:00 -07:00（America/Los_Angeles）；类型：便便；便便颜色：绿色；便便性状：柔软；备注：test_full_update_diaper",
+          "wireBytes": 760,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "49b219f2-fe44-4445-ad18-bf6e032c9269",
+            "entityType": "diaper",
+            "eventKey": "family_record:167486ad1f7de54b707e279c0880a06cc3e18a86a55141a2e4232b1a2ed3773a",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "c11c8a57-2fdb-5de6-9f42-617f79fb26a8"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f1cbb5b38e779634bd94db2ad93697f2",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除尿布记录",
+          "body": "发生时间：2026-10-06 09:20:00 -07:00（America/Los_Angeles）；类型：便便；便便颜色：绿色；便便性状：柔软；备注：test_full_update_diaper",
+          "wireBytes": 759,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "49b219f2-fe44-4445-ad18-bf6e032c9269",
+            "entityType": "diaper",
+            "eventKey": "family_record:2b316999367d0a94ce2a697f628ff8f6f69fc2e00acc8283f85b2f69ad10b96e",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "3801d32e-086d-5fbc-ad7e-39aa1ade6689"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "e90f7d8940608749035d1e2c5c3354d6",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除补剂记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；补剂：test_vitamin_d_updated；用量：2 tablets；剂量：2.5 ml；备注：test_full_update_supplement",
+          "wireBytes": 774,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "12a5c000-6d0c-4dbc-9c3a-37adaa73c0ab",
+            "entityType": "supplement",
+            "eventKey": "family_record:0b66d271eb748167222e194d4360e6f0c84426621dbfb181115e8b2d8fff3176",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "7e2082d7-0f52-54b1-a0b3-0f850c2a21f5"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "8b59beaab51eb2cfafb852ba3bdbe2f6",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除辅食记录",
+          "body": "发生时间：2026-10-06 09:30:00 -07:00（America/Los_Angeles）；记录日期：2026-10-06；餐次：晚餐；食物：test_family_push_62ee8284520c_sweet_potato；份量：test_updated_portion_3tbsp；接受度：一般；备注：test_full_update_food",
+          "wireBytes": 848,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "84b183a8-9606-471a-b386-35db76226dc6",
+            "entityType": "food",
+            "eventKey": "family_record:2b19b0553831a066f1e5d52b3b45b2973298e38ac2bb96225ef5f4f2031e5537",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "a83d807a-f3e2-5292-b8a3-5d53d1213a98"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "cecaffe94b0ce6de974d557a7d1b5674",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复辅食记录",
+          "body": "发生时间：2026-10-06 09:30:00 -07:00（America/Los_Angeles）；记录日期：2026-10-06；餐次：晚餐；食物：test_family_push_62ee8284520c_sweet_potato；份量：test_updated_portion_3tbsp；接受度：一般；备注：test_full_update_food",
+          "wireBytes": 849,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "84b183a8-9606-471a-b386-35db76226dc6",
+            "entityType": "food",
+            "eventKey": "family_record:285f770907bc436a5000bb92fbd1d34ade738feace64448f5fd5025773950c6e",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "32b38fb5-cc3b-537c-b53f-4b861d94dc11"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "c15c6fe79af628568fdaabfd81750ad7",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增辅食记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；记录日期：2026-10-06；餐次：午餐；食物：test_family_push_62ee8284520c_sweet_potato；份量：test_portion_2tbsp；接受度：喜欢；备注：test_full_create_food",
+          "wireBytes": 840,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "84b183a8-9606-471a-b386-35db76226dc6",
+            "entityType": "food",
+            "eventKey": "family_record:8b3ade1bb156eac2ab4e8e90e33decc71c94a4f2fd7996d597ca7732daa8d80a",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "86d0e3c2-3f80-5203-b192-d8d9b9befb23"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "401deb6864fabd8fcba840860ef59aa4",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复补剂记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；补剂：test_vitamin_d_updated；用量：2 tablets；剂量：2.5 ml；备注：test_full_update_supplement",
+          "wireBytes": 775,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "12a5c000-6d0c-4dbc-9c3a-37adaa73c0ab",
+            "entityType": "supplement",
+            "eventKey": "family_record:0b41f8d4c69f6d5260b567ff7fd74794c9d2ca67640efb44ea243618c2097573",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "02b7b9e0-8b8c-5f7f-95fc-0283c569d184"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "bfd2094b9f30be0e1507344656d685a7",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增补剂记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；补剂：test_vitamin_d；用量：1 tablet；剂量：0 ml；备注：test_full_create_supplement",
+          "wireBytes": 763,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "12a5c000-6d0c-4dbc-9c3a-37adaa73c0ab",
+            "entityType": "supplement",
+            "eventKey": "family_record:3cecb8cd876b4dcfde6684339737ba81126aa50c584a06e6a43356cc2cbc6717",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "1ec85514-fd54-5c5e-9e7b-3fd4847a33f9"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "6b37f4fbdf137b670c4e818004a4c6a3",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新生长测量记录",
+          "body": "测量日期：2026-10-07；体重：9.8 千克；身长：76.1 厘米；头围：45.2 厘米；备注：test_full_update_growth",
+          "wireBytes": 726,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "c64e83a5-2d38-4c56-a186-3d060fbb9c62",
+            "entityType": "growth",
+            "eventKey": "family_record:d4f2d3bdf6082cbb045ce5cda1efd1a5ccd45aa03661328a4699ba9dd9fa45da",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "2b333076-938c-5745-bcb0-8853c0e6a4a8"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ddc6f32b453e5d30706b567ab7188118",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增生长测量记录",
+          "body": "测量日期：2026-10-06；体重：9.4 千克；身长：75.5 厘米；头围：45 厘米；备注：test_full_create_growth",
+          "wireBytes": 724,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "c64e83a5-2d38-4c56-a186-3d060fbb9c62",
+            "entityType": "growth",
+            "eventKey": "family_record:ae622813423bda9d66c5296f1595b1b7287440c86dfbd8e67238919df245dc8a",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "ae9c08c5-168a-5ef2-989e-7ec331ea2ba4"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "d1da4cc357e6a87dc72a06dab0e90306",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新补剂记录",
+          "body": "发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）；补剂：test_vitamin_d_updated；用量：2 tablets；剂量：2.5 ml；备注：test_full_update_supplement",
+          "wireBytes": 774,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "12a5c000-6d0c-4dbc-9c3a-37adaa73c0ab",
+            "entityType": "supplement",
+            "eventKey": "family_record:ec3fd2e8a572d29123b7c609b7c4e56570cf7b83543a0a2b203a6534c855e1f9",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "097b508c-9b01-5097-bc4c-7299c382a683"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "dd678cb86c1ceca3bca352a6570ad252",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复生长测量记录",
+          "body": "测量日期：2026-10-07；体重：9.8 千克；身长：76.1 厘米；头围：45.2 厘米；备注：test_full_update_growth",
+          "wireBytes": 727,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "c64e83a5-2d38-4c56-a186-3d060fbb9c62",
+            "entityType": "growth",
+            "eventKey": "family_record:5984eca46f6885d820a94a0c1b77c9a000d7f0cdd82dd08f0c9b87ee7b798524",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "498834bf-e6f5-5a70-8a0c-b6ab08f84048"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "a5f47ea8294c2d404d0e0ab649c34342",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除生长测量记录",
+          "body": "测量日期：2026-10-07；体重：9.8 千克；身长：76.1 厘米；头围：45.2 厘米；备注：test_full_update_growth",
+          "wireBytes": 726,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "c64e83a5-2d38-4c56-a186-3d060fbb9c62",
+            "entityType": "growth",
+            "eventKey": "family_record:9ba2835c7e0a7078de7948a69d535b03c1b4a3cc97a6c877225d925aa581a3ee",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "6c78a452-d9ef-57b0-bfcb-a68759944e48"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "904cfbe292eba6a128c542c64834f4f6",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：0 毫升；左侧时长：0 分钟；右侧时长：12 分钟；吐奶：否；备注：长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备注长备…点击查看完整内容",
+          "wireBytes": 3072,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "51a30c6d-637a-4bd0-a578-5c26d38c2760",
+            "entityType": "feeding",
+            "eventKey": "family_record:dae42d0d751102b82f935ed20ababb24a140cb101c2e6333fd68785c24aa84f5",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "6cbfa854-880a-591c-868f-84c24101d9d6"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "a21ec88217f86501e02780cb795d992f",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：145 毫升；吐奶：否；备注：test_legacy_current_record",
+          "wireBytes": 752,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "5b721e0d-4fa2-4039-9989-181d585b73a2",
+            "entityType": "feeding",
+            "eventKey": "family_record:0c6b218c13978134e0391c4f73b34bce80f1a166e9ddda072bc4c20235b904b3",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "1cc29feb-a7ac-58c6-ab6a-07cd49bc9978"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "f805bc13ff9085f60cab2f920edf98d0",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "此通知对应旧记录版本 1。当前记录版本 2 已变化；打开通知查看当前内容。",
+          "wireBytes": 694,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "5b721e0d-4fa2-4039-9989-181d585b73a2",
+            "entityType": "feeding",
+            "eventKey": "family_record:c65a4ab44a736264d268d467f6dd396848e369fa13a2a9c1ee6c712a5de8a35d",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "5d4b3dfe-bd1c-5a41-b095-c3d34014390b"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_other_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "01a3c6ad92a31c40f63111c2d2dabee3",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_other_family_actor为test_family_push_62ee8284520c_other_baby新增喂奶记录",
+          "body": "发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）；类型：配方奶；奶量：210 毫升；吐奶：否；备注：test_other_tenant_private_marker",
+          "wireBytes": 780,
+          "url": "/notifications",
+          "data": {
+            "actorId": "0051e0cc-d9d6-403d-88de-a6ba3023c1d0",
+            "babyId": "cb2d2fa2-fe25-42c6-b1d8-be67cf83c85a",
+            "entityId": "32907222-7ec8-42d2-af85-e1475bc8f869",
+            "entityType": "feeding",
+            "eventKey": "family_record:ee4a77af2cc59f7a97659b0b1469784600a65d5ae360dbef8acb6d4ce3a82b09",
+            "eventKind": "family_record",
+            "familyId": "399f10b0-bc58-43f6-b217-a2ece1dc26d3",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "97c586a9-d459-570b-8884-1e8a5d991b4e"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "c9155194103f8924bef9ae651f3f4bd8",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_updated",
+          "wireBytes": 753,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ac3a18bd-f560-4972-8a51-ebb50cda7b2a",
+            "entityType": "feeding",
+            "eventKey": "family_record:0c88010db1e8858fcacbbb8c92e1e5f0242f03b6555ba5871e05528338362376",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "1d57c0d8-fb92-5719-9e57-d88f68f8e14e"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ec7fb428a5ed6f3643a96715e1b16a77",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_updated",
+          "wireBytes": 753,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "ac3a18bd-f560-4972-8a51-ebb50cda7b2a",
+            "entityType": "feeding",
+            "eventKey": "family_record:2c7b3c8566d0670d114d78c3690d492a31f8d29028d305622f404f0d35d6692f",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "1e55a065-7ac1-5a2e-af9f-e811a14a850f"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "8a6f123a2bca3a076a44f84a4d0bdd68",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增睡眠记录",
+          "body": "开始时间：2026-10-05 03:00:00 -07:00（America/Los_Angeles）；类型：白天小睡；结束时间：2026-10-05 04:00:00 -07:00（America/Los_Angeles）；睡眠时长：1 小时 0 分钟；夜醒次数：0 次",
+          "wireBytes": 808,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "16273235-256d-4230-9f2b-f5a7f4ab0ab6",
+            "entityType": "sleep",
+            "eventKey": "family_record:646f2a462d526a98418b632280e4fc6d705059a7c170f1e9c6f0eabd0cb4553b",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "0ca560de-6cab-59e8-b6a1-972299638867"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "e2026dfcb3e14eb4c4fd2592246cd75f",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增尿布记录",
+          "body": "发生时间：2026-10-05 04:05:00 -07:00（America/Los_Angeles）；类型：尿尿",
+          "wireBytes": 676,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "76a5f2b5-7413-47ed-ab95-bf2f22d9e86b",
+            "entityType": "diaper",
+            "eventKey": "family_record:cc1dbb0877f46c5ba0b3abadbad1b11484e120c3bf94baeb51cea4e4eaa73ef4",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "33d620e2-5775-568a-9716-ceb492b25f0d"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "a8a3fcc70e113c7d1cff6b66838efc41",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增补剂记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；补剂：test_vitamin；剂量：1.25 drops",
+          "wireBytes": 708,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "71da524e-5c8f-479c-95f9-205a606a8394",
+            "entityType": "supplement",
+            "eventKey": "family_record:6736608ffe06d3ce561adf41fe6be4d5c70e5aa9f2154f46c975c5bd8af4ec4c",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "3fce216a-2e81-5d2a-b359-0dd09258ef5e"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "da424545c31ad69dedce189ce6692130",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增生长测量记录",
+          "body": "测量日期：2026-10-05；体重：9.4 千克；身长：75.5 厘米",
+          "wireBytes": 668,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "62c4fa1f-a644-478f-828c-d2e28bda1ad0",
+            "entityType": "growth",
+            "eventKey": "family_record:c34428cd282f74db781b01a1515148a2b153ef55a7341ad6d3f0b7ee6e349246",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "fa226d67-9d6c-5b32-b82d-55a4663c976e"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "aafe112373d5958bbdca1676252f3e98",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby更新生长测量记录",
+          "body": "测量日期：2026-10-05；体重：9.4 千克；身长：75.5 厘米；备注：test_private_record_growth",
+          "wireBytes": 706,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "62c4fa1f-a644-478f-828c-d2e28bda1ad0",
+            "entityType": "growth",
+            "eventKey": "family_record:ff3320e8b48e68ea69bdaa606431f4f6607461f3e72c2c596e0b6905d0386e6c",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "update",
+            "recordVersion": "2",
+            "url": "/notifications"
+          },
+          "tag": "96df5954-01ac-5baa-91c0-aa6f164c042f"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "dc58dd2ebada44f63b46ac47734d5b32",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby删除生长测量记录",
+          "body": "测量日期：2026-10-05；体重：9.4 千克；身长：75.5 厘米；备注：test_private_record_growth",
+          "wireBytes": 706,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "62c4fa1f-a644-478f-828c-d2e28bda1ad0",
+            "entityType": "growth",
+            "eventKey": "family_record:8112771e99057d052729b36a7ae573dfe829d6f06201d0d486fe9d12d131b857",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "delete",
+            "recordVersion": "3",
+            "url": "/notifications"
+          },
+          "tag": "66afd766-bb4a-5ce8-8427-79ede660661c"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "30443bf6860efe3f8d4713f8d67ff611",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby恢复生长测量记录",
+          "body": "测量日期：2026-10-05；体重：9.4 千克；身长：75.5 厘米；备注：test_private_record_growth",
+          "wireBytes": 707,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "62c4fa1f-a644-478f-828c-d2e28bda1ad0",
+            "entityType": "growth",
+            "eventKey": "family_record:b1af1fc517fd677cfa71983381e2050c1a3503cf792965f091a41927327613cc",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "restore",
+            "recordVersion": "4",
+            "url": "/notifications"
+          },
+          "tag": "ecfe3158-fcbc-51f6-b7b5-42ba4e63ed7c"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "4a0867e07da5588db42d7a42c98d6141",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_conflict",
+          "wireBytes": 754,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "d491013a-915d-4ab4-ba2d-48a5fcb02934",
+            "entityType": "feeding",
+            "eventKey": "family_record:c65b9cd83311c3bcc6f4a177ad9534305f1c9a7a7466856a829623ea107586bf",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "5c535a7c-3057-51be-84d2-72883ad6540f"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "d662a2edf7942ed4f2f82fe8261e7c42",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_forced_rollback",
+          "wireBytes": 761,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "7008bf6e-8806-467c-b7c3-22480c015b88",
+            "entityType": "feeding",
+            "eventKey": "family_record:9369c2489daa3082612a656a6ae7209154e7838dd19d1af9c3a2a59be5ca117c",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "50d57c96-80e3-53da-80c9-54f98b04b996"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "3e20a9ecce51387ef4f0993cf8ada4da",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增补剂记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；补剂：test_vitamin；剂量：1.25 drops",
+          "wireBytes": 708,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "67bf07d4-f71a-48c2-8edf-1ebc361a39e7",
+            "entityType": "supplement",
+            "eventKey": "family_record:d0ff216cf7b6a47d09bdd7e9c4f9a689148f043a4fc082daee49fdc25e7af388",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "9fb5eaa9-8fa1-5bbf-8838-dff4ae092ba5"
+        }
+      },
+      {
+        "path": "/test_62ee8284520c_reader",
+        "bytes": 4096,
+        "encrypted": true,
+        "topic": "ed77a04b1cdf5919d1342cdb756dbbf5",
+        "status": 201,
+        "payload": {
+          "decrypted": true,
+          "privacySafe": true,
+          "title": "test_family_push_62ee8284520c_actor为test_family_push_62ee8284520c_baby新增喂奶记录",
+          "body": "发生时间：2026-10-05 05:00:00 -07:00（America/Los_Angeles）；类型：瓶喂；奶量：120 毫升；吐奶：否；备注：test_private_record_concurrent_worker",
+          "wireBytes": 763,
+          "url": "/notifications",
+          "data": {
+            "actorId": "4f281c60-2bf6-4557-a4f8-3279f6d2a6f2",
+            "babyId": "e40fc7c3-7ca6-499f-ae78-968f1e566f39",
+            "entityId": "bad1b833-5c6a-46bd-9813-6ed3024ab9fa",
+            "entityType": "feeding",
+            "eventKey": "family_record:fe714fb92536b80a08b8e83ac25cdc6de641573cf43411aeea34bd46eeed4e8d",
+            "eventKind": "family_record",
+            "familyId": "ded20902-b308-4be8-b4ae-8ae5185ee277",
+            "operation": "create",
+            "recordVersion": "1",
+            "url": "/notifications"
+          },
+          "tag": "bebeaf28-01b7-596b-890f-6ec4f4fcd259"
+        }
+      }
+    ],
+    "count": 42,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "FULL_PUSH_CONTENT_20261006",
+    "runId": "62ee8284520c",
+    "status": "cleaned",
+    "database": "test_growdesk_62ee8284520c",
+    "appRole": "test_app_62ee8284520c",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

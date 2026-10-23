@@ -71,7 +71,7 @@ func nativePushEndpoint(c Config, raw string) (*url.URL, error) {
 		return nil, invalid("Push endpoint requires HTTPS")
 	}
 	host := strings.ToLower(u.Hostname())
-	permitted := host == "fcm.googleapis.com" || host == "updates.push.services.mozilla.com" || strings.HasSuffix(host, ".push.services.mozilla.com") || host == "web.push.apple.com" || strings.HasSuffix(host, ".web.push.apple.com") || host == "api.push.apple.com" || host == "api.sandbox.push.apple.com"
+	permitted := host == "fcm.googleapis.com" || host == "updates.push.services.mozilla.com" || strings.HasSuffix(host, ".push.services.mozilla.com") || host == "web.push.apple.com" || strings.HasSuffix(host, ".web.push.apple.com") || strings.HasSuffix(host, ".notify.windows.com") || host == "api.push.apple.com" || host == "api.sandbox.push.apple.com"
 	if !permitted {
 		return nil, invalid("Unsupported push service host")
 	}
@@ -215,6 +215,12 @@ func nativeAPNSToken(team, keyID, private string, now time.Time) (string, error)
 // Delivery is at-least-once. Stable notification identity supports downstream
 // deduplication; a response never authorizes sending to a new device owner.
 func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) error {
+	if lease.Input.FamilyRecord != nil {
+		ready, err := s.prepareFamilyPush(ctx, lease)
+		if err != nil || !ready {
+			return err
+		}
+	}
 	var device, notification Object
 	_, err := s.readSnapshot(ctx, func(q Querier) (Result, error) {
 		if err := nativeTaskOwner(ctx, q, lease.Input, false); err != nil {
@@ -241,6 +247,12 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
 	if err = s.renewNativeLease(ctx, lease); err != nil {
 		return err
 	}
+	if lease.Input.FamilyRecord != nil {
+		ready, err := s.prepareFamilyPush(ctx, lease)
+		if err != nil || !ready {
+			return err
+		}
+	}
 	var response *http.Response
 	client := s.PushHTTP
 	if client == nil {
@@ -260,12 +272,17 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
 		if e = validateVAPID(public, private, subject); e != nil {
 			return e
 		}
-		raw, e := jsonBytes(payload)
+		var raw []byte
+		if lease.Input.FamilyRecord != nil {
+			_, raw, _, e = familyPushWirePayload(text(notification["title"]), text(notification["body"]), obj(notification["data"]), lease.Input.NotificationID, 3072)
+		} else {
+			raw, e = jsonBytes(payload)
+			if e == nil && len(raw) > 3072 {
+				e = invalid("Push payload exceeds budget")
+			}
+		}
 		if e != nil {
 			return e
-		}
-		if len(raw) > 3072 {
-			return invalid("Push payload exceeds budget")
 		}
 		digest := sha256.Sum256([]byte(lease.Input.NotificationID))
 		response, err = webpush.SendNotificationWithContext(ctx, raw, sub, &webpush.Options{HTTPClient: client, Subscriber: subject, VAPIDPublicKey: public, VAPIDPrivateKey: private, TTL: 300, Topic: hex.EncodeToString(digest[:16])})
@@ -293,12 +310,17 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
 		if e != nil {
 			return e
 		}
-		raw, e := jsonBytes(Object{"aps": Object{"alert": Object{"title": notification["title"], "body": notification["body"]}, "sound": "default"}, "notificationId": lease.Input.NotificationID, "data": notification["data"]})
+		var raw []byte
+		if lease.Input.FamilyRecord != nil {
+			_, raw, _, e = familyAPNSWirePayload(text(notification["title"]), text(notification["body"]), lease.Input.NotificationID, obj(notification["data"]), 4096)
+		} else {
+			raw, e = jsonBytes(Object{"aps": Object{"alert": Object{"title": notification["title"], "body": notification["body"]}, "sound": "default"}, "notificationId": lease.Input.NotificationID, "data": notification["data"]})
+			if e == nil && len(raw) > 4096 {
+				e = invalid("APNs payload exceeds budget")
+			}
+		}
 		if e != nil {
 			return e
-		}
-		if len(raw) > 4096 {
-			return invalid("APNs payload exceeds budget")
 		}
 		request, e := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(raw))
 		if e != nil {
@@ -335,6 +357,11 @@ func (s *Server) executeNativePush(ctx context.Context, lease nativeTaskLease) e
 		return err
 	}
 	defer rollback(tx)
+	if lease.Input.FamilyRecord != nil {
+		if err = lockUser(ctx, tx, lease.Input.UserID); err != nil {
+			return err
+		}
+	}
 	if err = lockSubmissionScope(ctx, tx, lease.Input); err != nil {
 		return err
 	}

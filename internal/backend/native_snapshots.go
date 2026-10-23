@@ -274,7 +274,7 @@ func taskResultDTO(row Object) Object {
 	return Object{"id": row["id"], "kind": row["kind"], "status": row["status"], "attempt": attempt, "result": row["result_ref"], "error": row["error_details"], "createdAt": isoValue(row["created_at"]), "updatedAt": isoValue(row["updated_at"])}
 }
 func (s *Server) readOwnedNativeTask(ctx context.Context, q Querier, user, id string) (Object, nativeTaskInput, error) {
-	row, err := one(ctx, q, `SELECT to_jsonb(t)||jsonb_build_object('payload',o.payload) FROM task_executions t
+	row, err := one(ctx, q, `SELECT to_jsonb(t)||jsonb_build_object('payload',o.payload,'type',o.type,'payload_version',o.payload_version) FROM task_executions t
 		JOIN task_outbox o ON o.aggregate_id=t.id AND o.phase_key='native-initial'
 		WHERE t.id=$1 AND t.owner_scope=$2 LIMIT 1`, id, "user:"+user)
 	if errors.Is(err, pgx.ErrNoRows) {

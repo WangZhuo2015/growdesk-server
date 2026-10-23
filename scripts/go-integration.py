@@ -134,6 +134,7 @@ def run_tests(owned,base):
     expect(base,'DELETE','/api/v1/auth/sessions/'+second['sessionId'],200,token=token)
     expect(base,'GET','/api/v1/me',401,token=second['accessToken'])
     print('PASS native register/login/current-user/session isolation',flush=True)
+
     refresh_body = {'refreshToken':registered['refreshToken'],'rotationId':'00000000-0000-4000-8000-000000000001'}
     rotated = expect(base,'POST','/api/v1/auth/refresh',200,refresh_body)['data']
     assert expect(base,'POST','/api/v1/auth/refresh',200,refresh_body)['data'] == rotated

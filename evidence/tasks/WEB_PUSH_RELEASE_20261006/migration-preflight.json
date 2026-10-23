@@ -1,0 +1,32 @@
+{
+  "passed": true,
+  "productionConnections": 0,
+  "testRecordsCreated": 0,
+  "controlledRoleExecution": true,
+  "failureRolledBackAllDdlAndRoleChanges": true,
+  "state": {
+    "ledgerCount": 4,
+    "checksum": "1dcb0e81c4f4b0a44595b30129990325e69a82c79efc215f6ab4a19f742c4a88",
+    "temporaryRoleGone": true,
+    "ownersRestored": true,
+    "appStillNonSuper": true,
+    "appCrud": true,
+    "validIndexes": true
+  },
+  "cleanup": {
+    "taskId": "IOS_WEB_PARITY_20261002",
+    "runId": "a17f9e05ce46",
+    "status": "cleaned",
+    "database": "test_growdesk_a17f9e05ce46",
+    "appRole": "test_app_a17f9e05ce46",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and roles",
+      "owned Redis process",
+      "owned MinIO process and bucket",
+      "owned Go API process"
+    ],
+    "errors": []
+  }
+}

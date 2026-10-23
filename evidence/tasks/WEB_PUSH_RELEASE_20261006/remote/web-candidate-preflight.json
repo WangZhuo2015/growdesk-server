@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "statuses": {
+    "/notifications": 200,
+    "/family/passport": 200,
+    "/api/push/vapid-key": 401,
+    "/api/passport/devices": 401,
+    "/sw.js": 200
+  },
+  "loopbackOnly": true,
+  "virtualEnvironment": true,
+  "processExited": true
+}

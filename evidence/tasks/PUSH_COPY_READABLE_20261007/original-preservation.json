@@ -1,0 +1,11 @@
+{
+  "originalHeadUnchanged": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+  "originalDirtySourceFiles": 73,
+  "ownedUpdatedPaths": {
+    "internal/backend/family_notification_content.go": "5827e4dd05cef86c106ac6264dd1d4d6a2b443ca0bf6fa20d07e72cc923de32c",
+    "internal/backend/family_notification_content_test.go": "bca77ba27917e0f5be438a04afb027556c60bf11ec02a3e52f73af65a0c321b5",
+    "scripts/review/check-family-push.py": "75a495f8ae706448670ed45b5505185a9afb197ee42e65a67945a0d07575d72c"
+  },
+  "unrelatedOriginalFilesUnchanged": 70,
+  "unrelatedChangesLost": []
+}

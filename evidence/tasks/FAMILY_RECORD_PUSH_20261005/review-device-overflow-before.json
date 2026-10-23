@@ -1,0 +1,33 @@
+{
+  "scope": "family recipient device fanout",
+  "productionConnections": 0,
+  "pushRequests": 0,
+  "sourceSha256File": "internal/backend/family_notifications.go",
+  "sourceSha256": "a89e2f924d1f460ff2fc21ec6b05fbb063c34ac1e570dd4d71e5b060f803bc49",
+  "createdServices": [
+    "postgresql"
+  ],
+  "exitCode": 1,
+  "ownedDatabase": "test_growdesk_79355780c09f",
+  "role": "test_app_79355780c09f",
+  "exercised": "actual Go registerPushDevice, current baby qualification, Passport record transaction, task claim, family fanout and failure persistence on real PostgreSQL; no worker process or HTTP push",
+  "cleanup": {
+    "status": "cleaned",
+    "database": "test_growdesk_79355780c09f",
+    "appRole": "test_app_79355780c09f",
+    "privateDirectoryRemoved": true,
+    "errors": []
+  },
+  "phase": "before_fix",
+  "findingPriority": "P2",
+  "findingFile": "internal/backend/family_notifications.go",
+  "findingLine": 266,
+  "testName": "TestReviewRecipientDeviceOverflowDoesNotBlockOtherRecipient",
+  "expected": "per-recipient device cap must not suppress other currently qualified recipients",
+  "observed": {
+    "laterRecipientNotificationCount": 0,
+    "headStatus": "failed",
+    "errorCode": "NOTIFICATION_DEVICE_LIMIT"
+  },
+  "status": "SCOPED_REVIEW_FINDING"
+}

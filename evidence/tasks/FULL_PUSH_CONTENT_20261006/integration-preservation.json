@@ -1,0 +1,23 @@
+{
+  "server": {
+    "originalHeadUnchanged": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "unrelatedTrackedAndUntrackedPreserved": 67,
+    "ownedPaths": [
+      "internal/backend/family_notification_content.go",
+      "internal/backend/family_notification_content_test.go",
+      "internal/backend/family_notifications.go",
+      "internal/backend/family_notifications_test.go",
+      "internal/backend/native_push.go",
+      "scripts/review/check-family-push.py"
+    ],
+    "unrelatedSourceDrift": []
+  },
+  "web": {
+    "originalHeadUnchanged": "8ed8e5c9f1a81a36191cdfba654af9e56aff4993",
+    "unrelatedTrackedAndUntrackedPreserved": 20,
+    "ownedPaths": [
+      "app/notifications/page.tsx"
+    ],
+    "unrelatedSourceDrift": []
+  }
+}

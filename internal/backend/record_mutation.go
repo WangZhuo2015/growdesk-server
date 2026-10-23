@@ -182,5 +182,8 @@ func publishRecordChange(ctx context.Context, tx pgx.Tx, userID string, command 
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO idempotency_receipts(actor_id,scope_id,command_id,request_hash,result_code,result_summary,response_body,completed_at)
 		VALUES($1,$2,$3,$4,200,$5::jsonb,$6::jsonb,$7)`, userID, command.Scope.FamilyID, command.Key, command.RequestHash, summaryJSON, response, now)
-	return err
+	if err != nil {
+		return err
+	}
+	return enqueueFamilyRecordNotification(ctx, tx, userID, command.Scope, command.Kind, command.ID, command.Operation, version)
 }

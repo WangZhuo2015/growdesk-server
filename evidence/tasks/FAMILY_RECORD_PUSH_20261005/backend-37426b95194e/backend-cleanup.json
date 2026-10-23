@@ -1,0 +1,17 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "runId": "37426b95194e",
+  "status": "cleaned",
+  "database": "test_growdesk_37426b95194e",
+  "appRole": "test_app_37426b95194e",
+  "privateDirectoryRemoved": true,
+  "resources": [
+    "owned PostgreSQL cluster",
+    "test database and non-superuser role",
+    "owned Redis process",
+    "owned Go API process",
+    "explicitly joined native workers",
+    "owned loopback HTTP push fixture"
+  ],
+  "errors": []
+}

@@ -1,0 +1,12 @@
+{
+  "exit_code": 0,
+  "log": "linux-local-sherpa-voice.retested.log",
+  "focused_timeout_passes": 10,
+  "skipped": 0,
+  "canonical_sentence_exact": true,
+  "quantity_140_ml_preserved": true,
+  "quantity_first_word_misrecognition_observed": true,
+  "source_frozen": true,
+  "api_production_match": "private-tts-api-production.match.json",
+  "helper_sha256": "f365003e46ad3b7366791c1965a948cb78561ebc06dea5daa90dccc4829d19a3"
+}

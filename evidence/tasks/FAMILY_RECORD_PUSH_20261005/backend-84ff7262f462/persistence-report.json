@@ -1,0 +1,80 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "runId": "84ff7262f462",
+  "phase": "baseline",
+  "passed": false,
+  "cases": [
+    {
+      "name": "committed REST record queues a family notification task",
+      "passed": false,
+      "expected": 1,
+      "actual": 0
+    }
+  ],
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-family-push-20261005",
+    "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "baselineArchiveSha256": "48d955260e9b067bf6b4d1f5419ab722df0fb2919becb159a0a2447c82bdf38d"
+  },
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_84ff7262f462",
+    "role": "test_app_84ff7262f462",
+    "superuser": false,
+    "postgresPort": 55859,
+    "redisPort": 55860,
+    "apiPort": 55863,
+    "pushFixturePort": 55894,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "baseline": {
+    "recordHttpStatus": 201,
+    "recipientSubscriptionPresent": true,
+    "delta": {
+      "records": 1,
+      "changes": 1,
+      "familyTasks": 0,
+      "deliveries": 0,
+      "notifications": 0
+    },
+    "missingEventObserved": true,
+    "fixtureRequests": 0
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "AssertionError",
+    "code": "family_notification_task_missing"
+  },
+  "fixture": {
+    "requests": [],
+    "count": 0
+  },
+  "cleanup": {
+    "taskId": "IOS_WEB_PARITY_20261002",
+    "runId": "84ff7262f462",
+    "status": "cleaned",
+    "database": "test_growdesk_84ff7262f462",
+    "appRole": "test_app_84ff7262f462",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and roles",
+      "owned Redis process",
+      "owned MinIO process and bucket",
+      "owned Go API process"
+    ],
+    "errors": []
+  }
+}

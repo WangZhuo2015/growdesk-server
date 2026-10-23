@@ -20,30 +20,47 @@ import (
 // a compatible native lease. No provider call happens inside a DB transaction.
 const nativeLeaseSeconds = 20
 
+type NativeWorkerProfile string
+
+const (
+	NativeWorkerProfileFull              NativeWorkerProfile = "full"
+	NativeWorkerProfileNotificationsOnly NativeWorkerProfile = "notifications-only"
+)
+
+type NativeRuntimeOptions struct {
+	WorkerProfile NativeWorkerProfile
+}
+
+func validNativeWorkerProfile(profile NativeWorkerProfile) bool {
+	return profile == NativeWorkerProfileFull || profile == NativeWorkerProfileNotificationsOnly
+}
+
 var nativeTaskKinds = []string{
 	"ai_chat_run", "voice_transcription", "daily_summary_synthesis",
 	"medical_ocr", "sync_snapshot_family", "user_data_export", "push_delivery",
+	familyRecordNotificationKind,
 }
 
 type nativeTaskInput struct {
-	Version        int      `json:"version"`
-	UserID         string   `json:"userId"`
-	FamilyID       string   `json:"familyId,omitempty"`
-	BabyID         string   `json:"babyId,omitempty"`
-	SessionID      string   `json:"sessionId,omitempty"`
-	MessageID      string   `json:"clientMessageId,omitempty"`
-	Message        string   `json:"message,omitempty"`
-	AttachmentIDs  []string `json:"attachmentIds,omitempty"`
-	TargetDate     string   `json:"targetDate,omitempty"`
-	SnapshotID     string   `json:"snapshotId,omitempty"`
-	NotificationID string   `json:"notificationId,omitempty"`
-	PushDeviceID   string   `json:"pushDeviceId,omitempty"`
+	Version        int                `json:"version"`
+	UserID         string             `json:"userId"`
+	FamilyID       string             `json:"familyId,omitempty"`
+	BabyID         string             `json:"babyId,omitempty"`
+	SessionID      string             `json:"sessionId,omitempty"`
+	MessageID      string             `json:"clientMessageId,omitempty"`
+	Message        string             `json:"message,omitempty"`
+	AttachmentIDs  []string           `json:"attachmentIds,omitempty"`
+	TargetDate     string             `json:"targetDate,omitempty"`
+	SnapshotID     string             `json:"snapshotId,omitempty"`
+	NotificationID string             `json:"notificationId,omitempty"`
+	PushDeviceID   string             `json:"pushDeviceId,omitempty"`
+	FamilyRecord   *familyRecordEvent `json:"familyRecord,omitempty"`
 }
 type nativeTaskLease struct {
-	ID, Kind, Owner string
-	Attempt         int64
-	Fence           int64
-	Input           nativeTaskInput
+	ID, Kind, Owner, OutboxID string
+	Attempt                   int64
+	Fence                     int64
+	Input                     nativeTaskInput
 }
 
 func nativeTaskKind(kind string) bool {
@@ -83,20 +100,25 @@ func nativeTaskOwner(ctx context.Context, q Querier, input nativeTaskInput, writ
 }
 
 func enqueueNativeTask(ctx context.Context, tx pgx.Tx, id, kind string, input nativeTaskInput) error {
-	if !nativeTaskKind(kind) || !actionUUID.MatchString(id) || input.Version != 1 || input.UserID == "" {
+	if !nativeTaskKind(kind) || kind == familyRecordNotificationKind || input.FamilyRecord != nil || !actionUUID.MatchString(id) || input.Version != 1 || input.UserID == "" {
 		return errors.New("invalid native task")
 	}
-	// Serialize the quota with other submissions by this user, including
-	// submissions for different families. Never accept this owner from an LLM.
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,73649))`, input.UserID); err != nil {
-		return err
-	}
-	var count int
-	if err := tx.QueryRow(ctx, `SELECT count(*) FROM task_executions WHERE owner_scope=$1 AND status IN ('queued','running','cancelling','awaiting_confirmation')`, "user:"+input.UserID).Scan(&count); err != nil {
-		return err
-	}
-	if count >= 64 {
-		return apiError(429, "TASK_QUOTA_EXCEEDED", "Too many unfinished tasks")
+	// Serialize the quota with other active submissions by this user, including
+	// different families. Passive delivery must not consume their submission
+	// budget while awaiting quiet hours or a provider retry.
+	if kind != "push_delivery" {
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,73649))`, input.UserID); err != nil {
+			return err
+		}
+		var count int
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM task_executions WHERE owner_scope=$1
+			AND kind IN ('ai_chat_run','voice_transcription','daily_summary_synthesis','medical_ocr','sync_snapshot_family','user_data_export')
+			AND status IN ('queued','running','cancelling','awaiting_confirmation')`, "user:"+input.UserID).Scan(&count); err != nil {
+			return err
+		}
+		if count >= 64 {
+			return apiError(429, "TASK_QUOTA_EXCEEDED", "Too many unfinished tasks")
+		}
 	}
 	raw, err := jsonText(Object{"__native": input})
 	if err != nil {
@@ -123,8 +145,21 @@ func decodeNativeTaskInput(row Object) (nativeTaskInput, error) {
 	if err = decodeJSON(raw, &input); err != nil {
 		return input, err
 	}
+	kind := text(row["kind"])
+	if text(row["type"]) != kind || integer(row["payload_version"]) != 1 || !nativeTaskKind(kind) {
+		return input, errors.New("task outbox metadata mismatch")
+	}
+	if kind == familyRecordNotificationKind {
+		if !validFamilyRecordInput(input) || input.UserID != "" || text(row["owner_scope"]) != "family:"+input.FamilyID {
+			return input, errors.New("family task owner metadata mismatch")
+		}
+		return input, nil
+	}
 	if input.Version != 1 || input.UserID == "" || text(row["owner_scope"]) != "user:"+input.UserID {
 		return input, errors.New("task owner metadata mismatch")
+	}
+	if input.FamilyRecord != nil && (kind != "push_delivery" || !validFamilyRecordInput(input) || input.UserID == input.FamilyRecord.ActorID || !actionUUID.MatchString(input.NotificationID) || !actionUUID.MatchString(input.PushDeviceID)) {
+		return input, errors.New("family delivery metadata mismatch")
 	}
 	return input, nil
 }
@@ -150,38 +185,41 @@ func appendNativeRunEvent(ctx context.Context, tx pgx.Tx, id, kind string, paylo
 	_, err = tx.Exec(ctx, `INSERT INTO ai_run_events(id,run_id,sequence,event_type,payload,created_at) VALUES($1,$2,$3,$4,$5::jsonb,NOW())`, newID(), id, seq, kind, raw)
 	return err
 }
-func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskLease, bool, error) {
+func (s *Server) claimNativeTask(ctx context.Context, owner string, profile NativeWorkerProfile) (nativeTaskLease, bool, error) {
 	var lease nativeTaskLease
+	if !validNativeWorkerProfile(profile) {
+		return lease, false, errors.New("invalid native worker profile")
+	}
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
 		return lease, false, err
 	}
 	defer rollback(tx)
-	row, err := one(ctx, tx, `SELECT to_jsonb(t) FROM task_executions t
+	claimed, err := one(ctx, tx, `SELECT jsonb_build_object('task',to_jsonb(t),'outbox',to_jsonb(o)) FROM task_executions t
+		JOIN task_outbox o ON o.aggregate_id=t.id
 		WHERE t.kind=ANY($1::text[]) AND t.cancel_requested_at IS NULL
 		AND (t.status='queued' OR (t.status='running' AND t.lease_expires_at<clock_timestamp()))
-		AND EXISTS(SELECT 1 FROM task_outbox o WHERE o.aggregate_id=t.id
-			AND o.phase_key='native-initial' AND o.payload_version=1
-			AND o.dispatch_state='active' AND o.next_dispatch_at<=clock_timestamp() AND o.payload ? '__native')
-		ORDER BY t.created_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, nativeTaskKinds)
+		AND o.phase_key='native-initial' AND o.payload_version=1
+		AND o.dispatch_state='active' AND o.next_dispatch_at<=clock_timestamp() AND o.payload ? '__native'
+		AND ($2::text='full' OR t.kind='family_record_notification'
+			OR (t.kind='push_delivery' AND jsonb_typeof(o.payload #> '{__native,familyRecord}')='object'))
+		ORDER BY t.created_at,t.id,o.created_at,o.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, nativeTaskKinds, string(profile))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return lease, false, nil
 	}
 	if err != nil {
 		return lease, false, err
 	}
+	row, outbox := obj(claimed["task"]), obj(claimed["outbox"])
 	id := text(row["id"])
-	outbox, err := one(ctx, tx, `SELECT to_jsonb(o) FROM task_outbox o WHERE aggregate_id=$1 AND phase_key='native-initial' ORDER BY created_at,id LIMIT 1`, id)
-	if err != nil {
-		return lease, false, err
-	}
 	outbox["owner_scope"] = row["owner_scope"]
+	outbox["kind"] = row["kind"]
 	input, err := decodeNativeTaskInput(outbox)
 	if err != nil {
 		if _, e := tx.Exec(ctx, `UPDATE task_executions SET status='failed',error_details='{"code":"TASK_INPUT_INVALID"}',lease_owner=NULL,lease_expires_at=NULL,updated_at=NOW() WHERE id=$1`, id); e != nil {
 			return lease, false, e
 		}
-		if _, e := tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='closed',terminal_at=NOW() WHERE aggregate_id=$1`, id); e != nil {
+		if _, e := tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='closed',terminal_at=NOW() WHERE id=$1`, outbox["id"]); e != nil {
 			return lease, false, e
 		}
 		if _, e := tx.Exec(ctx, `UPDATE ai_runs SET error_code='TASK_INPUT_INVALID',error_message='Invalid retained task input',finished_at=NOW() WHERE id=$1`, id); e != nil {
@@ -202,7 +240,7 @@ func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskL
 		if _, err = tx.Exec(ctx, `UPDATE task_executions SET status='failed',lease_owner=NULL,lease_expires_at=NULL,error_details='{"code":"ATTEMPTS_EXHAUSTED"}',updated_at=NOW() WHERE id=$1`, id); err != nil {
 			return lease, false, err
 		}
-		if _, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='closed',terminal_at=NOW() WHERE aggregate_id=$1`, id); err != nil {
+		if _, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state='closed',terminal_at=NOW() WHERE id=$1`, outbox["id"]); err != nil {
 			return lease, false, err
 		}
 		if _, err = tx.Exec(ctx, `UPDATE ai_runs SET error_code='ATTEMPTS_EXHAUSTED',error_message='Execution attempts exhausted',finished_at=NOW() WHERE id=$1`, id); err != nil {
@@ -232,7 +270,7 @@ func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskL
 	if err = tx.Commit(ctx); err != nil {
 		return lease, false, err
 	}
-	return nativeTaskLease{ID: id, Kind: text(row["kind"]), Owner: owner, Attempt: attempt, Fence: fence, Input: input}, true, nil
+	return nativeTaskLease{ID: id, Kind: text(row["kind"]), Owner: owner, OutboxID: text(outbox["id"]), Attempt: attempt, Fence: fence, Input: input}, true, nil
 }
 
 var errNativeLeaseLost = errors.New("native task lease lost")
@@ -257,7 +295,7 @@ func (s *Server) renewNativeLease(ctx context.Context, lease nativeTaskLease) er
 	if tag.RowsAffected() != 1 {
 		return errNativeLeaseLost
 	}
-	return nativeTaskOwner(ctx, s.DB, lease.Input, false)
+	return nativeLeaseScope(ctx, s.DB, lease)
 }
 func (s *Server) nativeTaskDelta(ctx context.Context, lease nativeTaskLease, delta string) error {
 	if len(delta) > 128*1024 {
@@ -301,7 +339,7 @@ func terminalNativeTask(ctx context.Context, tx pgx.Tx, lease nativeTaskLease, s
 	if status == "awaiting_confirmation" {
 		dispatch = "parked"
 	}
-	_, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state=$2,terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE aggregate_id=$1`, lease.ID, dispatch)
+	_, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state=$2,terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE id=$3 AND aggregate_id=$1`, lease.ID, dispatch, lease.OutboxID)
 	return err
 }
 func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, cause error) error {
@@ -355,7 +393,7 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 		dispatch = "active"
 	}
 	_, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state=$2,next_dispatch_at=clock_timestamp()+make_interval(secs=>$3),
-		terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE aggregate_id=$1`, lease.ID, dispatch, int32(lease.Attempt*2))
+		terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE id=$4 AND aggregate_id=$1`, lease.ID, dispatch, int32(lease.Attempt*2), lease.OutboxID)
 	if err != nil {
 		return err
 	}
@@ -384,7 +422,17 @@ func boolInt(value bool) int64 {
 // returning. A failed business task is persisted, not mistaken for a crash.
 // Database/lease failures remain observable to the process supervisor.
 func (s *Server) RunWorkerOnce(ctx context.Context, owner string) (bool, error) {
-	lease, found, err := s.claimNativeTask(ctx, owner)
+	return s.RunWorkerOnceWithProfile(ctx, owner, NativeWorkerProfileFull)
+}
+
+// RunWorkerOnceWithProfile filters candidates in PostgreSQL before task rows
+// are locked or lease state is changed. A disallowed task therefore remains
+// byte-for-byte eligible for its normal worker, including expired leases.
+func (s *Server) RunWorkerOnceWithProfile(ctx context.Context, owner string, profile NativeWorkerProfile) (bool, error) {
+	if !validNativeWorkerProfile(profile) {
+		return false, errors.New("invalid native worker profile")
+	}
+	lease, found, err := s.claimNativeTask(ctx, owner, profile)
 	if err != nil || !found {
 		return found, err
 	}
@@ -424,8 +472,15 @@ func (s *Server) RunWorkerOnce(ctx context.Context, owner string) (bool, error) 
 	return true, nil
 }
 func (s *Server) RunWorker(ctx context.Context, concurrency int) error {
+	return s.RunWorkerWithProfile(ctx, concurrency, NativeWorkerProfileFull)
+}
+
+func (s *Server) RunWorkerWithProfile(ctx context.Context, concurrency int, profile NativeWorkerProfile) error {
 	if concurrency < 1 || concurrency > 16 {
 		return errors.New("worker concurrency must be between 1 and 16")
+	}
+	if !validNativeWorkerProfile(profile) {
+		return errors.New("invalid native worker profile")
 	}
 	var group sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
@@ -434,7 +489,7 @@ func (s *Server) RunWorker(ctx context.Context, concurrency int) error {
 			defer group.Done()
 			owner := "go-" + newID()
 			for ctx.Err() == nil {
-				found, err := s.RunWorkerOnce(ctx, owner)
+				found, err := s.RunWorkerOnceWithProfile(ctx, owner, profile)
 				if err != nil && ctx.Err() == nil {
 					s.Log.Error("native worker database operation failed", "worker", owner)
 				}
@@ -516,6 +571,20 @@ func (s *Server) RunScheduler(ctx context.Context) error {
 }
 
 func RunNativeRuntime(ctx context.Context, kind string, once bool, log *slog.Logger) error {
+	return RunNativeRuntimeWithOptions(ctx, kind, once, log, NativeRuntimeOptions{WorkerProfile: NativeWorkerProfileFull})
+}
+
+func RunNativeRuntimeWithOptions(ctx context.Context, kind string, once bool, log *slog.Logger, options NativeRuntimeOptions) error {
+	profile := options.WorkerProfile
+	if profile == "" {
+		profile = NativeWorkerProfileFull
+	}
+	if !validNativeWorkerProfile(profile) {
+		return errors.New("invalid native worker profile")
+	}
+	if kind != "worker" && profile != NativeWorkerProfileFull {
+		return errors.New("native worker profile only applies to worker runtime")
+	}
 	if once {
 		budget := 30 * time.Second
 		if kind == "worker" {
@@ -540,7 +609,7 @@ func RunNativeRuntime(ctx context.Context, kind string, once bool, log *slog.Log
 	switch kind {
 	case "worker":
 		if once {
-			_, err = server.RunWorkerOnce(ctx, "go-once-"+newID())
+			_, err = server.RunWorkerOnceWithProfile(ctx, "go-once-"+newID(), profile)
 			return err
 		}
 		n := 2
@@ -550,7 +619,7 @@ func RunNativeRuntime(ctx context.Context, kind string, once bool, log *slog.Log
 				return fmt.Errorf("invalid worker concurrency")
 			}
 		}
-		return server.RunWorker(ctx, n)
+		return server.RunWorkerWithProfile(ctx, n, profile)
 	case "scheduler":
 		if once {
 			_, err = server.ReconcileNativeTasks(ctx)

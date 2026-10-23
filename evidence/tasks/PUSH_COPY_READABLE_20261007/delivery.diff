@@ -1,0 +1,921 @@
+diff --git a/internal/backend/family_notification_content.go b/internal/backend/family_notification_content.go
+index 50433fe..363a155 100644
+--- a/internal/backend/family_notification_content.go
++++ b/internal/backend/family_notification_content.go
+@@ -5,6 +5,7 @@ import (
+ 	"encoding/json"
+ 	"errors"
+ 	"fmt"
++	"strconv"
+ 	"strings"
+ 	"time"
+ 
+@@ -70,13 +71,15 @@ func renderFamilyNotificationSnapshot(content familyNotificationRecordContent) f
+ 	actor := familyNotificationDisplayValue(content.ActorName, "家庭成员")
+ 	baby := familyNotificationDisplayValue(content.BabyName, "宝宝")
+ 	title := actor + "为" + baby + familyNotificationOperationName(content.Operation) + familyNotificationRecordName(content.Kind) + "记录"
+-	zone, zoneName := familyNotificationLocation(content.TimeZone)
++	zone, _ := familyNotificationLocation(content.TimeZone)
+ 	parts := make([]string, 0, 12)
+ 	record := content.Record
+ 
+ 	addTime := func(label, key string) {
+ 		if value := record[key]; familyNotificationValuePresent(value) {
+-			parts = append(parts, label+familyNotificationTimestamp(value, zone, zoneName))
++			if rendered := familyNotificationTimestamp(value, zone); rendered != "" {
++				parts = append(parts, label+rendered)
++			}
+ 		}
+ 	}
+ 	addText := func(label, key string) {
+@@ -110,7 +113,7 @@ func renderFamilyNotificationSnapshot(content familyNotificationRecordContent) f
+ 		if content.FormulaName != "" {
+ 			parts = append(parts, "奶粉："+familyNotificationDisplayValue(content.FormulaName, ""))
+ 		} else if content.FormulaID != "" {
+-			parts = append(parts, "奶粉产品 ID："+content.FormulaID)
++			parts = append(parts, "奶粉：未命名产品")
+ 		}
+ 		if value := record["spit_up"]; familyNotificationValuePresent(value) {
+ 			parts = append(parts, "吐奶："+familyNotificationYesNo(value))
+@@ -143,32 +146,51 @@ func renderFamilyNotificationSnapshot(content familyNotificationRecordContent) f
+ 		})
+ 		addNote()
+ 	case "food":
+-		if familyNotificationValuePresent(record["occurred_at"]) {
++		occurredAt := record["occurred_at"]
++		recordDate := familyNotificationDisplayValue(text(record["record_date"]), "")
++		if familyNotificationValuePresent(occurredAt) {
+ 			addTime("发生时间：", "occurred_at")
+-			if date := familyNotificationDisplayValue(text(record["record_date"]), ""); date != "" {
+-				parts = append(parts, "记录日期："+date)
++			if recordDate != "" {
++				if localDate, ok := familyNotificationLocalDate(occurredAt, zone); !ok || localDate != recordDate {
++					parts = append(parts, "记录日期："+recordDate)
++				}
+ 			}
+-		} else if date := familyNotificationDisplayValue(text(record["record_date"]), ""); date != "" {
+-			parts = append(parts, "记录日期："+date)
++		} else if recordDate != "" {
++			parts = append(parts, "记录日期："+recordDate)
+ 		}
+ 		if value := familyNotificationEnum(text(record["meal_type"]), map[string]string{"breakfast": "早餐", "lunch": "午餐", "dinner": "晚餐", "snack": "加餐"}); value != "" {
+ 			parts = append(parts, "餐次："+value)
+ 		}
+-		if len(content.FoodItemNames) > 0 {
+-			parts = append(parts, "食物："+strings.Join(content.FoodItemNames, "、"))
+-		} else if ids := familyNotificationStringList(record["food_item_ids"]); len(ids) > 0 {
+-			parts = append(parts, "食物项 ID："+strings.Join(ids, "、"))
++		foodIDs := familyNotificationStringList(record["food_item_ids"])
++		foodNames := content.FoodItemNames
++		if len(foodIDs) > 0 {
++			catalogNames := make(map[string]string)
++			if len(foodNames) == len(foodIDs) {
++				for index, id := range foodIDs {
++					if name := familyNotificationDisplayValue(foodNames[index], ""); name != "" {
++						catalogNames[id] = name
++					}
++				}
++			}
++			foodNames = familyNotificationFoodNames(foodIDs, catalogNames)
++		}
++		if len(foodNames) > 0 {
++			parts = append(parts, "食物："+strings.Join(foodNames, "、"))
++		}
++		if portion := familyNotificationFoodPortion(text(record["portion_description"])); portion != "" {
++			parts = append(parts, "份量："+portion)
+ 		}
+-		addText("份量：", "portion_description")
+ 		parts = addEnumText(parts, "接受度：", record["reaction"], map[string]string{"like": "喜欢", "normal": "一般", "dislike": "不喜欢"})
+-		addNote()
++		parts = append(parts, familyNotificationFoodObservationParts(text(record["notes"]))...)
+ 	case "supplement":
+ 		addTime("发生时间：", "occurred_at")
+ 		addText("补剂：", "supplement_name")
+-		if content.SupplementProductName != "" {
+-			parts = append(parts, "产品："+familyNotificationDisplayValue(content.SupplementProductName, ""))
+-		} else if id := text(record["product_id"]); id != "" {
+-			parts = append(parts, "产品 ID："+id)
++		productName := familyNotificationDisplayValue(content.SupplementProductName, "")
++		productID, cleanNotes, invalidProductTag := familyNotificationSupplementProductReference(text(record["product_id"]), text(record["notes"]))
++		if productName != "" {
++			parts = append(parts, "产品："+productName)
++		} else if productID != "" || invalidProductTag {
++			parts = append(parts, "产品：未命名补剂")
+ 		}
+ 		addText("用量：", "amount")
+ 		if value := record["dose"]; value != nil && text(value) != "" {
+@@ -178,7 +200,12 @@ func renderFamilyNotificationSnapshot(content familyNotificationRecordContent) f
+ 			}
+ 			parts = append(parts, "剂量："+familyNotificationNumber(value)+unit)
+ 		}
+-		addNote()
++		if invalidProductTag {
++			parts = append(parts, "部分产品信息无法显示，请打开记录查看")
++		}
++		if note := familyNotificationNote(cleanNotes); note != "" {
++			parts = append(parts, "备注："+note)
++		}
+ 	case "growth":
+ 		if date := familyNotificationDisplayValue(text(record["measurement_date"]), ""); date != "" {
+ 			parts = append(parts, "测量日期："+date)
+@@ -259,6 +286,157 @@ func familyNotificationNumber(value any) string {
+ 	return text(decimalValue(value))
+ }
+ 
++func familyNotificationFoodPortion(value string) string {
++	if value == "" {
++		return ""
++	}
++	if label, ok := map[string]string{"little": "少量", "half": "半碗", "most": "大部分", "all": "全部"}[value]; ok {
++		return label
++	}
++	return familyNotificationDisplayValue(value, "")
++}
++
++type familyNotificationFoodObservation struct {
++	Notes         string
++	Acceptance    int
++	HasAcceptance bool
++	BabyState     string
++	HasAbnormal   bool
++	AbnormalValue bool
++	AbnormalNotes string
++	Invalid       bool
++}
++
++func familyNotificationFoodObservationParts(value string) []string {
++	observation := decodeFamilyNotificationFoodObservation(value)
++	parts := make([]string, 0, 5)
++	if observation.HasAcceptance {
++		parts = append(parts, fmt.Sprintf("喜欢程度：%d/5", observation.Acceptance))
++	}
++	if observation.BabyState != "" {
++		state := map[string]string{"happy": "开心", "neutral": "一般", "rejected": "拒绝"}[observation.BabyState]
++		parts = append(parts, "进食状态："+state)
++	}
++	if observation.HasAbnormal {
++		if observation.AbnormalValue {
++			parts = append(parts, "异常情况：有异常")
++			if note := strings.TrimSpace(observation.AbnormalNotes); note != "" {
++				parts = append(parts, "异常备注："+note)
++			}
++		} else {
++			parts = append(parts, "异常情况：无异常")
++		}
++	} else if note := strings.TrimSpace(observation.AbnormalNotes); note != "" {
++		parts = append(parts, "异常备注："+note)
++	}
++	if observation.Invalid {
++		parts = append(parts, "部分观察信息无法显示，请打开记录查看")
++	}
++	if note := familyNotificationNote(observation.Notes); note != "" {
++		parts = append(parts, "备注："+note)
++	}
++	return parts
++}
++
++func decodeFamilyNotificationFoodObservation(value string) familyNotificationFoodObservation {
++	const prefix = "[growdesk-web-food:v1]"
++	const versionPrefix = "[growdesk-web-food:"
++	if !strings.HasPrefix(value, versionPrefix) {
++		return familyNotificationFoodObservation{Notes: value}
++	}
++	if !strings.HasPrefix(value, prefix) {
++		return familyNotificationFoodObservation{Invalid: true}
++	}
++	result := familyNotificationFoodObservation{}
++	var envelope map[string]json.RawMessage
++	if err := json.Unmarshal([]byte(strings.TrimPrefix(value, prefix)), &envelope); err != nil || envelope == nil {
++		result.Invalid = true
++		return result
++	}
++	if rawNotes, ok := envelope["notes"]; !ok {
++		result.Invalid = true
++	} else if strings.TrimSpace(string(rawNotes)) == "null" {
++		result.Notes = ""
++	} else if err := json.Unmarshal(rawNotes, &result.Notes); err != nil {
++		result.Invalid = true
++	}
++	rawObservations, ok := envelope["observations"]
++	if !ok || strings.TrimSpace(string(rawObservations)) == "null" {
++		result.Invalid = true
++		return result
++	}
++	var observations map[string]json.RawMessage
++	if err := json.Unmarshal(rawObservations, &observations); err != nil || observations == nil {
++		result.Invalid = true
++		return result
++	}
++	for key, raw := range observations {
++		switch key {
++		case "acceptance":
++			var decoded any
++			decoder := json.NewDecoder(strings.NewReader(string(raw)))
++			decoder.UseNumber()
++			if err := decoder.Decode(&decoded); err != nil {
++				result.Invalid = true
++				continue
++			}
++			number, ok := decoded.(json.Number)
++			if !ok {
++				result.Invalid = true
++				continue
++			}
++			acceptance, err := strconv.Atoi(number.String())
++			if err != nil || acceptance < 1 || acceptance > 5 {
++				result.Invalid = true
++				continue
++			}
++			result.Acceptance, result.HasAcceptance = acceptance, true
++		case "babyState":
++			var state string
++			if err := json.Unmarshal(raw, &state); err != nil || (state != "happy" && state != "neutral" && state != "rejected") {
++				result.Invalid = true
++				continue
++			}
++			result.BabyState = state
++		case "hasAbnormal":
++			if string(raw) == "null" || json.Unmarshal(raw, &result.AbnormalValue) != nil {
++				result.Invalid = true
++				continue
++			}
++			result.HasAbnormal = true
++		case "abnormalNotes":
++			if string(raw) == "null" || json.Unmarshal(raw, &result.AbnormalNotes) != nil {
++				result.Invalid = true
++			}
++		}
++	}
++	return result
++}
++
++func familyNotificationSupplementProductReference(productID, notes string) (string, string, bool) {
++	const prefix = "[productId:"
++	if !strings.HasPrefix(notes, prefix) {
++		return productID, notes, false
++	}
++	closingBracket := strings.IndexByte(notes[len(prefix):], ']')
++	if closingBracket < 0 {
++		if lineBreak := strings.IndexAny(notes, "\r\n"); lineBreak >= 0 {
++			return productID, strings.TrimLeft(notes[lineBreak:], " \t\r\n"), true
++		}
++		return productID, "", true
++	}
++	taggedID := strings.TrimSpace(notes[len(prefix) : len(prefix)+closingBracket])
++	if taggedID == "" {
++		cleanNotes := strings.TrimLeft(notes[len(prefix)+closingBracket+1:], " \t\r\n")
++		return productID, cleanNotes, true
++	}
++	if productID == "" {
++		productID = taggedID
++	}
++	cleanNotes := strings.TrimLeft(notes[len(prefix)+closingBracket+1:], " \t\r\n")
++	return productID, cleanNotes, false
++}
++
+ func familyNotificationValuePresent(value any) bool {
+ 	if value == nil {
+ 		return false
+@@ -294,23 +472,42 @@ func familyNotificationLocation(zoneName string) (*time.Location, string) {
+ 	return location, zoneName
+ }
+ 
+-func familyNotificationTimestamp(value any, location *time.Location, zoneName string) string {
++func familyNotificationTimestamp(value any, location *time.Location) string {
+ 	instant, err := asTime(value)
+ 	if err != nil {
+-		return familyNotificationDisplayValue(text(value), "")
++		return ""
++	}
++	localTime := instant.In(location)
++	if localTime.Nanosecond() != 0 {
++		return localTime.Format("2006-01-02 15:04:05.000")
+ 	}
+-	return instant.In(location).Format("2006-01-02 15:04:05 -07:00") + "（" + zoneName + "）"
++	if localTime.Second() != 0 {
++		return localTime.Format("2006-01-02 15:04:05")
++	}
++	return localTime.Format("2006-01-02 15:04")
++}
++
++func familyNotificationLocalDate(value any, location *time.Location) (string, bool) {
++	instant, err := asTime(value)
++	if err != nil {
++		return "", false
++	}
++	return instant.In(location).Format("2006-01-02"), true
+ }
+ 
+ func familyNotificationStringList(value any) []string {
+ 	switch values := value.(type) {
+ 	case []string:
+-		return append([]string(nil), values...)
++		result := make([]string, len(values))
++		copy(result, values)
++		return result
+ 	case []any:
+ 		result := make([]string, 0, len(values))
+ 		for _, value := range values {
+-			if item := text(value); item != "" {
++			if item, ok := value.(string); ok {
+ 				result = append(result, item)
++			} else {
++				result = append(result, "")
+ 			}
+ 		}
+ 		return result
+@@ -319,6 +516,76 @@ func familyNotificationStringList(value any) []string {
+ 	}
+ }
+ 
++func familyNotificationFoodNames(ids []string, catalogNames map[string]string) []string {
++	names := make([]string, 0, len(ids))
++	for _, id := range ids {
++		id = strings.TrimSpace(id)
++		if id == "" {
++			names = append(names, "未命名食物")
++			continue
++		}
++		if name := familyNotificationDisplayValue(catalogNames[id], ""); name != "" {
++			names = append(names, name)
++		} else if !familyNotificationOpaqueFoodID(id) {
++			names = append(names, familyNotificationDisplayValue(id, "未命名食物"))
++		} else {
++			names = append(names, "未命名食物")
++		}
++	}
++	return names
++}
++
++func familyNotificationOpaqueFoodID(value string) bool {
++	value = strings.TrimSpace(value)
++	if value == "" {
++		return false
++	}
++	if familyNotificationLooksLikeUUID(value) {
++		return true
++	}
++	lower := strings.ToLower(value)
++	for _, prefix := range []string{"food_", "food-item-", "fooditem_", "fi_", "item_"} {
++		if strings.HasPrefix(lower, prefix) {
++			return true
++		}
++	}
++	if len(value) >= 24 {
++		hasDigit, asciiToken := false, true
++		for _, r := range value {
++			if r >= '0' && r <= '9' {
++				hasDigit = true
++			} else if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '-' || r == '_' {
++				// Still an ASCII identifier-shaped token.
++			} else {
++				asciiToken = false
++				break
++			}
++		}
++		if asciiToken && hasDigit {
++			return true
++		}
++	}
++	return false
++}
++
++func familyNotificationLooksLikeUUID(value string) bool {
++	if len(value) != 36 {
++		return false
++	}
++	for index, r := range value {
++		if index == 8 || index == 13 || index == 18 || index == 23 {
++			if r != '-' {
++				return false
++			}
++			continue
++		}
++		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
++			return false
++		}
++	}
++	return true
++}
++
+ func legacyFamilyNotificationSnapshot(event familyRecordEvent, content familyNotificationRecordContent) familyNotificationSnapshot {
+ 	if content.Record != nil && integer(content.Record["version"]) == event.Version {
+ 		content.Kind, content.Operation = event.Kind, event.Operation
+@@ -369,7 +636,8 @@ func loadFamilyNotificationIdentity(ctx context.Context, q Querier, actorID, fam
+ 
+ func familyNotificationNames(ctx context.Context, q Querier, scope Scope, record Object) ([]string, string, string, error) {
+ 	foodNames := []string(nil)
+-	if ids := familyNotificationStringList(record["food_item_ids"]); len(ids) > 0 {
++	ids := familyNotificationStringList(record["food_item_ids"])
++	if len(ids) > 0 {
+ 		rows, err := many(ctx, q, `SELECT to_jsonb(x) FROM food_library_items x
+ 			WHERE x.id=ANY($1::text[]) AND (x.family_id IS NULL OR x.family_id=$2)`, ids, scope.FamilyID)
+ 		if err != nil {
+@@ -381,11 +649,7 @@ func familyNotificationNames(ctx context.Context, q Querier, scope Scope, record
+ 				names[id] = name
+ 			}
+ 		}
+-		for _, id := range ids {
+-			if name := names[id]; name != "" {
+-				foodNames = append(foodNames, name)
+-			}
+-		}
++		foodNames = familyNotificationFoodNames(ids, names)
+ 	}
+ 	formulaName, supplementName := "", ""
+ 	if id := text(record["formula_product_id"]); id != "" {
+@@ -394,7 +658,7 @@ func familyNotificationNames(ctx context.Context, q Querier, scope Scope, record
+ 			return nil, "", "", err
+ 		}
+ 	}
+-	if id := text(record["product_id"]); id != "" {
++	if id, _, _ := familyNotificationSupplementProductReference(text(record["product_id"]), text(record["notes"])); id != "" {
+ 		err := q.QueryRow(ctx, `SELECT concat_ws(' ',NULLIF(brand,''),name) FROM supplement_products WHERE id=$1 AND family_id=$2`, id, scope.FamilyID).Scan(&supplementName)
+ 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+ 			return nil, "", "", err
+diff --git a/internal/backend/family_notification_content_test.go b/internal/backend/family_notification_content_test.go
+index bb7eded..8494850 100644
+--- a/internal/backend/family_notification_content_test.go
++++ b/internal/backend/family_notification_content_test.go
+@@ -23,14 +23,14 @@ func TestRenderFamilyNotificationSnapshotIncludesPersistedRecordDetails(t *testi
+ 			kind: "feeding", operation: "create", formulaName: "test_formula_name",
+ 			wantTitle: "测试家长为测试宝宝新增喂奶记录",
+ 			record:    Object{"occurred_at": at, "feeding_type": "formula", "amount_ml": json.Number("0.000"), "left_minutes": 0, "right_minutes": 12, "spit_up": "false", "notes": "test_feeding_note"},
+-			want:      []string{"配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "test_formula_name", "吐奶：否", "test_feeding_note", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++			want:      []string{"配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "test_formula_name", "吐奶：否", "test_feeding_note", "发生时间：2026-10-06 08:15"},
+ 		},
+ 		{
+ 			name: "sleep keeps zero waking count and interval",
+ 			kind: "sleep", operation: "update",
+ 			wantTitle: "测试家长为测试宝宝更新睡眠记录",
+ 			record:    Object{"sleep_type": "night", "started_at": at.Add(-time.Hour), "ended_at": at, "night_waking_count": 0, "notes": "test_sleep_note"},
+-			want:      []string{"夜间睡眠", "开始时间：2026-10-06 07:15:00 -07:00（America/Los_Angeles）", "结束时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次", "test_sleep_note"},
++			want:      []string{"夜间睡眠", "开始时间：2026-10-06 07:15", "结束时间：2026-10-06 08:15", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次", "test_sleep_note"},
+ 		},
+ 		{
+ 			name: "diaper keeps type, color, consistency and note",
+@@ -45,14 +45,14 @@ func TestRenderFamilyNotificationSnapshotIncludesPersistedRecordDetails(t *testi
+ 			wantTitle: "测试家长为测试宝宝恢复辅食记录",
+ 			record:    Object{"record_date": "2026-10-06", "meal_type": "lunch", "occurred_at": at, "portion_description": "test_half_bowl", "reaction": "like", "notes": "test_food_note"},
+ 			foodNames: []string{"test_pear", "test_oat"},
+-			want:      []string{"午餐", "食物：test_pear、test_oat", "test_half_bowl", "接受度：喜欢", "test_food_note", "记录日期：2026-10-06", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++			want:      []string{"午餐", "食物：test_pear、test_oat", "test_half_bowl", "接受度：喜欢", "test_food_note", "发生时间：2026-10-06 08:15"},
+ 		},
+ 		{
+ 			name: "supplement keeps amount dose unit and note",
+ 			kind: "supplement", operation: "create",
+ 			wantTitle: "测试家长为测试宝宝新增补剂记录",
+ 			record:    Object{"supplement_name": "test_vitamin_d", "occurred_at": at, "amount": "0 mL", "dose": json.Number("0.00000"), "unit_name": "mL", "notes": "test_supplement_note"},
+-			want:      []string{"test_vitamin_d", "用量：0 mL", "剂量：0 mL", "test_supplement_note", "2026-10-06 08:15:00 -07:00（America/Los_Angeles）"},
++			want:      []string{"test_vitamin_d", "用量：0 mL", "剂量：0 mL", "test_supplement_note", "发生时间：2026-10-06 08:15"},
+ 		},
+ 		{
+ 			name: "growth keeps zero-valued measurements and date-only clock",
+@@ -116,6 +116,129 @@ func TestFamilyNotificationSnapshotPreservesNoteWhitespaceAndLineBreaks(t *testi
+ 	}
+ }
+ 
++func TestFamilyNotificationFoodCopyRendersLegacyObservationCapsuleWithoutInternalEncoding(t *testing.T) {
++	notes := `[growdesk-web-food:v1]{"notes":"第一行备注\n第二行备注","observations":{"acceptance":5,"babyState":"happy","hasAbnormal":false,"abnormalNotes":"不应显示","futureField":"test_internal_value"}}`
++	localTime := time.Date(2026, 10, 7, 11, 35, 0, 0, time.FixedZone("test_plus_eight", 8*60*60))
++	snapshot := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++		Kind: "food", Operation: "create", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "Asia/Shanghai",
++		Record: Object{
++			"occurred_at": localTime, "record_date": "2026-10-07", "meal_type": "lunch",
++			"food_item_ids":       []string{"胡萝卜泥", "8b9d3058-1de3-4b8a-96d7-154d3ec310e7"},
++			"portion_description": "most", "notes": notes,
++		},
++	})
++	for _, want := range []string{
++		"发生时间：2026-10-07 11:35", "餐次：午餐", "食物：胡萝卜泥、未命名食物",
++		"份量：大部分", "喜欢程度：5/5", "进食状态：开心", "异常情况：无异常",
++		"备注：第一行备注\n第二行备注",
++	} {
++		if !strings.Contains(snapshot.Body, want) {
++			t.Errorf("readable food snapshot %q does not include %q", snapshot.Body, want)
++		}
++	}
++	for _, forbidden := range []string{
++		"Asia/Shanghai", "+08:00", "11:35:00", "记录日期：2026-10-07", "食物项 ID：",
++		"8b9d3058-1de3-4b8a-96d7-154d3ec310e7", "most", "[growdesk-web-food:v1]", "futureField", "test_internal_value", "不应显示",
++	} {
++		if strings.Contains(snapshot.Body, forbidden) {
++			t.Errorf("readable food snapshot leaked or duplicated %q: %q", forbidden, snapshot.Body)
++		}
++	}
++}
++
++func TestFamilyNotificationSupplementCopyRemovesLegacyProductIDTagAndPreservesNote(t *testing.T) {
++	productID := "test_internal_product_123"
++	snapshot := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++		Kind: "supplement", Operation: "create", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "UTC",
++		Record: Object{
++			"supplement_name": "测试维生素", "product_id": productID,
++			"notes": "[productId:" + productID + "] 早餐后服用\n第二行备注",
++		},
++	})
++	if !strings.Contains(snapshot.Body, "产品：未命名补剂") || !strings.Contains(snapshot.Body, "备注：早餐后服用\n第二行备注") {
++		t.Fatalf("supplement snapshot did not preserve readable content: %q", snapshot.Body)
++	}
++	if strings.Contains(snapshot.Body, productID) || strings.Contains(snapshot.Body, "[productId:") {
++		t.Fatalf("supplement snapshot exposed an internal product reference: %q", snapshot.Body)
++	}
++
++	malformedTag := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++		Kind: "supplement", Operation: "create", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "UTC",
++		Record: Object{"notes": "[productId:]早餐后服用\n第二行备注"},
++	})
++	if !strings.Contains(malformedTag.Body, "产品：未命名补剂") || !strings.Contains(malformedTag.Body, "早餐后服用\n第二行备注") || strings.Contains(malformedTag.Body, "[productId:") {
++		t.Fatalf("malformed product tag hid readable notes or exposed internal metadata: %q", malformedTag.Body)
++	}
++}
++
++func TestFamilyNotificationFoodCopyPreservesValidFieldsBesideInvalidObservation(t *testing.T) {
++	notes := `[growdesk-web-food:v1]{"notes":"实际备注第一行\n实际备注第二行","observations":{"acceptance":4,"babyState":"future_state","hasAbnormal":true,"abnormalNotes":"红疹\n已经消退","futureField":"test_hidden_value"}}`
++	snapshot := renderFamilyNotificationSnapshot(familyNotificationRecordContent{
++		Kind: "food", Operation: "update", ActorName: "测试家长", BabyName: "测试宝宝", TimeZone: "Asia/Shanghai",
++		Record: Object{
++			"occurred_at": time.Date(2026, 10, 7, 11, 35, 42, 125_000_000, time.FixedZone("test_plus_eight", 8*60*60)),
++			"record_date": "2026-10-06", "portion_description": "little", "notes": notes,
++		},
++	})
++	for _, want := range []string{
++		"发生时间：2026-10-07 11:35:42.125", "记录日期：2026-10-06", "份量：少量",
++		"喜欢程度：4/5", "异常情况：有异常", "异常备注：红疹\n已经消退",
++		"部分观察信息无法显示，请打开记录查看", "备注：实际备注第一行\n实际备注第二行",
++	} {
++		if !strings.Contains(snapshot.Body, want) {
++			t.Errorf("partial observation output %q does not include %q", snapshot.Body, want)
++		}
++	}
++	for _, forbidden := range []string{"future_state", "test_hidden_value", "[growdesk-web-food:v1]", "abnormalNotes"} {
++		if strings.Contains(snapshot.Body, forbidden) {
++			t.Errorf("partial observation output leaked %q: %q", forbidden, snapshot.Body)
++		}
++	}
++}
++
++func TestFamilyNotificationFoodCopyKeepsAbnormalNoteWhenStatusIsUnavailable(t *testing.T) {
++	notes := `[growdesk-web-food:v1]{"notes":"test_human_note","observations":{"hasAbnormal":"unknown","abnormalNotes":"红疹说明"}}`
++	parts := strings.Join(familyNotificationFoodObservationParts(notes), "；")
++	if !strings.Contains(parts, "异常备注：红疹说明") || !strings.Contains(parts, "部分观察信息无法显示，请打开记录查看") || !strings.Contains(parts, "备注：test_human_note") {
++		t.Fatalf("valid abnormal notes or user notes were discarded with an invalid status: %q", parts)
++	}
++	if strings.Contains(parts, "异常情况：无异常") || strings.Contains(parts, "unknown") {
++		t.Fatalf("unknown abnormal status was guessed or exposed: %q", parts)
++	}
++}
++
++func TestFamilyNotificationFoodObservationDecodeIsVersionScopedAndKeepsOrdinaryJSON(t *testing.T) {
++	unknownVersion := `[growdesk-web-food:v2]{"notes":"test_hidden_note","observations":{"newField":"test_hidden_value"}}`
++	unknownParts := strings.Join(familyNotificationFoodObservationParts(unknownVersion), "；")
++	if !strings.Contains(unknownParts, "部分观察信息无法显示，请打开记录查看") || strings.Contains(unknownParts, "test_hidden_note") || strings.Contains(unknownParts, "test_hidden_value") {
++		t.Fatalf("unknown observation version was guessed or exposed: %q", unknownParts)
++	}
++
++	ordinaryJSON := `{"notes":"ordinary user JSON","observations":{"acceptance":5}}`
++	ordinaryParts := strings.Join(familyNotificationFoodObservationParts(ordinaryJSON), "；")
++	if ordinaryParts != "备注："+ordinaryJSON {
++		t.Fatalf("ordinary JSON note was changed: %q", ordinaryParts)
++	}
++}
++
++func TestFamilyNotificationFoodNamesKeepCatalogLegacyAndFallbackItemsInOrder(t *testing.T) {
++	ids := []string{
++		"food_item_removed_123", "胡萝卜泥", "8b9d3058-1de3-4b8a-96d7-154d3ec310e7", "rolled oats", "food_removed_or_unknown",
++	}
++	names := familyNotificationFoodNames(ids, map[string]string{"food_item_removed_123": "测试目录梨"})
++	want := []string{"测试目录梨", "胡萝卜泥", "未命名食物", "rolled oats", "未命名食物"}
++	if strings.Join(names, "、") != strings.Join(want, "、") {
++		t.Fatalf("food names lost order, a readable legacy name, or a fallback: %#v", names)
++	}
++	if strings.Contains(strings.Join(names, "、"), "food_item_removed_123") || strings.Contains(strings.Join(names, "、"), "8b9d3058-1de3-4b8a-96d7-154d3ec310e7") || strings.Contains(strings.Join(names, "、"), "food_removed_or_unknown") {
++		t.Fatalf("food names exposed opaque identifiers: %#v", names)
++	}
++	missing := familyNotificationFoodNames(familyNotificationStringList([]any{"", nil}), nil)
++	if strings.Join(missing, "、") != "未命名食物、未命名食物" {
++		t.Fatalf("unresolved list elements were silently dropped: %#v", missing)
++	}
++}
++
+ func TestFamilyPushPayloadClipsUnicodeWithinWireBudgetWithoutChangingInboxSnapshot(t *testing.T) {
+ 	fullBody := "发生时间：2026-10-06 08:15:00 +08:00（Asia/Shanghai）；奶量：120 毫升；备注：" + strings.Repeat("宝宝喜欢吃苹果🍎", 400)
+ 	snapshot := familyNotificationSnapshot{Version: 1, Title: "测试家长为测试宝宝新增喂奶记录", Body: fullBody}
+diff --git a/scripts/review/check-family-push.py b/scripts/review/check-family-push.py
+index b063eb5..2a5576c 100644
+--- a/scripts/review/check-family-push.py
++++ b/scripts/review/check-family-push.py
+@@ -29,7 +29,7 @@ import urllib.parse
+ import uuid
+ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+ 
+-TASK_ID = "FULL_PUSH_CONTENT_20261006"
++TASK_ID = "PUSH_COPY_READABLE_20261007"
+ ROOT = Path(__file__).resolve().parents[2]
+ KIND = "family_record_notification"
+ 
+@@ -290,13 +290,21 @@ class Journey:
+         return self.sql_json("SELECT COALESCE(jsonb_agg(to_jsonb(n)),'[]'::jsonb) FROM notifications n WHERE event_key=" +
+                              quote(event["input"]["familyRecord"]["eventKey"]) + ";")
+ 
+-    def fanout(self, event, recipients=1, recipient=None):
+-        self.once()
++    def fanout(self, event, recipients=1, recipient=None, notifications_only=False):
++        self.once(notifications_only=notifications_only)
+         return self.assert_fanout(event, recipients=recipients, recipient=recipient)
+ 
+     def assert_fanout(self, event, recipients=1, recipient=None):
+         recipient = recipient or self.recipient
+         head = self.task(event["id"])
++        if head["status"] != "succeeded":
++            self.report.setdefault("fanoutFailureDiagnostics", []).append({
++                "eventKey": event["input"]["familyRecord"]["eventKey"],
++                "task": head,
++                "state": self.task_state(event["id"]),
++                "notifications": self.notification_rows(event),
++                "children": self.children(event),
++            })
+         assert head["status"] == "succeeded", "family_fanout_not_succeeded"
+         assert head["dispatch"] == "closed", "fanout_outbox_not_closed"
+         notes = self.notification_rows(event)
+@@ -324,11 +332,11 @@ class Journey:
+             assert child["input"]["userId"] == recipient["id"], "delivery_input_owner_mismatch"
+         return children
+ 
+-    def delivered(self, event, recipient=None):
++    def delivered(self, event, recipient=None, notifications_only=False):
+         recipient = recipient or self.recipient
+-        children = self.fanout(event, recipient=recipient)
++        children = self.fanout(event, recipient=recipient, notifications_only=notifications_only)
+         before = self.fixture.count(recipient["pushPath"])
+-        self.once()
++        self.once(notifications_only=notifications_only)
+         child = self.task(children[0]["id"])
+         assert self.fixture.count(recipient["pushPath"]) == before + 1, "provider_request_missing_or_duplicate"
+         self.assert_delivery(event, child, recipient)
+@@ -428,28 +436,158 @@ class Journey:
+     def baseline(self):
+         self.baseline_mode = True
+         self.setup()
+-        before = self.inventory()
+-        row = self.feeding("baseline_detail_probe")
+-        after = self.inventory()
+-        assert after["records"] == before["records"] + 1, "record_transaction_not_committed"
+-        assert after["changes"] == before["changes"] + 1, "family_change_not_committed"
+-        event = self.event(row["id"])
+-        child = self.delivered(event)
+-        payload = self.last_delivered_payload
+-        details = ["发生时间：", "类型：瓶喂", "奶量：120 毫升", "备注：test_private_record_baseline_detail_probe"]
+-        details_present = all(fragment in payload["body"] for fragment in details)
+-        delta = {name: after[name] - before[name] for name in before}
+-        self.report["baseline"] = {"recordHttpStatus": 201, "recipientSubscriptionPresent": True,
+-                                   "delta": delta, "familyTaskObserved": delta["familyTasks"] == 1,
+-                                   "fixtureRequests": self.fixture.count(), "decryptedTitle": payload["title"],
+-                                   "decryptedBodyWasGeneric": payload["body"] == "有新的照护记录",
+-                                   "detailedBodyFieldsPresent": details_present,
+-                                   "notificationId": child["input"]["notificationId"]}
+-        self.report["cases"].append({"name": "baseline encrypted push contains detailed family record content",
+-                                      "passed": details_present, "expected": details,
+-                                      "actual": {"genericBody": payload["body"] == "有新的照护记录",
+-                                                 "allDetailsPresent": details_present}})
+-        assert details_present, "push_body_missing_full_record_details"
++        self.case("baseline screenshot-shaped legacy food values are leaked as raw JSON", self.check_readable_food_copy_baseline)
++
++    def readable_food_tenant(self, with_catalogs=False):
++        family = self.call("POST", "/api/v1/families", 201, {
++            "name": self.prefix + "_readable_family", "timeZone": "Asia/Shanghai"}, self.actor)
++        baby = self.call("POST", "/api/v1/families/" + family["id"] + "/babies", 201, {
++            "name": self.prefix + "_readable_baby", "birthDate": "2025-03-04", "gender": "girl"}, self.actor)
++        reader = self.account("readable_reader")
++        invite = self.call("POST", "/api/v1/families/" + family["id"] + "/invites", 201, {}, self.actor)
++        self.call("POST", "/api/v1/families/join", 200, {"inviteCode": invite["inviteCode"]}, reader)
++        self.call("POST", "/api/v1/babies/" + baby["id"] + "/members", 201,
++                  {"userId": reader["id"], "role": "member"}, self.actor,
++                  "test_readable_grant_" + str(uuid.uuid4()))
++        self.device(reader, "readable_reader")
++        result = {"family": family, "baby": baby, "reader": reader}
++        if with_catalogs:
++            catalog_name = "test_食物目录梨"
++            catalog = self.call("POST", "/api/v1/food/items", 201, {
++                "familyId": family["id"], "name": catalog_name, "category": "fruit",
++                "allergenRisk": "low", "recommendedAgeMonths": 6, "tried": True}, self.actor)
++            foreign_family = self.call("POST", "/api/v1/families", 201, {
++                "name": self.prefix + "_foreign_catalog_family", "timeZone": "Asia/Shanghai"}, self.actor)
++            foreign_name = "test_异家庭目录苹果"
++            foreign_catalog = self.call("POST", "/api/v1/food/items", 201, {
++                "familyId": foreign_family["id"], "name": foreign_name, "category": "fruit",
++                "allergenRisk": "low", "recommendedAgeMonths": 6, "tried": True}, self.actor)
++            assert catalog["name"] == catalog_name and catalog["id"].startswith("custom_"), "readable_catalog_item_not_created"
++            assert foreign_catalog["name"] == foreign_name and foreign_catalog["id"].startswith("custom_"), "foreign_catalog_item_not_created"
++            result.update({"catalog": catalog, "catalogName": catalog_name,
++                           "foreignCatalog": foreign_catalog, "foreignName": foreign_name})
++        return result
++
++    @staticmethod
++    def food_metadata_note(note, observations):
++        return "[growdesk-web-food:v1]" + json.dumps(
++            {"notes": note, "observations": observations}, ensure_ascii=False, separators=(",", ":"))
++
++    def deliver_food_copy_record(self, tenant, label, food_ids, portion, note, occurred_at="2026-10-06T23:15:00Z"):
++        family, baby, reader = tenant["family"], tenant["baby"], tenant["reader"]
++        record_id = str(uuid.uuid4())
++        payload = {"recordDate": "2026-10-07", "mealType": "lunch", "occurredAt": occurred_at,
++                   "foodItemIds": food_ids, "portionDescription": portion, "notes": note}
++        self.sync_record(record_id, "foodLog", "create", 1, payload, actor=self.actor, family=family, baby=baby)
++        persisted = int(self.runner.psql("SELECT count(*) FROM food_records WHERE family_id=" + quote(family["id"]) +
++                                         " AND baby_id=" + quote(baby["id"]) + " AND id=" + quote(record_id) + ";"))
++        assert persisted == 1, "readable_food_http_write_not_persisted"
++        event = self.event(record_id, kind="food")
++        assert event["input"]["familyId"] == family["id"] and event["input"]["babyId"] == baby["id"], "readable_food_event_scope_mismatch"
++        child = self.delivered(event, recipient=reader, notifications_only=True)
++        notification_id = child["input"]["notificationId"]
++        db_note = next((item for item in self.notification_rows(event) if item["id"] == notification_id), None)
++        assert db_note is not None and db_note["user_id"] == reader["id"], "readable_food_inbox_row_missing"
++        inbox = self.call("GET", "/api/v1/notifications?limit=100", 200, account=reader)
++        api_note = next((item for item in inbox if item["id"] == notification_id), None)
++        assert api_note is not None, "readable_food_http_inbox_missing"
++        wire = self.last_delivered_payload
++        bodies = {"databaseInbox": db_note["body"], "httpInbox": api_note["body"], "decryptedPush": wire["body"]}
++        assert len(set(bodies.values())) == 1, "readable_food_inbox_and_wire_content_diverged"
++        return {"event": event, "child": child, "payload": payload, "bodies": bodies,
++                "title": wire["title"], "wireBytes": wire["wireBytes"]}
++
++    @staticmethod
++    def assert_food_body(bodies, expected=(), forbidden=()):
++        for channel, body in bodies.items():
++            for fragment in expected:
++                assert fragment in body, "readable_food_missing_expected_copy:" + channel
++            for fragment in forbidden:
++                assert fragment not in body, "readable_food_leaked_internal_value:" + channel
++
++    def check_readable_food_copy_baseline(self):
++        tenant = self.readable_food_tenant()
++        raw_note = self.food_metadata_note(None, {"acceptance": 5, "babyState": "happy", "hasAbnormal": False})
++        actual = self.deliver_food_copy_record(tenant, "screenshot_baseline", ["test_食物南瓜"], "most", raw_note)
++        bodies = actual["bodies"]
++        missing = [fragment for fragment in ("发生时间：2026-10-07 07:15", "食物：test_食物南瓜", "份量：大部分",
++                                               "喜欢程度：5/5", "进食状态：开心", "异常情况：无异常")
++                   if fragment not in bodies["decryptedPush"]]
++        raw_envelope_visible = all(raw_note in body for body in bodies.values())
++        self.report["baselineRed"] = {"actualHttpWriteAndPersistedRow": True, "actualWorkerDelivered": True,
++                                      "encryptedWebPushDecrypted": True, "inboxAndWireBodiesEqual": True,
++                                      "rawScreenshotEnvelopeVisibleInAllChannels": raw_envelope_visible,
++                                      "rawLegacyPortionVisible": "most" in bodies["decryptedPush"],
++                                      "redundantSameDayRecordDateVisible": "记录日期：2026-10-07" in bodies["decryptedPush"],
++                                      "missingReadableFields": missing,
++                                      "decryptedBody": bodies["decryptedPush"],
++                                      "expectedReadableFragments": ["发生时间：2026-10-07 07:15", "食物：test_食物南瓜",
++                                                                     "份量：大部分", "喜欢程度：5/5", "进食状态：开心", "异常情况：无异常"]}
++        assert raw_envelope_visible, "baseline_screenshot_raw_json_not_reproduced"
++        assert missing, "baseline_screenshot_fields_unexpectedly_readable"
++        assert all(body == bodies["decryptedPush"] for body in bodies.values()), "baseline_inbox_and_wire_diverged"
++        assert not missing, "screenshot_readability_expectation_missing"
++
++    def check_readable_food_copy(self):
++        tenant = self.readable_food_tenant(with_catalogs=True)
++        legacy_name = "test_食物南瓜"
++        opaque_id = str(uuid.uuid4())
++        primary_note = self.food_metadata_note(None, {"acceptance": 5, "babyState": "happy", "hasAbnormal": False})
++        primary = self.deliver_food_copy_record(tenant, "screenshot", [legacy_name], "most", primary_note)
++        primary_expected = ("发生时间：2026-10-07 07:15", "食物：" + legacy_name, "份量：大部分",
++                            "喜欢程度：5/5", "进食状态：开心", "异常情况：无异常")
++        primary_forbidden = ("[growdesk-web-food:v1]", "observations", "acceptance", "babyState", "hasAbnormal",
++                             "foodItemIds", "most", "食物项 ID", "Asia/Shanghai", "+08:00", "记录日期：2026-10-07")
++        self.assert_food_body(primary["bodies"], primary_expected, primary_forbidden)
++
++        multiline = "test_多行备注第一行\ntest_多行备注第二行"
++        abnormal_note = "test_异常说明第一行\ntest_异常说明第二行"
++        abnormal_metadata = self.food_metadata_note(multiline, {"acceptance": 4, "babyState": "rejected",
++                                                                  "hasAbnormal": True, "abnormalNotes": abnormal_note})
++        abnormal = self.deliver_food_copy_record(tenant, "multiline_abnormal", [legacy_name], "little", abnormal_metadata)
++        self.assert_food_body(abnormal["bodies"], ("份量：少量", "喜欢程度：4/5", "进食状态：拒绝",
++                                "异常情况：有异常", "异常备注：" + abnormal_note, "备注：" + multiline),
++                             ("[growdesk-web-food:v1]", "observations", "acceptance", "babyState", "hasAbnormal"))
++
++        mixed_first = self.food_metadata_note("test_目录顺序一", {"acceptance": 3, "babyState": "neutral",
++                                                                    "hasAbnormal": False, "abnormalNotes": "test_stale_abnormal_hidden"})
++        first = self.deliver_food_copy_record(tenant, "mixed_catalog_first",
++                [tenant["catalog"]["id"], legacy_name, opaque_id, tenant["foreignCatalog"]["id"]], "half", mixed_first)
++        first_foods = "食物：" + tenant["catalogName"] + "、" + legacy_name
++        self.assert_food_body(first["bodies"], (first_foods, "份量：半碗", "喜欢程度：3/5", "进食状态：一般"),
++                             (opaque_id, tenant["foreignCatalog"]["id"], tenant["foreignName"],
++                              "test_stale_abnormal_hidden", "异常备注：", "食物项 ID"))
++
++        mixed_second = self.food_metadata_note("test_目录顺序二", {"acceptance": 2, "babyState": "happy", "hasAbnormal": False})
++        second = self.deliver_food_copy_record(tenant, "mixed_catalog_second",
++                [legacy_name, tenant["catalog"]["id"], tenant["foreignCatalog"]["id"], opaque_id], "all", mixed_second)
++        second_foods = "食物：" + legacy_name + "、" + tenant["catalogName"]
++        self.assert_food_body(second["bodies"], (second_foods, "份量：全部", "喜欢程度：2/5", "进食状态：开心"),
++                             (opaque_id, tenant["foreignCatalog"]["id"], tenant["foreignName"], "食物项 ID"))
++
++        malformed = self.deliver_food_copy_record(tenant, "malformed_envelope", [legacy_name], "most",
++                                                   "[growdesk-web-food:v1]{malformed")
++        wrong_types = self.food_metadata_note(None, {"acceptance": "5", "babyState": [], "hasAbnormal": "false"})
++        typed = self.deliver_food_copy_record(tenant, "wrong_metadata_types", [legacy_name], "most", wrong_types)
++        safe_fallback_forbidden = ("[growdesk-web-food:v1]", "{malformed", "observations", "acceptance", "babyState",
++                                   "hasAbnormal", "hasAbnormal", '"notes"', '"observations"')
++        self.assert_food_body(malformed["bodies"], (), safe_fallback_forbidden)
++        self.assert_food_body(typed["bodies"], (), safe_fallback_forbidden)
++
++        ai_replay_untouched = None
++        if hasattr(self, "last_ai_replay_task"):
++            ai = self.task(self.last_ai_replay_task)
++            assert ai["status"] == "queued" and ai["attempt"] == 0 and ai["fence_token"] == 0, "notifications_only_food_probe_claimed_ai_task"
++            ai_replay_untouched = True
++
++        return {"screenshot": {"readabilityFragments": list(primary_expected), "timezoneAndDuplicateDateSuppressed": True,
++                               "inboxAndEncryptedWireEqual": True},
++                "multilineAndAbnormal": {"internalLineBreaksPreserved": True, "abnormalNotePreserved": True},
++                "catalogResolution": {"mixedInputOrders": ["catalog,legacy", "legacy,catalog"],
++                                      "opaqueAndCrossFamilyIDsHidden": True, "staleAbnormalNoteHidden": True},
++                "malformedAndWrongTypes": {"twoBoundaryCases": True, "rawEnvelopeSuppressed": True},
++                "realHttpWrites": 6, "actualNotificationsOnlyWorkerAndDecryptedPushPerWrite": True,
++                "AI202TaskRemainsQueuedUnclaimed": ai_replay_untouched}
+ 
+     def fixed(self):
+         self.setup()
+@@ -484,6 +622,7 @@ class Journey:
+             409: "AI empty-attachment replay retains preexisting 409 without a metadata 500 regression",
+         }[self.ai_empty_replay_status]
+         self.case(ai_replay_case, self.check_ai_replay)
++        self.case("legacy food screenshot values render as readable family-local inbox and push copy", self.check_readable_food_copy)
+         assert self.fixture.count(self.actor["pushPath"]) == 0, "actor_received_own_event"
+         assert self.fixture.count(self.unassigned["pushPath"]) == self.eligible_peer_requests, "unassigned_received_event"
+         self.report["worker"] = {"actualNativeRuns": self.worker_runs, "allOwnedProcessesExited": all(p.poll() is not None for p in self.worker_processes)}
+@@ -604,22 +743,22 @@ class Journey:
+                 "rightMinutes": 12, "spitUp": False, "notes": "test_full_create_feeding"}, "update": {
+                 "feedingType": "formula", "occurredAt": "2026-10-06T16:15:00Z", "amountMl": "135", "leftMinutes": 4,
+                 "rightMinutes": 14, "spitUp": True, "notes": "test_full_update_feeding"},
+-             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "吐奶：否"],
+-             "updateFields": ["发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "类型：配方奶", "奶量：135 毫升", "左侧时长：4 分钟", "右侧时长：14 分钟", "吐奶：是"]},
++             "createFields": ["发生时间：2026-10-06 08:15", "类型：配方奶", "奶量：0 毫升", "左侧时长：0 分钟", "右侧时长：12 分钟", "吐奶：否"],
++             "updateFields": ["发生时间：2026-10-06 09:15", "类型：配方奶", "奶量：135 毫升", "左侧时长：4 分钟", "右侧时长：14 分钟", "吐奶：是"]},
+             {"kind": "sleep", "wire": "sleep", "name": "睡眠", "create": {
+                 "sleepType": "nap", "startedAt": "2026-10-06T15:15:00Z", "endedAt": "2026-10-06T16:15:00Z",
+                 "nightWakingCount": 0, "notes": "test_full_create_sleep"}, "update": {
+                 "sleepType": "night", "startedAt": "2026-10-06T16:15:00Z", "endedAt": "2026-10-06T17:45:00Z",
+                 "nightWakingCount": 1, "notes": "test_full_update_sleep"},
+-             "createFields": ["开始时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：白天小睡", "结束时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次"],
+-             "updateFields": ["开始时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "类型：夜间睡眠", "结束时间：2026-10-06 10:45:00 -07:00（America/Los_Angeles）", "睡眠时长：1 小时 30 分钟", "夜醒次数：1 次"]},
++             "createFields": ["开始时间：2026-10-06 08:15", "类型：白天小睡", "结束时间：2026-10-06 09:15", "睡眠时长：1 小时 0 分钟", "夜醒次数：0 次"],
++             "updateFields": ["开始时间：2026-10-06 09:15", "类型：夜间睡眠", "结束时间：2026-10-06 10:45", "睡眠时长：1 小时 30 分钟", "夜醒次数：1 次"]},
+             {"kind": "diaper", "wire": "diaper", "name": "尿布", "create": {
+                 "diaperType": "both", "occurredAt": "2026-10-06T15:15:00Z", "poopColor": "brown",
+                 "poopConsistency": "soft", "notes": "test_full_create_diaper"}, "update": {
+                 "diaperType": "poop", "occurredAt": "2026-10-06T16:20:00Z", "poopColor": "green",
+                 "poopConsistency": "soft", "notes": "test_full_update_diaper"},
+-             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "类型：尿便都有", "便便颜色：棕色", "便便性状：柔软"],
+-             "updateFields": ["发生时间：2026-10-06 09:20:00 -07:00（America/Los_Angeles）", "类型：便便", "便便颜色：绿色", "便便性状：柔软"]},
++             "createFields": ["发生时间：2026-10-06 08:15", "类型：尿便都有", "便便颜色：棕色", "便便性状：柔软"],
++             "updateFields": ["发生时间：2026-10-06 09:20", "类型：便便", "便便颜色：绿色", "便便性状：柔软"]},
+             {"kind": "food", "wire": "foodLog", "name": "辅食", "create": {
+                 "recordDate": "2026-10-06", "occurredAt": "2026-10-06T15:15:00Z", "mealType": "lunch",
+                 "foodItemIds": [item["id"]], "portionDescription": "test_portion_2tbsp", "reaction": "like",
+@@ -627,15 +766,15 @@ class Journey:
+                 "recordDate": "2026-10-06", "occurredAt": "2026-10-06T16:30:00Z", "mealType": "dinner",
+                 "foodItemIds": [item["id"]], "portionDescription": "test_updated_portion_3tbsp", "reaction": "normal",
+                 "notes": "test_full_update_food"},
+-             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "记录日期：2026-10-06", "餐次：午餐", "食物：" + item["name"], "份量：test_portion_2tbsp", "接受度：喜欢"],
+-             "updateFields": ["发生时间：2026-10-06 09:30:00 -07:00（America/Los_Angeles）", "记录日期：2026-10-06", "餐次：晚餐", "食物：" + item["name"], "份量：test_updated_portion_3tbsp", "接受度：一般"]},
++             "createFields": ["发生时间：2026-10-06 08:15", "餐次：午餐", "食物：" + item["name"], "份量：test_portion_2tbsp", "接受度：喜欢"],
++             "updateFields": ["发生时间：2026-10-06 09:30", "餐次：晚餐", "食物：" + item["name"], "份量：test_updated_portion_3tbsp", "接受度：一般"]},
+             {"kind": "supplement", "wire": "supplementRecord", "name": "补剂", "create": {
+                 "supplementName": "test_vitamin_d", "occurredAt": "2026-10-06T15:15:00Z", "amount": "1 tablet",
+                 "dose": "0", "unitName": "ml", "notes": "test_full_create_supplement"}, "update": {
+                 "supplementName": "test_vitamin_d_updated", "occurredAt": "2026-10-06T16:15:00Z", "amount": "2 tablets",
+                 "dose": "2.5", "unitName": "ml", "notes": "test_full_update_supplement"},
+-             "createFields": ["发生时间：2026-10-06 08:15:00 -07:00（America/Los_Angeles）", "补剂：test_vitamin_d", "用量：1 tablet", "剂量：0 ml"],
+-             "updateFields": ["发生时间：2026-10-06 09:15:00 -07:00（America/Los_Angeles）", "补剂：test_vitamin_d_updated", "用量：2 tablets", "剂量：2.5 ml"]},
++             "createFields": ["发生时间：2026-10-06 08:15", "补剂：test_vitamin_d", "用量：1 tablet", "剂量：0 ml"],
++             "updateFields": ["发生时间：2026-10-06 09:15", "补剂：test_vitamin_d_updated", "用量：2 tablets", "剂量：2.5 ml"]},
+             {"kind": "growth", "wire": "growthMeasurement", "name": "生长测量", "create": {
+                 "measurementDate": "2026-10-06", "weightKg": "9.40", "heightCm": "75.5", "headCircumferenceCm": "45.0",
+                 "notes": "test_full_create_growth"}, "update": {
+@@ -1249,6 +1388,7 @@ class Journey:
+         raw = self.task(first["id"])
+         assert task["status"] == "queued" and raw["attempt"] == 0 and raw["fence_token"] == 0, "ai_worker_unexpectedly_started"
+         assert self.worker_runs == workers and self.fixture.count() == requests, "ai_replay_invoked_worker_or_push"
++        self.last_ai_replay_task = first["id"]
+         evidence = {"createHTTP": 202, "replayHTTP": self.ai_empty_replay_status,
+                     "firstAndReplaySameRunId": self.ai_empty_replay_status == 202,
+                     "fullReplayResponseMatchesCreate": replay_matches_first,
+@@ -1373,7 +1513,7 @@ def main():
+     parser.add_argument("--server-root", required=True, type=Path)
+     parser.add_argument("--ios-root", type=Path, default=Path("/Users/wangzhuo/Documents/GitHub/growdesk-ios"))
+     parser.add_argument("--phase", required=True, choices=("baseline", "fixed"))
+-    parser.add_argument("--probe", choices=("family-push", "ai-empty-replay"), default="family-push")
++    parser.add_argument("--probe", choices=("family-push", "ai-empty-replay", "readable-food"), default="family-push")
+     parser.add_argument("--ai-empty-replay-status", type=int, choices=(202, 409), default=409,
+                         help="expected replay HTTP status in AI replay acceptance (default: 409)")
+     args = parser.parse_args()
+@@ -1430,6 +1570,10 @@ def main():
+         stage = "real_http_cases"
+         if args.probe == "ai-empty-replay":
+             journey.probe_ai_empty_replay()
++        elif args.probe == "readable-food":
++            assert args.phase == "fixed", "readable_food_probe_requires_fixed_phase"
++            journey.setup()
++            journey.case("legacy food screenshot values render as readable family-local inbox and push copy", journey.check_readable_food_copy)
+         elif args.phase == "baseline":
+             journey.baseline()
+         else:

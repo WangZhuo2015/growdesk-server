@@ -1,0 +1,5 @@
+{
+  "growdesk-api": "MainPID=1699845\nNRestarts=0\nActiveState=active\nSubState=running",
+  "baby-panel": "MainPID=1699886\nNRestarts=0\nActiveState=active\nSubState=running",
+  "growdesk-notifications-worker": "MainPID=1699928\nNRestarts=0\nActiveState=active\nSubState=running"
+}

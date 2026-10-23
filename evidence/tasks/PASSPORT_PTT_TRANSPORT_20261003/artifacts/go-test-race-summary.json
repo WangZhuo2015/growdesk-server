@@ -1,0 +1,39 @@
+{
+  "failures": [],
+  "jsonl_bytes": 348392,
+  "package_status_counts": {
+    "pass": 2,
+    "skip": 4
+  },
+  "packages": {
+    "github.com/WangZhuo2015/growdesk-server": "skip",
+    "github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api": "pass",
+    "github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate": "skip",
+    "github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler": "skip",
+    "github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker": "skip",
+    "github.com/WangZhuo2015/growdesk-server/internal/backend": "pass"
+  },
+  "platform": "darwin/arm64",
+  "skipped_tests": [
+    {
+      "package": "github.com/WangZhuo2015/growdesk-server/internal/backend",
+      "test": "TestPassportFoodCatalogContextIntegration"
+    },
+    {
+      "package": "github.com/WangZhuo2015/growdesk-server/internal/backend",
+      "test": "TestPassportConfirmedRecordsIntegration"
+    },
+    {
+      "package": "github.com/WangZhuo2015/growdesk-server/internal/backend",
+      "test": "TestPassportConfirmationRevocationIntegration"
+    },
+    {
+      "package": "github.com/WangZhuo2015/growdesk-server/internal/backend",
+      "test": "TestPassportShortTurnWebSocketIntegration"
+    }
+  ],
+  "test_status_counts": {
+    "test_pass": 346,
+    "test_skip": 4
+  }
+}

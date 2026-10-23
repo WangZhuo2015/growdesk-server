@@ -1,0 +1,100 @@
+{
+  "phase": "deployed",
+  "deployed": true,
+  "physicalDeviceReceiptVerified": false,
+  "environmentFilesBefore": {
+    "/home/ubuntu/Github/baby_panel_for_cecilia/.env": {
+      "size": 1133,
+      "mtimeNs": 1790269527135897539,
+      "mode": 384,
+      "uid": 1001,
+      "gid": 1001
+    },
+    "/home/ubuntu/growdesk/api.env": {
+      "size": 1052,
+      "mtimeNs": 1791027386780350338,
+      "mode": 384,
+      "uid": 1001,
+      "gid": 1001
+    }
+  },
+  "previousPid": {
+    "growdesk-api": 2555265,
+    "baby-panel": 1462274
+  },
+  "beforeHealth": {
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    },
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "status": "ok"
+  },
+  "migration": {
+    "checksum": "1dcb0e81c4f4b0a44595b30129990325e69a82c79efc215f6ab4a19f742c4a88",
+    "roleGone": true,
+    "ownersRestored": true,
+    "appStillNonSuper": true,
+    "appCrud": true,
+    "indexesValid": true
+  },
+  "liveSwitchStarted": true,
+  "runtimePreservationSha256": {
+    "data/archive": "f40ff9cee6277ee437fd17eedcb961e41031857e856a852e06d3b2971f6e1eec",
+    "public/uploads": "e5d3e3366295846a577ae32f3eece69da4edd28778de3033c45b7dd7eb8c504c",
+    "backups": "f7c1823e3adc2f0865c5acaf9ce101f03d96e78e8761d481906eee9ce31ca9b6",
+    "llm-profiles.json": "4da3682310a56b4c91b85a696310c3d67bc3cac3bb061acd16808563a58235dd"
+  },
+  "afterHealth": {
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    },
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "status": "ok"
+  },
+  "localStatus": {
+    "/notifications": 200,
+    "/family/passport": 200,
+    "/sw.js": 200,
+    "/api/push/vapid-key": 401,
+    "/api/passport/devices": 401
+  },
+  "pid": {
+    "growdesk-api": 905397,
+    "baby-panel": 905411,
+    "growdesk-notifications-worker": 905627
+  },
+  "apiRevision": {
+    "reference": "f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4",
+    "revision": "65ccdaac9fb12b749795e7fcbbcd856a02830600"
+  },
+  "workerRevision": {
+    "reference": "f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4",
+    "revision": "65ccdaac9fb12b749795e7fcbbcd856a02830600"
+  },
+  "environmentFilesAfter": {
+    "/home/ubuntu/Github/baby_panel_for_cecilia/.env": {
+      "size": 1133,
+      "mtimeNs": 1790269527135897539,
+      "mode": 384,
+      "uid": 1001,
+      "gid": 1001
+    },
+    "/home/ubuntu/growdesk/api.env": {
+      "size": 1052,
+      "mtimeNs": 1791027386780350338,
+      "mode": 384,
+      "uid": 1001,
+      "gid": 1001
+    }
+  },
+  "apiSource": "65ccdaac9fb12b749795e7fcbbcd856a02830600",
+  "webSource": "5c8156d464d0c6e8fd005d46fc9b6f097069da7b",
+  "workerProfile": "notifications-only",
+  "environmentFilesUnchanged": true,
+  "noTestPushSent": true,
+  "rollbackDirectory": "/home/ubuntu/growdesk/push-releases/web-push-20261006/rollback"
+}

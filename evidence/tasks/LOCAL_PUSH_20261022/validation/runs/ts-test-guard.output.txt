@@ -1,0 +1,30 @@
+
+> growdesk-server@0.1.0 backend:test:guard
+> node --import tsx --test packages/testkit/tests/environment.test.ts packages/database/tests/config.test.ts
+
+✔ database guard accepts an owned PostgreSQL test URL without connecting (0.581834ms)
+✔ database guard rejects sqlite before a connection (0.261542ms)
+✔ database guard rejects productionHost before a connection (0.089416ms)
+✔ database guard rejects unknownHost before a connection (0.070416ms)
+✔ database guard rejects productionDatabase before a connection (0.065125ms)
+✔ database guard rejects wrongRole before a connection (0.066958ms)
+✔ database guard rejects defaultPort before a connection (0.071375ms)
+✔ database guard rejects driverOverride before a connection (0.069125ms)
+✔ database guard rejects strictTls before a connection (0.065541ms)
+✔ accepts exact isolated runner connection (0.58375ms)
+✔ rejects sqlite before any connection and without exposing secret (0.209208ms)
+✔ rejects productionHost before any connection and without exposing secret (0.065708ms)
+✔ rejects unknownHost before any connection and without exposing secret (0.058542ms)
+✔ rejects wrongRole before any connection and without exposing secret (0.062083ms)
+✔ rejects wrongDatabase before any connection and without exposing secret (0.050916ms)
+✔ rejects wrongPort before any connection and without exposing secret (0.067833ms)
+✔ rejects queryBypass before any connection and without exposing secret (0.070958ms)
+✔ rejects wrongSecret before any connection and without exposing secret (0.063958ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.627125

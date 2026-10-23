@@ -1,0 +1,15 @@
+{
+  "command": "/Users/wangzhuo/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.darwin-arm64/bin/go test ./...",
+  "exitCode": 0,
+  "packages": {
+    "cmd/growdesk-api": "passed",
+    "internal/backend": "passed",
+    "cmd/growdesk-migrate": "no test files",
+    "cmd/growdesk-scheduler": "no test files",
+    "cmd/growdesk-worker": "no test files"
+  },
+  "sourceHashes": {
+    "internal/backend/family_notification_content.go": "5827e4dd05cef86c106ac6264dd1d4d6a2b443ca0bf6fa20d07e72cc923de32c",
+    "internal/backend/family_notification_content_test.go": "bca77ba27917e0f5be438a04afb027556c60bf11ec02a3e52f73af65a0c321b5"
+  }
+}

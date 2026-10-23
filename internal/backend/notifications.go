@@ -11,6 +11,8 @@ func (s *Server) registerNotifications() {
 	s.registerDeclared(http.MethodDelete, "/api/v1/devices/{installationId}/push", s.unregisterPushDevice)
 	s.registerDeclared(http.MethodGet, "/api/v1/notifications", s.listNotifications)
 	s.registerDeclared(http.MethodPost, "/api/v1/notifications/{id}/read", s.readNotification)
+	s.registerDeclared(http.MethodGet, "/api/v1/me/notification-preferences", s.getNotificationPreferences)
+	s.registerDeclared(http.MethodPut, "/api/v1/me/notification-preferences", s.putNotificationPreferences)
 }
 
 func (s *Server) registerPushDevice(ctx context.Context, r *Request) (Result, error) {

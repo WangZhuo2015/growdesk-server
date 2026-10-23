@@ -1,0 +1,15 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 33.54,
+  "top_level_tests": 35,
+  "top_level_passes": 35,
+  "skips": 0,
+  "existing_local_voice_acceptance_passed": true,
+  "engine_model_and_helper_hashes_verified": true,
+  "no_database_or_external_http_provider": true,
+  "voice_sources_unchanged_after_imperative_review": true,
+  "later_changed_files_not_exercised_by_linux_voice_suite": [
+    "internal/backend/passport_voice_records.go",
+    "internal/backend/passport_voice_records_test.go"
+  ]
+}

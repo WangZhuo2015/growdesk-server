@@ -1,0 +1,98 @@
+{
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "user_report": [
+    "screen still shows physical key setup while second key starts speech",
+    "very short key press produces punctuation-only recognition",
+    "second attempt displays WebSocket cannot connect"
+  ],
+  "backend_at_diagnosis": {
+    "pid": 3435230,
+    "n_restarts": 0,
+    "active": "running",
+    "sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921",
+    "crash_or_restart_journal_found": false
+  },
+  "device_no_reset_attempt": {
+    "capture": "../growdesk-iot/build/device-tests/passport-20261003-short-turn",
+    "opening_usb_still_reset_device": true,
+    "elapsed_seconds": 240.17,
+    "ws_connected": 1,
+    "gateway_ready": 1,
+    "subsequent_disconnects": 0,
+    "new_physical_turn_observed": false
+  },
+  "transport_cause": "UNDETERMINED: historical device event lost on USB open, awaiting typed device error/reproduction",
+  "confirmed_code_defect": "UI setup lock failure silently ignored while controller map ready",
+  "new_flash_not_performed": false,
+  "new_firmware_flash": {
+    "user_reply": "ok",
+    "app_only": true,
+    "offset": "0x10000",
+    "exit_code": 0,
+    "readback_hash_verified": true,
+    "elapsed_seconds": 20.38,
+    "capture": "/Users/wangzhuo/Documents/GitHub/growdesk-iot/build/device-tests/passport-20261003-short-turn-fixed",
+    "startup_elf_prefix": "c2cd56ede",
+    "key_map_active_observed": true,
+    "ws_connected_elapsed_seconds": 23.46,
+    "gateway_ready_elapsed_seconds": 23.86,
+    "physical_visual_voice_acceptance": "PENDING operator response",
+    "bounded_capture_result": {
+      "elapsed_seconds": 600.1,
+      "expected_monitor_open_resets": 1,
+      "unexpected_resets": 0,
+      "panic": 0,
+      "connected": 1,
+      "ready": 1,
+      "disconnects": 0,
+      "error_log_lines": 0,
+      "elf_prefix_matched": true,
+      "stored_key_map_active": true,
+      "physical_turn_observed": false,
+      "screen_microphone_ai_speaker_acceptance": "NOT RUN: no operator action/response observed",
+      "historical_ws_failure_cause": "UNDETERMINED",
+      "serial_capture_exit_code": 0,
+      "serial_port_closed": true
+    }
+  },
+  "backend_after_new_firmware_flash_read_only_check": {
+    "recorded_at_utc": "2026-10-03T13:09:13.931117+00:00",
+    "pid": 3678614,
+    "n_restarts": 0,
+    "active": "active",
+    "substate": "running",
+    "installed_and_running_executable_sha256": "9ae41d1fdddf3a605a95bed61d4a7249eb3e2c47bed388d96ba9d95a4065f7d9",
+    "anonymous_ws_http": 401,
+    "tls_verification_enabled": true,
+    "no_provider_request_or_database_test_issued": true
+  },
+  "followup_confirmed_code_findings": [
+    "CONNECT_TIMEOUT/CONNECT_FAILED can replace retained lower-level transport error in UI before READY",
+    "component auto reconnect and coordinator are both enabled; coordinator can stop a component retry handshake"
+  ],
+  "latest_physical_ptt_transport": {
+    "status": "FAIL",
+    "layer": "physical_device_ptt_transport",
+    "installed_bundle_sha256": "e8c606433cc93fc5ba63349fd12354b38bfbb93d6aa5bcb3315dada2f98124ed",
+    "observation_seconds": 600.04,
+    "counts": {
+      "reset": 1,
+      "panic": 0,
+      "connected": 2,
+      "disconnected": 1,
+      "ready": 2,
+      "errors": 3
+    },
+    "initial_ready_seconds": 16.94,
+    "ptt_listening_seconds": 513.98,
+    "first_failure_seconds": 516.83,
+    "first_failure": "transport_poll_write(0): writable wait timeout before the failing frame header/payload writes",
+    "recovery_ready_seconds": 545.37,
+    "recovery_seconds": 28.54,
+    "backend_correlation": "two stream interrupted warnings match failure and first retry interruption; old logger omitted actual error",
+    "original_network_root_cause": "UNDETERMINED",
+    "voice_asr_ai_speaker": "NOT_PASSED",
+    "serial_port": "CLOSED",
+    "user_priority": "Fix connection before requesting more voice testing"
+  }
+}

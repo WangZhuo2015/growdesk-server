@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "cases": 26,
+  "httpAssertions": 290,
+  "actualWorkerRuns": 124,
+  "encryptedLoopbackRequests": 53,
+  "sourceDrift": [],
+  "immutableInputsSha256": "b2e611dfdc23851892c34774071019903364788f613655f280501758585a3241",
+  "physicalDeviceDeliveryVerified": false,
+  "workerProcessesExited": true,
+  "workerStopErrors": [],
+  "fixtureStopped": true,
+  "externalPushRequests": 0
+}

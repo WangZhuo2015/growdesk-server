@@ -1,0 +1,19 @@
+{
+  "database": {
+    "host": "172.21.0.3",
+    "port": "5432",
+    "database": "growdesk",
+    "role": "growdesk",
+    "passwordPresent": true,
+    "protocol": "postgresql:"
+  },
+  "vapid": {
+    "publicPresent": true,
+    "privatePresent": true,
+    "pairMatches": true,
+    "publicSha256": "76792afefa401d2a6f0d8ddcc126ef9b14e05129e04f89b2cb8c726c6d5ffe61",
+    "subjectPresent": true,
+    "jwtSecretPresent": true,
+    "jwtKeyPresent": false
+  }
+}

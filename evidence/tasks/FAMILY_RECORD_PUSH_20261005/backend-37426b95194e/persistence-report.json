@@ -1,0 +1,176 @@
+{
+  "taskId": "FAMILY_RECORD_PUSH_20261005",
+  "runId": "37426b95194e",
+  "phase": "baseline",
+  "passed": false,
+  "cases": [
+    {
+      "name": "committed REST record queues a family notification task",
+      "passed": false,
+      "expected": 1,
+      "actual": 0
+    }
+  ],
+  "status": "IMPLEMENTED_NOT_REVIEWED",
+  "externalPushRequests": 0,
+  "physicalDeviceDeliveryVerified": false,
+  "proof": "real HTTP, PostgreSQL, native worker and webpush-go; only owned loopback provider responses are simulated",
+  "harness": {
+    "scriptSha256": "eca0bb4c82b2c00b81105e8060a07127bfa755e1a9cc4017b59703d33bfbc0d8",
+    "ownedRunSource": "/Users/wangzhuo/Documents/GitHub/growdesk-ios/scripts/test-cloud-parity.py",
+    "ownedRunSourceSha256": "95bbc8eb39a15f739d342d586fc0d91e3f9d64965eb48cd8cab4a9098836a510"
+  },
+  "source": {
+    "serverRoot": "/private/tmp/growdesk-family-push-20261005",
+    "head": "516371a5959e11db865969cd0b2f9aa42be9bfa2",
+    "baselineArchiveSha256": "48d955260e9b067bf6b4d1f5419ab722df0fb2919becb159a0a2447c82bdf38d"
+  },
+  "nativeMigrations": [
+    "0001_oauth.sql",
+    "0002_object_cleanup.sql",
+    "0003_passport.sql"
+  ],
+  "isolation": {
+    "host": "127.0.0.1",
+    "database": "test_growdesk_37426b95194e",
+    "role": "test_app_37426b95194e",
+    "superuser": false,
+    "postgresPort": 57382,
+    "redisPort": 57383,
+    "apiPort": 57386,
+    "pushFixturePort": 57425,
+    "virtualVapid": true,
+    "freshCluster": true
+  },
+  "setup": {
+    "realHttpRegistration": true,
+    "realFamilyJoin": true,
+    "realBabyGrant": true,
+    "testUsers": 3,
+    "deviceRows": 3
+  },
+  "baseline": {
+    "recordHttpStatus": 201,
+    "recipientSubscriptionPresent": true,
+    "delta": {
+      "records": 1,
+      "changes": 1,
+      "familyTasks": 0,
+      "deliveries": 0,
+      "notifications": 0,
+      "outbox": 0,
+      "timeline": 1,
+      "receipts": 1,
+      "supplementRecords": 0,
+      "growthRecords": 0,
+      "familyCursor": 1
+    },
+    "missingEventObserved": true,
+    "fixtureRequests": 0
+  },
+  "failure": {
+    "stage": "real_http_cases",
+    "class": "AssertionError",
+    "code": "family_notification_task_missing"
+  },
+  "worker": {
+    "actualNativeRuns": 1,
+    "allOwnedProcessesExited": true,
+    "stopErrors": []
+  },
+  "testUsers": 3,
+  "httpAssertions": [
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/auth/register",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2a83d6ac-7b35-4dd5-b78d-98bdc425c6c3/babies",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2a83d6ac-7b35-4dd5-b78d-98bdc425c6c3/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/2a83d6ac-7b35-4dd5-b78d-98bdc425c6c3/invites",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/families/join",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/937eca91-0173-4433-a8f5-5e9b3bb56a35/members",
+      "status": 201,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/e72c79e1-2763-473f-a5a4-56f25b555207/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/f127440d-aca9-4837-9b93-af7bb831be68/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "PUT /api/v1/devices/d9c85413-5077-444b-a5f0-7df558f03e96/push",
+      "status": 200,
+      "errorCode": null
+    },
+    {
+      "case": "POST /api/v1/babies/937eca91-0173-4433-a8f5-5e9b3bb56a35/records/feeding",
+      "status": 201,
+      "errorCode": null
+    }
+  ],
+  "fixture": {
+    "requests": [],
+    "count": 0,
+    "stopped": true
+  },
+  "cleanup": {
+    "taskId": "FAMILY_RECORD_PUSH_20261005",
+    "runId": "37426b95194e",
+    "status": "cleaned",
+    "database": "test_growdesk_37426b95194e",
+    "appRole": "test_app_37426b95194e",
+    "privateDirectoryRemoved": true,
+    "resources": [
+      "owned PostgreSQL cluster",
+      "test database and non-superuser role",
+      "owned Redis process",
+      "owned Go API process",
+      "explicitly joined native workers",
+      "owned loopback HTTP push fixture"
+    ],
+    "errors": []
+  }
+}

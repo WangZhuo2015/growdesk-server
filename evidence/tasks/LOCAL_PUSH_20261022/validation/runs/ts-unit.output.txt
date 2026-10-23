@@ -1,0 +1,206 @@
+
+> growdesk-server@0.1.0 backend:test:unit
+> npm run backend:build && node --import tsx --test "packages/*/tests/**/*.test.ts" "apps/*/tests/**/*.test.ts" "tests/unit/**/*.test.ts"
+
+
+> growdesk-server@0.1.0 backend:build
+> npm run --workspace=@growdesk/contracts build && npm run --workspace=@growdesk/domain build && npm run --workspace=@growdesk/database build && npm run --workspace=@growdesk/adapters build && npm run --workspace=@growdesk/testkit build && npm run --workspace=@growdesk/api build && npm run --workspace=@growdesk/worker build && npm run --workspace=@growdesk/scheduler build
+
+
+> @growdesk/contracts@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/domain@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/database@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/adapters@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/testkit@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/api@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/worker@0.1.0 build
+> tsc -p tsconfig.json
+
+
+> @growdesk/scheduler@0.1.0 build
+> tsc -p tsconfig.json
+
+✔ AI API preflight rejects an absent provider with 503 (0.650542ms)
+✔ AI API preflight accepts only explicit fixture responses (0.131834ms)
+✔ AI API preflight accepts approved compatible provider configuration (0.060625ms)
+✔ password hashing and verification (586.651792ms)
+✔ access token signing and verification lifecycle (4.973ms)
+✔ refresh token generation and hashing (0.30475ms)
+✔ body validation preserves nullable JSON values without coercion (252.416833ms)
+✔ query validation retains Fastify's default scalar coercion (40.902083ms)
+✔ health liveness is a real Fastify route (137.403708ms)
+✔ health route does not expose business endpoints in the baseline (19.455541ms)
+✔ health readiness is 503 when dependencies are not configured (111.459667ms)
+✔ health readiness is 200 only when both foundation dependencies respond (46.912583ms)
+✔ liveness does not call or depend on readiness (12.656333ms)
+✔ readiness closes its dependency owner with the app (12.319916ms)
+✔ knowledge preserves source details and filters exact milestone month and activity range (311.912625ms)
+✔ legacy supplement nutrient aliases and units normalize deterministically (0.762ms)
+✔ validated weather preserves the old UI shape and crosses midnight (151.871ms)
+✔ European AQI is not classified using unrelated 50-point thresholds (3.740583ms)
+✔ invalid/missing AQI stays unavailable instead of appearing excellent (1.445708ms)
+✔ optional AQI HTTP, JSON and network failures do not fabricate a measurement (0.786833ms)
+✔ forecast rejects unknown JSON, missing values and mismatched parallel arrays (1.045208ms)
+✔ forecast failures return 502, never a cacheable successful response (8.319458ms)
+✔ invalid coordinates are rejected before any paid or external work (0.454084ms)
+✔ valid custom coordinates and unknown WMO codes remain explicit (0.389834ms)
+✔ Web AI contracts do not cause duplicate schema registration on repeated startup (150.512333ms)
+✔ all six Web AI operations are exported exactly once in the canonical contract (0.177625ms)
+✔ scheduler requires both database and Redis configuration before starting (0.607333ms)
+✔ scheduler lifecycle stops cleanly without dispatching jobs (0.155166ms)
+✔ AI provider fails explicitly when no provider is configured (0.736833ms)
+✔ fixture provider requires an explicit response and emits persisted-style text deltas (0.634917ms)
+✔ OpenAI-compatible HTTP fixture streams text without contacting an external provider (33.938584ms)
+✔ worker requires both database and Redis configuration before starting (0.635166ms)
+✔ worker lifecycle stops cleanly without claiming jobs (0.156083ms)
+✔ Redis guard accepts an isolated loopback test URL without connecting (0.568791ms)
+✔ runtime Redis supports an explicitly configured ACL user (0.085542ms)
+✔ Redis guard rejects remoteHost before a connection (0.292542ms)
+✔ Redis guard rejects defaultPort before a connection (0.085875ms)
+✔ Redis guard rejects noPassword before a connection (1.547458ms)
+✔ Redis guard rejects query before a connection (0.106375ms)
+✔ Redis probe runs PING and disconnects the client (1.083625ms)
+✔ Redis probe fails closed for missing configuration (0.103792ms)
+✔ Redis probe bounds a hung ping and disconnects (9.596875ms)
+✔ Redis probe single-flights concurrent checks and closes in-flight clients (2.650709ms)
+▶ GrowDesk Contracts Test Suite
+  ✔ ApiErrorEnvelope schema validates standard error payload (1.209917ms)
+  ✔ Feeding record creation payload validates correct input and rejects malformed fields (0.3355ms)
+  ✔ Sleep record creation payload validates correct input (0.099875ms)
+  ✔ Growth measurement schema enforces decimal strings (0.130792ms)
+  ✔ Sync command batch schema validates offline mutations structure (0.275292ms)
+  ✔ ROUTE_DEFINITIONS has unique operationIds and explicit status markings (0.251875ms)
+  ✔ attachment content is documented as binary media while errors remain JSON (1493.322333ms)
+  ✔ Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff (941.997542ms)
+✔ GrowDesk Contracts Test Suite (2438.332458ms)
+✔ food creation keeps absent, false and true tried states without coercion (0.698125ms)
+✔ Passport card event accepts bounded per-turn correlation and legacy omission (1.472125ms)
+✔ database guard accepts an owned PostgreSQL test URL without connecting (0.686875ms)
+✔ database guard rejects sqlite before a connection (0.312875ms)
+✔ database guard rejects productionHost before a connection (0.103958ms)
+✔ database guard rejects unknownHost before a connection (0.503375ms)
+✔ database guard rejects productionDatabase before a connection (0.087ms)
+✔ database guard rejects wrongRole before a connection (0.069875ms)
+✔ database guard rejects defaultPort before a connection (0.081875ms)
+✔ database guard rejects driverOverride before a connection (0.07675ms)
+✔ database guard rejects strictTls before a connection (0.058709ms)
+✔ PostgreSQL probe runs SELECT 1 and closes the client (1.110375ms)
+✔ PostgreSQL probe fails closed for missing configuration (0.096083ms)
+✔ PostgreSQL probe bounds a hung query and still closes (9.617917ms)
+✔ PostgreSQL probe single-flights concurrent checks and waits on close (0.546583ms)
+✔ one user can hold active memberships for multiple babies and families (0.70425ms)
+✔ multiple caregivers can access the same baby through separate BabyMember rows (0.096083ms)
+✔ family admin without a BabyMember row cannot read or manage that baby (0.437584ms)
+✔ baby access requires an active FamilyMember and an active BabyMember (0.085417ms)
+✔ viewer can read but cannot write or manage baby records (0.080166ms)
+✔ family write/manage permission intersects with baby permission (0.069792ms)
+✔ unknown runtime family or baby roles fail closed (0.077083ms)
+✔ record scope must agree with the Baby composite family identity (0.065ms)
+✔ family feed projection returns only babies with active baby access (0.105292ms)
+✔ the last active baby admin cannot be revoked, but another admin permits revocation (0.221167ms)
+✔ a viewer or revoked FamilyMember does not satisfy the last-admin safeguard (0.0755ms)
+✔ baby membership consistency and composite uniqueness are explicit (0.08375ms)
+✔ legacy family-only record authorization no longer grants write access (0.054541ms)
+✔ login without an active binding does not enable sync (1.726209ms)
+✔ unexpected runtime operation fails closed even with a valid binding (0.10575ms)
+✔ unknown runtime family role cannot read cloud data (0.073042ms)
+✔ pending rejects upload and download (0.083584ms)
+✔ paused rejects upload and download (0.0485ms)
+✔ revoked rejects upload and download (0.034583ms)
+✔ switching bindingId cannot reuse an old binding (0.048875ms)
+✔ switching installationId cannot reuse an old binding (0.036125ms)
+✔ switching localVaultId cannot reuse an old binding (0.041583ms)
+✔ switching familyId cannot reuse an old binding (0.08075ms)
+✔ switching accounts cannot reuse an active binding (0.053625ms)
+✔ late requests from a previous generation are rejected after re-enable (0.256625ms)
+✔ expired consent does not silently approve a new policy (0.065791ms)
+✔ removed family membership rejects a still-active binding (0.067417ms)
+✔ invited family membership cannot sync (0.074042ms)
+✔ revoked family membership cannot sync (0.049875ms)
+✔ viewer can pull but cannot upload; consenting member can upload (0.063625ms)
+✔ accepts exact isolated runner connection (0.62075ms)
+✔ rejects sqlite before any connection and without exposing secret (0.229167ms)
+✔ rejects productionHost before any connection and without exposing secret (0.054458ms)
+✔ rejects unknownHost before any connection and without exposing secret (0.046625ms)
+✔ rejects wrongRole before any connection and without exposing secret (0.777708ms)
+✔ rejects wrongDatabase before any connection and without exposing secret (0.05975ms)
+✔ rejects wrongPort before any connection and without exposing secret (0.058416ms)
+✔ rejects queryBypass before any connection and without exposing secret (0.063166ms)
+✔ rejects wrongSecret before any connection and without exposing secret (0.051708ms)
+✔ object storage guard admits only the manifest-bound loopback test namespace (0.812334ms)
+✔ A3 reconcile terminates unclaimed cancellations before recovery or max-attempt failure (0.655875ms)
+✔ A3 retry cancelled task clears the cancellation marker before dispatch (0.454ms)
+✔ A3 retry failed task clears the cancellation marker before dispatch (0.089708ms)
+✔ A3 cancel keeps ownership checks and records a request without stealing a running lease (0.285ms)
+✔ backend import boundaries are enforced (396.988584ms)
+✔ architecture rules catch package subpaths and relative boundary bypasses (4.53575ms)
+BFF_LEGACY_SCHEMA {"field":{"type":"string"},"propertyOrder":["sessionSecretHash","userId","username","password","deviceLabel","legacyAuthToken"]}
+✔ BFF legacy exchange source preserves the already published optional credential schema (27.761667ms)
+✔ production compose keeps attachment storage private and digest pinned (0.564958ms)
+✔ food creation preserves tried=undefined with one transaction (1.15225ms)
+✔ food creation preserves tried=false with one transaction (0.123875ms)
+✔ food creation preserves tried=true with one transaction (0.09125ms)
+✔ status creation failure is propagated without a post-commit retry (0.279208ms)
+✔ an unowned explicit family is rejected before transaction creation (0.12725ms)
+✔ F3 service persists explicit tried in the active family and returns it on create/list (1.248833ms)
+✔ F3 route-local create schema accepts optional tried without dropping it (220.873167ms)
+✔ F3 omission keeps old create behavior; false is explicitly persisted (0.205916ms)
+✔ growth legacy metadata maps through the entity and DTO whitelist (2.221333ms)
+✔ growth metadata outside the importer marker stays out of the DTO (0.1165ms)
+✔ pure reference planner maps canonical business and AI message fields (1.160458ms)
+✔ AI archive and job receipts are internally consumed while unsupported references remain quarantined (0.193166ms)
+✔ planner fails closed on duplicate, public URL, and purpose mismatch (0.15625ms)
+✔ legacy paths are restricted to a literal captured uploads path (0.668875ms)
+✔ unsafe paths never query the database (0.268709ms)
+✔ only an unambiguous authorized attachment identity is returned (0.590209ms)
+✔ absent ambiguous and malformed mappings do not expose an object (0.201833ms)
+✔ legacy public knowledge remains byte-faithful after compatibility aliases are removed (14.116375ms)
+✔ legacy release metadata and source references retain their golden hashes (0.373459ms)
+✔ legacy vaccine engine rules retain their golden hash (0.090125ms)
+✔ legacy books retain their golden hash (0.113375ms)
+✔ supplement product keyset cursor accepts promoted source-stable IDs (6.810083ms)
+✔ supplement product cursor rejects malformed or unsafe values (0.3685ms)
+✔ timeline filters non-care projections before pagination without losing any supported kind (4.480333ms)
+✔ maximum-size timeline page retains its lookahead and every tied-timestamp row (1.06825ms)
+✔ exactly 200 timeline rows form a complete final page (0.395542ms)
+✔ 201st timeline row remains discoverable after a maximum-size page (0.380084ms)
+✔ default-size and empty timeline pages preserve their existing contracts (0.199125ms)
+✔ lookahead does not increase the public page limit or allow unbounded repository reads (0.427333ms)
+✔ maximum-size pagination still rejects missing baby membership before querying records (0.367042ms)
+✔ a page of 30 sessions requires one summary query rather than 60 (1.2805ms)
+✔ empty pages require no additional query (0.087ms)
+✔ last message DTO retains order metadata but excludes images and tool payloads (1.154542ms)
+✔ incomplete, duplicate, unexpected and inconsistent summaries fail closed (1.619875ms)
+✔ summary input is bounded before accessing the database (0.280292ms)
+✔ client record version parses strictly within the persisted int32 range (0.958209ms)
+ℹ tests 150
+ℹ suites 1
+ℹ pass 150
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3994.69575
+npm notice
+npm notice New minor version of npm available! 11.11.0 -> 11.21.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1
+npm notice To update run: npm install -g npm@11.21.1
+npm notice

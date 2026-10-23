@@ -1,0 +1,10 @@
+{
+  "sherpa-voice-linux-arm64.test": {
+    "sha256": "f365003e46ad3b7366791c1965a948cb78561ebc06dea5daa90dccc4829d19a3",
+    "size_bytes": 27156627
+  },
+  "sherpa-voice-api-linux-arm64": {
+    "sha256": "c98deb95c8060f871256b1520be3a95e8b318b8645740df81e52eba955f6f921",
+    "size_bytes": 27404818
+  }
+}

@@ -1,0 +1,37 @@
+=== RUN   TestClassifyStreamInterruption
+=== RUN   TestClassifyStreamInterruption/unexpected_eof_wrapped
+=== RUN   TestClassifyStreamInterruption/eof_wrapped
+=== RUN   TestClassifyStreamInterruption/context_canceled_wrapped
+=== RUN   TestClassifyStreamInterruption/context_deadline_wrapped
+=== RUN   TestClassifyStreamInterruption/network_timeout
+=== RUN   TestClassifyStreamInterruption/closed_connection
+=== RUN   TestClassifyStreamInterruption/closed_file_sentinel
+=== RUN   TestClassifyStreamInterruption/reset
+=== RUN   TestClassifyStreamInterruption/aborted
+=== RUN   TestClassifyStreamInterruption/broken_pipe
+=== RUN   TestClassifyStreamInterruption/read_limit_wrapped
+=== RUN   TestClassifyStreamInterruption/known_protocol_message
+=== RUN   TestClassifyStreamInterruption/wrapped_protocol_message
+=== RUN   TestClassifyStreamInterruption/unrecognized_secret_is_unknown
+=== RUN   TestClassifyStreamInterruption/protocol-like_secret_is_unknown
+--- PASS: TestClassifyStreamInterruption (0.00s)
+    --- PASS: TestClassifyStreamInterruption/unexpected_eof_wrapped (0.00s)
+    --- PASS: TestClassifyStreamInterruption/eof_wrapped (0.00s)
+    --- PASS: TestClassifyStreamInterruption/context_canceled_wrapped (0.00s)
+    --- PASS: TestClassifyStreamInterruption/context_deadline_wrapped (0.00s)
+    --- PASS: TestClassifyStreamInterruption/network_timeout (0.00s)
+    --- PASS: TestClassifyStreamInterruption/closed_connection (0.00s)
+    --- PASS: TestClassifyStreamInterruption/closed_file_sentinel (0.00s)
+    --- PASS: TestClassifyStreamInterruption/reset (0.00s)
+    --- PASS: TestClassifyStreamInterruption/aborted (0.00s)
+    --- PASS: TestClassifyStreamInterruption/broken_pipe (0.00s)
+    --- PASS: TestClassifyStreamInterruption/read_limit_wrapped (0.00s)
+    --- PASS: TestClassifyStreamInterruption/known_protocol_message (0.00s)
+    --- PASS: TestClassifyStreamInterruption/wrapped_protocol_message (0.00s)
+    --- PASS: TestClassifyStreamInterruption/unrecognized_secret_is_unknown (0.00s)
+    --- PASS: TestClassifyStreamInterruption/protocol-like_secret_is_unknown (0.00s)
+=== RUN   TestServeHTTPLogsSafeUnknownHTTPStreamError
+--- PASS: TestServeHTTPLogsSafeUnknownHTTPStreamError (0.10s)
+=== RUN   TestServeHTTPLogsWebSocketCloseCodeWithoutReason
+--- PASS: TestServeHTTPLogsWebSocketCloseCodeWithoutReason (0.09s)
+PASS

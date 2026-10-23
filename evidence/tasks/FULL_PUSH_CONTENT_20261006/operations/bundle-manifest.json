@@ -1,0 +1,14 @@
+{
+  "revision": "8b9edd3be223c2e784bf3ba617d7f11eac27323a",
+  "webRevision": "c366c6818887fb400d541dc679fc5c5b936392b0",
+  "fromCleanGitArchive": true,
+  "previousRelease": "web-push-20261006",
+  "schemaChanged": false,
+  "files": {
+    "environment-launch.py": "6ee6dc8e56f6dba6d4bb901fe6cc20549f26c5d4168d1b649a5f222184bd076d",
+    "source.tar.gz": "0c297b6259ce9c401fc830b4704511108c62f5769ad69663f873b0db47f267c5",
+    "activate.py": "22c17c3bf89ca3cd26be965452c0f0e03d8c4123d6471306d45c47c219ef75d4",
+    "bin/growdesk-api": "684afa52949eb01b7df88ab3883a1bf84981a14e5b29fac00835c1aae97349e4",
+    "bin/growdesk-worker": "6c143450b3fa39708dbef99996931ac29a1ccc05df3ba3c6ac9d8e4e59bdf4fd"
+  }
+}

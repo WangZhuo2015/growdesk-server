@@ -16,6 +16,7 @@ var revision = "development"
 
 func main() {
 	once := flag.Bool("once", false, "process one bounded iteration and exit")
+	notificationsOnly := flag.Bool("notifications-only", false, "claim only family record notification tasks and their tagged push deliveries")
 	version := flag.Bool("version", false, "print the source revision")
 	flag.Parse()
 	if *version {
@@ -27,7 +28,12 @@ func main() {
 	log := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
-	if err := backend.RunNativeRuntime(ctx, "worker", *once, log); err != nil {
+	profile := backend.NativeWorkerProfileFull
+	if *notificationsOnly {
+		profile = backend.NativeWorkerProfileNotificationsOnly
+	}
+	options := backend.NativeRuntimeOptions{WorkerProfile: profile}
+	if err := backend.RunNativeRuntimeWithOptions(ctx, "worker", *once, log, options); err != nil {
 		log.Error("native process stopped", "error", err)
 		os.Exit(1)
 	}

@@ -1,0 +1,41 @@
+{
+  "sourceRevision": "ba7abcfb0ffe7253b8bff9322c15ab620a5743a8",
+  "productionTestPushSent": false,
+  "physicalDeviceReceiptVerified": false,
+  "schemaChanged": false,
+  "services": {
+    "growdesk-api": {
+      "MainPID": "1752897",
+      "NRestarts": "0",
+      "ActiveState": "active",
+      "SubState": "running",
+      "runningBinarySha256": "f0bf9f85bc7e347a2aca6024bbbc846bdbe9d43c5cb710e9092e2a466c802462"
+    },
+    "growdesk-notifications-worker": {
+      "MainPID": "1753061",
+      "NRestarts": "0",
+      "ActiveState": "active",
+      "SubState": "running",
+      "runningBinarySha256": "76fb27fc9fdff3ef34359c94759e4d671e0736e42f652d0f721e934a40563c25"
+    }
+  },
+  "webPidUnchanged": true,
+  "workerProfile": "notifications-only",
+  "publicHttpStatuses": {
+    "https://ampere.zwang.fun:8443/health/ready": 200,
+    "https://ampere.zwang.fun:8443/api/v1/notifications": 401,
+    "https://baby.zwang.fun/notifications": 200,
+    "https://baby.zwang.fun/sw.js": 200,
+    "https://baby.zwang.fun/api/push/vapid-key": 401
+  },
+  "readyHealth": {
+    "status": "ok",
+    "service": "growdesk-api",
+    "stage": "foundation",
+    "dependencies": {
+      "postgres": "ok",
+      "redis": "ok"
+    }
+  },
+  "passed": true
+}

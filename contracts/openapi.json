@@ -22047,6 +22047,316 @@
         }
       }
     },
+    "/api/v1/me/notification-preferences": {
+      "get": {
+        "operationId": "getNotificationPreferences",
+        "summary": "Get effective user or baby notification preferences",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "babyId",
+            "required": false,
+            "description": "UUID v4 string"
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "babyId",
+                        "timeZone",
+                        "kinds",
+                        "quietHours"
+                      ],
+                      "properties": {
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "timeZone": {
+                          "type": "string"
+                        },
+                        "kinds": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "family_record"
+                          ],
+                          "properties": {
+                            "family_record": {
+                              "description": "Family care record notifications; subscribed devices default to enabled",
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "quietHours": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                              "description": "Inclusive local HH:mm; must differ from end",
+                              "type": "string"
+                            },
+                            "end": {
+                              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                              "description": "Exclusive local HH:mm; may cross midnight",
+                              "type": "string"
+                            }
+                          },
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putNotificationPreferences",
+        "summary": "Replace user or authorized baby notification preferences",
+        "tags": [
+          "Notifications"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "timeZone",
+                  "kinds",
+                  "quietHours"
+                ],
+                "properties": {
+                  "babyId": {
+                    "format": "uuid",
+                    "description": "UUID v4 string",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "timeZone": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "IANA timezone, validated by the server; Local is not accepted",
+                    "type": "string"
+                  },
+                  "kinds": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "family_record"
+                    ],
+                    "properties": {
+                      "family_record": {
+                        "description": "Family care record notifications; subscribed devices default to enabled",
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "quietHours": {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "properties": {
+                      "start": {
+                        "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                        "description": "Inclusive local HH:mm; must differ from end",
+                        "type": "string"
+                      },
+                      "end": {
+                        "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                        "description": "Exclusive local HH:mm; may cross midnight",
+                        "type": "string"
+                      }
+                    },
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "babyId",
+                        "timeZone",
+                        "kinds",
+                        "quietHours"
+                      ],
+                      "properties": {
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "timeZone": {
+                          "type": "string"
+                        },
+                        "kinds": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "family_record"
+                          ],
+                          "properties": {
+                            "family_record": {
+                              "description": "Family care record notifications; subscribed devices default to enabled",
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "quietHours": {
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "properties": {
+                            "start": {
+                              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                              "description": "Inclusive local HH:mm; must differ from end",
+                              "type": "string"
+                            },
+                            "end": {
+                              "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+                              "description": "Exclusive local HH:mm; may cross midnight",
+                              "type": "string"
+                            }
+                          },
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/families/{familyId}/nutrition/products": {
       "get": {
         "operationId": "listFormulaProducts",

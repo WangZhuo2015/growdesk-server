@@ -1,0 +1,15 @@
+go-test	1
+go-test-go1.27	1
+go-test-local-toolchain	0
+go-vet	0
+go-build	0
+cross-linux-arm64-api	0
+cross-linux-arm64-migrate	0
+cross-linux-arm64-scheduler	0
+cross-linux-arm64-worker	0
+ts-unit	0
+ts-typecheck	0
+ts-contracts-check	0
+ts-test-guard	0
+ts-lint	0
+baseline-hash-check	0

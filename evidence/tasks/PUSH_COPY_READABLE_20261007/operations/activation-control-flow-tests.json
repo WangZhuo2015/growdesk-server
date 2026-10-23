@@ -1,0 +1,135 @@
+{
+  "scriptSha256": "0ed88270100f025591a7c77c24d84f4676bf8d546125a575f801ce941df1ae3d",
+  "localSimulationOnly": true,
+  "tests": [
+    {
+      "fault": null,
+      "passed": true,
+      "serviceCommands": [
+        [
+          "stop",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-api"
+        ],
+        [
+          "daemon-reload"
+        ],
+        [
+          "start",
+          "growdesk-api"
+        ],
+        [
+          "start",
+          "growdesk-notifications-worker"
+        ]
+      ],
+      "deployed": true,
+      "rolledBack": false
+    },
+    {
+      "fault": "after-copy",
+      "passed": true,
+      "serviceCommands": [
+        [
+          "stop",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-api"
+        ],
+        [
+          "daemon-reload"
+        ],
+        [
+          "start",
+          "growdesk-api"
+        ],
+        [
+          "stop",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-api"
+        ],
+        [
+          "daemon-reload"
+        ],
+        [
+          "start",
+          "growdesk-api"
+        ],
+        [
+          "start",
+          "growdesk-notifications-worker"
+        ]
+      ],
+      "deployed": false,
+      "rolledBack": true
+    },
+    {
+      "fault": "worker-start",
+      "passed": true,
+      "serviceCommands": [
+        [
+          "stop",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-api"
+        ],
+        [
+          "daemon-reload"
+        ],
+        [
+          "start",
+          "growdesk-api"
+        ],
+        [
+          "start",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-notifications-worker"
+        ],
+        [
+          "stop",
+          "growdesk-api"
+        ],
+        [
+          "daemon-reload"
+        ],
+        [
+          "start",
+          "growdesk-api"
+        ],
+        [
+          "start",
+          "growdesk-notifications-worker"
+        ]
+      ],
+      "deployed": false,
+      "rolledBack": true
+    },
+    {
+      "fault": "backup",
+      "passed": true,
+      "serviceCommands": [],
+      "deployed": false,
+      "rolledBack": false
+    },
+    {
+      "fault": "preexisting-backup",
+      "passed": true,
+      "serviceCommands": [],
+      "deployed": false,
+      "rolledBack": false
+    }
+  ]
+}

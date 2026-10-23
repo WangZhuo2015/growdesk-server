@@ -1,0 +1,14 @@
+{
+  "provenance": {
+    "schemaVersion": 1,
+    "sourceGitSha": "c366c6818887fb400d541dc679fc5c5b936392b0",
+    "sourceDirty": false,
+    "buildId": "jFRaen6S2ha8tJjqKrZsj",
+    "artifactSha256": "ca5ad7f43ea8f77799defe432e6d368608e65a78d6d229f10ae608c55fed94b5",
+    "builtAt": "2026-10-06T13:09:30.817Z"
+  },
+  "noProductionEnvRead": true,
+  "nextVersion": "16.3.6",
+  "completeNotificationBodySource": true,
+  "completeNotificationTitleSource": true
+}

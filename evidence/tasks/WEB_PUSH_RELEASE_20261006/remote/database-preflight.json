@@ -1,0 +1,87 @@
+{
+  "exit": 0,
+  "metadata": {
+    "roles": [
+      {
+        "rolname": "postgres",
+        "rolsuper": true,
+        "rolcreatedb": true,
+        "rolcreaterole": true,
+        "rolcanlogin": true
+      },
+      {
+        "rolname": "growdesk",
+        "rolsuper": false,
+        "rolcreatedb": false,
+        "rolcreaterole": false,
+        "rolcanlogin": true
+      }
+    ],
+    "tables": [
+      {
+        "schemaname": "public",
+        "tablename": "notifications",
+        "tableowner": "postgres"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "device_sessions",
+        "tableowner": "postgres"
+      },
+      {
+        "schemaname": "native_go",
+        "tablename": "migrations",
+        "tableowner": "growdesk"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "push_devices",
+        "tableowner": "postgres"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "task_executions",
+        "tableowner": "postgres"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "task_outbox",
+        "tableowner": "postgres"
+      },
+      {
+        "schemaname": "public",
+        "tablename": "passport_devices",
+        "tableowner": "growdesk"
+      }
+    ],
+    "migrations": [
+      {
+        "name": "0001_oauth.sql",
+        "sha256": "bde35d470380232f00de11ec794c01d586a17c1782b24176c154dcc824986481"
+      },
+      {
+        "name": "0002_object_cleanup.sql",
+        "sha256": "ab219547e33f576baecb31652e89f02006efdc977f7d423447817a1ae51aa19a"
+      },
+      {
+        "name": "0003_passport.sql",
+        "sha256": "6f4b5d04a9c9b4cfcb2cb3a28ec2c3b9bb3648f8acd1785c895443f532c3a8ab"
+      }
+    ],
+    "family_notification_collisions": 0,
+    "family_outbox_collisions": 0,
+    "tasks_by_kind_status": [
+      {
+        "kind": "legacy_ai_job",
+        "status": "failed",
+        "count": 1
+      },
+      {
+        "kind": "legacy_ai_job",
+        "status": "succeeded",
+        "count": 3
+      }
+    ]
+  },
+  "error": ""
+}

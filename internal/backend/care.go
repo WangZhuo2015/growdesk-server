@@ -644,6 +644,9 @@ func (s *Server) mutateCare(ctx context.Context, r *Request, d careSpec, op stri
 	if err != nil {
 		return Result{}, err
 	}
+	if err = enqueueFamilyRecordNotification(ctx, tx, r.Principal.UserID, scope, d.Kind, id, op, version); err != nil {
+		return Result{}, err
+	}
 	if err = tx.Commit(ctx); err != nil {
 		return Result{}, err
 	}

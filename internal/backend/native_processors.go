@@ -13,6 +13,15 @@ import (
 // Provider results are proposals. All durable effects are committed only after
 // rechecking both the current principal and the exact leased execution epoch.
 func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) error {
+	if lease.Kind == familyRecordNotificationKind {
+		if err := familyRecordScope(ctx, s.DB, lease.Input); err != nil {
+			return err
+		}
+		return s.executeFamilyRecordNotification(ctx, lease)
+	}
+	if lease.Kind == "push_delivery" && lease.Input.FamilyRecord != nil {
+		return s.executeNativePush(ctx, lease)
+	}
 	if err := nativeTaskOwner(ctx, s.DB, lease.Input, false); err != nil {
 		return err
 	}
@@ -40,7 +49,11 @@ func (s *Server) executeNativeTask(ctx context.Context, lease nativeTaskLease) e
 			answer, err = s.callNativeVisualAI(ctx, config, input, message, delta)
 		}
 	case "voice_transcription":
-		transcript, err = s.transcribeNativeAudio(ctx, config, input)
+		speechConfig, speechErr := nativeSpeechConfiguration()
+		if speechErr != nil {
+			return speechErr
+		}
+		transcript, err = s.transcribeNativeAudio(ctx, speechConfig, input)
 		if err != nil {
 			return err
 		}

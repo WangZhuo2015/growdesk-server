@@ -1,0 +1,10 @@
+{
+  "loopback_only": true,
+  "nondefault_port": 56835,
+  "database": "test_voice_c24230728224",
+  "role": "test_voice_c24230728224",
+  "guard_passed": true,
+  "tests_exit_code": 0,
+  "fixture_counts_after": "0|0|0|0",
+  "temporary_cluster_removed": true
+}
