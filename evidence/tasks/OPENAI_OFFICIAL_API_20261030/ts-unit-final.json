@@ -1,0 +1,15 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "--test",
+    "packages/*/tests/**/*.test.ts",
+    "apps/*/tests/**/*.test.ts",
+    "tests/unit/**/*.test.ts"
+  ],
+  "started_at": "2026-10-30T06:26:26.996564+00:00",
+  "duration_seconds": 13.04,
+  "exit_code": 1,
+  "isolation": "Inherited database/provider/notification settings removed; local tests only."
+}

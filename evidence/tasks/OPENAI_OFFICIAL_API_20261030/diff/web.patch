@@ -1,0 +1,1288 @@
+--- a/lib/llm-profiles.ts
++++ b/lib/llm-profiles.ts
+@@ -43,20 +43,100 @@
+   );
+ }
+ 
+-/** Fallback profile created from legacy / environment variables */
++export const OPENAI_OFFICIAL_PROFILE_ID = "openai-official";
++export const AMD_V41_PROFILE_ID = "amd-v4.1-flash";
++const OPENAI_OFFICIAL_BASE = "https://api.openai.com/v1";
++const AMD_V41_BASE = "https://developer.amd.com.cn/radeon/api/v1";
++const MAX_OPENAI_KEY_BYTES = 16_384;
++
++/** Resolve only explicitly configured key sources. Never guess a repository-local key path. */
++export function resolveOfficialOpenAiKey(): string {
++  const inline = process.env.GROWDESK_AI_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
++  if (inline) return inline;
++  const configuredPath = process.env.GROWDESK_AI_API_KEY_FILE?.trim();
++  if (!configuredPath) return "";
++
++  let fd: number | undefined;
++  try {
++    fd = fs.openSync(configuredPath, fs.constants.O_RDONLY);
++    const stat = fs.fstatSync(fd);
++    if (!stat.isFile() || stat.size > MAX_OPENAI_KEY_BYTES) throw new Error();
++    const buffer = Buffer.alloc(MAX_OPENAI_KEY_BYTES + 1);
++    const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
++    if (bytesRead > MAX_OPENAI_KEY_BYTES) throw new Error();
++    const raw = new TextDecoder("utf-8", { fatal: true }).decode(buffer.subarray(0, bytesRead));
++    const key = raw.trim();
++    if (!key || /[\s\p{Cc}]/u.test(key)) throw new Error();
++    return key;
++  } catch {
++    throw new Error("Official OpenAI API key configuration is invalid");
++  } finally {
++    if (fd !== undefined) {
++      try { fs.closeSync(fd); } catch {}
++    }
++  }
++}
++
++function isAmdApiRoot(value: unknown): boolean {
++  if (typeof value !== "string" || !/^https:\/\/developer\.amd\.com\.cn\/radeon\/api\/v1\/?$/i.test(value.trim())) return false;
++  try {
++    const url = new URL(value);
++    return url.protocol === "https:" && url.hostname.toLowerCase() === "developer.amd.com.cn"
++      && !url.username && !url.password && !url.port && !url.search && !url.hash
++      && (url.pathname === "/radeon/api/v1" || url.pathname === "/radeon/api/v1/");
++  } catch {
++    return false;
++  }
++}
++
++function configuredAmdProfile(config: LlmProfilesConfig | null): LlmProfile | undefined {
++  if (!config) return undefined;
++  const candidates = Object.values(config.profiles).filter(profile =>
++    profile && isAmdApiRoot(profile.baseUrl) && typeof profile.apiKey === "string" && Boolean(profile.apiKey.trim()),
++  );
++  const activeId = process.env.LLM_PROFILE?.trim() || config.activeProfile;
++  const active = config.profiles[activeId];
++  return active && candidates.includes(active) ? active : candidates[0];
++}
++
++function getBuiltInProfiles(config: LlmProfilesConfig | null): Array<{ id: string; profile: LlmProfile }> {
++  const configuredAmd = isTestEnvironment() ? undefined : configuredAmdProfile(config);
++  const testAmdKey = isTestEnvironment() ? process.env.AMD_API_KEY?.trim() || "" : "";
++  return [
++    {
++      id: OPENAI_OFFICIAL_PROFILE_ID,
++      profile: {
++        name: "OpenAI official API · GPT-6 Luna",
++        baseUrl: OPENAI_OFFICIAL_BASE,
++        apiKey: resolveOfficialOpenAiKey(),
++        model: "gpt-6-luna",
++        visionModel: "gpt-6-luna",
++      },
++    },
++    {
++      id: AMD_V41_PROFILE_ID,
++      profile: {
++        name: "AMD · DeepSeek V4.1 Flash",
++        baseUrl: AMD_V41_BASE,
++        apiKey: configuredAmd?.apiKey?.trim() || testAmdKey,
++        ...(configuredAmd?.headers ? { headers: configuredAmd.headers } : {}),
++        ...(configuredAmd?.completionExtras ? { completionExtras: configuredAmd.completionExtras } : {}),
++        model: "DeepSeek-V4.1-Flash",
++        visionModel: "DeepSeek-V4.1-Flash",
++      },
++    },
++  ];
++}
++
++/** Fallback profile created from explicitly configured legacy environment variables. */
+ function getLegacyEnvProfile(): LlmProfile {
+-  const baseUrl = (process.env.AI_BASE_URL || process.env.OPENAI_BASE_URL || "https://opencode.ai/zen/go/v1").replace(/\/+$/, "");
+-  const apiKey = process.env.AI_API_KEY || process.env.OPENAI_API_KEY || "";
++  const explicitBase = process.env.AI_BASE_URL || process.env.OPENAI_BASE_URL;
++  const baseUrl = (explicitBase || "https://opencode.ai/zen/go/v1").replace(/\/+$/, "");
++  const apiKey = process.env.AI_API_KEY || (explicitBase ? process.env.OPENAI_API_KEY : "") || "";
+   const model = process.env.AI_MODEL || process.env.OPENAI_MODEL || "Qwen3.8-Flash-Next";
+   const visionModel = process.env.AI_VISION_MODEL || "Qwen3.8-Flash-Next";
+ 
+-  return {
+-    name: "Legacy Environment",
+-    baseUrl,
+-    apiKey,
+-    model,
+-    visionModel,
+-  };
++  return { name: "Legacy Environment", baseUrl, apiKey, model, visionModel };
+ }
+ 
+ let cachedConfig: { filePath: string; mtimeMs: number; config: LlmProfilesConfig } | null = null;
+@@ -84,31 +164,38 @@
+ }
+ 
+ export function listLlmProfileEntries(): Array<{ id: string; profile: LlmProfile }> {
+-  // Tests must use isolated environment profiles, never repository operator credentials.
+-  if (isTestEnvironment()) return [{ id: "default", profile: getLegacyEnvProfile() }];
+-  const config = loadLlmProfilesConfig();
+-  if (config) {
+-    const entries = Object.entries(config.profiles)
+-      .filter(([, profile]) => Boolean(profile && profile.baseUrl))
+-      .map(([id, profile]) => ({ id, profile }));
+-    if (entries.length > 0) return entries;
+-  }
+-  return [{ id: "default", profile: getLegacyEnvProfile() }];
++  // Tests use only virtual environment keys and never load the operator profile file.
++  const configured = isTestEnvironment() ? null : loadLlmProfilesConfig();
++  const builtIns = getBuiltInProfiles(configured);
++  const custom = configured
++    ? Object.entries(configured.profiles)
++        .filter(([id, profile]) => ![OPENAI_OFFICIAL_PROFILE_ID, AMD_V41_PROFILE_ID].includes(id) && Boolean(profile && profile.baseUrl))
++        .map(([id, profile]) => ({ id, profile }))
++    : [];
++  const hasLegacyConfig = isTestEnvironment() || Boolean(
++    process.env.AI_BASE_URL || process.env.OPENAI_BASE_URL || process.env.AI_API_KEY,
++  );
++  const legacy = hasLegacyConfig && !custom.some(({ id }) => id === "default")
++    ? [{ id: "default", profile: getLegacyEnvProfile() }]
++    : [];
++  return [...builtIns, ...custom, ...legacy];
+ }
+ 
+ export function getLlmProfileById(profileId: string): LlmProfile | null {
+   return listLlmProfileEntries().find((entry) => entry.id === profileId)?.profile || null;
++}
++
++export function isOfficialOpenAiProfileActive(): boolean {
++  return getActiveLlmProfileId() === OPENAI_OFFICIAL_PROFILE_ID;
+ }
+ 
+ export function getActiveLlmProfileId(): string {
+   const scoped = profileScope.getStore();
+   if (scoped) return scoped.profileId;
+   if (isTestEnvironment()) return "default";
+-  const config = loadLlmProfilesConfig();
+-  if (!config) return "default";
+-  const activeKey = process.env.LLM_PROFILE || config.activeProfile;
+-  if (config.profiles[activeKey]?.baseUrl) return activeKey;
+-  return Object.entries(config.profiles).find(([, profile]) => Boolean(profile?.baseUrl))?.[0] || "default";
++  const requested = process.env.LLM_PROFILE?.trim();
++  if (requested && getLlmProfileById(requested)?.baseUrl) return requested;
++  return OPENAI_OFFICIAL_PROFILE_ID;
+ }
+ 
+ export function getLlmProfileScope(): ScopedLlmProfile | undefined {
+@@ -187,40 +274,27 @@
+     return getLegacyEnvProfile();
+   }
+ 
+-  const config = loadLlmProfilesConfig();
+-  if (!config) {
+-    return getLegacyEnvProfile();
+-  }
+-
+-  const activeKey = process.env.LLM_PROFILE || config.activeProfile;
+-  const profile = config.profiles[activeKey];
+-  if (profile && profile.baseUrl) {
+-    return profile;
+-  }
+-
+-  // Fallback if active key not found
+-  const firstProfile = Object.values(config.profiles)[0];
+-  if (firstProfile && firstProfile.baseUrl) {
+-    return firstProfile;
+-  }
+-
++  const requested = process.env.LLM_PROFILE?.trim();
++  if (requested) {
++    const profile = getLlmProfileById(requested);
++    if (profile?.baseUrl) return profile;
++  }
++  if (!isTestEnvironment()) {
++    const official = getLlmProfileById(OPENAI_OFFICIAL_PROFILE_ID);
++    if (official) return official;
++  }
+   return getLegacyEnvProfile();
+ }
+ 
+ export function getLlmProfiles(): { activeProfile: string; profiles: Record<string, LlmProfile> } {
+-  const config = loadLlmProfilesConfig();
+-  if (!config) {
+-    const legacy = getLegacyEnvProfile();
+-    return {
+-      activeProfile: "default",
+-      profiles: { default: legacy },
+-    };
+-  }
+-
+-  const activeKey = process.env.LLM_PROFILE || config.activeProfile;
++  const entries = listLlmProfileEntries();
++  const requested = process.env.LLM_PROFILE?.trim();
++  const activeProfile = requested && entries.some(({ id }) => id === requested)
++    ? requested
++    : isTestEnvironment() ? "default" : OPENAI_OFFICIAL_PROFILE_ID;
+   return {
+-    activeProfile: activeKey,
+-    profiles: config.profiles,
++    activeProfile,
++    profiles: Object.fromEntries(entries.map(({ id, profile }) => [id, profile])),
+   };
+ }
+ 
+@@ -284,7 +358,7 @@
+ 
+     const selectedProfile = parsed.profiles[profileId];
+ 
+-    if (options.syncEnv) {
++    if (options.syncEnv && ![OPENAI_OFFICIAL_PROFILE_ID, AMD_V41_PROFILE_ID].includes(profileId)) {
+       syncActiveProfileToEnv(selectedProfile, profileId);
+     }
+ 
+--- a/lib/llm-preferences.ts
++++ b/lib/llm-preferences.ts
+@@ -10,6 +10,8 @@
+   getLlmProfileProvider,
+   listLlmProfileEntries,
+   resolveLlmProfileModel,
++  OPENAI_OFFICIAL_PROFILE_ID,
++  AMD_V41_PROFILE_ID,
+ } from "@/lib/llm-profiles";
+ import { getChatGPTPlan } from "@/lib/chatgpt-plan";
+ import { growdeskFetch } from "@/lib/growdesk/client";
+@@ -276,6 +278,22 @@
+   };
+ }
+ 
++/** Default routing for features without an explicitly saved preference. */
++export function getDefaultFeatureLlmSelection(feature: LlmFeature): LlmSelection {
++  if (!isLlmFeature(feature)) throw new LlmPreferenceError(400, "invalid_feature", "AI feature is invalid");
++  const profileId = feature === "daily_summary" ? AMD_V41_PROFILE_ID : OPENAI_OFFICIAL_PROFILE_ID;
++  const profile = getLlmProfileById(profileId);
++  if (!profile?.baseUrl) {
++    throw new LlmPreferenceError(503, "llm_profile_unavailable", "The default AI profile is unavailable");
++  }
++  return {
++    feature,
++    source: "api",
++    profileId,
++    modelId: resolveLlmProfileModel(profile, VISION_FEATURES.has(feature)),
++  };
++}
++
+ export async function getLlmPreferences(owner: string, accessToken?: string): Promise<LlmSelection[]> {
+   validateOwner(owner);
+   if (!usesSharedPreferences(accessToken)) return localStore().list(owner);
+--- a/lib/llm-context.ts
++++ b/lib/llm-context.ts
+@@ -5,6 +5,8 @@
+   type LlmModelInfo,
+   type LlmSelection,
+   getFeatureLlmSelection,
++  getDefaultFeatureLlmSelection,
++  LlmPreferenceError,
+   validateLlmSelection,
+ } from "./llm-preferences";
+ import { AI_CONFIG } from "./config";
+@@ -34,7 +36,16 @@
+   work: () => T | Promise<T>,
+ ): Promise<T> {
+   const saved = await getFeatureLlmSelection(owner, feature, accessToken);
+-  const selection = saved ? await validateLlmSelection(owner, saved) : undefined;
++  const candidate = saved || getDefaultFeatureLlmSelection(feature);
++  let selection: LlmSelection;
++  try {
++    selection = await validateLlmSelection(owner, candidate);
++  } catch (error) {
++    if (!saved && error instanceof LlmPreferenceError && error.code === "llm_profile_unavailable") {
++      throw new LlmPreferenceError(503, "llm_profile_unavailable", "The default AI profile is not configured");
++    }
++    throw error;
++  }
+   const execute = () => featureScope.run({ owner, feature, selection }, work);
+   if (selection?.source === "api") {
+     return runWithLlmProfileScope(selection.profileId, selection.modelId, execute);
+--- a/lib/llm-provenance.ts
++++ b/lib/llm-provenance.ts
+@@ -1,6 +1,12 @@
+ import { AsyncLocalStorage } from "node:async_hooks";
+ import type { LlmModelInfo } from "@/lib/llm-preferences";
+ import { getCurrentLlmFeatureScope, getCurrentLlmModelInfo } from "@/lib/llm-context";
++import {
++  getActiveLlmProfile,
++  getActiveLlmProfileId,
++  getLlmProfileScope,
++  OPENAI_OFFICIAL_PROFILE_ID,
++} from "@/lib/llm-profiles";
+ import { chatGPTPlanTaskFetch } from "@/lib/chatgpt-plan/task-adapter";
+ 
+ const executions = new AsyncLocalStorage<{ llm: LlmModelInfo | null }>();
+@@ -13,6 +19,31 @@
+ }
+ export function actualLlmModel(): LlmModelInfo | null {
+   return executions.getStore()?.llm ?? null;
++}
++
++function normalizeOfficialChatRequest(input: string | URL, init: RequestInit): RequestInit {
++  if (getActiveLlmProfileId() !== OPENAI_OFFICIAL_PROFILE_ID || typeof init.body !== "string") return init;
++  let url: URL;
++  let body: unknown;
++  try {
++    url = new URL(input);
++    if (url.hostname.toLowerCase() !== "api.openai.com" || !url.pathname.endsWith("/chat/completions")) return init;
++    body = JSON.parse(init.body);
++  } catch {
++    return init;
++  }
++  if (!body || typeof body !== "object" || Array.isArray(body)) return init;
++  const payload = { ...(body as Record<string, unknown>) };
++  const scope = getLlmProfileScope();
++  const profile = getActiveLlmProfile();
++  payload.model = scope?.modelId || profile.model || "gpt-6-luna";
++  if (payload.max_completion_tokens === undefined && typeof payload.max_tokens === "number") {
++    payload.max_completion_tokens = payload.max_tokens;
++  }
++  delete payload.max_tokens;
++  // GPT-6 reasoning models use their default sampling settings.
++  delete payload.temperature;
++  return { ...init, body: JSON.stringify(payload) };
+ }
+ 
+ /** Record the model sent, then prefer the provider's actual model identifier. */
+@@ -54,7 +85,7 @@
+     ...selected, source: "api", provider: new URL(input).hostname, model: model || selected?.model || "unknown",
+   };
+   recordLlmModel(info);
+-  const response = await fetch(input, init);
++  const response = await fetch(input, normalizeOfficialChatRequest(input, init));
+   if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
+     // Do not consume or replace the response that the feature parser receives.
+     const payload: unknown = await response.clone().json().catch(() => null);
+--- a/lib/agent/model.ts
++++ b/lib/agent/model.ts
+@@ -6,7 +6,11 @@
+ } from "@earendil-works/pi-ai";
+ import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
+ import { openAIResponsesApi } from "@earendil-works/pi-ai/api/openai-responses.lazy";
+-import { getActiveLlmProfile } from "@/lib/llm-profiles";
++import {
++  getActiveLlmProfile,
++  getActiveLlmProfileId,
++  OPENAI_OFFICIAL_PROFILE_ID,
++} from "@/lib/llm-profiles";
+ 
+ export type LlmBackendId = "openrouter" | "opencode";
+ 
+@@ -20,7 +24,7 @@
+ export interface LlmBackendSession {
+   id: LlmBackendId;
+   models: ReturnType<typeof createModels>;
+-  model: Model<"openai-completions">;
++  model: Model<"openai-completions"> | Model<"openai-responses">;
+   getApiKey: () => string | undefined;
+ }
+ 
+@@ -49,6 +53,7 @@
+ 
+ function opencodeApiKey(): string {
+   const profile = getActiveLlmProfile();
++  if (getActiveLlmProfileId() === OPENAI_OFFICIAL_PROFILE_ID) return profile.apiKey || "";
+   if (profile.apiKey) return profile.apiKey;
+   return process.env.AI_API_KEY || "";
+ }
+@@ -90,6 +95,8 @@
+ }
+ 
+ export function resolveLlmBackendId(_raw?: unknown): LlmBackendId {
++  // A missing official key is a configuration error, never a reason to switch providers.
++  if (getActiveLlmProfileId() === OPENAI_OFFICIAL_PROFILE_ID) return "opencode";
+   if (opencodeApiKey()) return "opencode";
+   return "openrouter";
+ }
+@@ -99,6 +106,42 @@
+   options?: { isVision?: boolean }
+ ): LlmBackendSession {
+   const isVision = Boolean(options?.isVision);
++
++  if (_id !== "openrouter" && getActiveLlmProfileId() === OPENAI_OFFICIAL_PROFILE_ID) {
++    const models = createModels();
++    const modelId = opencodeModelId();
++    const model: Model<"openai-responses"> = {
++      id: modelId,
++      name: modelId,
++      api: "openai-responses",
++      provider: "openai",
++      baseUrl: opencodeBaseUrl(),
++      reasoning: true,
++      input: ["text", "image"],
++      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
++      contextWindow: 256_000,
++      maxTokens: 16_384,
++      headers: opencodeHeaders(),
++    };
++    models.setProvider(
++      createProvider({
++        id: "openai",
++        name: "OpenAI",
++        baseUrl: opencodeBaseUrl(),
++        auth: {
++          apiKey: envApiKeyAuth("OpenAI API key", ["GROWDESK_AI_API_KEY", "OPENAI_API_KEY"]),
++        },
++        models: [model as unknown as Model<"openai-completions">],
++        api: openAIResponsesApi(),
++      })
++    );
++    return {
++      id: "opencode",
++      models,
++      model,
++      getApiKey: () => opencodeApiKey() || undefined,
++    };
++  }
+ 
+   // Opencode / Primary provider
+   if (_id === "opencode" || (opencodeApiKey() && _id !== "openrouter")) {
+--- a/lib/agent/run.ts
++++ b/lib/agent/run.ts
+@@ -7,7 +7,14 @@
+ } from "@earendil-works/pi-agent-core";
+ import { planErrorMessage } from "@/lib/chatgpt-plan/core.mjs";
+ import type { ImageContent, Model } from "@earendil-works/pi-ai";
+-import { createLlmBackend, createOpencodeResponsesBackend, OPENROUTER_HEADERS, type LlmBackendId } from "@/lib/agent/model";
++import {
++  createLlmBackend,
++  createOpencodeResponsesBackend,
++  OPENROUTER_HEADERS,
++  resolveLlmBackendId,
++  type LlmBackendId,
++} from "@/lib/agent/model";
++import { getActiveLlmProfileId, OPENAI_OFFICIAL_PROFILE_ID } from "@/lib/llm-profiles";
+ import { createRetryingModelStreamFn } from "@/lib/agent/stream-retry";
+ import type { ChatLlmModelInfo } from "@/lib/agent/chat-retry";
+ 
+@@ -101,34 +108,41 @@
+   const hasImages = Boolean(opts.images && opts.images.length > 0);
+   // Resolve the active profile inside the request's profile scope. This keeps a
+   // saved per-feature selection pinned even when its key is not in process.env.
++  const officialProfileSelected = getActiveLlmProfileId() === OPENAI_OFFICIAL_PROFILE_ID;
+   const configuredOpencode = createLlmBackend("opencode", { isVision: hasImages });
+-  const useOpencode = Boolean(configuredOpencode.getApiKey());
+-  const opencodeChat = useOpencode ? configuredOpencode : null;
+-  const isOpencodeZen = Boolean(opencodeChat?.model.baseUrl?.includes("opencode.ai") && opencodeChat.model.id.includes("muse-spark"));
+-  const opencodeResponses = useOpencode && !hasImages && isOpencodeZen ? createOpencodeResponsesBackend() : null;
++  const opencodeChat = configuredOpencode;
++  const hasOpencodeApiKey = Boolean(opencodeChat.getApiKey());
++  const isOpencodeZen = Boolean(opencodeChat.model.baseUrl?.includes("opencode.ai") && opencodeChat.model.id.includes("muse-spark"));
++  const opencodeResponses = hasOpencodeApiKey && !hasImages && isOpencodeZen ? createOpencodeResponsesBackend() : null;
+   const openrouter = createLlmBackend("openrouter", { isVision: hasImages });
+-
+-  const opencodeChatFn = opencodeChat ? createBackendStreamFn(opencodeChat as any) : null;
++  const requestedBackend = opts.backend || resolveLlmBackendId();
++  const useOpencode = requestedBackend === "opencode";
++
++  const opencodeChatFn = createBackendStreamFn(opencodeChat as any);
+   const opencodeResponsesFn = opencodeResponses ? createBackendStreamFn(opencodeResponses as any) : null;
+   const openrouterFn = createBackendStreamFn(openrouter, OPENROUTER_HEADERS);
+ 
+-  const created = activeStreamFn && activeModel ? null : (opencodeChat ?? openrouter);
++  if (officialProfileSelected && useOpencode && !opencodeChat.getApiKey() && !opts.backendSession && !activeStreamFn) {
++    throw new Error("OpenAI official API is not configured. Set GROWDESK_AI_API_KEY or GROWDESK_AI_API_KEY_FILE.");
++  }
++
++  const created = activeStreamFn && activeModel ? null : (useOpencode ? opencodeChat : openrouter);
+   const model = activeModel ?? created!.model;
+ 
+-  if (opts.pinnedLlm && !opts.backendSession && !activeStreamFn && !opencodeChatFn) {
++  if (opts.pinnedLlm && !opts.backendSession && !activeStreamFn && useOpencode && !opencodeChat.getApiKey()) {
+     throw new Error("所选 API 配置暂不可用，请检查配置后重试。");
+   }
+ 
+   const primaryFn = activeStreamFn
+     ? activeStreamFn
+-    : opencodeChatFn || openrouterFn;
+-  const primaryModel = activeModel || opencodeChat?.model || openrouter.model;
+-  const fallbackCandidates = activeStreamFn || opts.pinnedLlm
++    : useOpencode ? opencodeChatFn : openrouterFn;
++  const primaryModel = activeModel || (useOpencode ? opencodeChat.model : openrouter.model);
++  const fallbackCandidates = activeStreamFn || opts.pinnedLlm || opts.backend || officialProfileSelected
+     ? []
+     : [
+         ...(opencodeResponsesFn ? [{ model: opencodeResponses!.model, invoke: opencodeResponsesFn }] : []),
+-        ...(opencodeChatFn && primaryFn !== opencodeChatFn ? [{ model: opencodeChat!.model, invoke: opencodeChatFn }] : []),
+-        ...(primaryFn !== openrouterFn ? [{ model: openrouter.model, invoke: openrouterFn }] : []),
++        ...(useOpencode || !hasOpencodeApiKey ? [] : [{ model: opencodeChat.model, invoke: opencodeChatFn }]),
++        ...(useOpencode ? [{ model: openrouter.model, invoke: openrouterFn }] : []),
+       ];
+ 
+   const streamFn: StreamFn = createRetryingModelStreamFn(primaryFn, {
+@@ -167,7 +181,7 @@
+       messages: opts.history,
+     },
+     streamFn,
+-    getApiKey: opts.backendSession?.getApiKey ?? opts.getApiKey ?? opencodeChat?.getApiKey ?? openrouter.getApiKey ?? (() => undefined),
++    getApiKey: opts.backendSession?.getApiKey ?? opts.getApiKey ?? (useOpencode ? opencodeChat.getApiKey : openrouter.getApiKey) ?? (() => undefined),
+     toolExecution: "sequential",
+     shouldStopAfterTurn: () => {
+       turns += 1;
+--- a/components/ui/LlmFeaturePreferences.tsx
++++ b/components/ui/LlmFeaturePreferences.tsx
+@@ -50,6 +50,10 @@
+   return selections;
+ }
+ 
++function defaultProfileId(feature: Feature): string {
++  return feature === "daily_summary" ? "amd-v4.1-flash" : "openai-official";
++}
++
+ function initialDrafts(snapshot: LlmPreferenceSnapshot): SelectionMap {
+   const persisted = featureSelectionMap(snapshot);
+   const fallbackProfileId = snapshot.activeProfileId || snapshot.defaultModelInfo?.profileId || "";
+@@ -61,9 +65,12 @@
+       defaults[row.id] = persisted[row.id];
+       continue;
+     }
+-    const profile = snapshot.profiles.find(item => item.id === fallbackProfileId) || fallbackProfile;
++    const preferredProfileId = defaultProfileId(row.id);
++    const profile = snapshot.profiles.find(item => item.id === preferredProfileId)
++      || snapshot.profiles.find(item => item.id === fallbackProfileId)
++      || fallbackProfile;
+     const modelId = modelFor(profile, row.vision);
+-    if (profile && profile.available && modelId) defaults[row.id] = { feature: row.id, source: "api", profileId: profile.id, modelId };
++    if (profile && modelId) defaults[row.id] = { feature: row.id, source: "api", profileId: profile.id, modelId };
+   }
+   return defaults;
+ }
+@@ -220,9 +227,10 @@
+     const row = FEATURE_ROWS.find(item => item.id === feature)!;
+     const persisted = savedRef.current[feature];
+     if (source === "api") {
+-      const fallbackId = snapshot?.activeProfileId || snapshot?.defaultModelInfo?.profileId || "";
++      const fallbackId = defaultProfileId(feature);
+       const profileId = persisted?.source === "api" ? persisted.profileId
+-        : snapshot?.profiles.find(item => item.id === fallbackId && item.available)?.id
++        : snapshot?.profiles.find(item => item.id === fallbackId)?.id
++          || snapshot?.profiles.find(item => item.id === snapshot?.activeProfileId && item.available)?.id
+           || snapshot?.profiles.find(item => item.available)?.id || "";
+       const profile = snapshot?.profiles.find(item => item.id === profileId);
+       const modelId = persisted?.source === "api" && persisted.profileId === profileId
+--- a/tests/unit/llm-preferences.test.ts
++++ b/tests/unit/llm-preferences.test.ts
+@@ -93,6 +93,10 @@
+     apiKey: process.env.AI_API_KEY,
+     baseUrl: process.env.AI_BASE_URL,
+     model: process.env.AI_MODEL,
++    officialKey: process.env.GROWDESK_AI_API_KEY,
++    openAiKey: process.env.OPENAI_API_KEY,
++    officialKeyFile: process.env.GROWDESK_AI_API_KEY_FILE,
++    amdKey: process.env.AMD_API_KEY,
+   };
+   try {
+     await import("node:fs/promises").then(({ writeFile }) => writeFile(
+@@ -106,8 +110,14 @@
+     process.env.AI_API_KEY = "test_fake_key";
+     process.env.AI_BASE_URL = "https://test-provider.invalid/v1";
+     process.env.AI_MODEL = "test-env-model";
+-
+-    assert.deepEqual(listLlmProfileEntries().map((entry) => entry.id), ["default"]);
++    process.env.GROWDESK_AI_API_KEY = "test_virtual_official_key";
++    process.env.OPENAI_API_KEY = "test_virtual_openai_key";
++    process.env.AMD_API_KEY = "test_virtual_amd_key";
++    delete process.env.GROWDESK_AI_API_KEY_FILE;
++
++    const entries = listLlmProfileEntries();
++    assert.deepEqual(entries.map((entry) => entry.id), ["openai-official", "amd-v4.1-flash", "default"]);
++    assert.equal(entries.find((entry) => entry.id === "amd-v4.1-flash")?.profile.apiKey, "test_virtual_amd_key");
+     assert.equal(getActiveLlmProfileId(), "default");
+     assert.equal(getActiveLlmProfile().name, "Legacy Environment");
+     const scoped = runWithLlmProfileScope("default", "test-scope-model", () => ({
+@@ -125,6 +135,14 @@
+     else process.env.AI_BASE_URL = previous.baseUrl;
+     if (previous.model === undefined) delete process.env.AI_MODEL;
+     else process.env.AI_MODEL = previous.model;
++    if (previous.officialKey === undefined) delete process.env.GROWDESK_AI_API_KEY;
++    else process.env.GROWDESK_AI_API_KEY = previous.officialKey;
++    if (previous.openAiKey === undefined) delete process.env.OPENAI_API_KEY;
++    else process.env.OPENAI_API_KEY = previous.openAiKey;
++    if (previous.officialKeyFile === undefined) delete process.env.GROWDESK_AI_API_KEY_FILE;
++    else process.env.GROWDESK_AI_API_KEY_FILE = previous.officialKeyFile;
++    if (previous.amdKey === undefined) delete process.env.AMD_API_KEY;
++    else process.env.AMD_API_KEY = previous.amdKey;
+     await rm(directory, { recursive: true, force: true });
+   }
+ });
+@@ -137,6 +155,10 @@
+     "AI_BASE_URL",
+     "AI_MODEL",
+     "AI_VISION_MODEL",
++    "GROWDESK_AI_API_KEY",
++    "OPENAI_API_KEY",
++    "GROWDESK_AI_API_KEY_FILE",
++    "AMD_API_KEY",
+     "LLM_PREFERENCES_FILE",
+     "GROWDESK_ENABLED",
+     "GROWDESK_API_URL",
+@@ -148,6 +170,10 @@
+     process.env.AI_BASE_URL = "https://test-provider.invalid/v1";
+     process.env.AI_MODEL = "test-chat-model";
+     process.env.AI_VISION_MODEL = "test-vision-model";
++    process.env.GROWDESK_AI_API_KEY = "test_virtual_official_key";
++    process.env.OPENAI_API_KEY = "test_virtual_openai_key";
++    process.env.AMD_API_KEY = "test_virtual_amd_key";
++    delete process.env.GROWDESK_AI_API_KEY_FILE;
+     process.env.LLM_PREFERENCES_FILE = filename;
+     process.env.GROWDESK_ENABLED = "false";
+     delete process.env.GROWDESK_API_URL;
+@@ -166,7 +192,7 @@
+       modelId: "test-vision-model",
+     });
+ 
+-    const [chat, medical, otherOwner] = await Promise.all([
++    const [chat, medical, otherOwner, dailySummary] = await Promise.all([
+       withLlmFeature("test_user_scope", "chat", undefined, () => ({
+         model: AI_CONFIG.model,
+         visionModel: AI_CONFIG.visionModel,
+@@ -184,6 +210,10 @@
+         info: getCurrentLlmModelInfo(),
+         cacheKey: getCurrentLlmCacheKey(),
+       })),
++      withLlmFeature("test_user_scope", "daily_summary", undefined, () => ({
++        model: AI_CONFIG.model,
++        info: getCurrentLlmModelInfo(),
++      })),
+     ]);
+ 
+     assert.equal(chat.model, "test-chat-model");
+@@ -197,7 +227,10 @@
+     assert.equal(medical.model, "test-vision-model");
+     assert.equal(medical.visionModel, "test-vision-model");
+     assert.equal(medical.info?.model, "test-vision-model");
+-    assert.equal(otherOwner.model, "test-chat-model");
++    assert.equal(otherOwner.model, "gpt-6-luna");
++    assert.equal(otherOwner.info?.profileId, "openai-official");
++    assert.equal(dailySummary.model, "DeepSeek-V4.1-Flash");
++    assert.equal(dailySummary.info?.profileId, "amd-v4.1-flash");
+     assert.notEqual(chat.cacheKey, medical.cacheKey);
+     assert.notEqual(chat.cacheKey, otherOwner.cacheKey);
+     assert.notEqual(medical.cacheKey, otherOwner.cacheKey);
+--- a/tests/unit/llm-provenance.test.ts
++++ b/tests/unit/llm-provenance.test.ts
+@@ -8,12 +8,20 @@
+ import { transformSync } from "esbuild";
+ 
+ const require = createRequire(import.meta.url);
++let activeProfileId = "test_profile";
++let fetchImpl: typeof fetch = fetch;
+ const source = readFileSync(new URL("../../lib/llm-provenance.ts", import.meta.url), "utf8");
+ const module = { exports: {} as Record<string, Function> };
+ const code = transformSync(source, { loader: "ts", format: "cjs" }).code;
+-vm.runInNewContext(code, { module, exports: module.exports, URL, Response, fetch, require: (id: string) => {
++vm.runInNewContext(code, { module, exports: module.exports, URL, Response, fetch: (...args: Parameters<typeof fetch>) => fetchImpl(...args), require: (id: string) => {
+   if (id === "@/lib/chatgpt-plan/task-adapter") return { chatGPTPlanTaskFetch: () => assert.fail("API tasks must not call the ChatGPT adapter") };
+   if (id === "@/lib/llm-context") return { getCurrentLlmFeatureScope: () => undefined, getCurrentLlmModelInfo: () => ({ source: "api", provider: "test_provider", model: "test_alias", profileId: "test_profile" }) };
++  if (id === "@/lib/llm-profiles") return {
++    OPENAI_OFFICIAL_PROFILE_ID: "openai-official",
++    getActiveLlmProfileId: () => activeProfileId,
++    getLlmProfileScope: () => activeProfileId === "openai-official" ? { modelId: "gpt-6-luna" } : undefined,
++    getActiveLlmProfile: () => ({ model: activeProfileId === "openai-official" ? "gpt-6-luna" : "test_alias" }),
++  };
+   if (id.startsWith("node:")) return require(id);
+   throw new Error("Unexpected dependency: " + id);
+ } });
+@@ -49,3 +57,36 @@
+   })));
+   assert.equal(actualLlmModel(), null);
+ });
++
++
++test("official GPT-6 direct requests use compatible token limits and sampling defaults", async () => {
++  const priorFetch = fetchImpl;
++  activeProfileId = "openai-official";
++  fetchImpl = async (input, init) => {
++    assert.equal(String(input), "https://api.openai.com/v1/chat/completions");
++    const body = JSON.parse(String(init?.body));
++    assert.equal(body.model, "gpt-6-luna");
++    assert.equal(body.max_completion_tokens, 321);
++    assert.equal("max_tokens" in body, false);
++    assert.equal("temperature" in body, false);
++    assert.deepEqual(body.response_format, { type: "json_object" });
++    return Response.json({ model: "gpt-6-luna", choices: [] });
++  };
++  try {
++    const response = await llmFetch("https://api.openai.com/v1/chat/completions", {
++      method: "POST",
++      headers: { "content-type": "application/json" },
++      body: JSON.stringify({
++        model: "old-model-alias",
++        max_tokens: 321,
++        temperature: 0.2,
++        response_format: { type: "json_object" },
++        messages: [{ role: "user", content: "test prompt" }],
++      }),
++    });
++    assert.equal(response.status, 200);
++  } finally {
++    fetchImpl = priorFetch;
++    activeProfileId = "test_profile";
++  }
++});
+--- a/tests/unit/openai-official-profile.test.ts
++++ b/tests/unit/openai-official-profile.test.ts
+@@ -0,0 +1,100 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import {
++  OPENAI_OFFICIAL_PROFILE_ID,
++  resolveOfficialOpenAiKey,
++  runWithLlmProfileScope,
++} from "../../lib/llm-profiles";
++import { createLlmBackend, resolveLlmBackendId } from "../../lib/agent/model";
++
++const KEY_ENV = ["GROWDESK_AI_API_KEY", "OPENAI_API_KEY", "GROWDESK_AI_API_KEY_FILE"] as const;
++type KeyEnv = (typeof KEY_ENV)[number];
++type SavedEnv = Record<KeyEnv, string | undefined>;
++
++function saveEnv(): SavedEnv {
++  return Object.fromEntries(KEY_ENV.map(key => [key, process.env[key]])) as SavedEnv;
++}
++function restoreEnv(saved: SavedEnv): void {
++  for (const key of KEY_ENV) {
++    if (saved[key] === undefined) delete process.env[key];
++    else process.env[key] = saved[key];
++  }
++}
++function clearInlineKeys(): void {
++  process.env.GROWDESK_AI_API_KEY = "";
++  process.env.OPENAI_API_KEY = "";
++}
++
++test("official key resolver prioritizes inline keys and reads only an explicit key file", async () => {
++  const prior = saveEnv();
++  const directory = await mkdtemp(path.join(os.tmpdir(), "test-openai-key-"));
++  const filename = path.join(directory, "virtual-key");
++  try {
++    await writeFile(filename, "  test_file_key_value  \n", { mode: 0o600 });
++    process.env.GROWDESK_AI_API_KEY = " test_growdesk_inline_key ";
++    process.env.OPENAI_API_KEY = "test_openai_inline_key";
++    process.env.GROWDESK_AI_API_KEY_FILE = filename;
++    assert.equal(resolveOfficialOpenAiKey(), "test_growdesk_inline_key");
++
++    process.env.GROWDESK_AI_API_KEY = "";
++    assert.equal(resolveOfficialOpenAiKey(), "test_openai_inline_key");
++
++    clearInlineKeys();
++    assert.equal(resolveOfficialOpenAiKey(), "test_file_key_value");
++
++    delete process.env.GROWDESK_AI_API_KEY_FILE;
++    assert.equal(resolveOfficialOpenAiKey(), "");
++  } finally {
++    restoreEnv(prior);
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test("official key resolver rejects missing, non-file, and oversized explicit files generically", async () => {
++  const prior = saveEnv();
++  const directory = await mkdtemp(path.join(os.tmpdir(), "test-openai-key-invalid-"));
++  const directoryPath = path.join(directory, "a-directory");
++  const oversizedPath = path.join(directory, "oversized-key");
++  try {
++    await mkdir(directoryPath);
++    await writeFile(oversizedPath, Buffer.alloc(16_385, 0x61), { mode: 0o600 });
++    clearInlineKeys();
++    for (const badPath of [path.join(directory, "missing-key"), directoryPath, oversizedPath]) {
++      process.env.GROWDESK_AI_API_KEY_FILE = badPath;
++      assert.throws(() => resolveOfficialOpenAiKey(), (error: unknown) => {
++        assert(error instanceof Error);
++        assert.equal(error.message, "Official OpenAI API key configuration is invalid");
++        assert.equal(error.message.includes(badPath), false);
++        assert.equal(error.message.includes("test_file"), false);
++        return true;
++      });
++    }
++  } finally {
++    restoreEnv(prior);
++    await rm(directory, { recursive: true, force: true });
++  }
++});
++
++test("official profile selects the OpenAI Responses adapter and never resolves to OpenRouter", () => {
++  const prior = saveEnv();
++  try {
++    process.env.GROWDESK_AI_API_KEY = "test_virtual_official_key";
++    process.env.OPENAI_API_KEY = "";
++    delete process.env.GROWDESK_AI_API_KEY_FILE;
++    runWithLlmProfileScope(OPENAI_OFFICIAL_PROFILE_ID, "gpt-6-luna", () => {
++      assert.equal(resolveLlmBackendId(), "opencode");
++      const backend = createLlmBackend("opencode", { isVision: true });
++      assert.equal(backend.model.id, "gpt-6-luna");
++      assert.equal(backend.model.api, "openai-responses");
++      assert.equal(backend.model.provider, "openai");
++      assert.equal(backend.model.baseUrl, "https://api.openai.com/v1");
++      assert.deepEqual(backend.model.input, ["text", "image"]);
++      assert.equal(backend.getApiKey(), "test_virtual_official_key");
++    });
++  } finally {
++    restoreEnv(prior);
++  }
++});
+--- a/app/api/ai/daily-summary/route.ts
++++ b/app/api/ai/daily-summary/route.ts
+@@ -10,8 +10,24 @@
+ import { growdeskFetch } from "@/lib/growdesk/client";
+ import { BridgeError, bridgeErrorResponse } from "@/lib/growdesk/bridge-protocol";
+ import { verifyBffCsrf } from "@/lib/growdesk/csrf";
++import { fetchScheduledDailySummary, type ScheduledDailySummary } from "@/lib/growdesk/scheduled-daily-summary";
+ 
+ export const maxDuration = 120;
++
++async function readScheduledSummary(
++  accessToken: string,
++  babyId: string,
++  date: string,
++): Promise<ScheduledDailySummary | null> {
++  try {
++    return await fetchScheduledDailySummary(growdeskFetch, accessToken, babyId, date);
++  } catch (error) {
++    // A secondary summary outage must not hide deterministic stats, but a
++    // rejected session or baby permission remains an authorization failure.
++    if (error instanceof BridgeError && (error.status === 401 || error.status === 403)) throw error;
++    return null;
++  }
++}
+ 
+ async function handleGET(request: Request) {
+   try {
+@@ -42,7 +58,8 @@
+         },
+         date
+       );
+-      return NextResponse.json({ summary }, { headers: { "cache-control": "no-store" } });
++      const scheduledSummary = await readScheduledSummary(bffSession.accessToken, baby.id, date);
++      return NextResponse.json({ summary, scheduledSummary }, { headers: { "cache-control": "no-store" } });
+     }
+ 
+     const auth = await requireAuth(request);
+@@ -74,7 +91,7 @@
+       date
+     );
+ 
+-    return NextResponse.json({ summary }, { headers: { "cache-control": "no-store" } });
++    return NextResponse.json({ summary, scheduledSummary: null }, { headers: { "cache-control": "no-store" } });
+   } catch (error: unknown) {
+     if (error instanceof BridgeError) return bridgeErrorResponse(error);
+     console.error("GET /api/ai/daily-summary error:", error);
+--- a/app/(main)/daily-summary/page.tsx
++++ b/app/(main)/daily-summary/page.tsx
+@@ -41,6 +41,7 @@
+ } from "@/lib/date";
+ import { calculateAge } from "@/lib/age";
+ import type { AiDailySummaryResult } from "@/types/daily-summary";
++import type { ScheduledDailySummary } from "@/lib/growdesk/scheduled-daily-summary";
+ import { DailySummaryPosterModal } from "@/components/daily-summary/DailySummaryPosterModal";
+ import { BabyAvatar } from "@/components/ui/BabyAvatar";
+ 
+@@ -88,6 +89,7 @@
+   );
+ 
+   const [summary, setSummary] = useState<AiDailySummaryResult | null>(null);
++  const [scheduledSummary, setScheduledSummary] = useState<ScheduledDailySummary | null>(null);
+   const [loading, setLoading] = useState<boolean>(true);
+   const [error, setError] = useState<string | null>(null);
+   const requestSeqRef = useRef(0);
+@@ -140,6 +142,9 @@
+ 
+     if (summary && (summary.babyId !== babyId || summary.date !== date)) {
+       setSummary(null);
++    }
++    if (scheduledSummary && (scheduledSummary.babyId !== babyId || scheduledSummary.date !== date)) {
++      setScheduledSummary(null);
+     }
+     setError(null);
+     setLoading(true);
+@@ -157,6 +162,12 @@
+       }
+       if (requestId === requestSeqRef.current) {
+         setSummary(body.summary);
++        const scheduled = body.scheduledSummary;
++        setScheduledSummary(
++          scheduled && scheduled.babyId === babyId && scheduled.date === date
++            ? scheduled as ScheduledDailySummary
++            : null,
++        );
+         setError(null);
+       }
+     } catch (caught) {
+@@ -470,6 +481,53 @@
+                 查看昨日完整日报 👈
+               </button>
+             </div>
++          )}
++
++          {scheduledSummary && scheduledSummary.babyId === baby?.id && scheduledSummary.date === selectedDate && (
++            <CuteCard className="space-y-3 border border-amber-300/70 bg-gradient-to-br from-amber-50/80 to-orange-50/40 p-4 shadow-soft dark:from-amber-950/20 dark:to-transparent">
++              <div className="flex flex-wrap items-start justify-between gap-2">
++                <div>
++                  <h2 className="text-sm font-bold text-text-primary">定时日报 · AMD</h2>
++                  <p className="mt-0.5 text-[10px] text-text-muted">
++                    AMD {scheduledSummary.llm.model} · 生成于 {new Date(scheduledSummary.generatedAt).toLocaleString("zh-CN")}
++                  </p>
++                </div>
++                <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-900 dark:bg-amber-900/50 dark:text-amber-200">
++                  {scheduledSummary.overallScore} · {scheduledSummary.overallRating.toFixed(1)} / 5
++                </span>
++              </div>
++              <h3 className="text-sm font-semibold leading-relaxed text-text-primary">{scheduledSummary.headline}</h3>
++              {scheduledSummary.highlights.length > 0 && (
++                <div className="flex flex-wrap gap-1.5">
++                  {scheduledSummary.highlights.map((item, index) => (
++                    <span key={index} className="rounded-xl border border-amber-200 bg-white/80 px-2.5 py-1 text-[11px] text-text-primary dark:bg-card/80">{item}</span>
++                  ))}
++                </div>
++              )}
++              <div className="space-y-2 border-t border-amber-200/70 pt-3 dark:border-amber-900/50">
++                {([
++                  ["喂养", scheduledSummary.sections.feeding],
++                  ["睡眠", scheduledSummary.sections.sleep],
++                  ["排便", scheduledSummary.sections.diaper],
++                  ["生长与照护", scheduledSummary.sections.growthAndCare],
++                  ["明日建议", scheduledSummary.sections.tomorrowTips],
++                ] as const).map(([label, text]) => (
++                  <section key={label}>
++                    <h4 className="mb-1 text-[11px] font-bold text-text-secondary">{label}</h4>
++                    <FormattedSectionText text={text} />
++                  </section>
++                ))}
++              </div>
++              {scheduledSummary.suggestedQuestions.length > 0 && (
++                <div className="border-t border-amber-200/70 pt-2 dark:border-amber-900/50">
++                  <h4 className="mb-1 text-[11px] font-bold text-text-secondary">可以继续关注</h4>
++                  <ul className="list-inside list-disc space-y-1 text-xs text-text-primary">
++                    {scheduledSummary.suggestedQuestions.map((question, index) => <li key={index}>{question}</li>)}
++                  </ul>
++                </div>
++              )}
++              <p className="border-t border-amber-200/70 pt-2 text-[10px] leading-relaxed text-text-muted dark:border-amber-900/50">{scheduledSummary.disclaimer}</p>
++            </CuteCard>
+           )}
+ 
+           {/* 3. Status Score & Headline Card */}
+--- a/lib/growdesk/scheduled-daily-summary.ts
++++ b/lib/growdesk/scheduled-daily-summary.ts
+@@ -0,0 +1,184 @@
++import { BridgeError, pathId, requireData, type BridgeFetch } from "./bridge-protocol";
++
++export interface ScheduledDailySummary {
++  schemaVersion: 1;
++  kind: "scheduled_daily_summary";
++  date: string;
++  babyId: string;
++  generatedAt: string;
++  llm: {
++    source: "api";
++    provider: "developer.amd.com.cn";
++    model: "DeepSeek-V4.1-Flash";
++  };
++  headline: string;
++  highlights: string[];
++  sections: {
++    feeding: string;
++    sleep: string;
++    diaper: string;
++    growthAndCare: string;
++    tomorrowTips: string;
++  };
++  suggestedQuestions: string[];
++  disclaimer: string;
++  overallScore: string;
++  overallRating: number;
++  statusLevel: "excellent" | "good" | "attention";
++}
++
++const PAGE_SIZE = 100;
++const MAX_PAGES = 5;
++const MAX_CONTENT_BYTES = 64 * 1024;
++
++function invalidSummary(): BridgeError {
++  return new BridgeError(502, "UPSTREAM_INVALID_SCHEDULED_SUMMARY", "GrowDesk 返回了无效的定时日报");
++}
++
++function isRecord(value: unknown): value is Record<string, unknown> {
++  return value !== null && typeof value === "object" && !Array.isArray(value);
++}
++
++function validDate(value: unknown): value is string {
++  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
++  const parsed = new Date(`${value}T00:00:00.000Z`);
++  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
++}
++
++function validInstant(value: unknown): value is string {
++  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
++  return Number.isFinite(Date.parse(value));
++}
++
++function boundedText(value: unknown, max: number): value is string {
++  return typeof value === "string" && value.trim().length > 0 && value.length <= max;
++}
++
++function boundedTextArray(value: unknown, maxItems: number, maxText: number): value is string[] {
++  return Array.isArray(value) && value.length <= maxItems && value.every(item => boundedText(item, maxText));
++}
++
++/** Parse only the stable AMD scheduled-summary contract; legacy plain text remains absent. */
++export function parseScheduledDailySummary(
++  raw: unknown,
++  expectedBabyId: string,
++  expectedDate: string,
++): ScheduledDailySummary | null {
++  let content = raw;
++  if (typeof raw === "string") {
++    if (Buffer.byteLength(raw, "utf8") > MAX_CONTENT_BYTES) throw invalidSummary();
++    const trimmed = raw.trim();
++    if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
++    try { content = JSON.parse(trimmed) as unknown; } catch { throw invalidSummary(); }
++  }
++  if (!isRecord(content)) return null;
++  let size: number;
++  try { size = Buffer.byteLength(JSON.stringify(content), "utf8"); } catch { throw invalidSummary(); }
++  if (size > MAX_CONTENT_BYTES) throw invalidSummary();
++  if (content.kind !== "scheduled_daily_summary" || content.schemaVersion !== 1) return null;
++
++  const sections = content.sections;
++  const llm = content.llm;
++  if (
++    content.babyId !== expectedBabyId || content.date !== expectedDate ||
++    !validDate(content.date) || !validInstant(content.generatedAt) ||
++    !isRecord(llm) || llm.source !== "api" || llm.provider !== "developer.amd.com.cn" || llm.model !== "DeepSeek-V4.1-Flash" ||
++    !boundedText(content.headline, 800) || !boundedTextArray(content.highlights, 12, 240) ||
++    !isRecord(sections) || !boundedText(sections.feeding, 3000) || !boundedText(sections.sleep, 3000) ||
++    !boundedText(sections.diaper, 3000) || !boundedText(sections.growthAndCare, 3000) || !boundedText(sections.tomorrowTips, 3000) ||
++    !boundedTextArray(content.suggestedQuestions, 12, 400) || !boundedText(content.disclaimer, 1500) ||
++    !boundedText(content.overallScore, 120) || typeof content.overallRating !== "number" ||
++    !Number.isFinite(content.overallRating) || content.overallRating < 0 || content.overallRating > 5 ||
++    !["excellent", "good", "attention"].includes(String(content.statusLevel))
++  ) {
++    throw invalidSummary();
++  }
++
++  return {
++    schemaVersion: 1,
++    kind: "scheduled_daily_summary",
++    date: expectedDate,
++    babyId: expectedBabyId,
++    generatedAt: content.generatedAt,
++    llm: { source: "api", provider: "developer.amd.com.cn", model: "DeepSeek-V4.1-Flash" },
++    headline: content.headline,
++    highlights: [...content.highlights],
++    sections: {
++      feeding: sections.feeding,
++      sleep: sections.sleep,
++      diaper: sections.diaper,
++      growthAndCare: sections.growthAndCare,
++      tomorrowTips: sections.tomorrowTips,
++    },
++    suggestedQuestions: [...content.suggestedQuestions],
++    disclaimer: content.disclaimer,
++    overallScore: content.overallScore,
++    overallRating: content.overallRating,
++    statusLevel: content.statusLevel as ScheduledDailySummary["statusLevel"],
++  };
++}
++
++/** Read a bounded keyset window from the baby-scoped list endpoint. */
++async function loadScheduledDailySummary(
++  fetchApi: BridgeFetch,
++  accessToken: string,
++  babyId: string,
++  date: string,
++): Promise<ScheduledDailySummary | null> {
++  if (!validDate(date)) throw new BridgeError(400, "INVALID_DATE", "日报日期格式无效");
++  const endpoint = `/api/v1/babies/${pathId(babyId)}/daily-summaries`;
++  const visited = new Set<string>();
++  let cursor: string | null = null;
++
++  for (let pageNumber = 0; pageNumber < MAX_PAGES; pageNumber += 1) {
++    const query = new URLSearchParams({ limit: String(PAGE_SIZE) });
++    if (cursor !== null) query.set("cursor", cursor);
++    const response = await fetchApi<unknown[]>(`${endpoint}?${query.toString()}`, { accessToken });
++    const items = requireData(response);
++    const nextCursor = response.page?.nextCursor;
++    if (!Array.isArray(items) || items.length > PAGE_SIZE ||
++        !(nextCursor === null || (typeof nextCursor === "string" && nextCursor.length > 0))) {
++      throw new BridgeError(502, "UPSTREAM_INVALID_PAGE", "GrowDesk 未返回完整的定时日报分页信息");
++    }
++
++    for (const item of items) {
++      if (!isRecord(item) || typeof item.babyId !== "string" || item.babyId !== babyId || !validDate(item.targetDate)) {
++        throw new BridgeError(502, "UPSTREAM_SCOPE_MISMATCH", "GrowDesk 返回了无效或跨宝宝的定时日报记录");
++      }
++      if (item.kind !== undefined && item.kind !== "scheduled_daily_summary") throw invalidSummary();
++      if (item.targetDate !== date) continue;
++      return parseScheduledDailySummary(item.content, babyId, date);
++    }
++
++    if (nextCursor === null) return null;
++    if (items.length === 0 || visited.has(nextCursor)) {
++      throw new BridgeError(502, "UPSTREAM_CURSOR_LOOP", "GrowDesk 定时日报分页没有继续前进");
++    }
++    visited.add(nextCursor);
++    cursor = nextCursor;
++    if (pageNumber + 1 === MAX_PAGES) {
++      throw new BridgeError(503, "SCHEDULED_SUMMARY_SCAN_LIMIT", "定时日报查询超出扫描范围");
++    }
++  }
++  throw new BridgeError(503, "SCHEDULED_SUMMARY_SCAN_LIMIT", "定时日报查询超出扫描范围");
++}
++
++
++/** Preserve non-authority failures as opaque telemetry while allowing the page to show deterministic stats. */
++export async function fetchScheduledDailySummary(
++  fetchApi: BridgeFetch,
++  accessToken: string,
++  babyId: string,
++  date: string,
++): Promise<ScheduledDailySummary | null> {
++  try {
++    return await loadScheduledDailySummary(fetchApi, accessToken, babyId, date);
++  } catch (error) {
++    if (!(error instanceof BridgeError && (error.status === 401 || error.status === 403))) {
++      const code = error instanceof BridgeError && /^[A-Z0-9_]{1,64}$/.test(error.code) ? error.code : "UNKNOWN";
++      const status = error instanceof BridgeError ? error.status : 0;
++      console.warn("scheduled_daily_summary.lookup_error", { code, status });
++    }
++    throw error;
++  }
++}
+--- a/tests/unit/scheduled-daily-summary.test.ts
++++ b/tests/unit/scheduled-daily-summary.test.ts
+@@ -0,0 +1,131 @@
++import assert from "node:assert/strict";
++import test from "node:test";
++import { readFile } from "node:fs/promises";
++import {
++  BridgeError,
++  type BridgeFetch,
++  type BridgeResult,
++} from "../../lib/growdesk/bridge-protocol";
++import {
++  fetchScheduledDailySummary,
++  parseScheduledDailySummary,
++  type ScheduledDailySummary,
++} from "../../lib/growdesk/scheduled-daily-summary";
++
++const babyId = "test_baby_scheduled";
++const date = "2026-10-29";
++const content: ScheduledDailySummary = {
++  schemaVersion: 1,
++  kind: "scheduled_daily_summary",
++  date,
++  babyId,
++  generatedAt: "2026-10-30T02:15:00Z",
++  llm: { source: "api", provider: "developer.amd.com.cn", model: "DeepSeek-V4.1-Flash" },
++  headline: "test scheduled headline",
++  highlights: ["test highlight one", "test highlight two"],
++  sections: {
++    feeding: "test feeding summary",
++    sleep: "test sleep summary",
++    diaper: "test diaper summary",
++    growthAndCare: "test growth and care summary",
++    tomorrowTips: "test tomorrow tips",
++  },
++  suggestedQuestions: ["test follow-up question"],
++  disclaimer: "test scheduled summary disclaimer",
++  overallScore: "test steady status",
++  overallRating: 4.2,
++  statusLevel: "good",
++};
++
++function ok<T>(data: T, nextCursor: string | null = null): BridgeResult<T> {
++  return { ok: true, status: 200, data, page: { nextCursor } };
++}
++
++test("parser validates the stable scheduled contract and keeps metrics out", () => {
++  const parsed = parseScheduledDailySummary(content, babyId, date);
++  assert.deepEqual(parsed, content);
++  assert.equal(parsed && "metrics" in parsed, false);
++  assert.equal(parseScheduledDailySummary("legacy plain summary", babyId, date), null);
++  assert.equal(parseScheduledDailySummary({ headline: "older object format" }, babyId, date), null);
++  assert.throws(() => parseScheduledDailySummary({ ...content, babyId: "test_other_baby" }, babyId, date), BridgeError);
++  assert.throws(() => parseScheduledDailySummary({ ...content, headline: "x".repeat(801) }, babyId, date), BridgeError);
++});
++
++test("loader uses authenticated bounded cursor pages and returns the exact baby/date", async () => {
++  const calls: Array<{ path: string; accessToken?: string }> = [];
++  const pages: BridgeResult<unknown>[] = [
++    ok([{ babyId, targetDate: "2026-10-28", content: "older row" }], "test_cursor_next"),
++    ok([{ babyId, targetDate: date, content: JSON.stringify(content) }]),
++  ];
++  const fetchApi: BridgeFetch = async <T>(path: string, options?: Parameters<BridgeFetch>[1]) => {
++    calls.push({ path, accessToken: options?.accessToken });
++    return pages.shift() as BridgeResult<T>;
++  };
++
++  const summary = await fetchScheduledDailySummary(fetchApi, "test_access_token", babyId, date);
++  assert.deepEqual(summary, content);
++  assert.equal(calls.length, 2);
++  assert.equal(calls[0].accessToken, "test_access_token");
++  assert.equal(calls[0].path, "/api/v1/babies/test_baby_scheduled/daily-summaries?limit=100");
++  assert.equal(calls[0].path.includes("date="), false);
++  assert.equal(calls[1].path, "/api/v1/babies/test_baby_scheduled/daily-summaries?limit=100&cursor=test_cursor_next");
++});
++
++test("loader treats absent or legacy content as missing and preserves authorization errors", async () => {
++  const noSummary: BridgeFetch = async <T>() => ok([{ babyId, targetDate: date, content: "legacy plain content" }]) as BridgeResult<T>;
++  assert.equal(await fetchScheduledDailySummary(noSummary, "test_access_token", babyId, date), null);
++
++  const forbidden: BridgeFetch = async <T>() => ({
++    ok: false,
++    status: 403,
++    error: { code: "FORBIDDEN", message: "test access denied" },
++  }) as BridgeResult<T>;
++  await assert.rejects(
++    fetchScheduledDailySummary(forbidden, "test_access_token", babyId, date),
++    (error: unknown) => error instanceof BridgeError && error.status === 403 && error.code === "FORBIDDEN",
++  );
++});
++
++
++test("loader accepts the actual Go list targetDate and parses its synthetic stable JSON fixture", async () => {
++  const fixture = JSON.parse(await readFile(new URL("../fixtures/scheduled-daily-summary-go.json", import.meta.url), "utf8")) as Record<string, unknown>;
++  const fixtureBabyId = String(fixture.babyId);
++  const fixtureDate = String(fixture.date);
++  const fetchApi: BridgeFetch = async <T>() => ok([{
++    babyId: fixtureBabyId,
++    targetDate: fixtureDate,
++    content: fixture,
++  }]) as BridgeResult<T>;
++
++  const summary = await fetchScheduledDailySummary(fetchApi, "test_access_token", fixtureBabyId, fixtureDate);
++  assert.equal(summary?.babyId, fixtureBabyId);
++  assert.equal(summary?.date, fixtureDate);
++  assert.equal(summary?.overallRating, 4.5);
++  assert.equal(summary?.llm.model, "DeepSeek-V4.1-Flash");
++  assert.equal(summary && "metrics" in summary, false);
++});
++
++
++test("scope mismatches emit opaque status/code telemetry without identifiers or tokens", async () => {
++  const priorWarn = console.warn;
++  const events: unknown[] = [];
++  console.warn = (...args: unknown[]) => { events.push(args); };
++  const wrongBaby: BridgeFetch = async <T>() => ok([{
++    babyId: "test_other_baby",
++    targetDate: date,
++    content: JSON.stringify(content),
++  }]) as BridgeResult<T>;
++  try {
++    await assert.rejects(
++      fetchScheduledDailySummary(wrongBaby, "test_access_token", babyId, date),
++      (error: unknown) => error instanceof BridgeError && error.code === "UPSTREAM_SCOPE_MISMATCH",
++    );
++    const eventText = JSON.stringify(events);
++    assert(eventText.includes("UPSTREAM_SCOPE_MISMATCH"));
++    assert.equal(eventText.includes("test_access_token"), false);
++    assert.equal(eventText.includes("test_baby_scheduled"), false);
++    assert.equal(eventText.includes("test_other_baby"), false);
++  } finally {
++    console.warn = priorWarn;
++  }
++});
+--- a/tests/fixtures/scheduled-daily-summary-go.json
++++ b/tests/fixtures/scheduled-daily-summary-go.json
+@@ -0,0 +1 @@
++{"babyId":"test_baby_uuid","date":"2026-10-29","disclaimer":"仅供日常照护参考，不构成诊断。","generatedAt":"2026-10-30T08:05:00.000Z","headline":"今天记录平稳。","highlights":["喂养有记录","睡眠有记录"],"isAiGenerated":true,"kind":"scheduled_daily_summary","llm":{"model":"DeepSeek-V4.1-Flash","provider":"developer.amd.com.cn","source":"api"},"overallRating":4.5,"overallScore":"作息规律","schemaVersion":1,"sections":{"diaper":"暂无异常记录。","feeding":"依据已记录的喂养信息。","growthAndCare":"仅总结现有护理信息。","sleep":"依据已记录的睡眠信息。","tomorrowTips":"按宝宝状态继续观察。"},"source":"ai","statusLevel":"good","suggestedQuestions":["需要补充哪些记录？","如何观察睡眠？","喂养节奏怎样调整？"]}

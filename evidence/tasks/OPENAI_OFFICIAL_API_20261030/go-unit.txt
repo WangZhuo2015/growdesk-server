@@ -1,0 +1,21 @@
+?   	github.com/WangZhuo2015/growdesk-server	[no test files]
+# github.com/WangZhuo2015/growdesk-server/evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend [github.com/WangZhuo2015/growdesk-server/evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend.test]
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_ws.go:29:12: undefined: nativeAIAction
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_ws.go:49:11: undefined: nativeAIAction
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_ws.go:50:11: undefined: PassportCard
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts.go:42:38: undefined: nativeProviderConfig
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts.go:188:54: undefined: Object
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts.go:343:10: undefined: Server
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts.go:343:64: undefined: nativeProviderConfig
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts.go:449:66: undefined: Object
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_tts_stages.go:14:10: undefined: Server
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_voice_diagnostics.go:22:10: undefined: Server
+evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend/passport_voice_diagnostics.go:22:10: too many errors
+ok  	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-api	6.383s
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-migrate	[no test files]
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-scheduler	[no test files]
+?   	github.com/WangZhuo2015/growdesk-server/cmd/growdesk-worker	[no test files]
+FAIL	github.com/WangZhuo2015/growdesk-server/evidence/tasks/PASSPORT_TTS_FIX_20261023/source-overlay/internal/backend [build failed]
+ok  	github.com/WangZhuo2015/growdesk-server/internal/backend	84.540s
+?   	github.com/WangZhuo2015/growdesk-server/node_modules/flatted/golang/pkg/flatted	[no test files]
+FAIL

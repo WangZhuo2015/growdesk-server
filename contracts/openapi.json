@@ -2314,6 +2314,64 @@
             "format": "date-time",
             "description": "RFC3339 UTC timestamp",
             "type": "string"
+          },
+          "llm": {
+            "$ref": "#/components/schemas/AiModelInfo",
+            "nullable": true
+          }
+        }
+      },
+      "AiModelInfo": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "provider",
+          "model"
+        ],
+        "properties": {
+          "source": {
+            "minLength": 1,
+            "maxLength": 40,
+            "type": "string"
+          },
+          "provider": {
+            "minLength": 1,
+            "maxLength": 200,
+            "type": "string"
+          },
+          "model": {
+            "minLength": 1,
+            "maxLength": 200,
+            "type": "string"
+          },
+          "modelBasis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "provider_response"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "requested"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "fixture"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "unknown"
+                ]
+              }
+            ]
           }
         }
       },
@@ -2415,6 +2473,14 @@
           },
           "resultSummary": {
             "type": "string",
+            "nullable": true
+          },
+          "llm": {
+            "$ref": "#/components/schemas/AiModelInfo",
+            "nullable": true
+          },
+          "asr": {
+            "$ref": "#/components/schemas/AiModelInfo",
             "nullable": true
           },
           "proposedPlan": {
@@ -17054,6 +17120,10 @@
                             "format": "date-time",
                             "description": "RFC3339 UTC timestamp",
                             "type": "string"
+                          },
+                          "llm": {
+                            "$ref": "#/components/schemas/AiModelInfo",
+                            "nullable": true
                           }
                         }
                       }
@@ -17263,6 +17333,14 @@
                         },
                         "resultSummary": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "llm": {
+                          "$ref": "#/components/schemas/AiModelInfo",
+                          "nullable": true
+                        },
+                        "asr": {
+                          "$ref": "#/components/schemas/AiModelInfo",
                           "nullable": true
                         },
                         "proposedPlan": {
@@ -17702,6 +17780,14 @@
                         },
                         "resultSummary": {
                           "type": "string",
+                          "nullable": true
+                        },
+                        "llm": {
+                          "$ref": "#/components/schemas/AiModelInfo",
+                          "nullable": true
+                        },
+                        "asr": {
+                          "$ref": "#/components/schemas/AiModelInfo",
                           "nullable": true
                         },
                         "proposedPlan": {
@@ -28665,6 +28751,496 @@
                           "type": "string"
                         },
                         "requestId": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/web/ai/preferences": {
+      "get": {
+        "operationId": "getWebAiPreferences",
+        "summary": "List AI feature selections for the authenticated user",
+        "tags": [
+          "Web AI"
+        ],
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "preferences"
+                      ],
+                      "properties": {
+                        "preferences": {
+                          "type": "array",
+                          "items": {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "feature",
+                              "source",
+                              "profileId",
+                              "modelId"
+                            ],
+                            "properties": {
+                              "feature": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "chat"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "daily_summary"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "tips"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "record_parse"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "nutrition_parse"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "search"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "growth_ocr"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "medical_ocr"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "voice"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "source": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "api"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "chatgpt"
+                                    ]
+                                  }
+                                ]
+                              },
+                              "profileId": {
+                                "minLength": 1,
+                                "maxLength": 100,
+                                "type": "string"
+                              },
+                              "modelId": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "upsertWebAiPreference",
+        "summary": "Save the authenticated user's selection for one AI feature",
+        "tags": [
+          "Web AI"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "feature",
+                  "source",
+                  "profileId",
+                  "modelId"
+                ],
+                "properties": {
+                  "feature": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "chat"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "daily_summary"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "tips"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "record_parse"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "nutrition_parse"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "search"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "growth_ocr"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "medical_ocr"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "voice"
+                        ]
+                      }
+                    ]
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "api"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "chatgpt"
+                        ]
+                      }
+                    ]
+                  },
+                  "profileId": {
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "type": "string"
+                  },
+                  "modelId": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-implementation-status": "READY",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "feature",
+                        "source",
+                        "profileId",
+                        "modelId"
+                      ],
+                      "properties": {
+                        "feature": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "chat"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "daily_summary"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "tips"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "record_parse"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "nutrition_parse"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "search"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "growth_ocr"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "medical_ocr"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "voice"
+                              ]
+                            }
+                          ]
+                        },
+                        "source": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "api"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "chatgpt"
+                              ]
+                            }
+                          ]
+                        },
+                        "profileId": {
+                          "minLength": 1,
+                          "maxLength": 100,
+                          "type": "string"
+                        },
+                        "modelId": {
+                          "minLength": 1,
+                          "maxLength": 200,
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Standard API Error Envelope",
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "code",
+                        "message",
+                        "requestId"
+                      ],
+                      "properties": {
+                        "code": {
+                          "description": "Machine-readable error code",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error description",
+                          "type": "string"
+                        },
+                        "details": {
+                          "description": "Structured error details"
+                        },
+                        "requestId": {
+                          "description": "Unique request tracing identifier",
                           "type": "string"
                         }
                       }

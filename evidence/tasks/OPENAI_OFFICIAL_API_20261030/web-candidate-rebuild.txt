@@ -1,0 +1,408 @@
+npm notice run baby-app@2.0.0 build
+npm notice run next build
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 32ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.4s
+  Running TypeScript ...
+  Finished TypeScript in 32.3s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/86) ...
+  Generating static pages using 3 workers (21/86) 
+  Generating static pages using 3 workers (42/86) 
+  Generating static pages using 3 workers (64/86) 
+✓ Generating static pages using 3 workers (86/86) in 978ms
+Turbopack build encountered 8 warnings:
+./lib/cron/backup.ts:25:20
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m23 |[0m   targetDb?: string;
+  [90m24 |[0m }): [33mPromise[0m<[33mBackupResult[0m> {
+[33m[1m>[0m [90m25 |[0m   [36mconst[0m repoRoot = path.resolve(process.cwd());
+  [90m   |[0m                    [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m26 |[0m   [36mconst[0m scriptPath = path.join(repoRoot, [32m"scripts"[0m, [32m"backup-db.sh"[0m);
+  [90m27 |[0m
+  [90m28 |[0m   [36mconst[0m env = {
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.resolve(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/cron/backup.ts
+    ./app/api/cron/backup/route.ts
+
+  #2 [App Route]:
+    ./lib/cron/backup.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+
+./lib/llm-preferences.ts:117:10
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m115 |[0m ... preferenceFilePath(): string {
+  [90m116 |[0m ...configured = process.env.[33mLLM_PREFERENCES_FILE[0m?.trim();
+[33m[1m>[0m [90m117 |[0m ... path.resolve(configured || path.join(process.cwd(), [32m".data"[0m, [32m"llm-preferences.json"[0m));
+  [90m    |[0m     [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m118 |[0m ...
+  [90m119 |[0m ...
+  [90m120 |[0m ... storageError(message = [32m"AI preferences could not be read or saved"[0m): [33mLlmPreferenceErr..[0m.
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.resolve(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import trace:
+  App Route:
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+
+./lib/llm-profiles.ts:147:10
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m145 |[0m   [36mconst[0m filePath = getProfilesFilePath();
+  [90m146 |[0m   [36mtry[0m {
+[33m[1m>[0m [90m147 |[0m     [36mif[0m (!fs.existsSync(filePath)) {
+  [90m    |[0m          [33m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m148 |[0m       [36mreturn[0m [36mnull[0m;
+  [90m149 |[0m     }
+  [90m150 |[0m     [36mconst[0m stat = fs.statSync(filePath);
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.existsSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+./lib/llm-profiles.ts:339:10
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m337 |[0m   [36mconst[0m filePath = getProfilesFilePath();
+  [90m338 |[0m   [36mtry[0m {
+[33m[1m>[0m [90m339 |[0m     [36mif[0m (!fs.existsSync(filePath)) {
+  [90m    |[0m          [33m[1m^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m340 |[0m       [36mreturn[0m { success: [36mfalse[0m, error: [32m`[0m${[33mCONFIG_FILENAME[0m[32m} does not exist.`[0m };
+  [90m341 |[0m     }
+  [90m342 |[0m     [36mconst[0m content = fs.readFileSync(filePath, [32m"utf-8"[0m);
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.existsSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+./lib/llm-profiles.ts:154:21
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m152 |[0m       [36mreturn[0m cachedConfig.config;
+  [90m153 |[0m     }
+[33m[1m>[0m [90m154 |[0m     [36mconst[0m content = fs.readFileSync(filePath, [32m"utf-8"[0m);
+  [90m    |[0m                     [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m155 |[0m     [36mconst[0m parsed = [33mJSON[0m.parse(content) [36mas[0m [33mLlmProfilesConfig[0m;
+  [90m156 |[0m     [36mif[0m (parsed && [36mtypeof[0m parsed === [32m"object"[0m && parsed.profiles) {
+  [90m157 |[0m       cachedConfig = { filePath, mtimeMs: stat.mtimeMs, config: parsed };
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFileSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+./lib/llm-profiles.ts:342:21
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m340 |[0m       [36mreturn[0m { success: [36mfalse[0m, error: [32m`[0m${[33mCONFIG_FILENAME[0m[32m} does not exist.`[0m };
+  [90m341 |[0m     }
+[33m[1m>[0m [90m342 |[0m     [36mconst[0m content = fs.readFileSync(filePath, [32m"utf-8"[0m);
+  [90m    |[0m                     [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m343 |[0m     [36mconst[0m parsed = [33mJSON[0m.parse(content) [36mas[0m [33mLlmProfilesConfig[0m;
+  [90m344 |[0m
+  [90m345 |[0m     [36mif[0m (!parsed.profiles || !parsed.profiles[profileId]) {
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.readFileSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+./lib/llm-profiles.ts:150:18
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m148 |[0m       [36mreturn[0m [36mnull[0m;
+  [90m149 |[0m     }
+[33m[1m>[0m [90m150 |[0m     [36mconst[0m stat = fs.statSync(filePath);
+  [90m    |[0m                  [33m[1m^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m151 |[0m     [36mif[0m (cachedConfig && cachedConfig.filePath === filePath && cachedConfig.mtimeMs === st...
+  [90m152 |[0m       [36mreturn[0m cachedConfig.config;
+  [90m153 |[0m     }
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: fs.statSync(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+./lib/llm-profiles.ts:31:10
+Warning: Dynamic filesystem access causes tracing of the whole project
+  [90m29 |[0m ...
+  [90m30 |[0m ...ofilesFilePath(): string {
+[33m[1m>[0m [90m31 |[0m ...resolve(process.env.[33mLLM_PROFILES_FILE[0m?.trim() || path.join(process.cwd(), [33mCONFIG_FILENA..[0m.
+  [90m   |[0m    [33m[1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [90m32 |[0m ...
+  [90m33 |[0m ...
+  [90m34 |[0m ...vFilePath(): string {
+
+Static analysis determined that this filesystem access causes the whole project to be traced and included in the output.
+This is usually unintentional and leads to all source files (including the public folder) to be deployed as part of the server code.
+This can slow down deployments or lead to failures when size limits are exceeded.
+To resolve this, you can
+- make sure the path is statically scoped to some subfolder, for example path.join(process.cwd(), 'data', bar), or
+- only use them in development, or
+- opt out by adding an ignore comment to the highlighted call: path.resolve(/*turbopackIgnore: true*/ ...), or
+- remove them.
+
+Import traces:
+  #1 [App Route]:
+    ./lib/llm-profiles.ts
+    ./app/api/ai/chat/route.ts
+
+  #2 [App Route]:
+    ./lib/llm-profiles.ts
+    ./lib/llm-preferences.ts
+    ./app/api/ai/preferences/route.ts
+
+  #3 [Middleware]:
+    ./lib/llm-profiles.ts
+    ./lib/config.ts
+    ./proxy.ts
+
+
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /.well-known/oauth-authorization-server
+├ ƒ /.well-known/oauth-protected-resource
+├ ƒ /.well-known/oauth-protected-resource/mcp
+├ ƒ /api/agent/voice
+├ ƒ /api/agent/voice/logs
+├ ƒ /api/agent/voice/logs/[id]
+├ ƒ /api/ai/backends
+├ ƒ /api/ai/chat
+├ ƒ /api/ai/chat/cancel
+├ ƒ /api/ai/chatgpt
+├ ƒ /api/ai/daily-summary
+├ ƒ /api/ai/jobs
+├ ƒ /api/ai/jobs/[id]
+├ ƒ /api/ai/parse-nutrition
+├ ƒ /api/ai/parse-record
+├ ƒ /api/ai/preferences
+├ ƒ /api/ai/search
+├ ƒ /api/ai/sessions
+├ ƒ /api/ai/sessions/[id]
+├ ƒ /api/ai/tips
+├ ƒ /api/app-config
+├ ƒ /api/asr/transcribe
+├ ƒ /api/attachments/[id]
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/me
+├ ƒ /api/auth/register
+├ ƒ /api/baby
+├ ƒ /api/baby/avatar
+├ ƒ /api/baby/members
+├ ƒ /api/books
+├ ƒ /api/books/[id]
+├ ƒ /api/cron/backup
+├ ƒ /api/cron/daily-summary
+├ ƒ /api/development/activities
+├ ƒ /api/development/milestones
+├ ƒ /api/development/warning-signs
+├ ƒ /api/family/invite
+├ ƒ /api/family/join
+├ ƒ /api/family/members
+├ ƒ /api/family/preview
+├ ƒ /api/food/feeding-guidelines
+├ ƒ /api/food/items
+├ ƒ /api/food/logs
+├ ƒ /api/food/plans
+├ ƒ /api/growth
+├ ƒ /api/growth/chart
+├ ƒ /api/growth/ocr
+├ ƒ /api/legacy-attachments/[...path]
+├ ƒ /api/mcp
+├ ƒ /api/mcp/usage
+├ ƒ /api/medical/ocr
+├ ƒ /api/medical/reports
+├ ƒ /api/medical/reports/[id]
+├ ƒ /api/medical/upload
+├ ƒ /api/notifications
+├ ƒ /api/notifications/[id]
+├ ƒ /api/nutrition/analysis
+├ ƒ /api/nutrition/products
+├ ƒ /api/nutrition/records
+├ ƒ /api/nutrition/schedules
+├ ƒ /api/oauth/authorize
+├ ƒ /api/oauth/register
+├ ƒ /api/oauth/revoke
+├ ƒ /api/oauth/token
+├ ƒ /api/passport/devices
+├ ƒ /api/passport/devices/[id]
+├ ƒ /api/passport/pairings/claim
+├ ƒ /api/push/send
+├ ƒ /api/push/subscribe
+├ ƒ /api/push/test
+├ ƒ /api/push/vapid-key
+├ ƒ /api/records/daily-summary
+├ ƒ /api/records/diaper
+├ ƒ /api/records/feeding
+├ ƒ /api/records/sleep
+├ ƒ /api/records/timeline
+├ ƒ /api/records/trends
+├ ƒ /api/user/tokens
+├ ƒ /api/user/tokens/[id]
+├ ƒ /api/vaccines
+├ ƒ /api/vaccines/selections
+├ ƒ /api/weather
+├ ○ /books
+├ ○ /daily-summary
+├ ○ /dashboard
+├ ○ /development
+├ ○ /family
+├ ○ /family/ai-usage
+├ ○ /family/passport
+├ ○ /food
+├ ○ /food/library
+├ ○ /food/log
+├ ○ /growth
+├ ○ /growth/add
+├ ○ /health/medical
+├ ○ /health/medical/add
+├ ○ /health/vaccines
+├ ○ /login
+├ ƒ /mcp
+├ ○ /notifications
+├ ○ /nutrition
+├ ○ /oauth/authorize
+├ ƒ /oauth/register
+├ ƒ /oauth/revoke
+├ ƒ /oauth/token
+├ ○ /onboarding
+├ ○ /records/diaper
+├ ○ /records/feeding
+├ ○ /records/sleep
+├ ○ /register
+├ ○ /settings
+└ ○ /weather
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+npm notice run baby-app@2.0.0 postbuild
+npm notice run node scripts/prepare-standalone.mjs

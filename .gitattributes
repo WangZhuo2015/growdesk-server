@@ -1,3 +1,6 @@
 # Preserve raw validation output as evidence.
 evidence/**/*.txt -whitespace
 evidence/**/*.log -whitespace
+
+# Unified patch context lines intentionally contain a leading space.
+evidence/tasks/OPENAI_OFFICIAL_API_20261030/diff/*.patch whitespace=-blank-at-eol,-space-before-tab

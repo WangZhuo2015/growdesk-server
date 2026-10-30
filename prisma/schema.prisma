@@ -43,6 +43,7 @@ model User {
   aiArchiveEntries        AiArchiveEntry[]
   agentVoiceLogs          AgentVoiceLog[]
   recordSnapshots         RecordSnapshot[]
+  llmPreferences          LlmPreference[]
 
   @@index([deletedAt, id], name: "ix_users_deleted_id")
   @@map("users")
@@ -1164,6 +1165,21 @@ model AiRunEvent {
   @@unique([runId, sequence], name: "uq_ai_run_events_seq")
   @@index([runId, sequence(sort: Asc)], name: "ix_ai_run_events_run")
   @@map("ai_run_events")
+  @@schema("public")
+}
+
+model LlmPreference {
+  userId    String   @map("user_id")
+  feature   String   @db.VarChar(32)
+  source    String   @db.VarChar(16)
+  profileId String   @map("profile_id") @db.VarChar(100)
+  modelId   String   @map("model_id") @db.VarChar(200)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, feature], map: "llm_preferences_pkey")
+  @@map("llm_preferences")
   @@schema("public")
 }
 

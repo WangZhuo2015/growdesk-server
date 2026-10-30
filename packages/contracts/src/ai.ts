@@ -60,6 +60,17 @@ export const AiMessageRoleSchema = Type.Union([
 
 export type AiMessageRole = Static<typeof AiMessageRoleSchema>;
 
+export const AiModelInfoSchema = Type.Object({
+  source: Type.String({ minLength: 1, maxLength: 40 }),
+  provider: Type.String({ minLength: 1, maxLength: 200 }),
+  model: Type.String({ minLength: 1, maxLength: 200 }),
+  modelBasis: Type.Optional(Type.Union([
+    Type.Literal("provider_response"), Type.Literal("requested"), Type.Literal("fixture"), Type.Literal("unknown"),
+  ])),
+}, { $id: "AiModelInfo", additionalProperties: false });
+
+export type AiModelInfo = Static<typeof AiModelInfoSchema>;
+
 export const AiMessageSchema = Type.Object(
   {
     id: UuidString,
@@ -68,6 +79,7 @@ export const AiMessageSchema = Type.Object(
     content: Type.String(),
     attachmentIds: Type.Array(Type.String()),
     createdAt: DateTimeString,
+    llm: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
   },
   { $id: "AiMessage", additionalProperties: false }
 );
@@ -168,6 +180,8 @@ export const AiRunSchema = Type.Object(
     attempt: Type.Integer({ minimum: 1 }),
     lastEventSeq: BigIntString,
     resultSummary: Nullable(Type.String()),
+    llm: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
+    asr: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
     proposedPlan: Nullable(
       Type.Object(
         {

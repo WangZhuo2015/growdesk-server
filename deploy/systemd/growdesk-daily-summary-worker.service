@@ -1,0 +1,22 @@
+[Unit]
+Description=GrowDesk scheduled daily summary worker
+After=network-online.target postgresql.service redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=growdesk
+Group=growdesk
+WorkingDirectory=/opt/growdesk
+EnvironmentFile=/home/ubuntu/Github/baby_panel_for_cecilia/.env
+EnvironmentFile=/home/ubuntu/growdesk/api.env
+Environment=GROWDESK_ENV=production
+ExecStart=/usr/bin/python3 /home/ubuntu/growdesk/openai-defaults-releases/20261030/launch-daily.py --worker
+Restart=always
+RestartSec=10s
+KillSignal=SIGTERM
+TimeoutStopSec=30s
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

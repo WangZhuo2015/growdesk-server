@@ -35,6 +35,7 @@ type nativeTaskInput struct {
 	Message        string   `json:"message,omitempty"`
 	AttachmentIDs  []string `json:"attachmentIds,omitempty"`
 	TargetDate     string   `json:"targetDate,omitempty"`
+	Scheduled      bool     `json:"scheduled,omitempty"`
 	SnapshotID     string   `json:"snapshotId,omitempty"`
 	NotificationID string   `json:"notificationId,omitempty"`
 	PushDeviceID   string   `json:"pushDeviceId,omitempty"`
@@ -151,7 +152,23 @@ func appendNativeRunEvent(ctx context.Context, tx pgx.Tx, id, kind string, paylo
 	return err
 }
 func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskLease, bool, error) {
+	return s.claimNativeTaskWithMode(ctx, owner, nativeTaskKinds, "exclude-scheduled")
+}
+
+func (s *Server) claimScheduledDailySummaryTask(ctx context.Context, owner string) (nativeTaskLease, bool, error) {
+	return s.claimNativeTaskWithMode(ctx, owner, []string{"daily_summary_synthesis"}, "scheduled-only")
+}
+
+func (s *Server) claimNativeTaskWithMode(ctx context.Context, owner string, kinds []string, scheduledMode string) (nativeTaskLease, bool, error) {
 	var lease nativeTaskLease
+	if len(kinds) == 0 || (scheduledMode != "exclude-scheduled" && scheduledMode != "scheduled-only") {
+		return lease, false, errors.New("invalid native task claim filter")
+	}
+	for _, kind := range kinds {
+		if !nativeTaskKind(kind) {
+			return lease, false, errors.New("invalid native task kind filter")
+		}
+	}
 	tx, err := s.DB.Begin(ctx)
 	if err != nil {
 		return lease, false, err
@@ -162,8 +179,12 @@ func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskL
 		AND (t.status='queued' OR (t.status='running' AND t.lease_expires_at<clock_timestamp()))
 		AND EXISTS(SELECT 1 FROM task_outbox o WHERE o.aggregate_id=t.id
 			AND o.phase_key='native-initial' AND o.payload_version=1
-			AND o.dispatch_state='active' AND o.next_dispatch_at<=clock_timestamp() AND o.payload ? '__native')
-		ORDER BY t.created_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, nativeTaskKinds)
+			AND o.dispatch_state='active' AND o.next_dispatch_at<=clock_timestamp() AND o.payload ? '__native'
+			AND CASE $2
+				WHEN 'scheduled-only' THEN t.kind='daily_summary_synthesis' AND COALESCE(o.payload->'__native'->>'scheduled','false')='true'
+				WHEN 'exclude-scheduled' THEN NOT (t.kind='daily_summary_synthesis' AND COALESCE(o.payload->'__native'->>'scheduled','false')='true')
+				ELSE false END)
+		ORDER BY t.created_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, kinds, scheduledMode)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return lease, false, nil
 	}
@@ -198,7 +219,8 @@ func (s *Server) claimNativeTask(ctx context.Context, owner string) (nativeTaskL
 	} else if text(row["status"]) == "running" {
 		attempt++
 	}
-	if attempt > integer(row["max_attempts"]) || integer(row["fence_token"]) == math.MaxInt64 {
+	unboundedDaily := text(row["kind"]) == "daily_summary_synthesis" && input.Scheduled
+	if (!unboundedDaily && attempt > integer(row["max_attempts"])) || integer(row["fence_token"]) == math.MaxInt64 {
 		if _, err = tx.Exec(ctx, `UPDATE task_executions SET status='failed',lease_owner=NULL,lease_expires_at=NULL,error_details='{"code":"ATTEMPTS_EXHAUSTED"}',updated_at=NOW() WHERE id=$1`, id); err != nil {
 			return lease, false, err
 		}
@@ -340,7 +362,11 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 	if errors.Is(cause, context.Canceled) && !cancelled {
 		code, message, retryable = "WORKER_STOPPED", "Worker execution interrupted", true
 	}
-	retry := !cancelled && retryable && lease.Attempt < integer(row["max_attempts"])
+	scheduledDaily := lease.Kind == "daily_summary_synthesis" && lease.Input.Scheduled
+	if scheduledDaily && !cancelled && scheduledDailyFailureShouldRetry(cause) {
+		retryable = true
+	}
+	retry := !cancelled && retryable && (scheduledDaily || lease.Attempt < integer(row["max_attempts"]))
 	if retry {
 		status, event = "queued", "attempt_restarted"
 	}
@@ -354,8 +380,19 @@ func (s *Server) failNativeTask(ctx context.Context, lease nativeTaskLease, caus
 	if retry {
 		dispatch = "active"
 	}
+	delay := int32(lease.Attempt * 2)
+	if scheduledDaily {
+		retryDelay := scheduledDailyConfigurationRetryDelay(lease.Attempt, cause)
+		if provider != nil && provider.RetryAfter > retryDelay {
+			retryDelay = provider.RetryAfter
+			if retryDelay > nativeDailyRetryAfterCap {
+				retryDelay = nativeDailyRetryAfterCap
+			}
+		}
+		delay = int32(retryDelay.Seconds())
+	}
 	_, err = tx.Exec(ctx, `UPDATE task_outbox SET dispatch_state=$2,next_dispatch_at=clock_timestamp()+make_interval(secs=>$3),
-		terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE aggregate_id=$1`, lease.ID, dispatch, int32(lease.Attempt*2))
+		terminal_at=CASE WHEN $2='closed' THEN NOW() ELSE NULL END WHERE aggregate_id=$1`, lease.ID, dispatch, delay)
 	if err != nil {
 		return err
 	}
@@ -384,7 +421,22 @@ func boolInt(value bool) int64 {
 // returning. A failed business task is persisted, not mistaken for a crash.
 // Database/lease failures remain observable to the process supervisor.
 func (s *Server) RunWorkerOnce(ctx context.Context, owner string) (bool, error) {
-	lease, found, err := s.claimNativeTask(ctx, owner)
+	return s.runWorkerOnce(ctx, owner, false)
+}
+
+func (s *Server) RunDailySummaryWorkerOnce(ctx context.Context, owner string) (bool, error) {
+	return s.runWorkerOnce(ctx, owner, true)
+}
+
+func (s *Server) runWorkerOnce(ctx context.Context, owner string, dailySummaryOnly bool) (bool, error) {
+	var lease nativeTaskLease
+	var found bool
+	var err error
+	if dailySummaryOnly {
+		lease, found, err = s.claimScheduledDailySummaryTask(ctx, owner)
+	} else {
+		lease, found, err = s.claimNativeTask(ctx, owner)
+	}
 	if err != nil || !found {
 		return found, err
 	}
@@ -454,6 +506,28 @@ func (s *Server) RunWorker(ctx context.Context, concurrency int) error {
 	return nil
 }
 
+// RunDailySummaryWorker owns only internally scheduled daily summary jobs.
+// Interactive daily summaries remain on the general native worker.
+func (s *Server) RunDailySummaryWorker(ctx context.Context) error {
+	owner := "daily-summary-" + newID()
+	for ctx.Err() == nil {
+		found, err := s.RunDailySummaryWorkerOnce(ctx, owner)
+		if err != nil && ctx.Err() == nil {
+			s.Log.Error("daily summary worker database operation failed")
+		}
+		if !found || err != nil {
+			timer := time.NewTimer(500 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return nil
+			case <-timer.C:
+			}
+		}
+	}
+	return nil
+}
+
 // Reconciliation never starts concurrent unbounded timers. Only this runtime's
 // outbox rows are touched; unrelated/legacy workers retain their own state.
 func (s *Server) ReconcileNativeTasks(ctx context.Context) (int64, error) {
@@ -518,7 +592,7 @@ func (s *Server) RunScheduler(ctx context.Context) error {
 func RunNativeRuntime(ctx context.Context, kind string, once bool, log *slog.Logger) error {
 	if once {
 		budget := 30 * time.Second
-		if kind == "worker" {
+		if kind == "worker" || kind == "daily-summary-worker" || kind == "daily-summary-scheduler" {
 			budget = 210 * time.Second
 		}
 		bounded, cancel := context.WithTimeout(ctx, budget)
@@ -557,6 +631,18 @@ func RunNativeRuntime(ctx context.Context, kind string, once bool, log *slog.Log
 			return err
 		}
 		return server.RunScheduler(ctx)
+	case "daily-summary-worker":
+		if once {
+			_, err = server.RunDailySummaryWorkerOnce(ctx, "daily-summary-once-"+newID())
+			return err
+		}
+		return server.RunDailySummaryWorker(ctx)
+	case "daily-summary-scheduler":
+		if !once {
+			return errors.New("daily summary scheduler must run once per timer invocation")
+		}
+		_, err = server.EnqueueScheduledDailySummaries(ctx, time.Now().UTC())
+		return err
 	default:
 		return errors.New("unknown native process")
 	}

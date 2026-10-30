@@ -1,0 +1,9 @@
+
+/home/ubuntu/Github/growdesk-server/apps/worker/src/ai-provider.ts
+  78:51  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+/home/ubuntu/Github/growdesk-server/apps/worker/tests/openai-official.test.ts
+  162:3  error  The value assigned to 'bodyClosed' is not used in subsequent statements  no-useless-assignment
+
+✖ 2 problems (2 errors, 0 warnings)
+

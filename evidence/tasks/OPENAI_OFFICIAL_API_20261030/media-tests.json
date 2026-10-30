@@ -1,0 +1,16 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-timeout=45s",
+    "./internal/backend",
+    "-run",
+    "^TestOfficialPassport"
+  ],
+  "started_at": "2026-10-30T06:13:48.396353+00:00",
+  "duration_seconds": 68.928,
+  "exit_code": 0,
+  "isolation": "Inherited database/provider/notification settings removed; local tests only."
+}

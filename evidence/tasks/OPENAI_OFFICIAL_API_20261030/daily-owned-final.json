@@ -1,0 +1,16 @@
+{
+  "command": [
+    "python3",
+    "scripts/go-daily-summary-integration.py",
+    "--api-binary",
+    "/tmp/growdesk-openai-api-test-20261030",
+    "--daily-binary",
+    "/tmp/growdesk-openai-daily-release-20261030",
+    "--worker-binary",
+    "/tmp/growdesk-openai-worker-test-20261030"
+  ],
+  "started_at": "2026-10-30T07:07:46.691063+00:00",
+  "duration_seconds": 15.53,
+  "exit_code": 0,
+  "isolation": "Inherited database/provider/notification settings removed; local tests only."
+}

@@ -1,0 +1,150 @@
+{
+  "publicChecks": [
+    {
+      "path": "/settings",
+      "status": 200,
+      "expected": 200,
+      "pass": true
+    },
+    {
+      "path": "/daily-summary",
+      "status": 200,
+      "expected": 200,
+      "pass": true
+    },
+    {
+      "path": "/api/ai/preferences",
+      "status": 401,
+      "expected": 401,
+      "pass": true
+    },
+    {
+      "path": "/api/ai/daily-summary?babyId=test_absent&date=2026-10-29",
+      "status": 401,
+      "expected": 401,
+      "pass": true
+    },
+    {
+      "path": "/.well-known/oauth-authorization-server",
+      "status": 200,
+      "expected": 200,
+      "pass": true
+    },
+    {
+      "path": "/mcp",
+      "status": 401,
+      "expected": 401,
+      "pass": true
+    }
+  ],
+  "settingsAssets": [
+    {
+      "path": "/_next/static/chunks/02agze572u40j.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/02ydnp57yblkd.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/043vfftevp19a.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/0a2kilw24wyc1.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/0cz1d0mv5g_q7.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/0e79suc3fy9jc.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/0m101i9ckc9d2.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/0ol200__kly_p.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/15fj883cf8ipi.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/1jlnvcjpabviu.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/1we9n-4xwo_gd.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/26lawg81hlc8x.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/29p3iuxg-2ypv.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/2gq3o-5dhuore.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/2n0o5e7xbhe-o.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/3093yr612azah.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/3fkw4r4uv9zt0.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/3jta6jrk-jubq.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/3n6yuqbdxy7h9.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/3ye-ihfar86en.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    },
+    {
+      "path": "/_next/static/chunks/turbopack-2887a57d_blte.js",
+      "status": 200,
+      "matchesReviewedArtifact": true
+    }
+  ],
+  "realAccountLogin": false,
+  "clinicalDataRead": false,
+  "syntheticWritesToProduction": false
+}

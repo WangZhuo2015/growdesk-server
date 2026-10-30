@@ -138,6 +138,12 @@ func schemaJSONValue(v any) any {
 }
 
 func (r *Route) Validate(req *http.Request, params map[string]string, body Object) error {
+	if r.OperationID == "upsertWebAiPreference" {
+		// Preference input accepts only catalogue selections, never ownership or provider connection fields.
+		if err := rejectUnknownLlmPreferenceFields(body); err != nil {
+			return err
+		}
+	}
 	// The frozen food-plan route has a preValidation hook before its schema.
 	// Preserve the 409 precondition signal even for non-string/missing versions;
 	// clients must not treat a lost CAS precondition as an ordinary field error.

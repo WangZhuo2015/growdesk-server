@@ -1,0 +1,15 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-count=1",
+    "-timeout=180s",
+    "./cmd/...",
+    "./internal/..."
+  ],
+  "started_at": "2026-10-30T06:20:47.438918+00:00",
+  "duration_seconds": 111.599,
+  "exit_code": 0,
+  "isolation": "Inherited database/provider/notification settings removed; local tests only."
+}

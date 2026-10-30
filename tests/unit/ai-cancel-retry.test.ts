@@ -4,6 +4,8 @@ import fs from "node:fs";
 import vm from "node:vm";
 import { createRequire } from "node:module";
 import ts from "typescript";
+import { resolveOfficialOpenAiKey } from "../../packages/adapters/src/openai-key.js";
+import * as aiModelInfo from "../../apps/api/src/services/ai-model-info.js";
 
 type QueryClient = {
   query(sql: string, values?: unknown): Promise<{ rows: unknown[]; rowCount: number }>;
@@ -36,6 +38,8 @@ const { AiService } = load<{
   AiService: new (database: unknown, pool: unknown) => AiServiceInstance;
 }>("../../apps/api/src/services/ai-service.ts", {
   "@growdesk/database": { Prisma: { JsonNull: null }, TaskExecutionRepository, RecordNotFoundError: Error, ConcurrencyConflictError: Error },
+  "@growdesk/adapters": { resolveOfficialOpenAiKey },
+  "./ai-model-info.js": aiModelInfo,
   "./feeding-service.js": {}, "@growdesk/contracts": {},
 });
 

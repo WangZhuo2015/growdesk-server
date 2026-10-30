@@ -1,0 +1,149 @@
+{
+  "server": {
+    ".gitignore": {
+      "sha256": "d487d558c4b8cd9427dc9bd1031f3858defb1d258373271cf1e80c20e1576e04",
+      "comparison": "HEAD snapshot"
+    },
+    "apps/api/src/services/ai-service.ts": {
+      "sha256": "20ac217ff65262b4d20c4db3e6cc8fbc82b97de9e36439e33f2a227f579fe8b6",
+      "comparison": "saved task-entry snapshot"
+    },
+    "apps/api/tests/ai-provider-config.test.ts": {
+      "sha256": "fbee79db2935637cb66a45adc14b0aa9fde7f15c35402ec033368d05c17de5f7",
+      "comparison": "saved task-entry snapshot"
+    },
+    "apps/worker/src/ai-provider.ts": {
+      "sha256": "58762159fa0ca0e9c4482b7ff6ac46e7a76278498a1080bfbb87c386d7ae53d4",
+      "comparison": "saved task-entry snapshot"
+    },
+    "packages/adapters/src/index.ts": {
+      "sha256": "3e19f8cb1b42a86257626ef9b2a67955a71d0d3b8acae3e431f5c59b7d98c416",
+      "comparison": "saved task-entry snapshot"
+    },
+    "internal/backend/ai_provider.go": {
+      "sha256": "b82fefc07bca212dc4be0166ea8955a378d5411d459d1a4701d31f727ba849bc",
+      "comparison": "saved task-entry snapshot"
+    },
+    "internal/backend/native_media.go": {
+      "sha256": "f3f48513389cd281538690dfe260c8e8cd4d5d68b78d0047efa6163ccb770f73",
+      "comparison": "saved task-entry snapshot"
+    },
+    "internal/backend/passport_ws.go": {
+      "sha256": "3ade7f946adccd1e97f31de9a6e47f2433eaa1e92bc5ce6f79960a211d0705ad",
+      "comparison": "saved task-entry snapshot"
+    },
+    "tests/unit/ai-cancel-retry.test.ts": {
+      "sha256": "ab3dcaa8835c52a120886f2eac227f10756f8c0538f497befa475c85d247ce40",
+      "comparison": "saved task-entry snapshot"
+    },
+    "internal/backend/native_tasks.go": {
+      "sha256": "5c8ac8f3ebd992a3607c675b2935706bd8de07b217b546aeac5c3c49e1ba6fe5",
+      "comparison": "HEAD snapshot"
+    },
+    "internal/backend/ai_run_commands.go": {
+      "sha256": "5be0b8f885199691cb65afda27e54bbe286795c517bc159ab09cf12c249cde35",
+      "comparison": "HEAD snapshot"
+    },
+    "internal/backend/native_processors.go": {
+      "sha256": "fef823ef97180e3230052bd52acbb013ea923fd9ee2a75ac5988b61303b3350d",
+      "comparison": "HEAD snapshot"
+    },
+    "packages/adapters/src/openai-key.ts": {
+      "sha256": "68ca35617e04aa9ba8126e6770e29959cda0292afb68d75331317dce91064965",
+      "comparison": "new file"
+    },
+    "apps/worker/tests/openai-official.test.ts": {
+      "sha256": "a9e953686b0b4b6f374038b3be7bed5fb3e9a968eb92c491d3c6669dc7917061",
+      "comparison": "new file"
+    },
+    "internal/backend/openai_responses.go": {
+      "sha256": "b41e9005d9497823e2d9e70abf4cf75844571ea57c7def8e60fd7a250c17b35f",
+      "comparison": "new file"
+    },
+    "internal/backend/openai_responses_test.go": {
+      "sha256": "8e990970e97a1107dcb3c04ee9a2ed734458ec29718ac0ac150702ed9aa695b8",
+      "comparison": "new file"
+    },
+    "internal/backend/openai_media_test.go": {
+      "sha256": "34ae1177fb3231c106f0303b7e8ecd6bfbfe41c191e932b2a29ca837f4fd4b8b",
+      "comparison": "new file"
+    },
+    "internal/backend/native_daily_summary.go": {
+      "sha256": "564d669ead866bc0d978b57ad8cee4db4e82e90531047a6f5c0123e2e8e1c6b4",
+      "comparison": "new file"
+    },
+    "internal/backend/native_daily_summary_test.go": {
+      "sha256": "4eb15f292075c284e8e2c0078d4da151eb92a5d6fffd93c1b9e82030e76ac8a8",
+      "comparison": "new file"
+    },
+    "cmd/growdesk-daily-summary/main.go": {
+      "sha256": "c1c9cef5c7f368917b624dbfb75f790a33b6bc77908931a8fdf4ef451c532d08",
+      "comparison": "new file"
+    },
+    "deploy/systemd/growdesk-daily-summary-worker.service": {
+      "sha256": "68cf27a4a9828949c596c4e6b627d8547b001fee4350493c1d755c7d9be3159f",
+      "comparison": "new file"
+    },
+    "deploy/openai.env.example": {
+      "sha256": "0f1b212a06f1886a058ae92ab856db24bfa27fc6e0831342d7eb5cd49a8a333d",
+      "comparison": "new file"
+    },
+    "docs/OPENAI_API.zh-CN.md": {
+      "sha256": "fb6730feb2676c53156d1757b55283775ed0c8759e086547fd7458431c7bdb47",
+      "comparison": "new file"
+    },
+    "scripts/go-daily-summary-integration.py": {
+      "sha256": "e70a28c305bed97879fa2bb8f19806115b15b6fc5a95cb8771ab6455fac0fa4e",
+      "comparison": "new file"
+    },
+    "scripts/stage-openai-defaults-web.py": {
+      "sha256": "7917e160bda3f8ac995cd0b8dfcbf16c709744a586706feeea00c64d1158d43f",
+      "comparison": "new file"
+    },
+    "scripts/test-openai-launchers.py": {
+      "sha256": "f94dfa824386d2563d0e4adffbe135485aef279059946df5c4d4ba5f0fa574ac",
+      "comparison": "new file"
+    },
+    "scripts/prepare-openai-defaults-release.py": {
+      "sha256": "beb72281f87928151a145b7a21baa28b620808382b838cbfb393b2cb20f2fcef",
+      "comparison": "new file"
+    },
+    "deploy/openai-defaults.py": {
+      "sha256": "4bb4e3f771fb1873d3d1a70e3780dc4ecd15ed52738cec350b97916f75707117",
+      "comparison": "new file"
+    },
+    "deploy/openai-defaults-20261030/launch-web.py": {
+      "sha256": "b9538fa533e41e29b95b99edcd3c900b13fd03fc6582efe24495417f6f5a51a9",
+      "comparison": "new file"
+    },
+    "deploy/openai-defaults-20261030/launch-api.py": {
+      "sha256": "958430ae88cf2f8064e37c5514c1b49c5c4f0ef5c60d86487f7253b78d41091e",
+      "comparison": "new file"
+    },
+    "deploy/openai-defaults-20261030/launch-daily.py": {
+      "sha256": "e84e7ead53b7d83799ecd800a135787da3473dfbe56e17f106a4d5779a232f72",
+      "comparison": "new file"
+    }
+  },
+  "webDonors": {
+    "lib/llm-profiles.ts": "d398b14eee500c00800729c58ec70522f56a1642ac302eb81b728b5a2d0ea908",
+    "lib/llm-preferences.ts": "bcecfe7bf30b5647b7a7e6ac0d954f6c0d4bab8511bdce3a362aefdd9c92cc36",
+    "lib/llm-context.ts": "79a903a4c0bf599b6b63a9d7b584529254ae155c00bea00dc19c5faa97b99b64",
+    "lib/llm-provenance.ts": "cf3fde19c5eb85bbae41d4a657c81465c684f4c4a6ef761c4c3ca375d27d14f3",
+    "lib/agent/model.ts": "8b4947a635def8d424ee5848815f7d4ce5b81b03869702114b51e5c381ca88c8",
+    "lib/agent/run.ts": "bcbf53d589ae52f485d038d71c473167fc894ce549a62394bb8c5218eaa69ffb",
+    "components/ui/LlmFeaturePreferences.tsx": "b0fc000dba229c06a2e3ac6f3c910c9010b17a2718c92fcaff391b35aacf251e",
+    "tests/unit/llm-preferences.test.ts": "c29e37897b16b560584e6cab68e91792c0a05c0505eb1611cbdfc7688efc17e1",
+    "tests/unit/llm-provenance.test.ts": "7f3c4285be9c6b5db2e232f3396eeb123bbe1d68925f209d072685657985204a",
+    "tests/unit/openai-official-profile.test.ts": "dcb1ce232718c780bb99b4a240d378e6399a02eda46f6c5c15bf3499f688daff",
+    "app/api/ai/daily-summary/route.ts": "f9a336373b73dd97e7eb68b394dce0b2adff33e969d3885b8dd087342ce1478b",
+    "app/(main)/daily-summary/page.tsx": "0b01fd9baa40b1613914f9887534efb84e2c1045ec583321a6b983f148721496",
+    "lib/growdesk/scheduled-daily-summary.ts": "eaa4e1e0a10c4867ff32716be0839d3088c3b807ef76670d47771fb83ccd1358",
+    "tests/unit/scheduled-daily-summary.test.ts": "69a1f2f2afcf86e740f299a0f865c7459a48b526204b99bb366324596a85ef02",
+    "tests/fixtures/scheduled-daily-summary-go.json": "c5ae8073765d0b249bf0ed257d9f650926b464d0fd164d7ac76ca9573136bbad"
+  },
+  "headComparisonMayIncludePreexistingChanges": [
+    "internal/backend/ai_run_commands.go",
+    "internal/backend/native_processors.go"
+  ]
+}
