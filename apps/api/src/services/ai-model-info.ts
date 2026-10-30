@@ -10,7 +10,7 @@ const modelUrlHostPath = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)+(?::[
 function safeModelLabel(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const label = value.trim();
-  if (!label || Array.from(label).length > 200 || /[\u0000-\u001f\u007f-\u009f]/u.test(label) ||
+  if (!label || Array.from(label).length > 200 || /\p{Cc}/u.test(label) ||
       modelUrlPrefix.test(label) || modelUrlHostPath.test(label)) return null;
   try {
     const url = new URL(label);

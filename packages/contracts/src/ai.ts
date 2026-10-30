@@ -71,6 +71,10 @@ export const AiModelInfoSchema = Type.Object({
 
 export type AiModelInfo = Static<typeof AiModelInfoSchema>;
 
+// Inline this value without its $id: the response serializer cannot resolve an
+// external model-info reference inside a nullable, nested named schema.
+const AiModelInfoValueSchema = Type.Omit(AiModelInfoSchema, []);
+
 export const AiMessageSchema = Type.Object(
   {
     id: UuidString,
@@ -79,7 +83,7 @@ export const AiMessageSchema = Type.Object(
     content: Type.String(),
     attachmentIds: Type.Array(Type.String()),
     createdAt: DateTimeString,
-    llm: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
+    llm: Type.Optional(Nullable(AiModelInfoValueSchema)),
   },
   { $id: "AiMessage", additionalProperties: false }
 );
@@ -180,8 +184,8 @@ export const AiRunSchema = Type.Object(
     attempt: Type.Integer({ minimum: 1 }),
     lastEventSeq: BigIntString,
     resultSummary: Nullable(Type.String()),
-    llm: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
-    asr: Type.Optional(Nullable(Type.Ref(AiModelInfoSchema))),
+    llm: Type.Optional(Nullable(AiModelInfoValueSchema)),
+    asr: Type.Optional(Nullable(AiModelInfoValueSchema)),
     proposedPlan: Nullable(
       Type.Object(
         {

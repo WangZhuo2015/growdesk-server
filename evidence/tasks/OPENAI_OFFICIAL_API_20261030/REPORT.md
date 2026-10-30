@@ -75,3 +75,18 @@ sudo -n python3 deploy/openai-defaults.py rollback
 Web 提交树基于最新 origin/main `422861a40295a7e174e01bcca014955c0fd182b1`，39 个任务/必要 LLM 路由、选择、设置和 retry 前置文件。干净树 tsc、20/20 定向测试、Next webpack 完整构建、lint 与 diff 检查均 exit 0。Turbopack 因隔离 worktree 的外部 node_modules symlink 限制未能构建，完整 webpack build 已通过，未跳过类型检查。
 
 最终两份清单分别为 112 与 39 文件，敏感路径和凭据扫描均 0 findings。两处被识别的合成测试字面量已明确改为 test_ 前缀；扫描不输出任何匹配值。未上传 .gpt、环境文件及备份、私有 profile、数据库、生成客户端、node_modules、运行数据或二进制。原工作区和无关未提交文件保持原样。
+
+
+### main 合并准备中的回归修复与检查限制
+
+PR #19 的远程 CI 暴露并修复了三项本次集成问题：模型标签控制字符正则改用等价的 Unicode Cc 类以符合 lint；严格接口数断言从原来的 159 更新为增加偏好 API 后的 161；新增模型信息在 nullable、嵌套命名 schema 中的外部引用会让真实 Fastify serializer 返回 500，现使用去掉 $id 的同结构内联 schema，未删除字段校验。新增真实 Fastify response serializer 回归覆盖 absent/null/present 模型信息和消息列表。
+
+修复后：完整 TS build/typecheck/lint 通过；全部 TS 单元测试 169/169、0 skip；Go `go test -race -count=1 ./...` 全通过；重新生成契约仍为 161 operations；真实 owned PostgreSQL 18/Redis 8 的 AI run 生命周期及 Web 会话隔离/并发测试共 22/22、0 skip。测试只在可销毁的 test_ 数据库/role/家庭/宝宝中执行，使用 fixture，无外部计费调用。Web PR #27 的旧 route harness 已补齐新依赖和 run 接口边界，保留原权限断言；定向测试 45/45，tsc 通过。
+
+远程 CI 没有冒称全绿。既存的 Go parity workflows 仍把 apps/packages/prisma/contracts 与固定 f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4 比较；对本 PR 的 base main@516371a 执行同样比较就已返回非零。旧 go-coverage.py 固定 151 operations，而 base 已有 159。这些冻结基线 gate 保留原样，未为本任务跳过或弱化。Web package.json/lockfile 与 base main@422861a 完全一致，依赖审计仍报告既存 critical 问题（当前为 next 和 proxy-addr）；未在本次合并工作中扩大依赖升级范围。
+
+CI 证据：server 首轮 https://github.com/WangZhuo2015/growdesk-server/actions/runs/41025839973 ，冻结基线 https://github.com/WangZhuo2015/growdesk-server/actions/runs/41025840085 ；Web 首轮 https://github.com/WangZhuo2015/baby_panel_for_cecilia/actions/runs/41025846588 ，依赖审计 https://github.com/WangZhuo2015/baby_panel_for_cecilia/actions/runs/41025846586 。修复结果和最终提交以 PR #19/#27 后续 checks 为准。
+
+合并清理保留两个原始 dirty 工作区及所有含独有提交的分支，只移除 clean 且已被 main 包含的工作树/分支；失效的 recovery worktree 登记可 prune，其未合并分支仍保留。密钥和私有配置不加入任何清单。本次修复后最终候选清单为服务端 113 文件、Web 40 文件。
+
+Web 额外回归：组合 `npm test` 中 unit 阶段 861/861 通过、0 skip；随后 live AI 阶段因默认指向其他既有 3089 服务而中止，组合命令 exit 130，不将其算作完整验收，也不将其中自行跳过的 HTTP roundtrip 冒充已验证。本次真实 HTTP/数据库证据仍以 owned PostgreSQL/Redis 的测试和前述独立场景为准。

@@ -2316,7 +2316,58 @@
             "type": "string"
           },
           "llm": {
-            "$ref": "#/components/schemas/AiModelInfo",
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "source",
+              "provider",
+              "model"
+            ],
+            "properties": {
+              "source": {
+                "minLength": 1,
+                "maxLength": 40,
+                "type": "string"
+              },
+              "provider": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "model": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "modelBasis": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "provider_response"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "requested"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "fixture"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                ]
+              }
+            },
             "nullable": true
           }
         }
@@ -2476,11 +2527,113 @@
             "nullable": true
           },
           "llm": {
-            "$ref": "#/components/schemas/AiModelInfo",
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "source",
+              "provider",
+              "model"
+            ],
+            "properties": {
+              "source": {
+                "minLength": 1,
+                "maxLength": 40,
+                "type": "string"
+              },
+              "provider": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "model": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "modelBasis": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "provider_response"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "requested"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "fixture"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                ]
+              }
+            },
             "nullable": true
           },
           "asr": {
-            "$ref": "#/components/schemas/AiModelInfo",
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "source",
+              "provider",
+              "model"
+            ],
+            "properties": {
+              "source": {
+                "minLength": 1,
+                "maxLength": 40,
+                "type": "string"
+              },
+              "provider": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "model": {
+                "minLength": 1,
+                "maxLength": 200,
+                "type": "string"
+              },
+              "modelBasis": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "provider_response"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "requested"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "fixture"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "unknown"
+                    ]
+                  }
+                ]
+              }
+            },
             "nullable": true
           },
           "proposedPlan": {
@@ -17122,7 +17275,58 @@
                             "type": "string"
                           },
                           "llm": {
-                            "$ref": "#/components/schemas/AiModelInfo",
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "source",
+                              "provider",
+                              "model"
+                            ],
+                            "properties": {
+                              "source": {
+                                "minLength": 1,
+                                "maxLength": 40,
+                                "type": "string"
+                              },
+                              "provider": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "model": {
+                                "minLength": 1,
+                                "maxLength": 200,
+                                "type": "string"
+                              },
+                              "modelBasis": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "provider_response"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "requested"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "fixture"
+                                    ]
+                                  },
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "unknown"
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
                             "nullable": true
                           }
                         }
@@ -17336,11 +17540,113 @@
                           "nullable": true
                         },
                         "llm": {
-                          "$ref": "#/components/schemas/AiModelInfo",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "source",
+                            "provider",
+                            "model"
+                          ],
+                          "properties": {
+                            "source": {
+                              "minLength": 1,
+                              "maxLength": 40,
+                              "type": "string"
+                            },
+                            "provider": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "model": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "modelBasis": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "provider_response"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "requested"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "fixture"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "unknown"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
                           "nullable": true
                         },
                         "asr": {
-                          "$ref": "#/components/schemas/AiModelInfo",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "source",
+                            "provider",
+                            "model"
+                          ],
+                          "properties": {
+                            "source": {
+                              "minLength": 1,
+                              "maxLength": 40,
+                              "type": "string"
+                            },
+                            "provider": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "model": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "modelBasis": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "provider_response"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "requested"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "fixture"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "unknown"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
                           "nullable": true
                         },
                         "proposedPlan": {
@@ -17783,11 +18089,113 @@
                           "nullable": true
                         },
                         "llm": {
-                          "$ref": "#/components/schemas/AiModelInfo",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "source",
+                            "provider",
+                            "model"
+                          ],
+                          "properties": {
+                            "source": {
+                              "minLength": 1,
+                              "maxLength": 40,
+                              "type": "string"
+                            },
+                            "provider": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "model": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "modelBasis": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "provider_response"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "requested"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "fixture"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "unknown"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
                           "nullable": true
                         },
                         "asr": {
-                          "$ref": "#/components/schemas/AiModelInfo",
+                          "additionalProperties": false,
+                          "type": "object",
+                          "required": [
+                            "source",
+                            "provider",
+                            "model"
+                          ],
+                          "properties": {
+                            "source": {
+                              "minLength": 1,
+                              "maxLength": 40,
+                              "type": "string"
+                            },
+                            "provider": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "model": {
+                              "minLength": 1,
+                              "maxLength": 200,
+                              "type": "string"
+                            },
+                            "modelBasis": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "provider_response"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "requested"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "fixture"
+                                  ]
+                                },
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "unknown"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
                           "nullable": true
                         },
                         "proposedPlan": {
