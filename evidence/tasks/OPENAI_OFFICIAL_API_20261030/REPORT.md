@@ -87,6 +87,6 @@ PR #19 的远程 CI 暴露并修复了三项本次集成问题：模型标签控
 
 CI 证据：server 首轮 https://github.com/WangZhuo2015/growdesk-server/actions/runs/41025839973 ，冻结基线 https://github.com/WangZhuo2015/growdesk-server/actions/runs/41025840085 ；Web 首轮 https://github.com/WangZhuo2015/baby_panel_for_cecilia/actions/runs/41025846588 ，依赖审计 https://github.com/WangZhuo2015/baby_panel_for_cecilia/actions/runs/41025846586 。修复结果和最终提交以 PR #19/#27 后续 checks 为准。
 
-合并清理保留两个原始 dirty 工作区及所有含独有提交的分支，只移除 clean 且已被 main 包含的工作树/分支；失效的 recovery worktree 登记可 prune，其未合并分支仍保留。密钥和私有配置不加入任何清单。本次修复后最终候选清单为服务端 113 文件、Web 40 文件。
+合并清理保留两个原始 dirty 工作区及所有含独有提交的分支，只移除 clean 且已被 main 包含的工作树/分支；失效的 recovery worktree 登记可 prune，其未合并分支仍保留。密钥和私有配置不加入任何清单。本次修复后最终候选清单为服务端 114 文件、Web 40 文件。
 
 Web 额外回归：组合 `npm test` 中 unit 阶段 861/861 通过、0 skip；随后 live AI 阶段因默认指向其他既有 3089 服务而中止，组合命令 exit 130，不将其算作完整验收，也不将其中自行跳过的 HTTP roundtrip 冒充已验证。本次真实 HTTP/数据库证据仍以 owned PostgreSQL/Redis 的测试和前述独立场景为准。
