@@ -226,6 +226,15 @@ func (s *Server) createNativeAIRun(ctx context.Context, r *Request) (Result, err
 }
 
 func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string) (Result, error) {
+	return s.createAuxiliaryRunMode(ctx, r, kind, false)
+}
+
+// createAuxiliaryRunMode is shared with the trusted daily scheduler. The
+// scheduled marker is set here, never accepted from an API body.
+func (s *Server) createAuxiliaryRunMode(ctx context.Context, r *Request, kind string, scheduled bool) (Result, error) {
+	if scheduled && kind != "daily_summary_synthesis" {
+		return Result{}, errors.New("scheduled mode is limited to daily summaries")
+	}
 	baby := r.Params["babyId"]
 	if baby == "" {
 		baby = text(r.Body["babyId"])
@@ -244,11 +253,14 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	if err != nil {
 		return Result{}, err
 	}
-	if _, err = nativeProviderConfiguration(); err != nil {
-		return Result{}, err
+	if !scheduled {
+		if _, err = nativeProviderConfiguration(); err != nil {
+			return Result{}, err
+		}
 	}
 	if kind == "daily_summary_synthesis" {
 		input.TargetDate = text(r.Body["targetDate"])
+		input.Scheduled = scheduled
 	} else {
 		input.AttachmentIDs = []string{text(r.Body["attachmentId"])}
 		if _, err = requireObjectStore(s); err != nil {
@@ -262,6 +274,21 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 	defer rollback(tx)
 	if err = lockSubmissionScope(ctx, tx, input); err != nil {
 		return Result{}, err
+	}
+	if scheduled {
+		if err = nativeTaskOwner(ctx, tx, input, true); err != nil {
+			return Result{}, err
+		}
+		alreadyHandled, checkErr := scheduledDailySummaryAlreadyHandled(ctx, tx, input)
+		if checkErr != nil {
+			return Result{}, checkErr
+		}
+		if alreadyHandled {
+			if err = tx.Commit(ctx); err != nil {
+				return Result{}, err
+			}
+			return Result{Status: 208, Body: Object{"status": "already_present"}}, nil
+		}
 	}
 	if _, err = taskAttachments(ctx, tx, input, kind); err != nil {
 		return Result{}, err
@@ -287,6 +314,9 @@ func (s *Server) createAuxiliaryRun(ctx context.Context, r *Request, kind string
 			}
 			if err = tx.Commit(ctx); err != nil {
 				return Result{}, err
+			}
+			if scheduled {
+				return Result{Status: 208, Body: Object{"status": "idempotent_replay"}}, nil
 			}
 			return Result{Status: 202, Body: envelope(row["response_body"])}, nil
 		}
@@ -566,7 +596,8 @@ func (s *Server) confirmNativeAIRun(ctx context.Context, r *Request) (Result, er
 		}
 	}
 	lease := nativeTaskLease{ID: r.Params["id"]}
-	result := Object{"confirmationHash": requestDigest, "appliedActionCount": 1, "actionIds": ids, "feedingId": outcome.Entity["id"]}
+	result := Object{"confirmationHash": requestDigest, "appliedActionCount": 1, "actionIds": ids, "feedingId": outcome.Entity["id"],
+		"llm": sanitizeModelInfo(obj(task["result_ref"])["llm"]), "asr": sanitizeModelInfo(obj(task["result_ref"])["asr"])}
 	if err = terminalNativeTask(ctx, tx, lease, "succeeded", result); err != nil {
 		return Result{}, err
 	}

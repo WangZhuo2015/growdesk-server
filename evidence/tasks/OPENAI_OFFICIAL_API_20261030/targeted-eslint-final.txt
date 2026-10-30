@@ -1,0 +1,6 @@
+
+/home/ubuntu/Github/growdesk-server/apps/worker/src/ai-provider.ts
+  79:51  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+✖ 1 problem (1 error, 0 warnings)
+

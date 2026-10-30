@@ -1,0 +1,18 @@
+{
+  "status": "DEPLOYED",
+  "release": "/home/ubuntu/growdesk/openai-defaults-releases/20261030-a4a669577479",
+  "manifestSha256": "a4a6695774793ea41bee82f650f328ae57c08cf28a9a8765f96f028e251b4e9e",
+  "webBuildId": "kYl_9uExdjAPBXwY-0FOh",
+  "mainApiBinaryReplaced": false,
+  "originalApiBinaryPreserved": true,
+  "databaseMigrations": false,
+  "privateRuntimeFilesCopied": false,
+  "ttsPidBefore": 1238,
+  "ttsPidAfter": 1238,
+  "webPidAfter": 3208291,
+  "apiPidAfter": 3208244,
+  "dailyWorkerPidAfter": 3208386,
+  "dailyWorkerActive": true,
+  "cronInitialEnqueueExitCode": 0,
+  "originalTimerPreserved": true
+}

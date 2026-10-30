@@ -1,5 +1,6 @@
 import { randomUUID, createHash } from "node:crypto";
 import pg from "pg";
+import { resolveOfficialOpenAiKey } from "@growdesk/adapters";
 import {
   PrismaClient,
   Prisma,
@@ -11,6 +12,7 @@ import {
 } from "@growdesk/database";
 import { UserPrincipal } from "@growdesk/domain";
 import { FeedingService } from "./feeding-service.js";
+import { messageModelInfoFromToolsJson, publicModelInfo } from "./ai-model-info.js";
 import {
   CreateAiSessionRequest,
   CreateAiRunRequest,
@@ -40,7 +42,33 @@ export function assertAiProviderConfigured(env: NodeJS.ProcessEnv = process.env)
     if (env.GROWDESK_AI_FIXTURE_RESPONSE ?? env.GROWDESK_AI_FIXTURE_TEXT) return;
     throw new AiProviderUnavailableError();
   }
-  if (mode === "openai-compatible" || mode === "openai" || mode === "compat") {
+  if (mode === "openai") {
+    let apiKey: string | null;
+    try {
+      apiKey = resolveOfficialOpenAiKey(env);
+    } catch {
+      throw new AiProviderUnavailableError();
+    }
+    const baseUrl = env.GROWDESK_AI_BASE_URL?.trim();
+    // Keep official credentials bound to the official endpoint. Custom providers
+    // must be explicitly selected with openai-compatible.
+    if (baseUrl && !/^https:\/\/api\.openai\.com(?:\/|$)/i.test(baseUrl)) {
+      throw new AiProviderUnavailableError();
+    }
+    if (baseUrl) {
+      try {
+        const url = new URL(baseUrl);
+        if (url.username || url.password || url.search || url.hash || /[?#]/.test(baseUrl) ||
+            !["/", "/v1", "/v1/", "/v1/responses"].includes(url.pathname)) {
+          throw new AiProviderUnavailableError();
+        }
+      } catch {
+        throw new AiProviderUnavailableError();
+      }
+    }
+    if (apiKey) return;
+  }
+  if (mode === "openai-compatible" || mode === "compat") {
     const baseUrl = env.GROWDESK_AI_BASE_URL?.trim();
     const apiKey = (env.GROWDESK_AI_API_KEY ?? env.AI_API_KEY ?? env.OPENAI_API_KEY ?? "").trim();
     if (baseUrl && apiKey) return;
@@ -232,6 +260,7 @@ export class AiService {
         content: m.content,
         attachmentIds: [] as string[],
         createdAt: m.createdAt.toISOString(),
+        llm: messageModelInfoFromToolsJson(m.toolsJson),
       })),
       page: {
         nextCursor,
@@ -341,6 +370,9 @@ export class AiService {
     if (run.babyId) await this.assertBabyAccess(principal, run.babyId);
 
     const task = run.taskExecution;
+    const taskResult = task.resultRef;
+    const llm = publicModelInfo(asRecord(taskResult).llm);
+    const asr = publicModelInfo(asRecord(taskResult).asr);
     return {
       data: {
         id: run.id,
@@ -358,6 +390,8 @@ export class AiService {
         attempt: Math.max(task.attempt, 1),
         lastEventSeq: run.lastEventSeq.toString(),
         resultSummary: run.resultSummary,
+        llm,
+        asr,
         proposedPlan: run.proposedPlan as {
           planHash: string;
           actions: Array<{
@@ -505,7 +539,9 @@ export class AiService {
           status: "succeeded",
           leaseOwner: null,
           leaseExpiresAt: null,
-          resultRef: { actionIds: [action.actionId], feedingId: feeding.id },
+          resultRef: { actionIds: [action.actionId], feedingId: feeding.id,
+            llm: (asRecord(run.taskExecution.resultRef).llm ?? null) as Prisma.InputJsonValue,
+            asr: (asRecord(run.taskExecution.resultRef).asr ?? null) as Prisma.InputJsonValue },
           updatedAt: now,
         },
       });

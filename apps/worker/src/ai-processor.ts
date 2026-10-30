@@ -222,16 +222,18 @@ export function createAiChatProcessor(
           await appendEvent(pool, ctx.taskId, ctx.attempt, "awaiting_confirmation", {
             planHash: proposedPlan.planHash,
             expiresAt,
+            llm: result.llm ?? null,
           }, guard);
-          return { parkPlan: proposedPlan };
+          return { parkPlan: { ...proposedPlan, llm: result.llm ?? null } };
         }
 
         await updateRun(pool, ctx.taskId, { resultSummary: result.text || null, finished: true }, guard);
         await appendEvent(pool, ctx.taskId, ctx.attempt, "run_succeeded", {
           text: result.text,
           usage: result.usage ?? null,
+          llm: result.llm ?? null,
         }, guard);
-        return { result: { text: result.text, usage: result.usage ?? null } };
+        return { result: { text: result.text, usage: result.usage ?? null, llm: result.llm ?? null } };
       } catch (error) {
         if (flushTimer) clearTimeout(flushTimer);
         if (error instanceof FencingTokenMismatchError) throw error;

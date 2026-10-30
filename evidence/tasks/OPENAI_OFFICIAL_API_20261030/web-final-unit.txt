@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: legacy preference file survives reopen and concurrent owner/feature writes
+ok 1 - legacy preference file survives reopen and concurrent owner/feature writes
+  ---
+  duration_ms: 129.033744
+  type: 'test'
+  ...
+# Subtest: preference file rejects secret or unknown fields instead of persisting them
+ok 2 - preference file rejects secret or unknown fields instead of persisting them
+  ---
+  duration_ms: 9.372168
+  type: 'test'
+  ...
+# Subtest: test profile resolution ignores repository profile data and uses only environment config
+ok 3 - test profile resolution ignores repository profile data and uses only environment config
+  ---
+  duration_ms: 7.357278
+  type: 'test'
+  ...
+# Subtest: parallel feature scopes pin selected models and isolate cache keys by owner and feature
+ok 4 - parallel feature scopes pin selected models and isolate cache keys by owner and feature
+  ---
+  duration_ms: 123.766156
+  type: 'test'
+  ...
+# Subtest: shared mode uses only the authenticated GrowDesk preference endpoint and never falls back locally
+ok 5 - shared mode uses only the authenticated GrowDesk preference endpoint and never falls back locally
+  ---
+  duration_ms: 180.715489
+  type: 'test'
+  ...
+# Subtest: records the actual provider model without consuming the feature response
+ok 6 - records the actual provider model without consuming the feature response
+  ---
+  duration_ms: 50.421339
+  type: 'test'
+  ...
+# Subtest: concurrent feature results keep independent provenance and rules clear model labels
+ok 7 - concurrent feature results keep independent provenance and rules clear model labels
+  ---
+  duration_ms: 8.662005
+  type: 'test'
+  ...
+# Subtest: official GPT-6 direct requests use compatible token limits and sampling defaults
+ok 8 - official GPT-6 direct requests use compatible token limits and sampling defaults
+  ---
+  duration_ms: 2.721774
+  type: 'test'
+  ...
+# Subtest: the optional runtime only receives preferences and explicit message claims
+ok 9 - the optional runtime only receives preferences and explicit message claims
+  ---
+  duration_ms: 1.93817
+  type: 'test'
+  ...
+# Subtest: a failed settings mutation is sent once and never reaches the main runtime
+ok 10 - a failed settings mutation is sent once and never reaches the main runtime
+  ---
+  duration_ms: 80.827256
+  type: 'test'
+  ...
+# Subtest: official key resolver prioritizes inline keys and reads only an explicit key file
+ok 11 - official key resolver prioritizes inline keys and reads only an explicit key file
+  ---
+  duration_ms: 12.031062
+  type: 'test'
+  ...
+# Subtest: official key resolver rejects missing, non-file, and oversized explicit files generically
+ok 12 - official key resolver rejects missing, non-file, and oversized explicit files generically
+  ---
+  duration_ms: 7.889361
+  type: 'test'
+  ...
+# Subtest: official profile selects the OpenAI Responses adapter and never resolves to OpenRouter
+ok 13 - official profile selects the OpenAI Responses adapter and never resolves to OpenRouter
+  ---
+  duration_ms: 2.315412
+  type: 'test'
+  ...
+# Subtest: parser validates the stable scheduled contract and keeps metrics out
+ok 14 - parser validates the stable scheduled contract and keeps metrics out
+  ---
+  duration_ms: 3.095296
+  type: 'test'
+  ...
+# Subtest: loader uses authenticated bounded cursor pages and returns the exact baby/date
+ok 15 - loader uses authenticated bounded cursor pages and returns the exact baby/date
+  ---
+  duration_ms: 1.113485
+  type: 'test'
+  ...
+# Subtest: loader treats absent or legacy content as missing and preserves authorization errors
+ok 16 - loader treats absent or legacy content as missing and preserves authorization errors
+  ---
+  duration_ms: 3.452657
+  type: 'test'
+  ...
+# Subtest: loader accepts the actual Go list targetDate and parses its synthetic stable JSON fixture
+ok 17 - loader accepts the actual Go list targetDate and parses its synthetic stable JSON fixture
+  ---
+  duration_ms: 33.18565
+  type: 'test'
+  ...
+# Subtest: scope mismatches emit opaque status/code telemetry without identifiers or tokens
+ok 18 - scope mismatches emit opaque status/code telemetry without identifiers or tokens
+  ---
+  duration_ms: 0.661163
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5202.55119

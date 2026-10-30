@@ -1,0 +1,100 @@
+ M apps/api/src/app.ts
+ M apps/api/src/services/ai-service.ts
+ M apps/api/src/services/web-ai-session-service.ts
+ M apps/worker/src/ai-processor.ts
+ M apps/worker/src/ai-provider.ts
+ M apps/worker/tests/ai-provider.test.ts
+ M contracts/openapi.json
+ M internal/backend/ai_history.go
+ M internal/backend/ai_provider.go
+ M internal/backend/ai_run_commands.go
+ M internal/backend/ai_run_reads.go
+ M internal/backend/auth.go
+ M internal/backend/contract.go
+ M internal/backend/food_plan.go
+ M internal/backend/foundation_test.go
+ M internal/backend/mcp_mutation_scope.go
+ M internal/backend/mcp_oauth.go
+ M internal/backend/native_exports.go
+ M internal/backend/native_media.go
+ M internal/backend/native_processors.go
+ M internal/backend/passport_ws.go
+ M internal/backend/record_snapshots.go
+ M internal/backend/register.go
+ M internal/backend/scope.go
+ M internal/backend/server.go
+ M internal/backend/supplement_catalog.go
+ M internal/backend/web_ai_sessions.go
+ M packages/contracts/src/ai.ts
+ M packages/contracts/src/all-routes.ts
+ M packages/contracts/src/index.ts
+ M packages/contracts/src/routes.ts
+ M packages/contracts/src/web-ai.ts
+ M prisma/schema.prisma
+ M scripts/contract-generator.mjs
+ M scripts/go-domain-integration.py
+ M scripts/test-integration.py
+ M tests/integration/web-ai-session-regression.test.ts
+?? apps/api/src/routes/llm-preferences-routes.ts
+?? apps/api/src/services/ai-model-info.ts
+?? apps/api/src/services/llm-preferences-service.ts
+?? apps/api/tests/ai-model-info.test.ts
+?? deploy/gpt-features-20261023/
+?? deploy/gpt-features-web.py
+?? deploy/llm-preferences-admin-migrate.sql
+?? deploy/llm-settings-20261023/
+?? deploy/nginx/growdesk-passport-log-format.conf
+?? deploy/passport-api-hotfix.py
+?? deploy/passport-tts-hotfix.py
+?? deploy/unified-settings-20261023/
+?? deploy/unified-settings-web.py
+?? evidence/tasks/GPT_FEATURE_SELECTION_20261023/
+?? evidence/tasks/LLM_FEATURE_PREFERENCES/
+?? evidence/tasks/LLM_SETTINGS_GO_CANDIDATE_20261023/
+?? evidence/tasks/LLM_SETTINGS_PERSISTENCE_20261023/
+?? evidence/tasks/MCP_CLIENT_RECOVERY_20261020/
+?? evidence/tasks/MCP_INCIDENT_20261020/
+?? evidence/tasks/MCP_PUBLIC_CLIENT_RESTORE_20261020/
+?? evidence/tasks/MCP_REPAIR_20261020/
+?? evidence/tasks/MCP_USAGE_PAGE_20261020/
+?? evidence/tasks/PASSPORT_TTS_DIAG_20261023/
+?? evidence/tasks/PASSPORT_TTS_FIX_20261023/
+?? evidence/tasks/UNIFIED_SETTINGS_PAGE_20261023/
+?? internal/backend/llm_preferences.go
+?? internal/backend/llm_provenance.go
+?? internal/backend/llm_provenance_test.go
+?? internal/backend/mcp_bridge.go
+?? internal/backend/mcp_bridge_test.go
+?? internal/backend/mcp_oauth_store.go
+?? internal/backend/mcp_oauth_store_test.go
+?? packages/contracts/src/llm-preferences.ts
+?? packages/contracts/src/mcp-bridge.ts
+?? packages/contracts/src/mcp-oauth.ts
+?? prisma/migrations/202610200026_llm_preferences/
+?? prisma/migrations/202610200027_mcp_oauth/
+?? scripts/go-gpt-features-web-integration.py
+?? scripts/go-llm-preferences-integration.py
+?? scripts/go-llm-settings-web-integration.py
+?? scripts/go-mcp-oauth-integration.py
+?? scripts/go-web-mcp-integration.py
+?? scripts/mcp-oauth-migrate.mjs
+?? scripts/passport-verified-candidate-integration.py
+?? scripts/prepare-gpt-features-artifact.py
+?? scripts/restore-mcp-public-client.mjs
+?? scripts/stage-gpt-features-web.py
+?? scripts/stage-llm-settings-go-candidate.py
+?? scripts/stage-llm-settings-web.py
+?? scripts/stage-mcp-go-candidate.py
+?? scripts/stage-passport-hotfix.py
+?? scripts/stage-unified-settings-web.py
+?? scripts/test-gpt-features-browser.cjs
+?? scripts/test-gpt-features-web.py
+?? scripts/test-llm-preferences-admin-migrate.py
+?? scripts/test-mcp-oauth-migrate.py
+?? scripts/test-mcp-public-client-restore.py
+?? scripts/test-mcp-usage-browser.cjs
+?? scripts/test-passport-api-hotfix.py
+?? scripts/test-passport-tts-hotfix.py
+?? scripts/test-unified-settings-browser.cjs
+?? scripts/test-unified-settings-web.py
+?? tests/integration/llm-preferences.test.ts

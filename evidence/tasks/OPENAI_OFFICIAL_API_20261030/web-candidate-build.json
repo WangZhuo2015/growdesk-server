@@ -1,0 +1,12 @@
+{
+  "command": [
+    "npm",
+    "run",
+    "build"
+  ],
+  "cwd": "/tmp/growdesk-openai-defaults-web-20261030",
+  "started_at": "2026-10-30T06:55:09.707941+00:00",
+  "duration_seconds": 52.56,
+  "exit_code": 1,
+  "isolation": "private public-source candidate; virtual keys; unreachable backend; no production env or data copied"
+}

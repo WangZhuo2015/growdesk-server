@@ -1,0 +1,2 @@
+npm notice run growdesk-server@0.1.0 backend:typecheck
+npm notice run tsc -p tsconfig.backend.json --noEmit

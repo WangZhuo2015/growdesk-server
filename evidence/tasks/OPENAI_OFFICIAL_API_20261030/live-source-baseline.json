@@ -1,0 +1,298 @@
+{
+  "manifestFiles": 711,
+  "changed": [
+    {
+      "path": "README.md",
+      "sha256": "b427539c00a12e449a297e28977708abe6794eb56dc4000236112bf9f8b9ff11"
+    },
+    {
+      "path": "app/(main)/food/page.tsx",
+      "sha256": "8d7256a6bb45a1c727f169ef4014b73953e9c06cfad1b7dd0b3c3a08b5949324"
+    },
+    {
+      "path": "app/(main)/settings/page.tsx",
+      "sha256": "2f8f618dcb7d0a524c3364c0acb0b60acb05f79015b6183466acb98d8774f761"
+    },
+    {
+      "path": "app/api/agent/voice/route.ts",
+      "sha256": "518fe1935a82fc162757da4c8a46ff916ed2b0f5dd5958a0f8cabc6f8a4d4849"
+    },
+    {
+      "path": "app/api/mcp/usage/route.ts",
+      "sha256": "6658e6505d3f6967afd0f18770c5eabf0d831cf394466a7ee3674848182f73e0"
+    },
+    {
+      "path": "app/api/oauth/authorize/route.ts",
+      "sha256": "b4e4098e0ea06ce24c082e2170a1397fcd451cbca2cc7bee45962a033e5e1c52"
+    },
+    {
+      "path": "app/api/user/tokens/[id]/route.ts",
+      "sha256": "3e1c8fb2099c326af792b693c20e7269111767f99ea2195ce04f40e1b6617a4c"
+    },
+    {
+      "path": "app/api/user/tokens/route.ts",
+      "sha256": "2c8a45b7915eb3644b972411ff96fb47991f40e6978040d2836081a0e9ea6082"
+    },
+    {
+      "path": "app/notifications/page.tsx",
+      "sha256": "0bf604bf375927fdf723066b77712ed4f8863f35f4d76e034312bd6f8a79e1ef"
+    },
+    {
+      "path": "app/oauth/revoke/route.ts",
+      "sha256": "bb3440db69e7e3f17c18ba25e3b1dbd6d3c6e79db9e167eddfe0dccb98d551a1"
+    },
+    {
+      "path": "app/oauth/token/route.ts",
+      "sha256": "c4a4c343f93c3acaabdeaf308eddb12d40e8e627284c8274f20f47aa7da5f76d"
+    },
+    {
+      "path": "components/records/FoodLogForm.tsx",
+      "sha256": "e3310aaa027d36c27734f59c08e26c4efa08333899d5a89c3481f890b5a66705"
+    },
+    {
+      "path": "components/user/PersonalTokenModal.tsx",
+      "sha256": "742bcfc9da40722b208df5f75afe70ca6f2a54d70283e4e514461f8d56d21272"
+    },
+    {
+      "path": "lib/agent/search.ts",
+      "sha256": "c0b631948bac4ae48214c70d2502e72030a6576f333cdc4a75f56e8529409e7f"
+    },
+    {
+      "path": "lib/agent/tools.ts",
+      "sha256": "d8a0ea2dfb8281db05393595fa5e7880b4828a99c75f9554aaf42495877e2d30"
+    },
+    {
+      "path": "lib/agent/tools/diaper.ts",
+      "sha256": "3f41eb08b32f8b6fadba51153c49d38292e2087b36b2ff14b0a0e5bdd92dcb23"
+    },
+    {
+      "path": "lib/agent/tools/feeding.ts",
+      "sha256": "9799f2cb2e9291c202470bd989bf2b4f92ce5dc09614a9b74d97a0e98c8886a7"
+    },
+    {
+      "path": "lib/agent/tools/food.ts",
+      "sha256": "33b16aedebe67cbb78716cbbacc4994c727e1e2eb910cdeb2b2c541484e9bfb5"
+    },
+    {
+      "path": "lib/agent/tools/growth.ts",
+      "sha256": "30eca9c077dd790c8a7610e4c111eea36510efbda20043c993e309b69c1d6792"
+    },
+    {
+      "path": "lib/agent/tools/helpers.ts",
+      "sha256": "536162154254d8fbe34589329df97bcdd4271a8d8b6389dd7a911d8d0afea7e0"
+    },
+    {
+      "path": "lib/agent/tools/nutrition.ts",
+      "sha256": "cd50c68c02ff5c4ff23541c337b9cf900791c21fc05205823a1335ca585851b8"
+    },
+    {
+      "path": "lib/agent/tools/sleep.ts",
+      "sha256": "9edc6a2a87e5f859d34909766e249c7bd6775f241633ce02a0dbaa0c754ebff6"
+    },
+    {
+      "path": "lib/agent/voice-fast-path.ts",
+      "sha256": "4bd846383909dfa1a484e6a4f12fb5171e724b231528a35f1ea03c52c57d946b"
+    },
+    {
+      "path": "lib/chatgpt-plan/core.d.mts",
+      "sha256": "ce482bdd23efda6aa6ba1fed5f2f72b8d42b10ccebf3974a21c197406490cbaa"
+    },
+    {
+      "path": "lib/chatgpt-plan/core.mjs",
+      "sha256": "59b8741abd1f732d293ea723b192d7d0c2c44a626322eeee46d995106ddae6ea"
+    },
+    {
+      "path": "lib/chatgpt-plan/index.ts",
+      "sha256": "6c6f6d545eaa9271d5d2d0a222c6874c273bc6b3a411e53a9ee5169f0abadd64"
+    },
+    {
+      "path": "lib/chatgpt-plan/task-adapter.ts",
+      "sha256": "e2437bb570276a0c699a026b60a780880ee0c04687c22cad6027e69838d4ae16"
+    },
+    {
+      "path": "lib/growdesk/bridge-policy.ts",
+      "sha256": "3022b3a37dbb412621dcbc7183701466a9bb350a894b786403ebc8bfedc2ab9b"
+    },
+    {
+      "path": "lib/growdesk/bridge-protocol.ts",
+      "sha256": "f608f9cf5918d2bb9ded37970be92adafcca8d0ebeffc799cbd52cef9f23e6bc"
+    },
+    {
+      "path": "lib/growdesk/client.ts",
+      "sha256": "73949c2fbcb274961ee4a573ea3e7455a82a1b3f4a03b31e28238ce3eef313a3"
+    },
+    {
+      "path": "lib/growdesk/food-compat.ts",
+      "sha256": "65dc1acc2aaf6399996aa1980c44d9d218dcf9c973568955e8f60371887accec"
+    },
+    {
+      "path": "lib/growdesk/http-transport.ts",
+      "sha256": "b1c816f74015cbcede2448eb792eb810167a4f01c6079ca7121a8cc8878c7d19"
+    },
+    {
+      "path": "lib/llm-context.ts",
+      "sha256": "35d2b41966100f59e0583337fe78536ee13a44826c79b3163c6c972fc181fa22"
+    },
+    {
+      "path": "lib/llm-preferences.ts",
+      "sha256": "1e1108ef20f5e3d271dd7b92f9cacc4b9fa512226bb789eac541c166b4da9c52"
+    },
+    {
+      "path": "lib/mcp/server.ts",
+      "sha256": "73b75bee9695cd57faf726dcbc25ea7955c8da86b3f1c2a2a7a2aeae09dacfdc"
+    },
+    {
+      "path": "lib/nutrition/engine.test.ts",
+      "sha256": "91f26d8643fcb15853dae50eee35a5316deea98ce20ead9ee07a52a5f8dda71a"
+    },
+    {
+      "path": "lib/nutrition/engine.ts",
+      "sha256": "88dda55c995e56ac39af19b56c3bddc9ac6d6fc5451cf492e9db0e6e3b0866ab"
+    },
+    {
+      "path": "lib/nutrition/food-nutrients.ts",
+      "sha256": "d1dcfa3b6eff3a6b2129dc83539f6f5162f1673b88f635990a21eff224e32742"
+    },
+    {
+      "path": "lib/oauth/config.ts",
+      "sha256": "f941fad30234e7d092039af04ac295bb20e9c40ee2a7bc7816fe7ffbe333989c"
+    },
+    {
+      "path": "lib/oauth/service.ts",
+      "sha256": "1d491108380374f789099abe3153ae6d7accf5208337044dc10c9ab4092a29ca"
+    },
+    {
+      "path": "lib/records/service.ts",
+      "sha256": "9320f276710da8c47ff52168fc1fe0b92c8b95ea135762b1d29744f8ddeb2f31"
+    },
+    {
+      "path": "package.json",
+      "sha256": "4886c6961a077fb2532e371cdf0a4d9c594dd655cb64f290bde13433ca722d04"
+    },
+    {
+      "path": "tests/unit/chatgpt-plan-task-adapter.test.ts",
+      "sha256": "5dc2d70be8a2b8f9c54d370da87570e30d739045fd651f090f6e28a897193fb0"
+    },
+    {
+      "path": "tests/unit/growdesk-go-adapter.test.ts",
+      "sha256": "cd69e59e83433837fef6fd27e3e395cceb37f9c03e654f6972c4f3d59f150f09"
+    },
+    {
+      "path": "types/index.ts",
+      "sha256": "16c4c703501b84c2f62ae3cbebca6a3a2e76dffbd297b4d7efd13a73c668c118"
+    }
+  ],
+  "missing": [
+    ".agents/skills/prisma-cli/SKILL.md",
+    ".agents/skills/prisma-cli/references/db-execute.md",
+    ".agents/skills/prisma-cli/references/db-pull.md",
+    ".agents/skills/prisma-cli/references/db-push.md",
+    ".agents/skills/prisma-cli/references/db-seed.md",
+    ".agents/skills/prisma-cli/references/debug.md",
+    ".agents/skills/prisma-cli/references/dev.md",
+    ".agents/skills/prisma-cli/references/format.md",
+    ".agents/skills/prisma-cli/references/generate.md",
+    ".agents/skills/prisma-cli/references/init.md",
+    ".agents/skills/prisma-cli/references/mcp.md",
+    ".agents/skills/prisma-cli/references/migrate-deploy.md",
+    ".agents/skills/prisma-cli/references/migrate-dev.md",
+    ".agents/skills/prisma-cli/references/migrate-diff.md",
+    ".agents/skills/prisma-cli/references/migrate-reset.md",
+    ".agents/skills/prisma-cli/references/migrate-resolve.md",
+    ".agents/skills/prisma-cli/references/migrate-status.md",
+    ".agents/skills/prisma-cli/references/studio.md",
+    ".agents/skills/prisma-cli/references/validate.md",
+    ".agents/skills/prisma-client-api/SKILL.md",
+    ".agents/skills/prisma-client-api/references/client-methods.md",
+    ".agents/skills/prisma-client-api/references/constructor.md",
+    ".agents/skills/prisma-client-api/references/filters.md",
+    ".agents/skills/prisma-client-api/references/model-queries.md",
+    ".agents/skills/prisma-client-api/references/query-options.md",
+    ".agents/skills/prisma-client-api/references/raw-queries.md",
+    ".agents/skills/prisma-client-api/references/relations.md",
+    ".agents/skills/prisma-client-api/references/transactions.md",
+    ".agents/skills/prisma-compute/SKILL.md",
+    ".agents/skills/prisma-compute/references/app-deploy-cli.md",
+    ".agents/skills/prisma-compute/references/compute-config.md",
+    ".agents/skills/prisma-compute/references/create-prisma.md",
+    ".agents/skills/prisma-compute/references/frameworks.md",
+    ".agents/skills/prisma-compute/references/sdk-api.md",
+    ".agents/skills/prisma-compute/references/troubleshooting.md",
+    ".agents/skills/prisma-database-setup/SKILL.md",
+    ".agents/skills/prisma-database-setup/references/cockroachdb.md",
+    ".agents/skills/prisma-database-setup/references/mongodb.md",
+    ".agents/skills/prisma-database-setup/references/mysql.md",
+    ".agents/skills/prisma-database-setup/references/postgresql.md",
+    ".agents/skills/prisma-database-setup/references/prisma-client-setup.md",
+    ".agents/skills/prisma-database-setup/references/prisma-postgres.md",
+    ".agents/skills/prisma-database-setup/references/sqlite.md",
+    ".agents/skills/prisma-database-setup/references/sqlserver.md",
+    ".agents/skills/prisma-driver-adapter-implementation/SKILL.md",
+    ".agents/skills/prisma-mongodb-upgrade/SKILL.md",
+    ".agents/skills/prisma-mongodb-upgrade/references/client-api-mapping.md",
+    ".agents/skills/prisma-mongodb-upgrade/references/decision-stay-or-migrate.md",
+    ".agents/skills/prisma-mongodb-upgrade/references/migrations-mapping.md",
+    ".agents/skills/prisma-mongodb-upgrade/references/schema-contract-mapping.md",
+    ".agents/skills/prisma-mongodb-upgrade/references/verify-cutover-checklist.md",
+    ".agents/skills/prisma-postgres-setup/SKILL.md",
+    ".agents/skills/prisma-postgres-setup/references/api-basics.md",
+    ".agents/skills/prisma-postgres-setup/references/auth.md",
+    ".agents/skills/prisma-postgres-setup/references/endpoints.md",
+    ".agents/skills/prisma-postgres-setup/references/prisma7-client.md",
+    ".agents/skills/prisma-postgres/SKILL.md",
+    ".agents/skills/prisma-postgres/references/console-and-connections.md",
+    ".agents/skills/prisma-postgres/references/create-db-cli.md",
+    ".agents/skills/prisma-postgres/references/management-api-sdk.md",
+    ".agents/skills/prisma-postgres/references/management-api.md",
+    ".agents/skills/prisma-upgrade-v7/SKILL.md",
+    ".agents/skills/prisma-upgrade-v7/references/accelerate-users.md",
+    ".agents/skills/prisma-upgrade-v7/references/driver-adapters.md",
+    ".agents/skills/prisma-upgrade-v7/references/env-variables.md",
+    ".agents/skills/prisma-upgrade-v7/references/esm-support.md",
+    ".agents/skills/prisma-upgrade-v7/references/prisma-config.md",
+    ".agents/skills/prisma-upgrade-v7/references/removed-features.md",
+    ".agents/skills/prisma-upgrade-v7/references/schema-changes.md",
+    ".dockerignore",
+    ".github/workflows/ci.yml",
+    ".github/workflows/go-web-parity.yml",
+    ".github/workflows/go-web-transport.yml",
+    ".github/workflows/growdesk-core-wip.yml",
+    ".github/workflows/postlaunch-session.yml",
+    ".github/workflows/prune-reviewed-branches.yml",
+    ".gitignore",
+    ".nvmrc",
+    ".oxlintrc.json",
+    "app/.well-known/oauth-authorization-server/route.ts",
+    "app/.well-known/oauth-protected-resource/mcp/route.ts",
+    "app/.well-known/oauth-protected-resource/route.ts",
+    "app/api/agent/passport/route.ts",
+    "lib/agent/passport-chatgpt-bridge.ts",
+    "lib/agent/tools/growdesk-write.ts",
+    "lib/agent/voice-route-test-dependencies.ts",
+    "lib/agent/voice-shortcut-deadline.ts",
+    "lib/agent/voice-timeout-budget.ts",
+    "lib/chatgpt-plan/voice-reasoning.ts",
+    "lib/growdesk/voice-key-context.ts",
+    "lib/growdesk/voice-token-endpoints.ts",
+    "next-env.d.ts",
+    "tests/unit/agent-voice-route-contract.test.ts",
+    "tests/unit/chatgpt-plan-core.test.ts",
+    "tests/unit/growdesk-voice-token-endpoints.test.ts",
+    "tests/unit/growdesk-write.test.ts",
+    "tests/unit/passport-chatgpt-bridge.test.ts",
+    "tests/unit/personal-token-modal-contract.test.ts",
+    "tests/unit/voice-caretool-cancellation.test.ts",
+    "tests/unit/voice-key-context.test.ts",
+    "tests/unit/voice-shortcut-deadline.test.ts",
+    "tests/unit/voice-timeout-budget.test.ts"
+  ],
+  "extraSource": [
+    "components/records/WheelSpinnerColumn.tsx",
+    "lib/growdesk/mcp-client.ts",
+    "lib/mcp/health-measurement-actions.ts",
+    "lib/oauth/redirect-uri.ts",
+    "tests/unit/oauth-redirect-uri.test.ts",
+    "tests/unit/mcp-health-measurement-actions.test.ts",
+    "tests/unit/mcp-client.test.ts"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "command": [
+    "node",
+    "--import",
+    "tsx",
+    "--test",
+    "--test-concurrency=1",
+    "tests/unit/openai-official-profile.test.ts",
+    "tests/unit/llm-preferences.test.ts",
+    "tests/unit/llm-provenance.test.ts",
+    "tests/unit/llm-settings-backend.test.ts",
+    "tests/unit/scheduled-daily-summary.test.ts"
+  ],
+  "cwd": "/tmp/growdesk-openai-defaults-web-20261030",
+  "started_at": "2026-10-30T07:04:53.878926+00:00",
+  "duration_seconds": 5.29,
+  "exit_code": 0,
+  "isolation": "private public-source candidate; virtual keys; unreachable backend; no production env or data copied"
+}

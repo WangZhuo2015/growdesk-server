@@ -1,0 +1,17 @@
+{
+  "lib/llm-profiles.ts": "d398b14eee500c00800729c58ec70522f56a1642ac302eb81b728b5a2d0ea908",
+  "lib/llm-preferences.ts": "bcecfe7bf30b5647b7a7e6ac0d954f6c0d4bab8511bdce3a362aefdd9c92cc36",
+  "lib/llm-context.ts": "79a903a4c0bf599b6b63a9d7b584529254ae155c00bea00dc19c5faa97b99b64",
+  "lib/llm-provenance.ts": "cf3fde19c5eb85bbae41d4a657c81465c684f4c4a6ef761c4c3ca375d27d14f3",
+  "lib/agent/model.ts": "8b4947a635def8d424ee5848815f7d4ce5b81b03869702114b51e5c381ca88c8",
+  "lib/agent/run.ts": "bcbf53d589ae52f485d038d71c473167fc894ce549a62394bb8c5218eaa69ffb",
+  "components/ui/LlmFeaturePreferences.tsx": "b0fc000dba229c06a2e3ac6f3c910c9010b17a2718c92fcaff391b35aacf251e",
+  "tests/unit/llm-preferences.test.ts": "c29e37897b16b560584e6cab68e91792c0a05c0505eb1611cbdfc7688efc17e1",
+  "tests/unit/llm-provenance.test.ts": "7f3c4285be9c6b5db2e232f3396eeb123bbe1d68925f209d072685657985204a",
+  "tests/unit/openai-official-profile.test.ts": "dcb1ce232718c780bb99b4a240d378e6399a02eda46f6c5c15bf3499f688daff",
+  "app/api/ai/daily-summary/route.ts": "f9a336373b73dd97e7eb68b394dce0b2adff33e969d3885b8dd087342ce1478b",
+  "app/(main)/daily-summary/page.tsx": "0b01fd9baa40b1613914f9887534efb84e2c1045ec583321a6b983f148721496",
+  "lib/growdesk/scheduled-daily-summary.ts": "eaa4e1e0a10c4867ff32716be0839d3088c3b807ef76670d47771fb83ccd1358",
+  "tests/unit/scheduled-daily-summary.test.ts": "69a1f2f2afcf86e740f299a0f865c7459a48b526204b99bb366324596a85ef02",
+  "tests/fixtures/scheduled-daily-summary-go.json": "c5ae8073765d0b249bf0ed257d9f650926b464d0fd164d7ac76ca9573136bbad"
+}

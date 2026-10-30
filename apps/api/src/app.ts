@@ -1,4 +1,5 @@
 import { webAiRoutes } from "./routes/web-ai-routes.js";
+import { llmPreferencesRoutes } from "./routes/llm-preferences-routes.js";
 import { weatherRoutes } from "./routes/weather-routes.js";
 import { bookRoutes } from "./routes/book-routes.js";
 import { knowledgeRoutes } from "./routes/knowledge-routes.js";
@@ -90,6 +91,7 @@ import {
   AiSessionResponseSchema,
   AiSessionListResponseSchema,
   AiMessageSchema,
+  AiModelInfoSchema,
   AiMessageListResponseSchema,
   AiRunSchema,
   AiRunResponseSchema,
@@ -308,6 +310,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(AiSessionResponseSchema);
   app.addSchema(AiSessionListResponseSchema);
   app.addSchema(AiMessageSchema);
+  app.addSchema(AiModelInfoSchema);
   app.addSchema(AiMessageListResponseSchema);
   app.addSchema(AiRunSchema);
   app.addSchema(AiRunResponseSchema);
@@ -523,6 +526,7 @@ export function buildApiApp(options: ApiAppOptions = {}) {
     // The Web plugin uses its own inline contracts. Do not register every
     // exported schema: nested/aliased $ids can break the existing validators.
     app.register(webAiRoutes, { pool: databaseContext.pool });
+    app.register(llmPreferencesRoutes, { pool: databaseContext.pool });
 
     app.register(syncRoutes, {
       syncService,

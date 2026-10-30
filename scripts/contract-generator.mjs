@@ -131,6 +131,7 @@ export async function buildContractApp() {
     contracts.RecordSnapshotSchema,
     contracts.AiSessionSchema,
     contracts.AiMessageSchema,
+    contracts.AiModelInfoSchema,
     contracts.AiRunSchema,
     contracts.SyncCommandSchema,
     contracts.SyncCommandResultItemSchema,

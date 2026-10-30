@@ -1,0 +1,4 @@
+branch: codex/llm-feature-preferences
+HEAD: 99105020eab8e786c2627ec921bad3ee2e6ccf8e
+Baseline source copies: /tmp/growdesk-openai-baseline-20261030
+No .env or production secrets read.

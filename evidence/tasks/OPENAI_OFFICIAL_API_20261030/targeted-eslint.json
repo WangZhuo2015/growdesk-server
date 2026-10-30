@@ -1,0 +1,13 @@
+{
+  "command": [
+    "./node_modules/.bin/eslint",
+    "apps/api/src/services/ai-service.ts",
+    "apps/api/tests/ai-provider-config.test.ts",
+    "apps/worker/src/ai-provider.ts",
+    "apps/worker/tests/openai-official.test.ts"
+  ],
+  "started_at": "2026-10-30T06:13:51.590441+00:00",
+  "duration_seconds": 2.815,
+  "exit_code": 1,
+  "isolation": "Inherited database/provider/notification settings removed; local tests only."
+}

@@ -1,0 +1,5 @@
+{
+  "app/.well-known/oauth-authorization-server/route.ts": "7c266a79ee1d905c862ad062fa096079cefa94c38fee6f9c5460723ce0378a40",
+  "app/.well-known/oauth-protected-resource/mcp/route.ts": "4e3bd7d01aa59625d7b2534916a436fea36cced6a9af7ff34f007791c5832d09",
+  "app/.well-known/oauth-protected-resource/route.ts": "4e3bd7d01aa59625d7b2534916a436fea36cced6a9af7ff34f007791c5832d09"
+}

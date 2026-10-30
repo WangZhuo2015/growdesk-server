@@ -1,0 +1,1035 @@
+TAP version 13
+# Subtest: message history extracts model provenance without exposing the trace marker as a tool
+ok 1 - message history extracts model provenance without exposing the trace marker as a tool
+  ---
+  duration_ms: 2.302051
+  type: 'test'
+  ...
+# Subtest: legacy and malformed toolsJson produce null model metadata
+ok 2 - legacy and malformed toolsJson produce null model metadata
+  ---
+  duration_ms: 0.256242
+  type: 'test'
+  ...
+# Subtest: public model metadata rejects URL, control and overlong labels
+ok 3 - public model metadata rejects URL, control and overlong labels
+  ---
+  duration_ms: 0.487043
+  type: 'test'
+  ...
+# Subtest: AI API preflight rejects an absent provider with 503
+ok 4 - AI API preflight rejects an absent provider with 503
+  ---
+  duration_ms: 1.356487
+  type: 'test'
+  ...
+# Subtest: AI API preflight accepts only explicit fixture responses
+ok 5 - AI API preflight accepts only explicit fixture responses
+  ---
+  duration_ms: 0.328922
+  type: 'test'
+  ...
+# Subtest: AI API preflight accepts approved compatible provider configuration
+ok 6 - AI API preflight accepts approved compatible provider configuration
+  ---
+  duration_ms: 0.194161
+  type: 'test'
+  ...
+# Subtest: AI API preflight accepts an official key without a base URL
+ok 7 - AI API preflight accepts an official key without a base URL
+  ---
+  duration_ms: 0.457242
+  type: 'test'
+  ...
+# Subtest: AI API preflight supports an explicit private key file and rejects unusable files
+ok 8 - AI API preflight supports an explicit private key file and rejects unusable files
+  ---
+  duration_ms: 8.115122
+  type: 'test'
+  ...
+# Subtest: AI API preflight rejects missing official keys and third-party endpoints
+ok 9 - AI API preflight rejects missing official keys and third-party endpoints
+  ---
+  duration_ms: 1.025046
+  type: 'test'
+  ...
+# Subtest: password hashing and verification
+ok 10 - password hashing and verification
+  ---
+  duration_ms: 348.199191
+  type: 'test'
+  ...
+# Subtest: access token signing and verification lifecycle
+ok 11 - access token signing and verification lifecycle
+  ---
+  duration_ms: 11.931501
+  type: 'test'
+  ...
+# Subtest: refresh token generation and hashing
+ok 12 - refresh token generation and hashing
+  ---
+  duration_ms: 0.755683
+  type: 'test'
+  ...
+# Subtest: body validation preserves nullable JSON values without coercion
+ok 13 - body validation preserves nullable JSON values without coercion
+  ---
+  duration_ms: 424.821626
+  type: 'test'
+  ...
+# Subtest: query validation retains Fastify's default scalar coercion
+ok 14 - query validation retains Fastify's default scalar coercion
+  ---
+  duration_ms: 134.592332
+  type: 'test'
+  ...
+# Subtest: health liveness is a real Fastify route
+ok 15 - health liveness is a real Fastify route
+  ---
+  duration_ms: 317.039552
+  type: 'test'
+  ...
+# Subtest: health route does not expose business endpoints in the baseline
+ok 16 - health route does not expose business endpoints in the baseline
+  ---
+  duration_ms: 70.578443
+  type: 'test'
+  ...
+# Subtest: health readiness is 503 when dependencies are not configured
+ok 17 - health readiness is 503 when dependencies are not configured
+  ---
+  duration_ms: 86.927087
+  type: 'test'
+  ...
+# Subtest: health readiness is 200 only when both foundation dependencies respond
+ok 18 - health readiness is 200 only when both foundation dependencies respond
+  ---
+  duration_ms: 61.927318
+  type: 'test'
+  ...
+# Subtest: liveness does not call or depend on readiness
+ok 19 - liveness does not call or depend on readiness
+  ---
+  duration_ms: 37.561273
+  type: 'test'
+  ...
+# Subtest: readiness closes its dependency owner with the app
+ok 20 - readiness closes its dependency owner with the app
+  ---
+  duration_ms: 35.620184
+  type: 'test'
+  ...
+# Subtest: knowledge preserves source details and filters exact milestone month and activity range
+ok 21 - knowledge preserves source details and filters exact milestone month and activity range
+  ---
+  duration_ms: 406.585013
+  type: 'test'
+  ...
+# Subtest: legacy supplement nutrient aliases and units normalize deterministically
+ok 22 - legacy supplement nutrient aliases and units normalize deterministically
+  ---
+  duration_ms: 1.504688
+  type: 'test'
+  ...
+# Subtest: validated weather preserves the old UI shape and crosses midnight
+ok 23 - validated weather preserves the old UI shape and crosses midnight
+  ---
+  duration_ms: 52.40007
+  type: 'test'
+  ...
+# Subtest: European AQI is not classified using unrelated 50-point thresholds
+ok 24 - European AQI is not classified using unrelated 50-point thresholds
+  ---
+  duration_ms: 17.953172
+  type: 'test'
+  ...
+# Subtest: invalid/missing AQI stays unavailable instead of appearing excellent
+ok 25 - invalid/missing AQI stays unavailable instead of appearing excellent
+  ---
+  duration_ms: 5.983191
+  type: 'test'
+  ...
+# Subtest: optional AQI HTTP, JSON and network failures do not fabricate a measurement
+ok 26 - optional AQI HTTP, JSON and network failures do not fabricate a measurement
+  ---
+  duration_ms: 3.166417
+  type: 'test'
+  ...
+# Subtest: forecast rejects unknown JSON, missing values and mismatched parallel arrays
+ok 27 - forecast rejects unknown JSON, missing values and mismatched parallel arrays
+  ---
+  duration_ms: 1.82625
+  type: 'test'
+  ...
+# Subtest: forecast failures return 502, never a cacheable successful response
+ok 28 - forecast failures return 502, never a cacheable successful response
+  ---
+  duration_ms: 5.391588
+  type: 'test'
+  ...
+# Subtest: invalid coordinates are rejected before any paid or external work
+ok 29 - invalid coordinates are rejected before any paid or external work
+  ---
+  duration_ms: 1.465567
+  type: 'test'
+  ...
+# Subtest: valid custom coordinates and unknown WMO codes remain explicit
+ok 30 - valid custom coordinates and unknown WMO codes remain explicit
+  ---
+  duration_ms: 1.522048
+  type: 'test'
+  ...
+# Subtest: Web AI contracts do not cause duplicate schema registration on repeated startup
+ok 31 - Web AI contracts do not cause duplicate schema registration on repeated startup
+  ---
+  duration_ms: 291.40154
+  type: 'test'
+  ...
+# Subtest: all six Web AI operations are exported exactly once in the canonical contract
+ok 32 - all six Web AI operations are exported exactly once in the canonical contract
+  ---
+  duration_ms: 0.441602
+  type: 'test'
+  ...
+# Subtest: scheduler requires both database and Redis configuration before starting
+ok 33 - scheduler requires both database and Redis configuration before starting
+  ---
+  duration_ms: 1.305326
+  type: 'test'
+  ...
+# Subtest: scheduler lifecycle stops cleanly without dispatching jobs
+ok 34 - scheduler lifecycle stops cleanly without dispatching jobs
+  ---
+  duration_ms: 0.428763
+  type: 'test'
+  ...
+# Subtest: AI provider fails explicitly when no provider is configured
+ok 35 - AI provider fails explicitly when no provider is configured
+  ---
+  duration_ms: 1.522807
+  type: 'test'
+  ...
+# Subtest: fixture provider requires an explicit response and emits persisted-style text deltas
+ok 36 - fixture provider requires an explicit response and emits persisted-style text deltas
+  ---
+  duration_ms: 1.659609
+  type: 'test'
+  ...
+# Subtest: OpenAI-compatible HTTP fixture streams text without contacting an external provider
+ok 37 - OpenAI-compatible HTTP fixture streams text without contacting an external provider
+  ---
+  duration_ms: 70.221681
+  type: 'test'
+  ...
+# Subtest: OpenAI-compatible model echo is preferred only when bounded and non-sensitive
+ok 38 - OpenAI-compatible model echo is preferred only when bounded and non-sensitive
+  ---
+  duration_ms: 138.02879
+  type: 'test'
+  ...
+# Subtest: worker requires both database and Redis configuration before starting
+ok 39 - worker requires both database and Redis configuration before starting
+  ---
+  duration_ms: 1.234846
+  type: 'test'
+  ...
+# Subtest: worker lifecycle stops cleanly without claiming jobs
+ok 40 - worker lifecycle stops cleanly without claiming jobs
+  ---
+  duration_ms: 0.443482
+  type: 'test'
+  ...
+# Subtest: official OpenAI defaults, key selection, and base URL allowlist
+ok 41 - official OpenAI defaults, key selection, and base URL allowlist
+  ---
+  duration_ms: 2.780614
+  type: 'test'
+  ...
+# Subtest: official provider remains unconfigured without an approved key source
+ok 42 - official provider remains unconfigured without an approved key source
+  ---
+  duration_ms: 0.680043
+  type: 'test'
+  ...
+# Subtest: official Responses API sends the fixed request schema and streams before the body closes
+ok 43 - official Responses API sends the fixed request schema and streams before the body closes
+  ---
+  duration_ms: 40.842691
+  type: 'test'
+  ...
+# Subtest: official Responses SSE emits parsed text for JSON action proposals and returns before EOF
+ok 44 - official Responses SSE emits parsed text for JSON action proposals and returns before EOF
+  ---
+  duration_ms: 2.264092
+  type: 'test'
+  ...
+# Subtest: official Responses API parses non-stream JSON output, model, usage, and action proposals
+ok 45 - official Responses API parses non-stream JSON output, model, usage, and action proposals
+  ---
+  duration_ms: 2.245132
+  type: 'test'
+  ...
+# Subtest: official Responses API rejects non-completed, errored, and empty JSON results
+ok 46 - official Responses API rejects non-completed, errored, and empty JSON results
+  ---
+  duration_ms: 5.77639
+  type: 'test'
+  ...
+# Subtest: official Responses API rejects truncated JSON-looking text in JSON and SSE completions
+ok 47 - official Responses API rejects truncated JSON-looking text in JSON and SSE completions
+  ---
+  duration_ms: 3.8483
+  type: 'test'
+  ...
+# Subtest: official Responses SSE parses multiline CRLF data split across chunks
+ok 48 - official Responses SSE parses multiline CRLF data split across chunks
+  ---
+  duration_ms: 1.787289
+  type: 'test'
+  ...
+# Subtest: official provider classifies auth and rate limits without exposing provider bodies
+ok 49 - official provider classifies auth and rate limits without exposing provider bodies
+  ---
+  duration_ms: 1.805249
+  type: 'test'
+  ...
+# Subtest: official Responses API rejects truncated, failed, incomplete, and malformed event streams
+ok 50 - official Responses API rejects truncated, failed, incomplete, and malformed event streams
+  ---
+  duration_ms: 3.014255
+  type: 'test'
+  ...
+# Subtest: official Responses API enforces response and frame limits
+ok 51 - official Responses API enforces response and frame limits
+  ---
+  duration_ms: 24.696127
+  type: 'test'
+  ...
+# Subtest: official provider classifies request timeout
+ok 52 - official provider classifies request timeout
+  ---
+  duration_ms: 101.107
+  type: 'test'
+  ...
+# Subtest: official API key resolver uses inline keys first and validates only explicit temporary files
+ok 53 - official API key resolver uses inline keys first and validates only explicit temporary files
+  ---
+  duration_ms: 2.680694
+  type: 'test'
+  ...
+# Subtest: Redis guard accepts an isolated loopback test URL without connecting
+ok 54 - Redis guard accepts an isolated loopback test URL without connecting
+  ---
+  duration_ms: 1.022766
+  type: 'test'
+  ...
+# Subtest: runtime Redis supports an explicitly configured ACL user
+ok 55 - runtime Redis supports an explicitly configured ACL user
+  ---
+  duration_ms: 0.230321
+  type: 'test'
+  ...
+# Subtest: Redis guard rejects remoteHost before a connection
+ok 56 - Redis guard rejects remoteHost before a connection
+  ---
+  duration_ms: 0.635683
+  type: 'test'
+  ...
+# Subtest: Redis guard rejects defaultPort before a connection
+ok 57 - Redis guard rejects defaultPort before a connection
+  ---
+  duration_ms: 0.295762
+  type: 'test'
+  ...
+# Subtest: Redis guard rejects noPassword before a connection
+ok 58 - Redis guard rejects noPassword before a connection
+  ---
+  duration_ms: 0.347762
+  type: 'test'
+  ...
+# Subtest: Redis guard rejects query before a connection
+ok 59 - Redis guard rejects query before a connection
+  ---
+  duration_ms: 0.136321
+  type: 'test'
+  ...
+# Subtest: Redis probe runs PING and disconnects the client
+ok 60 - Redis probe runs PING and disconnects the client
+  ---
+  duration_ms: 2.224371
+  type: 'test'
+  ...
+# Subtest: Redis probe fails closed for missing configuration
+ok 61 - Redis probe fails closed for missing configuration
+  ---
+  duration_ms: 0.255121
+  type: 'test'
+  ...
+# Subtest: Redis probe bounds a hung ping and disconnects
+ok 62 - Redis probe bounds a hung ping and disconnects
+  ---
+  duration_ms: 12.973186
+  type: 'test'
+  ...
+# Subtest: Redis probe single-flights concurrent checks and closes in-flight clients
+ok 63 - Redis probe single-flights concurrent checks and closes in-flight clients
+  ---
+  duration_ms: 1.98049
+  type: 'test'
+  ...
+# Subtest: GrowDesk Contracts Test Suite
+    # Subtest: ApiErrorEnvelope schema validates standard error payload
+    ok 1 - ApiErrorEnvelope schema validates standard error payload
+      ---
+      duration_ms: 6.978116
+      type: 'test'
+      ...
+    # Subtest: Feeding record creation payload validates correct input and rejects malformed fields
+    ok 2 - Feeding record creation payload validates correct input and rejects malformed fields
+      ---
+      duration_ms: 1.152766
+      type: 'test'
+      ...
+    # Subtest: Sleep record creation payload validates correct input
+    ok 3 - Sleep record creation payload validates correct input
+      ---
+      duration_ms: 0.470322
+      type: 'test'
+      ...
+    # Subtest: Growth measurement schema enforces decimal strings
+    ok 4 - Growth measurement schema enforces decimal strings
+      ---
+      duration_ms: 0.407082
+      type: 'test'
+      ...
+    # Subtest: Sync command batch schema validates offline mutations structure
+    ok 5 - Sync command batch schema validates offline mutations structure
+      ---
+      duration_ms: 3.043056
+      type: 'test'
+      ...
+    # Subtest: ROUTE_DEFINITIONS has unique operationIds and explicit status markings
+    ok 6 - ROUTE_DEFINITIONS has unique operationIds and explicit status markings
+      ---
+      duration_ms: 0.931405
+      type: 'test'
+      ...
+    # Subtest: attachment content is documented as binary media while errors remain JSON
+    ok 7 - attachment content is documented as binary media while errors remain JSON
+      ---
+      duration_ms: 4694.607477
+      type: 'test'
+      ...
+    # Subtest: Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff
+    ok 8 - Canonical OpenAPI 3.0.3 spec matches contracts/openapi.json with zero diff
+      ---
+      duration_ms: 2910.405616
+      type: 'test'
+      ...
+    1..8
+ok 64 - GrowDesk Contracts Test Suite
+  ---
+  duration_ms: 7619.84977
+  type: 'suite'
+  ...
+# Subtest: food creation keeps absent, false and true tried states without coercion
+ok 65 - food creation keeps absent, false and true tried states without coercion
+  ---
+  duration_ms: 1.82637
+  type: 'test'
+  ...
+# Subtest: database guard accepts an owned PostgreSQL test URL without connecting
+ok 66 - database guard accepts an owned PostgreSQL test URL without connecting
+  ---
+  duration_ms: 1.532768
+  type: 'test'
+  ...
+# Subtest: database guard rejects sqlite before a connection
+ok 67 - database guard rejects sqlite before a connection
+  ---
+  duration_ms: 0.780484
+  type: 'test'
+  ...
+# Subtest: database guard rejects productionHost before a connection
+ok 68 - database guard rejects productionHost before a connection
+  ---
+  duration_ms: 0.252721
+  type: 'test'
+  ...
+# Subtest: database guard rejects unknownHost before a connection
+ok 69 - database guard rejects unknownHost before a connection
+  ---
+  duration_ms: 0.170761
+  type: 'test'
+  ...
+# Subtest: database guard rejects productionDatabase before a connection
+ok 70 - database guard rejects productionDatabase before a connection
+  ---
+  duration_ms: 0.160361
+  type: 'test'
+  ...
+# Subtest: database guard rejects wrongRole before a connection
+ok 71 - database guard rejects wrongRole before a connection
+  ---
+  duration_ms: 0.215001
+  type: 'test'
+  ...
+# Subtest: database guard rejects defaultPort before a connection
+ok 72 - database guard rejects defaultPort before a connection
+  ---
+  duration_ms: 0.345242
+  type: 'test'
+  ...
+# Subtest: database guard rejects driverOverride before a connection
+ok 73 - database guard rejects driverOverride before a connection
+  ---
+  duration_ms: 0.238001
+  type: 'test'
+  ...
+# Subtest: database guard rejects strictTls before a connection
+ok 74 - database guard rejects strictTls before a connection
+  ---
+  duration_ms: 0.934405
+  type: 'test'
+  ...
+# Subtest: PostgreSQL probe runs SELECT 1 and closes the client
+ok 75 - PostgreSQL probe runs SELECT 1 and closes the client
+  ---
+  duration_ms: 2.305652
+  type: 'test'
+  ...
+# Subtest: PostgreSQL probe fails closed for missing configuration
+ok 76 - PostgreSQL probe fails closed for missing configuration
+  ---
+  duration_ms: 0.243842
+  type: 'test'
+  ...
+# Subtest: PostgreSQL probe bounds a hung query and still closes
+ok 77 - PostgreSQL probe bounds a hung query and still closes
+  ---
+  duration_ms: 11.366818
+  type: 'test'
+  ...
+# Subtest: PostgreSQL probe single-flights concurrent checks and waits on close
+ok 78 - PostgreSQL probe single-flights concurrent checks and waits on close
+  ---
+  duration_ms: 2.329932
+  type: 'test'
+  ...
+# Subtest: one user can hold active memberships for multiple babies and families
+ok 79 - one user can hold active memberships for multiple babies and families
+  ---
+  duration_ms: 1.554928
+  type: 'test'
+  ...
+# Subtest: multiple caregivers can access the same baby through separate BabyMember rows
+ok 80 - multiple caregivers can access the same baby through separate BabyMember rows
+  ---
+  duration_ms: 0.383842
+  type: 'test'
+  ...
+# Subtest: family admin without a BabyMember row cannot read or manage that baby
+ok 81 - family admin without a BabyMember row cannot read or manage that baby
+  ---
+  duration_ms: 0.889964
+  type: 'test'
+  ...
+# Subtest: baby access requires an active FamilyMember and an active BabyMember
+ok 82 - baby access requires an active FamilyMember and an active BabyMember
+  ---
+  duration_ms: 0.250841
+  type: 'test'
+  ...
+# Subtest: viewer can read but cannot write or manage baby records
+ok 83 - viewer can read but cannot write or manage baby records
+  ---
+  duration_ms: 0.475603
+  type: 'test'
+  ...
+# Subtest: family write/manage permission intersects with baby permission
+ok 84 - family write/manage permission intersects with baby permission
+  ---
+  duration_ms: 0.401802
+  type: 'test'
+  ...
+# Subtest: unknown runtime family or baby roles fail closed
+ok 85 - unknown runtime family or baby roles fail closed
+  ---
+  duration_ms: 0.412162
+  type: 'test'
+  ...
+# Subtest: record scope must agree with the Baby composite family identity
+ok 86 - record scope must agree with the Baby composite family identity
+  ---
+  duration_ms: 0.221081
+  type: 'test'
+  ...
+# Subtest: family feed projection returns only babies with active baby access
+ok 87 - family feed projection returns only babies with active baby access
+  ---
+  duration_ms: 0.922325
+  type: 'test'
+  ...
+# Subtest: the last active baby admin cannot be revoked, but another admin permits revocation
+ok 88 - the last active baby admin cannot be revoked, but another admin permits revocation
+  ---
+  duration_ms: 1.031606
+  type: 'test'
+  ...
+# Subtest: a viewer or revoked FamilyMember does not satisfy the last-admin safeguard
+ok 89 - a viewer or revoked FamilyMember does not satisfy the last-admin safeguard
+  ---
+  duration_ms: 0.382242
+  type: 'test'
+  ...
+# Subtest: baby membership consistency and composite uniqueness are explicit
+ok 90 - baby membership consistency and composite uniqueness are explicit
+  ---
+  duration_ms: 0.407602
+  type: 'test'
+  ...
+# Subtest: legacy family-only record authorization no longer grants write access
+ok 91 - legacy family-only record authorization no longer grants write access
+  ---
+  duration_ms: 0.179881
+  type: 'test'
+  ...
+# Subtest: login without an active binding does not enable sync
+ok 92 - login without an active binding does not enable sync
+  ---
+  duration_ms: 2.674574
+  type: 'test'
+  ...
+# Subtest: unexpected runtime operation fails closed even with a valid binding
+ok 93 - unexpected runtime operation fails closed even with a valid binding
+  ---
+  duration_ms: 0.487322
+  type: 'test'
+  ...
+# Subtest: unknown runtime family role cannot read cloud data
+ok 94 - unknown runtime family role cannot read cloud data
+  ---
+  duration_ms: 0.225602
+  type: 'test'
+  ...
+# Subtest: pending rejects upload and download
+ok 95 - pending rejects upload and download
+  ---
+  duration_ms: 0.228201
+  type: 'test'
+  ...
+# Subtest: paused rejects upload and download
+ok 96 - paused rejects upload and download
+  ---
+  duration_ms: 0.189241
+  type: 'test'
+  ...
+# Subtest: revoked rejects upload and download
+ok 97 - revoked rejects upload and download
+  ---
+  duration_ms: 0.14068
+  type: 'test'
+  ...
+# Subtest: switching bindingId cannot reuse an old binding
+ok 98 - switching bindingId cannot reuse an old binding
+  ---
+  duration_ms: 0.165
+  type: 'test'
+  ...
+# Subtest: switching installationId cannot reuse an old binding
+ok 99 - switching installationId cannot reuse an old binding
+  ---
+  duration_ms: 0.152961
+  type: 'test'
+  ...
+# Subtest: switching localVaultId cannot reuse an old binding
+ok 100 - switching localVaultId cannot reuse an old binding
+  ---
+  duration_ms: 0.932005
+  type: 'test'
+  ...
+# Subtest: switching familyId cannot reuse an old binding
+ok 101 - switching familyId cannot reuse an old binding
+  ---
+  duration_ms: 1.038565
+  type: 'test'
+  ...
+# Subtest: switching accounts cannot reuse an active binding
+ok 102 - switching accounts cannot reuse an active binding
+  ---
+  duration_ms: 0.458402
+  type: 'test'
+  ...
+# Subtest: late requests from a previous generation are rejected after re-enable
+ok 103 - late requests from a previous generation are rejected after re-enable
+  ---
+  duration_ms: 0.258762
+  type: 'test'
+  ...
+# Subtest: expired consent does not silently approve a new policy
+ok 104 - expired consent does not silently approve a new policy
+  ---
+  duration_ms: 0.204481
+  type: 'test'
+  ...
+# Subtest: removed family membership rejects a still-active binding
+ok 105 - removed family membership rejects a still-active binding
+  ---
+  duration_ms: 0.467682
+  type: 'test'
+  ...
+# Subtest: invited family membership cannot sync
+ok 106 - invited family membership cannot sync
+  ---
+  duration_ms: 0.374602
+  type: 'test'
+  ...
+# Subtest: revoked family membership cannot sync
+ok 107 - revoked family membership cannot sync
+  ---
+  duration_ms: 0.357802
+  type: 'test'
+  ...
+# Subtest: viewer can pull but cannot upload; consenting member can upload
+ok 108 - viewer can pull but cannot upload; consenting member can upload
+  ---
+  duration_ms: 0.233441
+  type: 'test'
+  ...
+# Subtest: accepts exact isolated runner connection
+ok 109 - accepts exact isolated runner connection
+  ---
+  duration_ms: 1.401167
+  type: 'test'
+  ...
+# Subtest: rejects sqlite before any connection and without exposing secret
+ok 110 - rejects sqlite before any connection and without exposing secret
+  ---
+  duration_ms: 0.634443
+  type: 'test'
+  ...
+# Subtest: rejects productionHost before any connection and without exposing secret
+ok 111 - rejects productionHost before any connection and without exposing secret
+  ---
+  duration_ms: 0.192041
+  type: 'test'
+  ...
+# Subtest: rejects unknownHost before any connection and without exposing secret
+ok 112 - rejects unknownHost before any connection and without exposing secret
+  ---
+  duration_ms: 0.13876
+  type: 'test'
+  ...
+# Subtest: rejects wrongRole before any connection and without exposing secret
+ok 113 - rejects wrongRole before any connection and without exposing secret
+  ---
+  duration_ms: 0.13812
+  type: 'test'
+  ...
+# Subtest: rejects wrongDatabase before any connection and without exposing secret
+ok 114 - rejects wrongDatabase before any connection and without exposing secret
+  ---
+  duration_ms: 0.188521
+  type: 'test'
+  ...
+# Subtest: rejects wrongPort before any connection and without exposing secret
+ok 115 - rejects wrongPort before any connection and without exposing secret
+  ---
+  duration_ms: 0.174361
+  type: 'test'
+  ...
+# Subtest: rejects queryBypass before any connection and without exposing secret
+ok 116 - rejects queryBypass before any connection and without exposing secret
+  ---
+  duration_ms: 0.172641
+  type: 'test'
+  ...
+# Subtest: rejects wrongSecret before any connection and without exposing secret
+ok 117 - rejects wrongSecret before any connection and without exposing secret
+  ---
+  duration_ms: 0.757044
+  type: 'test'
+  ...
+# Subtest: object storage guard admits only the manifest-bound loopback test namespace
+ok 118 - object storage guard admits only the manifest-bound loopback test namespace
+  ---
+  duration_ms: 1.800409
+  type: 'test'
+  ...
+# /home/ubuntu/Github/growdesk-server/tests/unit/ai-cancel-retry.test.ts:26
+#     throw new Error(`Unmocked import ${id}`);
+#     ^
+# Error: Unmocked import ./ai-model-info.js
+#     at require (/home/ubuntu/Github/growdesk-server/tests/unit/ai-cancel-retry.test.ts:26:11)
+#     at evalmachine.<anonymous>:9:28
+#     at Script.runInContext (node:vm:149:12)
+#     at Script.runInNewContext (node:vm:154:17)
+#     at Object.runInNewContext (node:vm:310:38)
+#     at load (/home/ubuntu/Github/growdesk-server/tests/unit/ai-cancel-retry.test.ts:23:6)
+#     at <anonymous> (/home/ubuntu/Github/growdesk-server/tests/unit/ai-cancel-retry.test.ts:36:23)
+#     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+#     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+#     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+# Node.js v22.23.3
+# Subtest: tests/unit/ai-cancel-retry.test.ts
+not ok 24 - tests/unit/ai-cancel-retry.test.ts
+  ---
+  duration_ms: 2434.322246
+  type: 'test'
+  location: '/home/ubuntu/Github/growdesk-server/tests/unit/ai-cancel-retry.test.ts:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: backend import boundaries are enforced
+ok 120 - backend import boundaries are enforced
+  ---
+  duration_ms: 1582.039421
+  type: 'test'
+  ...
+# Subtest: architecture rules catch package subpaths and relative boundary bypasses
+ok 121 - architecture rules catch package subpaths and relative boundary bypasses
+  ---
+  duration_ms: 11.855621
+  type: 'test'
+  ...
+# BFF_LEGACY_SCHEMA {"field":{"type":"string"},"propertyOrder":["sessionSecretHash","userId","username","password","deviceLabel","legacyAuthToken"]}
+# Subtest: BFF legacy exchange source preserves the already published optional credential schema
+ok 122 - BFF legacy exchange source preserves the already published optional credential schema
+  ---
+  duration_ms: 12.834226
+  type: 'test'
+  ...
+# Subtest: production compose keeps attachment storage private and digest pinned
+ok 123 - production compose keeps attachment storage private and digest pinned
+  ---
+  duration_ms: 1.261566
+  type: 'test'
+  ...
+# Subtest: food creation preserves tried=undefined with one transaction
+ok 124 - food creation preserves tried=undefined with one transaction
+  ---
+  duration_ms: 2.679134
+  type: 'test'
+  ...
+# Subtest: food creation preserves tried=false with one transaction
+ok 125 - food creation preserves tried=false with one transaction
+  ---
+  duration_ms: 0.329721
+  type: 'test'
+  ...
+# Subtest: food creation preserves tried=true with one transaction
+ok 126 - food creation preserves tried=true with one transaction
+  ---
+  duration_ms: 0.438802
+  type: 'test'
+  ...
+# Subtest: status creation failure is propagated without a post-commit retry
+ok 127 - status creation failure is propagated without a post-commit retry
+  ---
+  duration_ms: 0.717604
+  type: 'test'
+  ...
+# Subtest: an unowned explicit family is rejected before transaction creation
+ok 128 - an unowned explicit family is rejected before transaction creation
+  ---
+  duration_ms: 0.515163
+  type: 'test'
+  ...
+# Subtest: F3 service persists explicit tried in the active family and returns it on create/list
+ok 129 - F3 service persists explicit tried in the active family and returns it on create/list
+  ---
+  duration_ms: 3.079696
+  type: 'test'
+  ...
+# Subtest: F3 route-local create schema accepts optional tried without dropping it
+ok 130 - F3 route-local create schema accepts optional tried without dropping it
+  ---
+  duration_ms: 517.087741
+  type: 'test'
+  ...
+# Subtest: F3 omission keeps old create behavior; false is explicitly persisted
+ok 131 - F3 omission keeps old create behavior; false is explicitly persisted
+  ---
+  duration_ms: 0.508082
+  type: 'test'
+  ...
+# Subtest: growth legacy metadata maps through the entity and DTO whitelist
+ok 132 - growth legacy metadata maps through the entity and DTO whitelist
+  ---
+  duration_ms: 2.362733
+  type: 'test'
+  ...
+# Subtest: growth metadata outside the importer marker stays out of the DTO
+ok 133 - growth metadata outside the importer marker stays out of the DTO
+  ---
+  duration_ms: 0.299762
+  type: 'test'
+  ...
+# Subtest: pure reference planner maps canonical business and AI message fields
+ok 134 - pure reference planner maps canonical business and AI message fields
+  ---
+  duration_ms: 3.93606
+  type: 'test'
+  ...
+# Subtest: AI archive and job receipts are internally consumed while unsupported references remain quarantined
+ok 135 - AI archive and job receipts are internally consumed while unsupported references remain quarantined
+  ---
+  duration_ms: 1.295887
+  type: 'test'
+  ...
+# Subtest: planner fails closed on duplicate, public URL, and purpose mismatch
+ok 136 - planner fails closed on duplicate, public URL, and purpose mismatch
+  ---
+  duration_ms: 0.728924
+  type: 'test'
+  ...
+# Subtest: legacy paths are restricted to a literal captured uploads path
+ok 137 - legacy paths are restricted to a literal captured uploads path
+  ---
+  duration_ms: 1.760329
+  type: 'test'
+  ...
+# Subtest: unsafe paths never query the database
+ok 138 - unsafe paths never query the database
+  ---
+  duration_ms: 0.540642
+  type: 'test'
+  ...
+# Subtest: only an unambiguous authorized attachment identity is returned
+ok 139 - only an unambiguous authorized attachment identity is returned
+  ---
+  duration_ms: 1.113806
+  type: 'test'
+  ...
+# Subtest: absent ambiguous and malformed mappings do not expose an object
+ok 140 - absent ambiguous and malformed mappings do not expose an object
+  ---
+  duration_ms: 0.499162
+  type: 'test'
+  ...
+# Subtest: legacy public knowledge remains byte-faithful after compatibility aliases are removed
+ok 141 - legacy public knowledge remains byte-faithful after compatibility aliases are removed
+  ---
+  duration_ms: 10.925736
+  type: 'test'
+  ...
+# Subtest: legacy release metadata and source references retain their golden hashes
+ok 142 - legacy release metadata and source references retain their golden hashes
+  ---
+  duration_ms: 8.596044
+  type: 'test'
+  ...
+# Subtest: legacy vaccine engine rules retain their golden hash
+ok 143 - legacy vaccine engine rules retain their golden hash
+  ---
+  duration_ms: 0.631883
+  type: 'test'
+  ...
+# Subtest: legacy books retain their golden hash
+ok 144 - legacy books retain their golden hash
+  ---
+  duration_ms: 0.867245
+  type: 'test'
+  ...
+# Subtest: supplement product keyset cursor accepts promoted source-stable IDs
+ok 145 - supplement product keyset cursor accepts promoted source-stable IDs
+  ---
+  duration_ms: 2.862974
+  type: 'test'
+  ...
+# Subtest: supplement product cursor rejects malformed or unsafe values
+ok 146 - supplement product cursor rejects malformed or unsafe values
+  ---
+  duration_ms: 0.953605
+  type: 'test'
+  ...
+# Subtest: timeline filters non-care projections before pagination without losing any supported kind
+ok 147 - timeline filters non-care projections before pagination without losing any supported kind
+  ---
+  duration_ms: 3.576058
+  type: 'test'
+  ...
+# Subtest: maximum-size timeline page retains its lookahead and every tied-timestamp row
+ok 148 - maximum-size timeline page retains its lookahead and every tied-timestamp row
+  ---
+  duration_ms: 9.64273
+  type: 'test'
+  ...
+# Subtest: exactly 200 timeline rows form a complete final page
+ok 149 - exactly 200 timeline rows form a complete final page
+  ---
+  duration_ms: 1.083886
+  type: 'test'
+  ...
+# Subtest: 201st timeline row remains discoverable after a maximum-size page
+ok 150 - 201st timeline row remains discoverable after a maximum-size page
+  ---
+  duration_ms: 1.422567
+  type: 'test'
+  ...
+# Subtest: default-size and empty timeline pages preserve their existing contracts
+ok 151 - default-size and empty timeline pages preserve their existing contracts
+  ---
+  duration_ms: 1.400847
+  type: 'test'
+  ...
+# Subtest: lookahead does not increase the public page limit or allow unbounded repository reads
+ok 152 - lookahead does not increase the public page limit or allow unbounded repository reads
+  ---
+  duration_ms: 1.339326
+  type: 'test'
+  ...
+# Subtest: maximum-size pagination still rejects missing baby membership before querying records
+ok 153 - maximum-size pagination still rejects missing baby membership before querying records
+  ---
+  duration_ms: 0.954925
+  type: 'test'
+  ...
+# Subtest: a page of 30 sessions requires one summary query rather than 60
+ok 154 - a page of 30 sessions requires one summary query rather than 60
+  ---
+  duration_ms: 2.057131
+  type: 'test'
+  ...
+# Subtest: empty pages require no additional query
+ok 155 - empty pages require no additional query
+  ---
+  duration_ms: 0.205761
+  type: 'test'
+  ...
+# Subtest: last message DTO retains order metadata but excludes images and tool payloads
+ok 156 - last message DTO retains order metadata but excludes images and tool payloads
+  ---
+  duration_ms: 0.482082
+  type: 'test'
+  ...
+# Subtest: incomplete, duplicate, unexpected and inconsistent summaries fail closed
+ok 157 - incomplete, duplicate, unexpected and inconsistent summaries fail closed
+  ---
+  duration_ms: 0.629924
+  type: 'test'
+  ...
+# Subtest: summary input is bounded before accessing the database
+ok 158 - summary input is bounded before accessing the database
+  ---
+  duration_ms: 0.795244
+  type: 'test'
+  ...
+# Subtest: client record version parses strictly within the persisted int32 range
+ok 159 - client record version parses strictly within the persisted int32 range
+  ---
+  duration_ms: 2.135211
+  type: 'test'
+  ...
+1..159
+# tests 166
+# suites 1
+# pass 165
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12983.162528
