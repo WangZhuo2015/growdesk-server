@@ -490,6 +490,19 @@ func (s *Server) createVaccineRecord(ctx context.Context, r *Request) (Result, e
 	})
 }
 
+func vaccineProjection(ctx context.Context, tx pgx.Tx, scope Scope, record Object, occurred time.Time, details Object, now time.Time) error {
+	raw, err := jsonText(details)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO timeline_entries(id,family_id,baby_id,entity_type,entity_id,occurred_at,summary,details,source,version,created_at,updated_at)
+		VALUES($1,$2,$3,'vaccine',$4,$5,$6,$7::jsonb,'ui_manual',1,$8,$8)
+		ON CONFLICT(family_id,baby_id,entity_type,entity_id) DO UPDATE SET occurred_at=EXCLUDED.occurred_at,
+		summary=EXCLUDED.summary,details=EXCLUDED.details,deleted_at=NULL,version=timeline_entries.version+1,updated_at=EXCLUDED.updated_at`,
+		newID(), scope.FamilyID, scope.BabyID, record["id"], occurred, "接种疫苗: "+text(record["vaccine_code"]), raw, now)
+	return err
+}
+
 func vaccineDetails(row Object) Object {
 	return Object{"doseNumber": row["dose_number"], "manufacturer": row["manufacturer"], "batchNumber": row["batch_number"],
 		"traceCode": row["trace_code"], "administrationRoute": row["administration_route"],
