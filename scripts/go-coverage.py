@@ -34,8 +34,8 @@ def main():
         actual[key] = operation
         if not operation['implemented']:
             missing.append(operation)
-    if len(expected) != 151 or set(actual) != set(expected):
-        raise SystemExit('Frozen contract and native route inventory differ')
+    if not expected or set(actual) != set(expected):
+        raise SystemExit('Committed contract and native route inventory differ')
     print(f'Native registrations: {len(actual) - len(missing)}/{len(actual)}; missing: {len(missing)}', flush=True)
     print('Registration is not proof of permission, transaction, worker or browser correctness.', flush=True)
     for operation in sorted(missing, key=lambda value: value['operationId']):

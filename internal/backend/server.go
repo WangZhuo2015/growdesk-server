@@ -136,6 +136,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.writeError(w, apiError(404, "NOT_FOUND", "Route not found"), requestID)
 		return
 	}
+	switch route.OperationID {
+	case "listVaccineRecords", "createVaccineRecord", "updateVaccineRecord", "deleteVaccineRecord":
+		w.Header().Add("Vary", vaccineLedgerHeader)
+	}
 	slotReleased := false
 	select {
 	case s.slots <- struct{}{}:
