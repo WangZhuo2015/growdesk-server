@@ -1514,13 +1514,19 @@
           "doseNumber",
           "legacyName",
           "legacyDose",
+          "recordStatus",
           "administeredDate",
           "scheduledDate",
           "completedDate",
           "isCompleted",
+          "manufacturer",
           "clinic",
           "batchNumber",
+          "traceCode",
+          "administrationRoute",
+          "injectionSite",
           "notes",
+          "sourceText",
           "version",
           "createdAt",
           "updatedAt"
@@ -1542,6 +1548,7 @@
             "type": "string"
           },
           "vaccineCode": {
+            "maxLength": 200,
             "type": "string"
           },
           "vaccineId": {
@@ -1566,11 +1573,34 @@
             "type": "string",
             "nullable": true
           },
+          "recordStatus": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "completed"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "planned"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "needs_review"
+                ]
+              }
+            ]
+          },
           "administeredDate": {
             "format": "date",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "description": "YYYY-MM-DD calendar date",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "scheduledDate": {
             "format": "date",
@@ -1589,16 +1619,43 @@
           "isCompleted": {
             "type": "boolean"
           },
+          "manufacturer": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
           "clinic": {
+            "maxLength": 200,
             "type": "string",
             "nullable": true
           },
           "batchNumber": {
+            "maxLength": 100,
+            "type": "string",
+            "nullable": true
+          },
+          "traceCode": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "administrationRoute": {
+            "maxLength": 80,
+            "type": "string",
+            "nullable": true
+          },
+          "injectionSite": {
+            "maxLength": 120,
             "type": "string",
             "nullable": true
           },
           "notes": {
-            "maxLength": 1000,
+            "maxLength": 4000,
+            "type": "string",
+            "nullable": true
+          },
+          "sourceText": {
+            "maxLength": 4000,
             "type": "string",
             "nullable": true
           },
@@ -16001,7 +16058,7 @@
     "/api/v1/babies/{babyId}/vaccines/records": {
       "get": {
         "operationId": "listVaccineRecords",
-        "summary": "List vaccination administration records for baby",
+        "summary": "List vaccine records; opt in to the nullable canonical ledger representation",
         "tags": [
           "Medical"
         ],
@@ -16015,6 +16072,17 @@
             "name": "babyId",
             "required": true,
             "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ledger"
+              ]
+            },
+            "in": "header",
+            "name": "x-growdesk-representation",
+            "required": false
           }
         ],
         "x-implementation-status": "PLANNED_SH06",
@@ -16044,13 +16112,19 @@
                           "doseNumber",
                           "legacyName",
                           "legacyDose",
+                          "recordStatus",
                           "administeredDate",
                           "scheduledDate",
                           "completedDate",
                           "isCompleted",
+                          "manufacturer",
                           "clinic",
                           "batchNumber",
+                          "traceCode",
+                          "administrationRoute",
+                          "injectionSite",
                           "notes",
+                          "sourceText",
                           "version",
                           "createdAt",
                           "updatedAt"
@@ -16072,6 +16146,7 @@
                             "type": "string"
                           },
                           "vaccineCode": {
+                            "maxLength": 200,
                             "type": "string"
                           },
                           "vaccineId": {
@@ -16096,11 +16171,34 @@
                             "type": "string",
                             "nullable": true
                           },
+                          "recordStatus": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "completed"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "planned"
+                                ]
+                              },
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "needs_review"
+                                ]
+                              }
+                            ]
+                          },
                           "administeredDate": {
                             "format": "date",
                             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                             "description": "YYYY-MM-DD calendar date",
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "scheduledDate": {
                             "format": "date",
@@ -16119,16 +16217,43 @@
                           "isCompleted": {
                             "type": "boolean"
                           },
+                          "manufacturer": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
                           "clinic": {
+                            "maxLength": 200,
                             "type": "string",
                             "nullable": true
                           },
                           "batchNumber": {
+                            "maxLength": 100,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "traceCode": {
+                            "maxLength": 200,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "administrationRoute": {
+                            "maxLength": 80,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "injectionSite": {
+                            "maxLength": 120,
                             "type": "string",
                             "nullable": true
                           },
                           "notes": {
-                            "maxLength": 1000,
+                            "maxLength": 4000,
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "sourceText": {
+                            "maxLength": 4000,
                             "type": "string",
                             "nullable": true
                           },
@@ -16179,7 +16304,7 @@
       },
       "post": {
         "operationId": "createVaccineRecord",
-        "summary": "Record administered vaccine dose",
+        "summary": "Create an administered, planned, or needs-review vaccine record",
         "tags": [
           "Medical"
         ],
@@ -16190,12 +16315,10 @@
               "schema": {
                 "additionalProperties": false,
                 "type": "object",
-                "required": [
-                  "vaccineCode",
-                  "administeredDate"
-                ],
                 "properties": {
                   "vaccineCode": {
+                    "minLength": 1,
+                    "maxLength": 200,
                     "type": "string"
                   },
                   "vaccineId": {
@@ -16207,7 +16330,8 @@
                   "doseNumber": {
                     "minimum": 1,
                     "maximum": 12,
-                    "type": "integer"
+                    "type": "integer",
+                    "nullable": true
                   },
                   "legacyName": {
                     "maxLength": 200,
@@ -16219,11 +16343,34 @@
                     "type": "string",
                     "nullable": true
                   },
+                  "recordStatus": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "completed"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "planned"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "needs_review"
+                        ]
+                      }
+                    ]
+                  },
                   "administeredDate": {
                     "format": "date",
                     "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                     "description": "YYYY-MM-DD calendar date",
-                    "type": "string"
+                    "type": "string",
+                    "nullable": true
                   },
                   "scheduledDate": {
                     "format": "date",
@@ -16242,16 +16389,43 @@
                   "isCompleted": {
                     "type": "boolean"
                   },
+                  "manufacturer": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
                   "clinic": {
+                    "maxLength": 200,
                     "type": "string",
                     "nullable": true
                   },
                   "batchNumber": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "traceCode": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "administrationRoute": {
+                    "maxLength": 80,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "injectionSite": {
+                    "maxLength": 120,
                     "type": "string",
                     "nullable": true
                   },
                   "notes": {
-                    "maxLength": 1000,
+                    "maxLength": 4000,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceText": {
+                    "maxLength": 4000,
                     "type": "string",
                     "nullable": true
                   }
@@ -16270,6 +16444,17 @@
             "name": "babyId",
             "required": true,
             "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ledger"
+              ]
+            },
+            "in": "header",
+            "name": "x-growdesk-representation",
+            "required": false
           }
         ],
         "x-implementation-status": "PLANNED_SH06",
@@ -16297,13 +16482,19 @@
                         "doseNumber",
                         "legacyName",
                         "legacyDose",
+                        "recordStatus",
                         "administeredDate",
                         "scheduledDate",
                         "completedDate",
                         "isCompleted",
+                        "manufacturer",
                         "clinic",
                         "batchNumber",
+                        "traceCode",
+                        "administrationRoute",
+                        "injectionSite",
                         "notes",
+                        "sourceText",
                         "version",
                         "createdAt",
                         "updatedAt"
@@ -16325,6 +16516,7 @@
                           "type": "string"
                         },
                         "vaccineCode": {
+                          "maxLength": 200,
                           "type": "string"
                         },
                         "vaccineId": {
@@ -16349,11 +16541,34 @@
                           "type": "string",
                           "nullable": true
                         },
+                        "recordStatus": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "completed"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "planned"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "needs_review"
+                              ]
+                            }
+                          ]
+                        },
                         "administeredDate": {
                           "format": "date",
                           "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
                           "description": "YYYY-MM-DD calendar date",
-                          "type": "string"
+                          "type": "string",
+                          "nullable": true
                         },
                         "scheduledDate": {
                           "format": "date",
@@ -16372,16 +16587,43 @@
                         "isCompleted": {
                           "type": "boolean"
                         },
+                        "manufacturer": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
                         "clinic": {
+                          "maxLength": 200,
                           "type": "string",
                           "nullable": true
                         },
                         "batchNumber": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "traceCode": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "administrationRoute": {
+                          "maxLength": 80,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "injectionSite": {
+                          "maxLength": 120,
                           "type": "string",
                           "nullable": true
                         },
                         "notes": {
-                          "maxLength": 1000,
+                          "maxLength": 4000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceText": {
+                          "maxLength": 4000,
                           "type": "string",
                           "nullable": true
                         },
@@ -16436,17 +16678,162 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
           }
         }
       }
     },
     "/api/v1/babies/{babyId}/vaccines/records/{id}": {
-      "delete": {
-        "operationId": "deleteVaccineRecord",
-        "summary": "Delete vaccination administration record",
+      "patch": {
+        "operationId": "updateVaccineRecord",
+        "summary": "Update a vaccine record with a baseVersion check",
         "tags": [
           "Medical"
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "minProperties": 2,
+                "type": "object",
+                "required": [
+                  "baseVersion"
+                ],
+                "properties": {
+                  "baseVersion": {
+                    "pattern": "^\\d+$",
+                    "description": "64-bit integer represented as string",
+                    "type": "string"
+                  },
+                  "vaccineCode": {
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "type": "string"
+                  },
+                  "vaccineId": {
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "doseNumber": {
+                    "minimum": 1,
+                    "maximum": 12,
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "legacyName": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "legacyDose": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "recordStatus": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "completed"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "planned"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "needs_review"
+                        ]
+                      }
+                    ]
+                  },
+                  "administeredDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "scheduledDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "completedDate": {
+                    "format": "date",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                    "description": "YYYY-MM-DD calendar date",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isCompleted": {
+                    "type": "boolean"
+                  },
+                  "manufacturer": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "clinic": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "batchNumber": {
+                    "maxLength": 100,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "traceCode": {
+                    "maxLength": 200,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "administrationRoute": {
+                    "maxLength": 80,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "injectionSite": {
+                    "maxLength": 120,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "notes": {
+                    "maxLength": 4000,
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "sourceText": {
+                    "maxLength": 4000,
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {
@@ -16467,6 +16854,310 @@
             "name": "id",
             "required": true,
             "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ledger"
+              ]
+            },
+            "in": "header",
+            "name": "x-growdesk-representation",
+            "required": false
+          }
+        ],
+        "x-implementation-status": "PLANNED_SH06",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "additionalProperties": false,
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "babyId",
+                        "familyId",
+                        "vaccineCode",
+                        "vaccineId",
+                        "doseNumber",
+                        "legacyName",
+                        "legacyDose",
+                        "recordStatus",
+                        "administeredDate",
+                        "scheduledDate",
+                        "completedDate",
+                        "isCompleted",
+                        "manufacturer",
+                        "clinic",
+                        "batchNumber",
+                        "traceCode",
+                        "administrationRoute",
+                        "injectionSite",
+                        "notes",
+                        "sourceText",
+                        "version",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "properties": {
+                        "id": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "babyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "familyId": {
+                          "format": "uuid",
+                          "description": "UUID v4 string",
+                          "type": "string"
+                        },
+                        "vaccineCode": {
+                          "maxLength": 200,
+                          "type": "string"
+                        },
+                        "vaccineId": {
+                          "minLength": 1,
+                          "maxLength": 128,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "doseNumber": {
+                          "minimum": 1,
+                          "maximum": 12,
+                          "type": "integer",
+                          "nullable": true
+                        },
+                        "legacyName": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "legacyDose": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "recordStatus": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "completed"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "planned"
+                              ]
+                            },
+                            {
+                              "type": "string",
+                              "enum": [
+                                "needs_review"
+                              ]
+                            }
+                          ]
+                        },
+                        "administeredDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "scheduledDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "completedDate": {
+                          "format": "date",
+                          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                          "description": "YYYY-MM-DD calendar date",
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "isCompleted": {
+                          "type": "boolean"
+                        },
+                        "manufacturer": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "clinic": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "batchNumber": {
+                          "maxLength": 100,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "traceCode": {
+                          "maxLength": 200,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "administrationRoute": {
+                          "maxLength": 80,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "injectionSite": {
+                          "maxLength": 120,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "notes": {
+                          "maxLength": 4000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "sourceText": {
+                          "maxLength": 4000,
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "version": {
+                          "pattern": "^\\d+$",
+                          "description": "64-bit integer represented as string",
+                          "type": "string"
+                        },
+                        "createdAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "description": "RFC3339 UTC timestamp",
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Standard API Error Envelope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteVaccineRecord",
+        "summary": "Delete vaccination administration record",
+        "tags": [
+          "Medical"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "pattern": "^\\d+$",
+              "type": "string"
+            },
+            "in": "query",
+            "name": "baseVersion",
+            "required": false,
+            "description": "64-bit integer represented as string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "babyId",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "UUID v4 string"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ledger"
+              ]
+            },
+            "in": "header",
+            "name": "x-growdesk-representation",
+            "required": false
           }
         ],
         "x-implementation-status": "PLANNED_SH06",
@@ -16745,7 +17436,7 @@
       },
       "put": {
         "operationId": "upsertVaccineSelection",
-        "summary": "Select or complete a vaccine dose",
+        "summary": "Select a vaccine dose; completion is derived from vaccine records",
         "tags": [
           "Medical"
         ],
@@ -16775,6 +17466,7 @@
                     "type": "boolean"
                   },
                   "completed": {
+                    "description": "Deprecated read-only field; completion is derived from actual vaccine records.",
                     "type": "boolean"
                   },
                   "baseVersion": {

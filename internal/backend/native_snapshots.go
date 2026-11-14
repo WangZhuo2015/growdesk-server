@@ -115,7 +115,7 @@ func snapshotRecordDTO(kind string, row Object) (Object, error) {
 	case "medical":
 		return medicalReportDTO(row), nil
 	case "vaccine":
-		return vaccineRecordDTO(row), nil
+		return vaccineRecordDTO(row, false), nil
 	}
 	d, err := commandSpec(kind)
 	if err != nil {
@@ -172,13 +172,18 @@ func (s *Server) buildNativeSnapshot(ctx context.Context, input nativeTaskInput)
 				}
 				page := nativeSnapshotPage{EntityType: kind, Data: make([]Object, 0, len(rows))}
 				for _, row := range rows {
+					last = text(row["id"])
+					count++
+					// Existing snapshot clients share the pre-ledger non-null date
+					// decoder. Unknown rows remain available through ledger GET.
+					if kind == "vaccine" && vaccineStatus(row) == "needs_review" {
+						continue
+					}
 					value, err := snapshotRecordDTO(kind, row)
 					if err != nil {
 						return Result{}, err
 					}
 					page.Data = append(page.Data, value)
-					last = text(row["id"])
-					count++
 				}
 				raw, err := jsonBytes(page)
 				if err != nil {

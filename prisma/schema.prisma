@@ -894,18 +894,24 @@ model VaccineRecord {
   familyId         String    @map("family_id")
   babyId           String    @map("baby_id")
   caregiverId      String    @map("caregiver_id")
-  vaccineCode      String    @map("vaccine_code") @db.VarChar(100)
+  vaccineCode      String    @map("vaccine_code") @db.VarChar(200)
   vaccineId        String?   @map("vaccine_id")
   doseNumber       Int?      @map("dose_number")
   legacyName       String?   @map("legacy_name") @db.VarChar(200)
   legacyDose       String?   @map("legacy_dose") @db.VarChar(100)
-  administeredDate DateTime  @map("administered_date") @db.Date
+  recordStatus     String    @default("needs_review") @map("record_status") @db.VarChar(20)
+  administeredDate DateTime? @map("administered_date") @db.Date
   scheduledDate    DateTime? @map("scheduled_date") @db.Date
   completedDate    DateTime? @map("completed_date") @db.Date
   isCompleted      Boolean   @default(false) @map("is_completed")
+  manufacturer     String?   @db.VarChar(200)
   clinic           String?   @db.VarChar(200)
   batchNumber      String?   @map("batch_number") @db.VarChar(100)
-  notes            String?   @db.VarChar(1000)
+  traceCode        String?   @map("trace_code") @db.VarChar(200)
+  administrationRoute String? @map("administration_route") @db.VarChar(80)
+  injectionSite    String?   @map("injection_site") @db.VarChar(120)
+  notes            String?   @db.VarChar(4000)
+  sourceText       String?   @map("source_text") @db.VarChar(4000)
   legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)
   deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(3)

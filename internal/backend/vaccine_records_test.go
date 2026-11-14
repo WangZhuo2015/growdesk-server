@@ -6,11 +6,14 @@ import (
 )
 
 func TestVaccineRecordProjectionPreservesPendingState(t *testing.T) {
-	row := Object{"administered_date": "2026-05-02", "scheduled_date": nil, "completed_date": nil,
-		"is_completed": false, "version": json.Number("1"), "dose_number": nil, "caregiver_id": "private"}
-	value := vaccineRecordDTO(row)
+	row := Object{"administered_date": nil, "scheduled_date": "2026-05-02", "completed_date": nil,
+		"record_status": "planned", "is_completed": false, "version": json.Number("1"), "dose_number": nil, "caregiver_id": "private"}
+	value := vaccineRecordDTO(row, false)
 	if value["scheduledDate"] != "2026-05-02" || value["completedDate"] != nil || value["isCompleted"] != false { t.Fatal(value) }
 	if value["version"] != "1" || value["doseNumber"] != nil { t.Fatal(value) }
+	if value["administeredDate"] != "2026-05-02" { t.Fatal("legacy transport date changed", value) }
+	ledger := vaccineRecordDTO(row, true)
+	if ledger["administeredDate"] != nil || ledger["scheduledDate"] != "2026-05-02" { t.Fatal("ledger invented an actual date", ledger) }
 	if _, leaked := value["caregiverId"]; leaked { t.Fatal("private caregiver projection leaked") }
 	selection := vaccineSelectionDTO(Object{"selected": false, "completed": false, "version": 1, "dose_number": 1})
 	if selection["selected"] != false || selection["completed"] != false { t.Fatal(selection) }

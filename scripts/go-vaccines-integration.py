@@ -58,62 +58,127 @@ class VaccineScenario(DOMAIN.Scenario):
         self.call('GET', base + '/records', 403, token=outsider, observe='vaccine baby isolation')
         self.call('GET', base + '/records', 200, token=owner, observe='empty records')
         self.call('GET', base + '/selections', 200, token=owner, observe='empty selections')
-        body = {'vaccineCode': 'different-input-code', 'vaccineId': 'test_vaccine', 'doseNumber': 1,
-                'administeredDate': '2026-05-02', 'scheduledDate': '2026-06-01', 'completedDate': '2026-05-02',
-                'isCompleted': False, 'clinic': None, 'notes': 'test pending'}
+        body = {'vaccineCode': 'test_vaccine', 'vaccineId': 'test_vaccine', 'doseNumber': 1,
+                'administeredDate': '2026-06-01', 'isCompleted': False,
+                'clinic': None, 'notes': 'test pending'}
         record = self.call('POST', base + '/records', 201, body, owner, 'test_vaccine_pending')
         rid = self.alias(record['data']['id'], 'pending_record')
+        assert record['data']['recordStatus'] == 'planned'
+        assert record['data']['administeredDate'] == '2026-06-01'
         assert record['data']['completedDate'] is None and record['data']['isCompleted'] is False
         assert record['data']['vaccineCode'] == 'TEST-A'
-        self.observations.append({'case': 'pending vaccine record', 'body': self.normalize(record)})
         snapshot = self.snapshot(fid)
         assert self.call('POST', base + '/records', 201, body, owner, 'test_vaccine_pending') == record
         assert self.snapshot(fid) == snapshot
         assert self.owned.sql(f"SELECT COUNT(*) FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}';").strip() == '0'
         if runtime == 'go':
             self.call('POST', base + '/records', 409, {**body, 'notes': 'changed'}, owner, 'test_vaccine_pending')
+            ledger = self.call('GET', base + '/records', 200, token=owner,
+                               headers={'x-growdesk-representation': 'ledger'})
+            assert len(ledger['data']) == 1
+            assert ledger['data'][0]['administeredDate'] is None
+            assert ledger['data'][0]['scheduledDate'] == '2026-06-01'
+            assert ledger['data'][0]['recordStatus'] == 'planned'
             assert self.snapshot(fid) == snapshot
         if interop_base:
             assert TOOLS.expect(interop_base, 'POST', base + '/records', 201, body, owner, {'Idempotency-Key': 'test_vaccine_pending'}) == record
-        selected = self.call('PUT', base + '/selections', 200, {'vaccineId': 'TEST-A', 'doseNumber': 1, 'selected': False, 'completed': False}, owner)
+        selected = self.call('PUT', base + '/selections', 200, {'vaccineId': 'TEST-A', 'doseNumber': 1, 'selected': False}, owner)
         sid = self.alias(selected['data']['id'], 'selection')
-        assert selected['data']['selected'] is False and selected['data']['version'] == 1
-        self.observations.append({'case': 'selection code resolves stable ID', 'body': self.normalize(selected)})
-        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': True}, owner, observe='complete pending vaccination')
-        completed = self.call('GET', base + '/records', 200, token=owner)
-        assert len(completed['data']) == 1 and completed['data'][0]['id'] == rid
-        assert completed['data'][0]['version'] == '2' and completed['data'][0]['isCompleted'] is True
-        assert completed['data'][0]['scheduledDate'] == '2026-06-01'
-        assert completed['data'][0]['legacyName'] == 'Test Vaccine' and completed['data'][0]['legacyDose'] == '第1剂'
-        self.observations.append({'case': 'selection completes existing record', 'body': self.normalize(completed)})
-        self.call('PUT', base + '/selections', 409, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': False}, owner, observe='stale selection')
-        # Failure after all record/projection changes must roll everything back.
+        assert selected['data']['selected'] is False and selected['data']['completed'] is False
+        assert selected['data']['version'] == 1
+        self.call('PUT', base + '/selections', 400,
+                  {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': True},
+                  owner, observe='selection completion is read only')
+        assert self.call('GET', base + '/records', 200, token=owner)['data'][0]['version'] == '1'
+
+        # Changes to the selection flag cannot mutate or delete the record.
+        # A trigger simulates a cursor failure after a write and proves rollback.
         self.owned.sql(f"""CREATE FUNCTION test_vaccine_failure() RETURNS trigger LANGUAGE plpgsql AS $$
           BEGIN RAISE EXCEPTION 'test_vaccine_cursor_failure'; END; $$;
           CREATE TRIGGER test_vaccine_failure BEFORE UPDATE ON family_sync_states
           FOR EACH ROW WHEN (NEW.family_id='{fid}') EXECUTE FUNCTION test_vaccine_failure();""")
         try:
-            for method, path, payload in (
-                ('PUT', base + '/selections', {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': False}),
-                ('POST', base + '/records', {**body, 'doseNumber': 2, 'isCompleted': True}),
-                ('DELETE', base + '/records/' + rid, None),
-            ):
-                before = self.snapshot(fid)
-                self.call(method, path, 500, payload, owner, 'test_vaccine_rollback')
+            before = self.snapshot(fid)
+            self.call('PUT', base + '/selections', 500,
+                      {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'selected': True}, owner)
+            assert self.snapshot(fid) == before
+            if runtime == 'go':
+                self.call('PATCH', base + '/records/' + rid, 500, {
+                    'baseVersion': '1', 'recordStatus': 'completed', 'isCompleted': True,
+                    'administeredDate': '2026-06-12', 'completedDate': '2026-06-12'}, owner,
+                    headers={'x-growdesk-representation': 'ledger'})
                 assert self.snapshot(fid) == before
         finally:
             self.owned.sql('DROP TRIGGER test_vaccine_failure ON family_sync_states; DROP FUNCTION test_vaccine_failure();')
-        self.observations.append({'case': 'vaccine completion and record rollback', 'unchanged': True})
-        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': False}, owner, observe='uncomplete vaccination')
-        assert self.call('GET', base + '/records', 200, token=owner)['data'] == []
-        assert self.owned.sql(f"SELECT version FROM vaccine_records WHERE id='{rid}' AND deleted_at IS NOT NULL;").strip() == '3'
-        assert self.owned.sql(f"SELECT version FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}' AND deleted_at IS NOT NULL;").strip() == '2'
-        immediate = self.call('POST', base + '/records', 201, {'vaccineCode': 'TEST-UNLISTED', 'administeredDate': '2026-04-03'}, owner, 'test_vaccine_completed')
-        immediate_id = self.alias(immediate['data']['id'], 'completed_record')
-        assert immediate['data']['vaccineId'] is None and immediate['data']['isCompleted'] is True
-        self.observations.append({'case': 'unlisted legacy vaccine code', 'body': self.normalize(immediate)})
-        self.call('DELETE', base + '/records/' + immediate_id, 200, token=owner, observe='delete vaccine record')
-        self.call('DELETE', base + '/records/' + immediate_id, 404, token=owner, observe='deleted vaccine cannot repeat delete')
+
+        # Canonical completed records are the only source for completion.
+        if runtime == 'go':
+            completed_id = rid
+            updated = self.call('PATCH', base + '/records/' + rid, 200, {
+                'baseVersion': '1', 'recordStatus': 'completed', 'isCompleted': True,
+                'administeredDate': '2026-06-12', 'completedDate': '2026-06-12',
+                'manufacturer': 'Test Manufacturer', 'batchNumber': 'TEST-BATCH',
+                'traceCode': 'TEST-TRACE', 'administrationRoute': 'intramuscular',
+                'injectionSite': 'left_thigh', 'notes': 'test completed'}, owner,
+                headers={'x-growdesk-representation': 'ledger'})
+            assert updated['data']['version'] == '2'
+            assert updated['data']['administeredDate'] == '2026-06-12'
+            assert updated['data']['scheduledDate'] == '2026-06-01'
+            assert updated['data']['manufacturer'] == 'Test Manufacturer'
+        else:
+            completed = self.call('POST', base + '/records', 201, {
+                'vaccineCode': 'TEST-A', 'vaccineId': 'test_vaccine', 'doseNumber': 1,
+                'recordStatus': 'completed', 'isCompleted': True,
+                'administeredDate': '2026-06-12', 'completedDate': '2026-06-12',
+                'manufacturer': 'Test Manufacturer', 'batchNumber': 'TEST-BATCH',
+                'traceCode': 'TEST-TRACE', 'administrationRoute': 'intramuscular',
+                'injectionSite': 'left_thigh', 'notes': 'test completed'}, owner, 'test_vaccine_completed')
+            completed_id = self.alias(completed['data']['id'], 'completed_record')
+        selected = self.call('GET', base + '/selections', 200, token=owner)
+        assert selected['data'][0]['completed'] is True and selected['data'][0]['selected'] is False
+        self.call('PUT', base + '/selections', 200,
+                  {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'selected': True}, owner)
+        selected = self.call('GET', base + '/selections', 200, token=owner)
+        assert selected['data'][0]['completed'] is True and selected['data'][0]['selected'] is True
+        self.call('PUT', base + '/selections', 200,
+                  {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'selected': False}, owner)
+        selected = self.call('GET', base + '/selections', 200, token=owner)
+        assert selected['data'][0]['completed'] is True and selected['data'][0]['selected'] is False
+
+        review = None
+        if runtime == 'go':
+            review = self.call('POST', base + '/records', 201, {
+                'vaccineCode': 'TEST-UNCERTAIN', 'vaccineId': None,
+                'recordStatus': 'needs_review', 'administeredDate': None,
+                'scheduledDate': None, 'completedDate': None, 'isCompleted': False,
+                'sourceText': 'Test source row without a confirmed date'}, owner,
+                'test_vaccine_review', headers={'x-growdesk-representation': 'ledger'})
+            assert review['data']['recordStatus'] == 'needs_review'
+            assert review['data']['vaccineId'] is None and review['data']['administeredDate'] is None
+            assert review['data']['scheduledDate'] is None and review['data']['isCompleted'] is False
+            legacy_rows = self.call('GET', base + '/records', 200, token=owner)
+            assert all(row['recordStatus'] != 'needs_review' for row in legacy_rows['data'])
+            ledger_rows = self.call('GET', base + '/records', 200, token=owner,
+                                    headers={'x-growdesk-representation': 'ledger'})
+            assert any(row['id'] == review['data']['id'] for row in ledger_rows['data'])
+
+        self.call('DELETE', base + '/records/' + completed_id, 200,
+                  token=owner, headers={'x-growdesk-representation': 'ledger'} if runtime == 'go' else None)
+        selected = self.call('GET', base + '/selections', 200, token=owner)
+        assert selected['data'][0]['completed'] is False and selected['data'][0]['selected'] is False
+        self.call('DELETE', base + '/records/' + completed_id, 404, token=owner)
+        unknown = self.call('POST', base + '/records', 201, {
+            'vaccineCode': 'TEST-UNLISTED', 'doseNumber': None,
+            'recordStatus': 'completed', 'administeredDate': '2026-04-03',
+            'completedDate': '2026-04-03', 'isCompleted': True}, owner, 'test_vaccine_unknown')
+        unknown_id = self.alias(unknown['data']['id'], 'unknown_record')
+        assert unknown['data']['vaccineId'] is None
+        assert unknown['data']['vaccineCode'] == 'TEST-UNLISTED'
+        assert unknown['data']['legacyName'] == 'TEST-UNLISTED'
+        self.call('DELETE', base + '/records/' + unknown_id, 200, token=owner)
+        if runtime == 'go' and review:
+            self.call('DELETE', base + '/records/' + self.alias(review['data']['id'], 'review_record'),
+                      200, token=owner, headers={'x-growdesk-representation': 'ledger'})
         persisted = self.call('GET', base + '/selections', 200, token=owner)
         self.base = restart()
         assert self.call('GET', base + '/selections', 200, token=owner) == persisted

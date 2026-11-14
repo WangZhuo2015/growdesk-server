@@ -95,10 +95,12 @@ class Scenario:
                 return date + '|<' + self.ids[identity] + '>'
         return value
 
-    def call(self, method, path, status, body=None, token=None, key=None, observe=None):
+    def call(self, method, path, status, body=None, token=None, key=None, observe=None, headers=None):
         self.calls += 1
-        headers = {'Idempotency-Key': key} if key else None
-        result = expect(self.base, method, path, status, body, token, headers)
+        request_headers = dict(headers or {})
+        if key:
+            request_headers['Idempotency-Key'] = key
+        result = expect(self.base, method, path, status, body, token, request_headers or None)
         if observe:
             payload = result if status < 400 else {'error': {'code': result['error']['code']}}
             self.observations.append({'case': observe, 'status': status, 'body': self.normalize(payload)})

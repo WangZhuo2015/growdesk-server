@@ -9,9 +9,26 @@ import {
   UpsertVaccineSelectionRequest,
   VaccineCatalogResponse,
 } from "@growdesk/contracts";
-import { BabyAccessDeniedError, ConcurrencyConflictError, RecordNotFoundError } from "@growdesk/database";
+import { BabyAccessDeniedError, BadRequestError, ConcurrencyConflictError, RecordNotFoundError } from "@growdesk/database";
 import { referenceData } from "../knowledge/legacy-reference-data.js";
 import { vaccineEngineRules } from "../knowledge/vaccine-engine-rules.js";
+
+function vaccineDateOnly(value: Date | null): string | null {
+  return value?.toISOString().slice(0, 10) ?? null;
+}
+
+function vaccineTodayShanghai(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
+}
+
+function vaccineDateFromInput(value: string | null | undefined, field: string): Date | null {
+  if (value == null) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestError(`Invalid ${field} date`, "INVALID_VACCINE_RECORD");
+  }
+  return date;
+}
 
 const DEFAULT_VACCINE_SCHEDULES: VaccineScheduleItem[] = [
   {
@@ -236,30 +253,55 @@ export class VaccineService {
         familyId,
         babyId,
         deletedAt: null,
+        recordStatus: { in: ["completed", "planned"] },
       },
-      orderBy: [{ administeredDate: "desc" }, { id: "desc" }],
+      orderBy: [{ administeredDate: "desc" }, { scheduledDate: "desc" }, { updatedAt: "desc" }, { id: "desc" }],
     });
 
-    return rows.map((r) => ({
-      id: r.id,
-      babyId: r.babyId,
-      familyId: r.familyId,
-      vaccineCode: r.vaccineCode,
-      vaccineId: r.vaccineId,
-      doseNumber: r.doseNumber,
-      legacyName: r.legacyName,
-      legacyDose: r.legacyDose,
-      administeredDate: r.administeredDate.toISOString().slice(0, 10),
-      scheduledDate: r.scheduledDate?.toISOString().slice(0, 10) ?? r.administeredDate.toISOString().slice(0, 10),
-      completedDate: r.completedDate?.toISOString().slice(0, 10) ?? null,
-      isCompleted: r.isCompleted,
-      clinic: r.clinic,
-      batchNumber: r.batchNumber,
-      notes: r.notes,
-      version: String(r.version),
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-    }));
+    const today = vaccineTodayShanghai();
+    return rows.filter((r) => {
+      if (r.recordStatus === "completed") {
+        return r.administeredDate !== null && vaccineDateOnly(r.administeredDate)! <= today;
+      }
+      return r.recordStatus === "planned";
+    }).map((r) => {
+      const completed = r.recordStatus === "completed" && r.administeredDate !== null
+        && vaccineDateOnly(r.administeredDate)! <= today;
+      const actualDate = vaccineDateOnly(r.administeredDate);
+      const scheduledDate = vaccineDateOnly(r.scheduledDate) ?? (completed ? actualDate : null);
+      // Preserve the pinned non-null iOS wire contract for the default API
+      // representation. The Go ledger endpoint is the nullable opt-in surface.
+      const administeredDate = completed ? actualDate : scheduledDate;
+      if (administeredDate === null) {
+        throw new BadRequestError("Legacy vaccine representation cannot expose an undated record", "VACCINE_LEDGER_REQUIRED");
+      }
+      return {
+        id: r.id,
+        babyId: r.babyId,
+        familyId: r.familyId,
+        vaccineCode: r.vaccineCode,
+        vaccineId: r.vaccineId,
+        doseNumber: r.doseNumber,
+        legacyName: r.legacyName,
+        legacyDose: r.legacyDose,
+        recordStatus: completed ? "completed" as const : "planned" as const,
+        administeredDate,
+        scheduledDate,
+        completedDate: completed ? actualDate : null,
+        isCompleted: completed,
+        manufacturer: r.manufacturer,
+        clinic: r.clinic,
+        batchNumber: r.batchNumber,
+        traceCode: r.traceCode,
+        administrationRoute: r.administrationRoute,
+        injectionSite: r.injectionSite,
+        notes: r.notes,
+        sourceText: r.sourceText,
+        version: String(r.version),
+        createdAt: r.createdAt.toISOString(),
+        updatedAt: r.updatedAt.toISOString(),
+      };
+    });
   }
 
   async createVaccineRecord(
@@ -271,14 +313,45 @@ export class VaccineService {
     const { familyId } = await this.assertBabyAccess(principal, babyId, true);
 
     const recordId = crypto.randomUUID();
-    const administeredDate = new Date(`${input.administeredDate}T00:00:00.000Z`);
-    const isCompleted = input.isCompleted ?? true;
-    const scheduledDate = input.scheduledDate
-      ? new Date(`${input.scheduledDate}T00:00:00.000Z`)
-      : administeredDate;
-    const completedDate = isCompleted
-      ? (input.completedDate ? new Date(`${input.completedDate}T00:00:00.000Z`) : administeredDate)
-      : null;
+    const explicitStatus = input.recordStatus !== undefined;
+    const recordStatus = input.recordStatus
+      ?? (input.isCompleted === false
+        ? "planned"
+        : input.scheduledDate != null && input.administeredDate == null && input.completedDate == null
+          ? "planned"
+          : "completed");
+    if (input.recordStatus && input.isCompleted !== undefined && input.isCompleted !== (recordStatus === "completed")) {
+      throw new BadRequestError("recordStatus conflicts with isCompleted", "INVALID_VACCINE_RECORD");
+    }
+    if (recordStatus === "needs_review") {
+      throw new BadRequestError("needs_review records require the ledger API representation", "VACCINE_LEDGER_REQUIRED");
+    }
+    if (recordStatus !== "completed" && input.completedDate != null) {
+      throw new BadRequestError("completedDate is only valid for a completed record", "INVALID_VACCINE_RECORD");
+    }
+    if (input.administeredDate != null && input.completedDate != null && input.administeredDate !== input.completedDate) {
+      throw new BadRequestError("completedDate must match administeredDate", "INVALID_VACCINE_RECORD");
+    }
+    const legacyActualDate = input.administeredDate ?? input.completedDate ?? null;
+    const legacyAppointmentAlias = !explicitStatus && input.isCompleted === false
+      && input.administeredDate != null;
+    if (recordStatus === "planned" && input.administeredDate != null && !legacyAppointmentAlias) {
+      throw new BadRequestError("planned records cannot contain administeredDate; provide scheduledDate", "INVALID_VACCINE_RECORD");
+    }
+    const scheduledDateText = input.scheduledDate ?? (legacyAppointmentAlias ? legacyActualDate : null);
+    const actualDateText = recordStatus === "completed" ? legacyActualDate : null;
+    if (recordStatus === "planned" && !scheduledDateText) {
+      throw new BadRequestError("scheduledDate is required for a planned record", "INVALID_VACCINE_RECORD");
+    }
+    if (recordStatus === "completed" && !actualDateText) {
+      throw new BadRequestError("administeredDate is required for a completed record", "INVALID_VACCINE_RECORD");
+    }
+    const administeredDate = vaccineDateFromInput(actualDateText, "administeredDate");
+    const scheduledDate = vaccineDateFromInput(scheduledDateText, "scheduledDate");
+    const completedDate = recordStatus === "completed" ? administeredDate : null;
+    if (administeredDate && actualDateText! > vaccineTodayShanghai()) {
+      throw new BadRequestError("administeredDate cannot be in the future in Asia/Shanghai", "INVALID_VACCINE_RECORD");
+    }
 
     const result = await this.prisma.$transaction(async (tx) => {
       // 1. Idempotency check if key provided
@@ -312,40 +385,54 @@ export class VaccineService {
         FOR UPDATE
       `;
 
-      const vaccine = input.vaccineId
-        ? await tx.vaccine.findUnique({ where: { id: input.vaccineId }, select: { id: true, vaccineCode: true } })
-        : await tx.vaccine.findUnique({ where: { vaccineCode: input.vaccineCode }, select: { id: true, vaccineCode: true } });
-      if (input.vaccineId && !vaccine) {
-        throw new RecordNotFoundError("vaccine", input.vaccineId);
+      const explicitlyUnlinked = input.vaccineId === null;
+      const vaccine = input.vaccineId != null
+        ? await tx.vaccine.findUnique({ where: { id: input.vaccineId }, select: { id: true, vaccineCode: true, name: true } })
+          ?? await tx.vaccine.findUnique({ where: { vaccineCode: input.vaccineId }, select: { id: true, vaccineCode: true, name: true } })
+        : !explicitlyUnlinked && input.vaccineCode
+          ? await tx.vaccine.findUnique({ where: { vaccineCode: input.vaccineCode.trim() }, select: { id: true, vaccineCode: true, name: true } })
+          : null;
+      if (input.vaccineId && !vaccine) throw new RecordNotFoundError("vaccine", input.vaccineId);
+      const vaccineCode = vaccine?.vaccineCode ?? input.vaccineCode?.trim();
+      if (!vaccineCode) throw new BadRequestError("vaccineId or vaccineCode is required", "INVALID_VACCINE_RECORD");
+      if (vaccine && input.vaccineCode && input.vaccineCode.trim() !== vaccine.vaccineCode
+        && input.vaccineCode.trim() !== input.vaccineId) {
+        throw new BadRequestError("vaccineCode does not match vaccineId", "INVALID_VACCINE_RECORD");
       }
+      const legacyName = input.legacyName?.trim() || vaccine?.name || vaccineCode;
 
-      // 3. Create record. `administeredDate` stays required for the old
-      // schema, while the explicit completion fields preserve pending rows.
+      // 3. Store actual administration and appointment dates separately.
       const rec = await tx.vaccineRecord.create({
         data: {
           id: recordId,
           familyId,
           babyId,
           caregiverId: principal.userId,
-          vaccineCode: vaccine?.vaccineCode ?? input.vaccineCode,
+          vaccineCode,
           vaccineId: vaccine?.id ?? null,
           doseNumber: input.doseNumber ?? null,
-          legacyName: input.legacyName ?? null,
+          legacyName,
           legacyDose: input.legacyDose ?? null,
+          recordStatus,
           administeredDate,
           scheduledDate,
           completedDate,
-          isCompleted,
+          isCompleted: recordStatus === "completed",
+          manufacturer: input.manufacturer ?? null,
           clinic: input.clinic ?? null,
           batchNumber: input.batchNumber ?? null,
+          traceCode: input.traceCode ?? null,
+          administrationRoute: input.administrationRoute ?? null,
+          injectionSite: input.injectionSite ?? null,
           notes: input.notes ?? null,
+          sourceText: input.sourceText ?? null,
           version: 1,
         },
       });
 
       // Pending/scheduled rows are not historical events. Keep them in the
       // record graph, but do not project them into the completion timeline.
-      if (isCompleted) {
+      if (recordStatus === "completed" && administeredDate) {
         await tx.timelineEntry.create({
           data: {
             id: crypto.randomUUID(),
@@ -400,13 +487,19 @@ export class VaccineService {
       doseNumber: result.doseNumber,
       legacyName: result.legacyName,
       legacyDose: result.legacyDose,
-      administeredDate: result.administeredDate.toISOString().slice(0, 10),
-      scheduledDate: result.scheduledDate?.toISOString().slice(0, 10) ?? result.administeredDate.toISOString().slice(0, 10),
-      completedDate: result.completedDate?.toISOString().slice(0, 10) ?? null,
-      isCompleted: result.isCompleted,
+      recordStatus: result.isCompleted ? "completed" : "planned",
+      administeredDate: (result.recordStatus === "completed" ? vaccineDateOnly(result.administeredDate) : vaccineDateOnly(result.scheduledDate))!,
+      scheduledDate: vaccineDateOnly(result.scheduledDate) ?? (result.recordStatus === "completed" ? vaccineDateOnly(result.administeredDate) : null),
+      completedDate: result.recordStatus === "completed" ? vaccineDateOnly(result.administeredDate) : null,
+      isCompleted: result.recordStatus === "completed" && result.administeredDate !== null,
+      manufacturer: result.manufacturer,
       clinic: result.clinic,
       batchNumber: result.batchNumber,
+      traceCode: result.traceCode,
+      administrationRoute: result.administrationRoute,
+      injectionSite: result.injectionSite,
       notes: result.notes,
+      sourceText: result.sourceText,
       version: String(result.version),
       createdAt: result.createdAt.toISOString(),
       updatedAt: result.updatedAt.toISOString(),
@@ -415,10 +508,18 @@ export class VaccineService {
 
   async listVaccineSelections(principal: UserPrincipal, babyId: string): Promise<VaccineSelection[]> {
     const { familyId } = await this.assertBabyAccess(principal, babyId);
-    const rows = await this.prisma.vaccineSelection.findMany({
-      where: { familyId, babyId },
-      orderBy: [{ vaccineId: "asc" }, { doseNumber: "asc" }],
-    });
+    const today = new Date(`${vaccineTodayShanghai()}T00:00:00.000Z`);
+    const [rows, completedRecords] = await this.prisma.$transaction([
+      this.prisma.vaccineSelection.findMany({
+        where: { familyId, babyId },
+        orderBy: [{ vaccineId: "asc" }, { doseNumber: "asc" }],
+      }),
+      this.prisma.vaccineRecord.findMany({
+        where: { familyId, babyId, deletedAt: null, recordStatus: "completed", isCompleted: true, administeredDate: { not: null, lte: today } },
+        select: { vaccineId: true, doseNumber: true },
+      }),
+    ]);
+    const completedKeys = new Set(completedRecords.map((row) => `${row.vaccineId ?? ""}:${row.doseNumber ?? ""}`));
     return rows.map((row) => ({
       id: row.id,
       familyId: row.familyId,
@@ -426,7 +527,7 @@ export class VaccineService {
       vaccineId: row.vaccineId,
       doseNumber: row.doseNumber,
       selected: row.selected,
-      completed: row.completed,
+      completed: completedKeys.has(`${row.vaccineId}:${row.doseNumber}`),
       version: row.version,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
@@ -438,7 +539,14 @@ export class VaccineService {
     babyId: string,
     input: UpsertVaccineSelectionRequest,
   ): Promise<VaccineSelection> {
+    if (input.completed !== undefined) {
+      throw new BadRequestError(
+        "Vaccine completion is derived from records; use vaccine records to change it",
+        "READ_ONLY_VACCINE_COMPLETION"
+      );
+    }
     const { familyId } = await this.assertBabyAccess(principal, babyId, true);
+    const today = new Date(`${vaccineTodayShanghai()}T00:00:00.000Z`);
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw`
         INSERT INTO "public"."family_sync_states" ("family_id", "epoch", "cursor", "created_at", "updated_at")
@@ -459,91 +567,23 @@ export class VaccineService {
         throw new ConcurrencyConflictError("Vaccine selection changed; reload before saving");
       }
       const selected = input.selected ?? existing?.selected ?? true;
-      const completed = input.completed ?? existing?.completed ?? false;
       const selection = existing
         ? await tx.vaccineSelection.update({
             where: { id: existing.id },
-            data: { selected, completed, version: { increment: 1 } },
+            data: { selected, version: { increment: 1 } },
           })
         : await tx.vaccineSelection.create({
             data: {
               id: crypto.randomUUID(), familyId, babyId, vaccineId,
-              doseNumber: input.doseNumber, selected, completed, version: 1,
+              doseNumber: input.doseNumber, selected, completed: false, version: 1,
             },
           });
-
-      const doseLabel = `第${input.doseNumber}剂`;
-      const existingRecord = await tx.vaccineRecord.findFirst({
-        where: { familyId, babyId, vaccineId, doseNumber: input.doseNumber, deletedAt: null },
+      const completedRecord = await tx.vaccineRecord.findFirst({
+        where: { familyId, babyId, vaccineId, doseNumber: input.doseNumber, recordStatus: "completed", isCompleted: true, administeredDate: { not: null, lte: today }, deletedAt: null },
+        select: { id: true },
       });
-      if (completed) {
-        const today = new Date();
-        if (existingRecord) {
-          await tx.vaccineRecord.update({
-            where: { id: existingRecord.id },
-            data: {
-              administeredDate: today,
-              scheduledDate: existingRecord.scheduledDate ?? today,
-              completedDate: today,
-              isCompleted: true,
-              legacyName: existingRecord.legacyName ?? vaccine.name,
-              legacyDose: existingRecord.legacyDose ?? doseLabel,
-              version: { increment: 1 },
-            },
-          });
-          const timeline = await tx.timelineEntry.findUnique({
-            where: { uq_timeline_entries_entity: { familyId, babyId, entityType: "vaccine", entityId: existingRecord.id } },
-          });
-          if (timeline) {
-            await tx.timelineEntry.update({
-              where: { id: timeline.id },
-              data: {
-                deletedAt: null,
-                occurredAt: today,
-                summary: `接种疫苗: ${vaccine.vaccineCode}`,
-                details: { doseNumber: input.doseNumber },
-                version: { increment: 1 },
-              },
-            });
-          } else {
-            await tx.timelineEntry.create({
-              data: {
-                id: crypto.randomUUID(), familyId, babyId, entityType: "vaccine", entityId: existingRecord.id,
-                occurredAt: today, summary: `接种疫苗: ${vaccine.vaccineCode}`,
-                details: { doseNumber: input.doseNumber }, source: "ui_manual", version: 1,
-              },
-            });
-          }
-        } else {
-          const record = await tx.vaccineRecord.create({
-            data: {
-              id: crypto.randomUUID(), familyId, babyId, caregiverId: principal.userId,
-              vaccineCode: vaccine.vaccineCode, vaccineId: vaccine.id, doseNumber: input.doseNumber,
-              legacyName: vaccine.name, legacyDose: doseLabel, administeredDate: today,
-              scheduledDate: today, completedDate: today, isCompleted: true, version: 1,
-            },
-          });
-          await tx.timelineEntry.create({
-            data: {
-              id: crypto.randomUUID(), familyId, babyId, entityType: "vaccine", entityId: record.id,
-              occurredAt: today, summary: `接种疫苗: ${vaccine.vaccineCode}`,
-              details: { doseNumber: input.doseNumber }, source: "ui_manual", version: 1,
-            },
-          });
-        }
-      } else if (existingRecord && existingRecord.isCompleted) {
-        const deletedAt = new Date();
-        await tx.vaccineRecord.update({
-          where: { id: existingRecord.id },
-          data: { deletedAt, version: { increment: 1 } },
-        });
-        await tx.timelineEntry.updateMany({
-          where: { familyId, babyId, entityType: "vaccine", entityId: existingRecord.id, deletedAt: null },
-          data: { deletedAt, version: { increment: 1 } },
-        });
-      }
       await tx.familySyncState.update({ where: { familyId }, data: { cursor: { increment: 1 } } });
-      return selection;
+      return { ...selection, completed: completedRecord !== null };
     });
     return {
       id: result.id,

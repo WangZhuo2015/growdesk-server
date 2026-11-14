@@ -147,25 +147,51 @@ export const VaccineScheduleResponseSchema = Type.Object(
 
 export type VaccineScheduleResponse = Static<typeof VaccineScheduleResponseSchema>;
 
+export const VaccineRecordStatusSchema = Type.Union([
+  Type.Literal("completed"),
+  Type.Literal("planned"),
+  Type.Literal("needs_review"),
+]);
+export type VaccineRecordStatus = Static<typeof VaccineRecordStatusSchema>;
+
+export const VaccineRecordRepresentationHeaderSchema = Type.Object(
+  { "x-growdesk-representation": Type.Optional(Type.Literal("ledger")) },
+  { additionalProperties: true }
+);
+
+export const DeleteVaccineRecordQuerySchema = Type.Object(
+  { baseVersion: Type.Optional(BigIntString) },
+  { additionalProperties: false }
+);
+
 export const VaccineRecordSchema = Type.Object(
   {
     id: UuidString,
     babyId: UuidString,
     familyId: UuidString,
-    vaccineCode: Type.String(),
+    vaccineCode: Type.String({ maxLength: 200 }),
     // Promoted legacy vaccine graph IDs are source-stable strings (for
     // example `vac_hepb`), not necessarily UUIDs.
     vaccineId: Nullable(Type.String({ minLength: 1, maxLength: 128 })),
     doseNumber: Nullable(Type.Integer({ minimum: 1, maximum: 12 })),
     legacyName: Nullable(Type.String({ maxLength: 200 })),
     legacyDose: Nullable(Type.String({ maxLength: 100 })),
-    administeredDate: DateString,
+    recordStatus: VaccineRecordStatusSchema,
+    // On ledger responses this is the real (or reported, if needs_review)
+    // administration date and is null when unknown. The default legacy
+    // representation keeps the pre-ledger non-null wire shape for old iOS.
+    administeredDate: Nullable(DateString),
     scheduledDate: Nullable(DateString),
     completedDate: Nullable(DateString),
     isCompleted: Type.Boolean(),
-    clinic: Nullable(Type.String()),
-    batchNumber: Nullable(Type.String()),
-    notes: Nullable(Type.String({ maxLength: 1000 })),
+    manufacturer: Nullable(Type.String({ maxLength: 200 })),
+    clinic: Nullable(Type.String({ maxLength: 200 })),
+    batchNumber: Nullable(Type.String({ maxLength: 100 })),
+    traceCode: Nullable(Type.String({ maxLength: 200 })),
+    administrationRoute: Nullable(Type.String({ maxLength: 80 })),
+    injectionSite: Nullable(Type.String({ maxLength: 120 })),
+    notes: Nullable(Type.String({ maxLength: 4000 })),
+    sourceText: Nullable(Type.String({ maxLength: 4000 })),
     version: BigIntString,
     createdAt: DateTimeString,
     updatedAt: DateTimeString,
@@ -177,23 +203,58 @@ export type VaccineRecord = Static<typeof VaccineRecordSchema>;
 
 export const CreateVaccineRecordRequestSchema = Type.Object(
   {
-    vaccineCode: Type.String(),
+    vaccineCode: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
     vaccineId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
-    doseNumber: Type.Optional(Type.Integer({ minimum: 1, maximum: 12 })),
+    doseNumber: Type.Optional(Nullable(Type.Integer({ minimum: 1, maximum: 12 }))),
     legacyName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
     legacyDose: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
-    administeredDate: DateString,
+    recordStatus: Type.Optional(VaccineRecordStatusSchema),
+    administeredDate: Type.Optional(Nullable(DateString)),
     scheduledDate: Type.Optional(Nullable(DateString)),
+    // Deprecated input aliases accepted for older clients. Canonical output
+    // values are derived from recordStatus/administeredDate.
     completedDate: Type.Optional(Nullable(DateString)),
     isCompleted: Type.Optional(Type.Boolean()),
-    clinic: Type.Optional(Nullable(Type.String())),
-    batchNumber: Type.Optional(Nullable(Type.String())),
-    notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
+    manufacturer: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    clinic: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    batchNumber: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    traceCode: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    administrationRoute: Type.Optional(Nullable(Type.String({ maxLength: 80 }))),
+    injectionSite: Type.Optional(Nullable(Type.String({ maxLength: 120 }))),
+    notes: Type.Optional(Nullable(Type.String({ maxLength: 4000 }))),
+    sourceText: Type.Optional(Nullable(Type.String({ maxLength: 4000 }))),
   },
   { $id: "CreateVaccineRecordRequest", additionalProperties: false }
 );
 
 export type CreateVaccineRecordRequest = Static<typeof CreateVaccineRecordRequestSchema>;
+
+export const UpdateVaccineRecordRequestSchema = Type.Object(
+  {
+    baseVersion: BigIntString,
+    vaccineCode: Type.Optional(Type.String({ minLength: 1, maxLength: 200 })),
+    vaccineId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
+    doseNumber: Type.Optional(Nullable(Type.Integer({ minimum: 1, maximum: 12 }))),
+    legacyName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    legacyDose: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    recordStatus: Type.Optional(VaccineRecordStatusSchema),
+    administeredDate: Type.Optional(Nullable(DateString)),
+    scheduledDate: Type.Optional(Nullable(DateString)),
+    completedDate: Type.Optional(Nullable(DateString)),
+    isCompleted: Type.Optional(Type.Boolean()),
+    manufacturer: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    clinic: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    batchNumber: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    traceCode: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    administrationRoute: Type.Optional(Nullable(Type.String({ maxLength: 80 }))),
+    injectionSite: Type.Optional(Nullable(Type.String({ maxLength: 120 }))),
+    notes: Type.Optional(Nullable(Type.String({ maxLength: 4000 }))),
+    sourceText: Type.Optional(Nullable(Type.String({ maxLength: 4000 }))),
+  },
+  { $id: "UpdateVaccineRecordRequest", additionalProperties: false, minProperties: 2 }
+);
+
+export type UpdateVaccineRecordRequest = Static<typeof UpdateVaccineRecordRequestSchema>;
 
 export const VaccineRecordResponseSchema = Type.Object(
   {
@@ -246,7 +307,7 @@ export const UpsertVaccineSelectionRequestSchema = Type.Object(
     vaccineId: Type.String({ minLength: 1, maxLength: 128 }),
     doseNumber: Type.Integer({ minimum: 1, maximum: 12 }),
     selected: Type.Optional(Type.Boolean()),
-    completed: Type.Optional(Type.Boolean()),
+    completed: Type.Optional(Type.Boolean({ description: "Deprecated read-only field; completion is derived from actual vaccine records." })),
     baseVersion: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { $id: "UpsertVaccineSelectionRequest", additionalProperties: false },

@@ -1,0 +1,69 @@
+name: Vaccine booklet ledger
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'internal/backend/**'
+      - 'packages/contracts/**'
+      - 'apps/api/src/services/vaccine-service.ts'
+      - 'contracts/**'
+      - 'prisma/**'
+      - 'scripts/go-vaccines-integration.py'
+      - '.github/workflows/vaccine-ledger.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vaccine-ledger-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-ledger:
+    name: Ledger contract and native PostgreSQL behavior
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: npm
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.1'
+          cache: true
+      - name: Validate the candidate schema and generated contract
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run backend:db:generate
+          npm run backend:build
+          npm run backend:contracts:check
+      - name: Compile and test native vaccine behavior
+        run: |
+          go mod download
+          go mod verify
+          git diff --exit-code -- go.mod go.sum
+          go vet ./internal/backend
+          go test -race -count=1 ./internal/backend -run '^TestVaccine'
+          mkdir -p dist-go
+          CGO_ENABLED=0 go build -trimpath -ldflags="-X main.revision=$(git rev-parse HEAD)" -o dist-go/growdesk-api ./cmd/growdesk-api
+          dist-go/growdesk-api --contract-inventory > dist-go/vaccine-operations.json
+      - name: Exercise real HTTP and owned PostgreSQL transactions
+        run: |
+          python3 -m py_compile scripts/go-vaccines-integration.py
+          python3 scripts/go-vaccines-integration.py --binary dist-go/growdesk-api --report dist-go/vaccine-ledger.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vaccine-ledger-${{ github.event.pull_request.head.sha || github.sha }}
+          path: dist-go/*.json
+          if-no-files-found: warn
