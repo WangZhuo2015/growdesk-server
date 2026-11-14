@@ -1,0 +1,2551 @@
+{
+  "scope": "vaccine booklet owned local-process HTTP regression",
+  "status": "PASS",
+  "evidenceStatus": "IMPLEMENTED_NOT_REVIEWED",
+  "baselineCommit": "d89d9ef380482e39df3171a6f782de63101cebbb",
+  "trackedDiffSha256": "6561fa4f344a6f58fb40eb379d692b3f27815147eebdc20f6540d22c4e8415cb",
+  "binary": {
+    "reference": "f0f046f9f01ee34b1ed3f59ed993e4acb5d5bdf4",
+    "revision": "d89d9ef380482e39df3171a6f782de63101cebbb"
+  },
+  "binarySha256": "fe92e966b8411b56e03cc8873aed8dea3835bfcaae3e7d44e8e30f7e3cc21234",
+  "runtimes": {
+    "go": {
+      "httpAssertions": 66,
+      "observations": [
+        {
+          "case": "frozen default vaccine schedule",
+          "body": {
+            "data": [
+              {
+                "doseNumber": 1,
+                "id": "sched-bcg-1",
+                "mandatory": true,
+                "name": "卡介苗",
+                "recommendedAgeMonths": 0,
+                "vaccineCode": "BCG"
+              },
+              {
+                "doseNumber": 1,
+                "id": "sched-hepb-1",
+                "mandatory": true,
+                "name": "乙肝疫苗 (第1剂)",
+                "recommendedAgeMonths": 0,
+                "vaccineCode": "HepB"
+              },
+              {
+                "doseNumber": 2,
+                "id": "sched-hepb-2",
+                "mandatory": true,
+                "name": "乙肝疫苗 (第2剂)",
+                "recommendedAgeMonths": 1,
+                "vaccineCode": "HepB"
+              },
+              {
+                "doseNumber": 1,
+                "id": "sched-ipv-1",
+                "mandatory": true,
+                "name": "脊灰灭活疫苗 (第1剂)",
+                "recommendedAgeMonths": 2,
+                "vaccineCode": "IPV"
+              },
+              {
+                "doseNumber": 1,
+                "id": "sched-dtap-1",
+                "mandatory": true,
+                "name": "百白破疫苗 (第1剂)",
+                "recommendedAgeMonths": 3,
+                "vaccineCode": "DTaP"
+              },
+              {
+                "doseNumber": 2,
+                "id": "sched-dtap-2",
+                "mandatory": true,
+                "name": "百白破疫苗 (第2剂)",
+                "recommendedAgeMonths": 4,
+                "vaccineCode": "DTaP"
+              },
+              {
+                "doseNumber": 3,
+                "id": "sched-dtap-3",
+                "mandatory": true,
+                "name": "百白破疫苗 (第3剂)",
+                "recommendedAgeMonths": 5,
+                "vaccineCode": "DTaP"
+              },
+              {
+                "doseNumber": 3,
+                "id": "sched-hepb-3",
+                "mandatory": true,
+                "name": "乙肝疫苗 (第3剂)",
+                "recommendedAgeMonths": 6,
+                "vaccineCode": "HepB"
+              },
+              {
+                "doseNumber": 1,
+                "id": "sched-mmr-1",
+                "mandatory": true,
+                "name": "麻腮风疫苗 (第1剂)",
+                "recommendedAgeMonths": 8,
+                "vaccineCode": "MMR"
+              }
+            ]
+          }
+        },
+        {
+          "case": "catalog requires authentication",
+          "status": 401,
+          "body": {
+            "error": {
+              "code": "UNAUTHORIZED"
+            }
+          }
+        },
+        {
+          "case": "full pinned graph rules and release",
+          "body": {
+            "dataRelease": {
+              "asOf": "2026-08-03",
+              "evidencePriority": [
+                "A：中国现行官方规范/政府指南",
+                "B：权威医学/公共卫生机构",
+                "C：出版社/作者/图书馆/正规书目",
+                "D：大众平台，仅用于市场热度、口碑或补充书目"
+              ],
+              "nullPolicy": "无可靠直接证据的字段填null或空数组，不为完整性自行推算数值。",
+              "sources": [
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nip_2026",
+                  "notes": "国家免疫规划儿童程序、补种、同时接种和特殊健康状态的核心基准。",
+                  "organization": "国家疾病预防控制局、国家卫生健康委员会",
+                  "publicationDate": "2026-07-03",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "国家免疫规划疫苗儿童免疫程序及说明（2026年版）",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100014/2073005020766703616/BXZA3kH5.pdf",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nip_2026_explainer",
+                  "notes": null,
+                  "organization": "国家疾病预防控制局",
+                  "publicationDate": "2026-07-03",
+                  "sourceLevel": "A",
+                  "sourceType": "government_policy_explainer",
+                  "title": "《关于印发国家免疫规划疫苗儿童免疫程序及说明（2026年版）的通知》政策解读",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100013/common/content/content_2073003175839174656.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nip_2026_qa",
+                  "notes": null,
+                  "organization": "国家疾病预防控制局",
+                  "publicationDate": "2026-07-03",
+                  "sourceLevel": "A",
+                  "sourceType": "government_policy_explainer",
+                  "title": "《国家免疫规划疫苗儿童免疫程序及说明（2026年版）》解读问答",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100013/common/content/content_2073002930292035584.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_jiangsu_legacy_2008",
+                  "notes": "该文件形成时间早于2026年国家免疫程序；不得用于覆盖2026年国家程序中的新调整。",
+                  "organization": "江苏省卫生健康委员会",
+                  "publicationDate": null,
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_policy",
+                  "title": "江苏省扩大儿童免疫规划实施方案（历史文件，网站标注有效）",
+                  "url": "https://wjw.jiangsu.gov.cn/art/2024/1/9/art_81326_11120903.html",
+                  "year": 2008
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_suzhou_2026_repost",
+                  "notes": "用于确认苏州市政府已发布/转载新版国家程序信息；未据此推断独立地方接种月龄。",
+                  "organization": "苏州市人民政府",
+                  "publicationDate": "2026-07-07",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_information",
+                  "title": "国家免疫规划疫苗儿童免疫程序及说明（2026年版）相关信息",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/mszx/202607/e666b20536604952895d8f6f94a33954.shtml",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_nonprogram_2026",
+                  "notes": "用于确认我国常见非免疫规划疫苗类别，不据此填入未明确给出的精确剂次或间隔。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-17",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "title": "非免疫规划疫苗接种服务相关科普",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/yfjzfw/jzfw/202606/t20260617_1836820.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_nonprogram_principle_2020",
+                  "notes": "非免疫规划疫苗应按接种工作规范、技术指南、省级方案及产品说明书执行。",
+                  "organization": "国家卫生健康委员会/中国疾病预防控制中心",
+                  "publicationDate": null,
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "国家卫生健康委办公厅关于印发非免疫规划疫苗使用指导原则（2020年版）的通知",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/jswj2026/202606/t20260624_1837332.html",
+                  "year": 2020
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_flu_2026",
+                  "notes": "包含≥6月龄人群接种建议及儿童既往接种史相关剂次数信息。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-22",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "title": "流感疫苗接种相关技术信息",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/lg/202606/t20260622_1837281.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_varicella_2026",
+                  "notes": "用于确认我国可用水痘减毒活疫苗及两剂保护效果信息；未用其推断精确月龄。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-22",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "title": "水痘疫苗相关技术信息",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/sd/202606/t20260622_1837288.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_wst580_2017",
+                  "notes": "标准化发育行为评估工具；不等同于家长里程碑清单。",
+                  "organization": "国家卫生和计划生育委员会（现国家卫生健康委员会）",
+                  "publicationDate": "2017-10-12",
+                  "sourceLevel": "A",
+                  "sourceType": "national_health_standard",
+                  "title": "WS/T 580—2017《0岁～6岁儿童发育行为评估量表》",
+                  "url": "https://www.nhc.gov.cn/wjw/c100311/201710/998011ad285a45808bfff259da50c125.shtml",
+                  "year": 2017
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nhc_autism_2022",
+                  "notes": "包含3、6、8、12、18、24、30、36月龄等初筛时点及预警征象。",
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2022-09-22",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "0～6岁儿童孤独症筛查干预服务规范（试行）",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202209/0cb5cf9dd3964c0ab46beb31c1be312d.shtml",
+                  "year": 2022
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nhc_autism_warning_pdf",
+                  "notes": null,
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2022-09-22",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline_appendix",
+                  "title": "0～6岁儿童孤独症筛查干预服务规范（试行）附件：儿童心理行为发育问题预警征象",
+                  "url": "https://www.nhc.gov.cn/bgt/c100251/202302/96218ad117b54853afdaccd38323d7af/files/1733795759650_44285.pdf",
+                  "year": 2022
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_2m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 2 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/2-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_4m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 4 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/4-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_6m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 6 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/6-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_9m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 9 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/9-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_12m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 1 Year",
+                  "url": "https://www.cdc.gov/act-early/milestones/1-year.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_15m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 15 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/15-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_18m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 18 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/18-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_24m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 24 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/2-years.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_30m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 30 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/30-months.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_milestone_36m_2026",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-05-15",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 36 Months",
+                  "url": "https://www.cdc.gov/act-early/milestones/3-years.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nhc_care_2022",
+                  "notes": "用于养育照护、亲子互动与分龄活动建议。",
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2022-11-28",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "3岁以下婴幼儿健康养育照护指南（试行）",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202211/f0f764d18bbc4ddea3cf659df6ebf10d.shtml",
+                  "year": 2022
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nhc_feeding_2022",
+                  "notes": "用于辅食添加、食物多样性、质地、顺应喂养和噎食风险。",
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2022-01-10",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "托育机构婴幼儿喂养与营养指南（试行）",
+                  "url": "https://www.nhc.gov.cn/rkjcyjtfzs/c100147/202201/a7d3fc17153f410ea97270814a3e662f.shtml",
+                  "year": 2022
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_wst678_2020",
+                  "notes": "适用于健康足月6～24月龄婴幼儿；包含新食物逐一添加、3～5天适应观察等建议。",
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2020-05-06",
+                  "sourceLevel": "A",
+                  "sourceType": "national_health_standard",
+                  "title": "WS/T 678—2020《婴幼儿辅食添加营养指南》",
+                  "url": "https://www.nhc.gov.cn/wjw/yingyang/202005/f3a01a3cfb5646e2a3fe33544e407a61.shtml",
+                  "year": 2020
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_nhc_feeding_assessment_2025",
+                  "notes": "包含关键月龄喂养频次、奶类摄入及食物多样性评估要点。",
+                  "organization": "国家卫生健康委员会",
+                  "publicationDate": "2025-02-08",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "婴幼儿营养喂养评估服务指南（试行）",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202502/19903ff647694f3a85ed6fe332380b34.shtml",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_who_cf_2023",
+                  "notes": null,
+                  "organization": "World Health Organization",
+                  "publicationDate": "2023-10-16",
+                  "sourceLevel": "B",
+                  "sourceType": "international_guideline",
+                  "title": "WHO Guideline for complementary feeding of infants and young children 6–23 months of age",
+                  "url": "https://www.who.int/publications/i/item/9789240081864",
+                  "year": 2023
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_food_intro_2026",
+                  "notes": "用于辅食准备信号、质地、逐一引入和部分过敏原引入信息。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-04-14",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "title": "When, What, and How to Introduce Solid Foods",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/when-what-and-how-to-introduce-solid-foods.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_food_avoid_2026",
+                  "notes": "用于蜂蜜、添加糖、牛奶作主要饮品、未巴氏杀菌食品等安全信息。",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-04-14",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_safety_guidance",
+                  "title": "Foods and Drinks to Avoid or Limit",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/foods-and-drinks-to-avoid-or-limit.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_choking_2026",
+                  "notes": null,
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-03-11",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_safety_guidance",
+                  "title": "Choking Hazards",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/choking-hazards.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_cdc_texture_2026",
+                  "notes": null,
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "publicationDate": "2026-03-13",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "title": "Tastes and Textures",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/tastes-and-textures.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_book_beng_ndl",
+                  "notes": null,
+                  "organization": "日本国立国会图书馆（NDL Search）",
+                  "publicationDate": "2008-10-01",
+                  "sourceLevel": "C",
+                  "sourceType": "library_catalog",
+                  "title": "《蹦!》书目记录",
+                  "url": "https://ndlsearch.ndl.go.jp/books/R100000002-Ia1000107871",
+                  "year": 2008
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_book_goldfish_ndl",
+                  "notes": null,
+                  "organization": "日本国立国会图书馆（NDL Search）",
+                  "publicationDate": "2012-04-01",
+                  "sourceLevel": "C",
+                  "sourceType": "library_catalog",
+                  "title": "《小金鱼逃走了》书目记录",
+                  "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I024785894",
+                  "year": 2012
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_book_caterpillar_douban",
+                  "notes": "书目信息与评分会随平台更新；评分仅作市场口碑补充。",
+                  "organization": "豆瓣读书",
+                  "publicationDate": "2008-04-01",
+                  "sourceLevel": "D",
+                  "sourceType": "consumer_book_platform",
+                  "title": "《好饿的毛毛虫》条目",
+                  "url": "https://book.douban.com/subject/3106707/",
+                  "year": 2008
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_book_gorilla_douban",
+                  "notes": "书目信息与评分会随平台更新；评分仅作市场口碑补充。",
+                  "organization": "豆瓣读书",
+                  "publicationDate": "2010-06-01",
+                  "sourceLevel": "D",
+                  "sourceType": "consumer_book_platform",
+                  "title": "《晚安，大猩猩》条目",
+                  "url": "https://book.douban.com/subject/4773507/",
+                  "year": 2010
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_book_headtoe_catalog",
+                  "notes": "用于书目元数据；年龄字段未直接采用该站过宽的0–12岁范围。",
+                  "organization": "ThatBear在线图书",
+                  "publicationDate": "2013-01-01",
+                  "sourceLevel": "D",
+                  "sourceType": "book_catalog_platform",
+                  "title": "《从头动到脚》书目记录",
+                  "url": "https://www.thatbear.cn/book/cong-tou-dong-dang-jiao",
+                  "year": 2013
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_pertussis_2026",
+                  "notes": "确认我国现用含百日咳成分疫苗包括DTaP、DTaP-Hib、DTaP-IPV-Hib。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-22",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "title": "疫苗可预防疾病：百日咳——疫苗免疫预防",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/brk/202606/t20260622_1837267.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_pentaxim_pi_2024",
+                  "notes": "经批准产品说明书。用于五联疫苗年龄、剂次、剂量、部位、禁忌及同时接种限制。",
+                  "organization": "Sanofi Winthrop Industrie / 深圳赛诺菲巴斯德生物制品有限公司",
+                  "publicationDate": "2024-01-10",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "title": "吸附无细胞百白破灭活脊髓灰质炎和b型流感嗜血杆菌（结合）联合疫苗（潘太欣/PENTAXIM）说明书",
+                  "url": "https://www.sanofi.cn/assets/dot-cn/pages/docs/your-health/vaccine-publications/20240314-imported-pentaxim-1127.pdf",
+                  "year": 2024
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_acthib_pi_2025",
+                  "notes": "经批准产品说明书。用于Hib分年龄免疫程序、剂量、途径和接种部位。",
+                  "organization": "Sanofi Winthrop Industrie / 深圳赛诺菲巴斯德生物制品有限公司",
+                  "publicationDate": "2025-03-29",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "title": "b型流感嗜血杆菌结合疫苗（安尔宝/Act-HIB）说明书",
+                  "url": "https://www.sanofi.cn/assets/dot-cn/pages/docs/your-health/vaccine-publications/haemophilus-inhaemophilus-influenzae-type-b-conjugate-vaccine-250329.pdf",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_guangdong_non_nip_2024",
+                  "notes": "非江苏地方方案，仅用于交叉核对上市非免规疫苗的技术程序，不用于宣称江苏地方政策相同。",
+                  "organization": "广东省卫生健康委员会",
+                  "publicationDate": "2024-01-08",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_government_guideline",
+                  "title": "广东省非免疫规划疫苗接种方案（2024年版）",
+                  "url": "https://www.yuexiu.gov.cn/ggfw/ztfw/yl/ylxx/content/post_9427091.html",
+                  "year": 2024
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_xinjiang_non_nip_2023",
+                  "notes": "非江苏地方方案，用于交叉核对Hib、四联、五联和流脑等技术程序。",
+                  "organization": "新疆维吾尔自治区卫生健康委员会",
+                  "publicationDate": "2023-09-15",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_government_guideline",
+                  "title": "自治区非免疫规划疫苗接种方案（2023年修订版）",
+                  "url": "https://wjw.xinjiang.gov.cn/hfpc/zhgl3/202309/c861afee92b846c69f304743a3055693.shtml",
+                  "year": 2023
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_pcv13_prevenar_pi_2025",
+                  "notes": "用于CRM197载体PCV13适用年龄与产品信息，并与政府非免规方案交叉核对。",
+                  "organization": "辉瑞医学信息中国",
+                  "publicationDate": "2025-07-04",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "title": "沛儿13（13价肺炎球菌多糖结合疫苗，CRM197载体）产品说明书",
+                  "url": "https://www.pfizermedicalinformation.cn/products/package-insert/prevenar13",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_pcv13i_cansino_2026",
+                  "notes": "上市许可持有人官方信息；列明6周龄至5岁分年龄免疫程序。",
+                  "organization": "康希诺生物股份公司",
+                  "publicationDate": null,
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_information",
+                  "title": "13价肺炎球菌多糖结合疫苗（CRM197/破伤风类毒素）优佩欣®产品信息",
+                  "url": "https://www.cansinotech.com.cn/detail-4553",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_pcv13i_regulatory_2025",
+                  "notes": "确认优佩欣批准文号国药准字S20250033及上市配送状态。",
+                  "organization": "新疆维吾尔自治区药品监督管理局",
+                  "publicationDate": "2025-12-16",
+                  "sourceLevel": "A",
+                  "sourceType": "drug_regulatory_notice",
+                  "title": "疫苗委托储存配送信息公告：13价肺炎球菌多糖结合疫苗（CRM197/破伤风类毒素）",
+                  "url": "https://mpa.xinjiang.gov.cn/xjyjj/tzgg/202512/a50b7c26ee954efa8805790fe0fe9932.shtml",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_hebeicdc_rotavirus_2025",
+                  "notes": "列明单价、三价、五价轮状病毒疫苗适用年龄和程序。",
+                  "organization": "河北省疾病预防控制中心",
+                  "publicationDate": null,
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_cdc_guidance",
+                  "title": "轮状病毒疫苗相关健康科普",
+                  "url": "https://www.hebeicdc.cn/jkkp/87965.jhtml",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rotateq_pi_2024",
+                  "notes": "说明书二次展示；年龄和剂次同时由省级疾控/政府方案交叉核对。",
+                  "organization": "Merck Sharp & Dohme",
+                  "publicationDate": "2024-09-05",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label_secondary_display",
+                  "title": "口服五价重配轮状病毒减毒活疫苗（Vero细胞）（乐儿德/RotaTeq）说明书",
+                  "url": "https://drugs.dxy.cn/pc/drug/SyhpeRkQdYc2igmepepm0mepepmQDfrw%3D%3D",
+                  "year": 2024
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rotavirus3_pi_2023",
+                  "notes": "说明书二次展示；程序由省级疾控资料交叉核对。",
+                  "organization": "兰州生物制品研究所有限责任公司",
+                  "publicationDate": "2023-04-07",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label_secondary_display",
+                  "title": "口服三价重配轮状病毒减毒活疫苗（Vero细胞）（瑞特威）说明书",
+                  "url": "https://drugs.dxy.cn/pc/drug/yaVdCq8XEwL3fAfBksovAYg",
+                  "year": 2023
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rotavirus6_regulatory_2026",
+                  "notes": "确认国药准字S20250047、生产企业武汉生物制品研究所有限责任公司及上市配送状态。",
+                  "organization": "海南省药品监督管理局",
+                  "publicationDate": "2026-05-07",
+                  "sourceLevel": "A",
+                  "sourceType": "drug_regulatory_notice",
+                  "title": "疫苗委托储存配送备案：口服六价重配轮状病毒减毒活疫苗（Vero细胞）",
+                  "url": "https://amr.hainan.gov.cn/himpa/xxgk/gsgg/ymbagg/202605/t20260507_4070868.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rotavirus6_wuhan_2025",
+                  "notes": "确认六价轮状病毒疫苗已上市、适用于6至36周龄及覆盖血清型。",
+                  "organization": "武汉市商务局（转载湖北日报）",
+                  "publicationDate": "2025-09-15",
+                  "sourceLevel": "A",
+                  "sourceType": "government_information",
+                  "title": "汉产全球首款六价轮状病毒疫苗正式上市",
+                  "url": "https://sw.wuhan.gov.cn/xwdt/mtbd/202509/t20250915_2647341.shtml",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rotavirus6_trial_2022",
+                  "notes": "临床研究中6–12周龄婴儿接受3剂、每剂间隔4周；最终批准窗口仍以产品最新说明书为准。",
+                  "organization": "Virologica Sinica",
+                  "publicationDate": "2022-07-19",
+                  "sourceLevel": "B",
+                  "sourceType": "peer_reviewed_research",
+                  "title": "口服六价重配轮状病毒活疫苗（Vero细胞）对中国婴儿的有效性、安全性和免疫原性研究",
+                  "url": "https://www.virosin.org/cn/article/2022/5",
+                  "year": 2022
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_ev71_guide",
+                  "notes": "用于EV-A71疫苗2剂程序、适用年龄和历史同时接种建议；同时接种条款较早，应结合现行产品说明书复核。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": null,
+                  "sourceLevel": "A",
+                  "sourceType": "technical_guideline",
+                  "title": "肠道病毒71型灭活疫苗使用技术指南",
+                  "url": "https://www.chinacdc.cn/nip/ywdt/zcyj/zcjswj/202112/W020211206570536774575.pdf",
+                  "year": 2016
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_ev71_2026",
+                  "notes": "鼓励儿童在12月龄前完成EV-A71疫苗全程接种。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-10",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "title": "2026年健康风险提示：手足口病与EV-A71疫苗",
+                  "url": "https://www.chinacdc.cn/jkts/202606/t20260610_1836703.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_chinacdc_meningococcal_2026",
+                  "notes": "确认我国使用A、AC、ACYW多糖疫苗及AC/ACYW结合流脑疫苗等类别。",
+                  "organization": "中国疾病预防控制中心",
+                  "publicationDate": "2026-06-22",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "title": "疫苗可预防疾病：流行性脑脊髓膜炎——疫苗免疫预防",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/ln/202606/t20260622_1837260.html",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_mcv4_cansino_2026",
+                  "notes": "现行适用3月龄至6周岁（83月龄），列明分年龄程序。",
+                  "organization": "康希诺生物股份公司",
+                  "publicationDate": "2026-02-25",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_information",
+                  "title": "ACYW135群脑膜炎球菌多糖结合疫苗（CRM197载体）曼海欣®产品信息",
+                  "url": "https://cansinotech.com.cn/detail-818",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_mcv4_expansion_2026",
+                  "notes": "确认国家药监部门已批准将适用人群扩大至3月龄至6周岁；2026年7月扩龄至17周岁的申请仅为受理，不能视为已批准。",
+                  "organization": "康希诺生物股份公司",
+                  "publicationDate": "2026-02-24",
+                  "sourceLevel": "B",
+                  "sourceType": "regulatory_approval_announcement",
+                  "title": "四价流脑结合疫苗曼海欣®适应症扩龄至6岁人群",
+                  "url": "https://www.cansinotech.com.cn/detail-4806",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_suzhou_varicella_2026",
+                  "notes": "确认江苏自2023-01-01起将水痘减毒活疫苗纳入儿童免费免疫项目；常规12–18月龄第1剂、4周岁第2剂，间隔不小于3个月。",
+                  "organization": "苏州市人民政府",
+                  "publicationDate": "2026-07-28",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_policy_information",
+                  "title": "苏州水痘疫苗免费接种政策说明",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/mszx/202607/3b7a1a0383114363adb1866da78b6a87.shtml",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_jiangsu_varicella_evaluation_2025",
+                  "notes": "确认江苏自2023-01-01实施水痘疫苗2剂次免费接种政策。",
+                  "organization": "江苏省疾病预防控制中心",
+                  "publicationDate": "2025-05-07",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_cdc_policy_evidence",
+                  "title": "2025年度采购需求：江苏省水痘疫苗2剂次免费接种政策卫生经济学研究",
+                  "url": "https://www.jscdc.cn/xxgk_1641/cgxq/202505/t20250507_95447.html",
+                  "year": 2025
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_suzhou_flu_2026",
+                  "notes": "用于确认苏州2026年仍提供自费流感疫苗服务；价格和优惠不写入医学程序。",
+                  "organization": "苏州市人民政府 / 苏州工业园区管理委员会",
+                  "publicationDate": "2026-01-20",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_service_information",
+                  "title": "苏州工业园区开展流感疫苗接种优惠活动",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/ylfw/202601/213030ed595a41ac846629dcbccff068.shtml",
+                  "year": 2026
+                },
+                {
+                  "accessedDate": "2026-08-03",
+                  "id": "src_rabies_2023",
+                  "notes": "用于儿童狂犬病暴露后处置、5针/2-1-1程序、注射部位、与常规儿童疫苗关系及再次暴露规则。",
+                  "organization": "国家疾病预防控制局、国家卫生健康委员会",
+                  "publicationDate": "2023-09-16",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "title": "狂犬病暴露预防处置工作规范（2023年版）",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100081/common/content/content_1715172596229992448.html",
+                  "year": 2023
+                }
+              ],
+              "title": "0–3岁中国婴幼儿育儿数据库：来源与全局QA"
+            },
+            "engineRules": [
+              {
+                "description": "默认不把不同轮状病毒产品叠加成一套程序；互换仅依据具体说明书/指南。",
+                "id": "rule_rotavirus_exclusive",
+                "sourceRefs": [
+                  "src_chinacdc_nonprogram_principle_2020",
+                  "src_hebeicdc_rotavirus_2025"
+                ],
+                "type": "mutually_exclusive_product_series",
+                "vaccineIds": [
+                  "vac_rotavirus_llr",
+                  "vac_rotavirus3",
+                  "vac_rotavirus5",
+                  "vac_rotavirus6"
+                ]
+              },
+              {
+                "description": "PCV13载体/产品不同，起始年龄、间隔和补种程序可能不同；先选产品再排程序。",
+                "id": "rule_pcv13_product_specific",
+                "sourceRefs": [
+                  "src_guangdong_non_nip_2024",
+                  "src_pcv13i_cansino_2026"
+                ],
+                "type": "product_specific_regimen",
+                "vaccineIds": [
+                  "vac_pcv13_crm197",
+                  "vac_pcv13_tt",
+                  "vac_pcv13_ttdt",
+                  "vac_pcv13_crm197_tt_cansino"
+                ]
+              },
+              {
+                "description": "含百日咳成分非免规疫苗按说明书接种可计入DTaP；含IPV成分可计入脊灰。",
+                "id": "rule_pertussis_combo_component_counting",
+                "sourceRefs": [
+                  "src_nip_2026",
+                  "src_chinacdc_pertussis_2026"
+                ],
+                "type": "component_counting",
+                "vaccineIds": [
+                  "vac_dtap_hib",
+                  "vac_dtap_ipv_hib_pentaxim"
+                ]
+              },
+              {
+                "description": "潘太欣中国说明书暂建议不与其他儿童计划免疫/常规儿童疫苗同时接种；自动排期不得默认同日。",
+                "id": "rule_pentaxim_no_auto_same_day",
+                "sourceRefs": [
+                  "src_pentaxim_pi_2024"
+                ],
+                "type": "coadministration_constraint",
+                "vaccineIds": [
+                  "vac_dtap_ipv_hib_pentaxim"
+                ]
+              },
+              {
+                "description": "EV-A71旧专项技术指南的同时接种规则较保守；接种前按当前产品说明书/门诊复核。",
+                "id": "rule_ev71_recheck_same_day",
+                "sourceRefs": [
+                  "src_ev71_guide",
+                  "src_chinacdc_nonprogram_principle_2020"
+                ],
+                "type": "coadministration_requires_revalidation",
+                "vaccineIds": [
+                  "vac_ev71"
+                ]
+              },
+              {
+                "description": "江苏/苏州水痘按地方免费项目显示，不能默认标成自费。",
+                "id": "rule_jiangsu_varicella_free",
+                "sourceRefs": [
+                  "src_suzhou_varicella_2026",
+                  "src_jiangsu_varicella_evaluation_2025"
+                ],
+                "type": "regional_program_override",
+                "vaccineIds": [
+                  "vac_varicella"
+                ]
+              },
+              {
+                "description": "自费流脑结合/四价疫苗与国家MPSV-A/MPSV-AC的替代计次，在缺少江苏2026明确逐剂映射时不自动计算。",
+                "id": "rule_meningococcal_no_automatic_substitution",
+                "sourceRefs": [
+                  "src_chinacdc_nonprogram_principle_2020",
+                  "src_chinacdc_meningococcal_2026"
+                ],
+                "type": "substitution_requires_local_policy",
+                "vaccineIds": [
+                  "vac_mcv_ac",
+                  "vac_mcv4_crm197",
+                  "vac_mpsv_acyw_highrisk"
+                ]
+              },
+              {
+                "description": "仅在高危、旅行或暴露等具体指征出现时生成，不进入健康儿童默认常规时间轴。",
+                "id": "rule_indication_specific_not_routine",
+                "sourceRefs": [
+                  "src_guangdong_non_nip_2024",
+                  "src_rabies_2023"
+                ],
+                "type": "exclude_from_routine_timeline",
+                "vaccineIds": [
+                  "vac_ppsv23_highrisk",
+                  "vac_mpsv_acyw_highrisk",
+                  "vac_rabies_pep"
+                ]
+              }
+            ],
+            "national": [
+              {
+                "catchUpRules": null,
+                "catchUpSupported": false,
+                "chinaNational": true,
+                "contraindications": null,
+                "diseases": null,
+                "doses": [
+                  {
+                    "doseLabel": "Test Dose",
+                    "doseNumber": 1,
+                    "doseVolumeMl": "0.5",
+                    "id": "test_dose",
+                    "maximumAgeDays": null,
+                    "maximumIntervalDaysFromPrevious": null,
+                    "minimumAgeDays": null,
+                    "minimumIntervalDaysFromPrevious": null,
+                    "notes": null,
+                    "recommendedAgeMaxMonths": null,
+                    "recommendedAgeMonths": null,
+                    "route": null,
+                    "site": null,
+                    "sourceRefsJson": null,
+                    "vaccineId": "test_vaccine"
+                  }
+                ],
+                "englishName": null,
+                "id": "test_vaccine",
+                "jiangsuNotes": null,
+                "legacyLabel": null,
+                "manualReviewRequired": false,
+                "marketStatus": null,
+                "name": "Test Vaccine",
+                "policyEffectiveDate": null,
+                "policyVersion": null,
+                "precautions": null,
+                "productApprovalNumber": null,
+                "productBrandName": null,
+                "productManufacturer": null,
+                "programType": "national_immunization_program",
+                "regimenOptions": null,
+                "regionalOverrides": null,
+                "routineHealthyChildOption": true,
+                "sexRestriction": "all",
+                "shortName": null,
+                "simultaneousVaccination": null,
+                "sourceRefsJson": [
+                  "test_source"
+                ],
+                "specialPopulations": null,
+                "substitutionRules": null,
+                "suzhouNotes": null,
+                "targetPopulation": null,
+                "vaccineCode": "TEST-A"
+              }
+            ],
+            "nonProgram": [
+              {
+                "catchUpRules": null,
+                "catchUpSupported": false,
+                "chinaNational": false,
+                "contraindications": null,
+                "diseases": null,
+                "doses": [],
+                "englishName": null,
+                "id": "test_non_program",
+                "jiangsuNotes": null,
+                "legacyLabel": null,
+                "manualReviewRequired": false,
+                "marketStatus": null,
+                "name": "Test Non Program",
+                "policyEffectiveDate": null,
+                "policyVersion": null,
+                "precautions": null,
+                "productApprovalNumber": null,
+                "productBrandName": null,
+                "productManufacturer": null,
+                "programType": "non_program",
+                "regimenOptions": null,
+                "regionalOverrides": null,
+                "routineHealthyChildOption": true,
+                "sexRestriction": "all",
+                "shortName": null,
+                "simultaneousVaccination": null,
+                "sourceRefsJson": null,
+                "specialPopulations": null,
+                "substitutionRules": null,
+                "suzhouNotes": null,
+                "targetPopulation": null,
+                "vaccineCode": "TEST-B"
+              }
+            ],
+            "provincial": [],
+            "schedule": [
+              {
+                "action": null,
+                "ageDays": null,
+                "ageLabel": null,
+                "ageMonths": 0,
+                "doseNumber": 1,
+                "id": "test_schedule_entry",
+                "isOptional": false,
+                "notes": null,
+                "priority": "test_priority",
+                "selectionGroup": null,
+                "sourceRefsJson": null,
+                "vaccineId": "test_vaccine"
+              }
+            ],
+            "strategyGroups": [
+              {
+                "baseProgram": null,
+                "id": "test_group",
+                "name": "Test Strategy",
+                "optionsJson": [
+                  0,
+                  false,
+                  null
+                ],
+                "scope": null,
+                "sourceRefsJson": null,
+                "strategyId": "test_strategy",
+                "vaccineId": "test_vaccine"
+              }
+            ]
+          }
+        },
+        {
+          "case": "stored public schedule",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "doseNumber": 1,
+                "id": "test_schedule",
+                "mandatory": false,
+                "name": "Test Schedule",
+                "recommendedAgeMonths": 0,
+                "vaccineCode": "TEST-A"
+              }
+            ]
+          }
+        },
+        {
+          "case": "vaccine baby isolation",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "empty records",
+          "status": 200,
+          "body": {
+            "data": []
+          }
+        },
+        {
+          "case": "empty selections",
+          "status": 200,
+          "body": {
+            "data": []
+          }
+        },
+        {
+          "case": "rescheduled plan and guarded body deletion",
+          "body": {
+            "administeredDate": "2026-06-03",
+            "babyId": "<baby>",
+            "batchNumber": null,
+            "clinic": null,
+            "completedDate": null,
+            "createdAt": "<generated-time>",
+            "doseNumber": null,
+            "familyId": "<family>",
+            "id": "<rescheduled_plan>",
+            "injectionSite": null,
+            "isCompleted": false,
+            "legacyDose": null,
+            "legacyName": null,
+            "manufacturer": null,
+            "notes": null,
+            "productName": null,
+            "scheduledDate": "2026-06-03",
+            "traceabilityCode": null,
+            "updatedAt": "<generated-time>",
+            "vaccineCode": "TEST-PLAN",
+            "vaccineId": null,
+            "version": "2"
+          }
+        },
+        {
+          "case": "booklet fields and pending state",
+          "body": {
+            "data": {
+              "administeredDate": "2026-06-01",
+              "babyId": "<baby>",
+              "batchNumber": "test_batch",
+              "clinic": "test_clinic",
+              "completedDate": null,
+              "createdAt": "<generated-time>",
+              "doseNumber": 1,
+              "familyId": "<family>",
+              "id": "<pending_record>",
+              "injectionSite": "test_left_arm",
+              "isCompleted": false,
+              "legacyDose": "test_booklet_dose",
+              "legacyName": "test_booklet_name",
+              "manufacturer": "test_manufacturer",
+              "notes": "test pending",
+              "productName": "test_product",
+              "scheduledDate": "2026-06-01",
+              "traceabilityCode": "00000001234567890123",
+              "updatedAt": "<generated-time>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "version": "1"
+            }
+          }
+        },
+        {
+          "case": "selection resolves code without recording vaccination",
+          "body": {
+            "data": {
+              "babyId": "<baby>",
+              "completed": false,
+              "createdAt": "<generated-time>",
+              "doseNumber": 1,
+              "familyId": "<family>",
+              "id": "<selection>",
+              "selected": false,
+              "updatedAt": "<generated-time>",
+              "vaccineId": "test_vaccine",
+              "version": 1
+            }
+          }
+        },
+        {
+          "case": "complete plan on explicit historical date",
+          "body": {
+            "data": {
+              "administeredDate": "2026-05-05",
+              "babyId": "<baby>",
+              "batchNumber": "test_batch",
+              "clinic": "test_clinic",
+              "completedDate": "2026-05-05",
+              "createdAt": "<generated-time>",
+              "doseNumber": 1,
+              "familyId": "<family>",
+              "id": "<pending_record>",
+              "injectionSite": "test_left_arm",
+              "isCompleted": true,
+              "legacyDose": "test_booklet_dose",
+              "legacyName": "test_booklet_name",
+              "manufacturer": "test_manufacturer",
+              "notes": "test pending",
+              "productName": "test_product",
+              "scheduledDate": "2026-06-01",
+              "traceabilityCode": "00000001234567890123",
+              "updatedAt": "<generated-time>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "version": "2"
+            }
+          }
+        },
+        {
+          "case": "selection never changes administration facts",
+          "unchanged": true
+        },
+        {
+          "case": "correct in place, clear metadata and preserve raw dose",
+          "body": {
+            "data": {
+              "administeredDate": "2026-05-06",
+              "babyId": "<baby>",
+              "batchNumber": "test_batch",
+              "clinic": null,
+              "completedDate": "2026-05-06",
+              "createdAt": "<generated-time>",
+              "doseNumber": null,
+              "familyId": "<family>",
+              "id": "<pending_record>",
+              "injectionSite": null,
+              "isCompleted": true,
+              "legacyDose": "test_booklet_dose",
+              "legacyName": "test_corrected_booklet_name",
+              "manufacturer": null,
+              "notes": "test pending",
+              "productName": null,
+              "scheduledDate": null,
+              "traceabilityCode": null,
+              "updatedAt": "<generated-time>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "version": "3"
+            }
+          }
+        },
+        {
+          "case": "concurrent corrections have one winner",
+          "statuses": [
+            200,
+            409
+          ]
+        },
+        {
+          "case": "atomic vaccine mutation rollback",
+          "unchanged": true
+        },
+        {
+          "case": "unlisted vaccine with unknown dose",
+          "body": {
+            "data": {
+              "administeredDate": "2026-04-03",
+              "babyId": "<baby>",
+              "batchNumber": null,
+              "clinic": null,
+              "completedDate": "2026-04-03",
+              "createdAt": "<generated-time>",
+              "doseNumber": null,
+              "familyId": "<family>",
+              "id": "<completed_record>",
+              "injectionSite": null,
+              "isCompleted": true,
+              "legacyDose": null,
+              "legacyName": null,
+              "manufacturer": null,
+              "notes": null,
+              "productName": null,
+              "scheduledDate": null,
+              "traceabilityCode": null,
+              "updatedAt": "<generated-time>",
+              "vaccineCode": "TEST-UNLISTED",
+              "vaccineId": null,
+              "version": "1"
+            }
+          }
+        }
+      ]
+    },
+    "typescript": {
+      "httpAssertions": 67,
+      "observations": [
+        {
+          "case": "frozen default vaccine schedule",
+          "body": {
+            "data": [
+              {
+                "id": "sched-bcg-1",
+                "vaccineCode": "BCG",
+                "name": "卡介苗",
+                "recommendedAgeMonths": 0,
+                "doseNumber": 1,
+                "mandatory": true
+              },
+              {
+                "id": "sched-hepb-1",
+                "vaccineCode": "HepB",
+                "name": "乙肝疫苗 (第1剂)",
+                "recommendedAgeMonths": 0,
+                "doseNumber": 1,
+                "mandatory": true
+              },
+              {
+                "id": "sched-hepb-2",
+                "vaccineCode": "HepB",
+                "name": "乙肝疫苗 (第2剂)",
+                "recommendedAgeMonths": 1,
+                "doseNumber": 2,
+                "mandatory": true
+              },
+              {
+                "id": "sched-ipv-1",
+                "vaccineCode": "IPV",
+                "name": "脊灰灭活疫苗 (第1剂)",
+                "recommendedAgeMonths": 2,
+                "doseNumber": 1,
+                "mandatory": true
+              },
+              {
+                "id": "sched-dtap-1",
+                "vaccineCode": "DTaP",
+                "name": "百白破疫苗 (第1剂)",
+                "recommendedAgeMonths": 3,
+                "doseNumber": 1,
+                "mandatory": true
+              },
+              {
+                "id": "sched-dtap-2",
+                "vaccineCode": "DTaP",
+                "name": "百白破疫苗 (第2剂)",
+                "recommendedAgeMonths": 4,
+                "doseNumber": 2,
+                "mandatory": true
+              },
+              {
+                "id": "sched-dtap-3",
+                "vaccineCode": "DTaP",
+                "name": "百白破疫苗 (第3剂)",
+                "recommendedAgeMonths": 5,
+                "doseNumber": 3,
+                "mandatory": true
+              },
+              {
+                "id": "sched-hepb-3",
+                "vaccineCode": "HepB",
+                "name": "乙肝疫苗 (第3剂)",
+                "recommendedAgeMonths": 6,
+                "doseNumber": 3,
+                "mandatory": true
+              },
+              {
+                "id": "sched-mmr-1",
+                "vaccineCode": "MMR",
+                "name": "麻腮风疫苗 (第1剂)",
+                "recommendedAgeMonths": 8,
+                "doseNumber": 1,
+                "mandatory": true
+              }
+            ]
+          }
+        },
+        {
+          "case": "catalog requires authentication",
+          "status": 401,
+          "body": {
+            "error": {
+              "code": "UNAUTHORIZED"
+            }
+          }
+        },
+        {
+          "case": "full pinned graph rules and release",
+          "body": {
+            "national": [
+              {
+                "id": "test_vaccine",
+                "vaccineCode": "TEST-A",
+                "name": "Test Vaccine",
+                "shortName": null,
+                "englishName": null,
+                "programType": "national_immunization_program",
+                "legacyLabel": null,
+                "sexRestriction": "all",
+                "chinaNational": true,
+                "diseases": null,
+                "targetPopulation": null,
+                "policyEffectiveDate": null,
+                "policyVersion": null,
+                "routineHealthyChildOption": true,
+                "manualReviewRequired": false,
+                "marketStatus": null,
+                "productBrandName": null,
+                "productManufacturer": null,
+                "productApprovalNumber": null,
+                "jiangsuNotes": null,
+                "suzhouNotes": null,
+                "catchUpSupported": false,
+                "catchUpRules": null,
+                "simultaneousVaccination": null,
+                "substitutionRules": null,
+                "contraindications": null,
+                "precautions": null,
+                "specialPopulations": null,
+                "regionalOverrides": null,
+                "regimenOptions": null,
+                "sourceRefsJson": [
+                  "test_source"
+                ],
+                "doses": [
+                  {
+                    "id": "test_dose",
+                    "vaccineId": "test_vaccine",
+                    "doseNumber": 1,
+                    "doseLabel": "Test Dose",
+                    "recommendedAgeMonths": null,
+                    "minimumAgeDays": null,
+                    "maximumAgeDays": null,
+                    "recommendedAgeMaxMonths": null,
+                    "minimumIntervalDaysFromPrevious": null,
+                    "maximumIntervalDaysFromPrevious": null,
+                    "route": null,
+                    "site": null,
+                    "doseVolumeMl": "0.5",
+                    "notes": null,
+                    "sourceRefsJson": null
+                  }
+                ]
+              }
+            ],
+            "nonProgram": [
+              {
+                "id": "test_non_program",
+                "vaccineCode": "TEST-B",
+                "name": "Test Non Program",
+                "shortName": null,
+                "englishName": null,
+                "programType": "non_program",
+                "legacyLabel": null,
+                "sexRestriction": "all",
+                "chinaNational": false,
+                "diseases": null,
+                "targetPopulation": null,
+                "policyEffectiveDate": null,
+                "policyVersion": null,
+                "routineHealthyChildOption": true,
+                "manualReviewRequired": false,
+                "marketStatus": null,
+                "productBrandName": null,
+                "productManufacturer": null,
+                "productApprovalNumber": null,
+                "jiangsuNotes": null,
+                "suzhouNotes": null,
+                "catchUpSupported": false,
+                "catchUpRules": null,
+                "simultaneousVaccination": null,
+                "substitutionRules": null,
+                "contraindications": null,
+                "precautions": null,
+                "specialPopulations": null,
+                "regionalOverrides": null,
+                "regimenOptions": null,
+                "sourceRefsJson": null,
+                "doses": []
+              }
+            ],
+            "provincial": [],
+            "strategyGroups": [
+              {
+                "id": "test_group",
+                "strategyId": "test_strategy",
+                "vaccineId": "test_vaccine",
+                "name": "Test Strategy",
+                "scope": null,
+                "baseProgram": null,
+                "optionsJson": [
+                  0,
+                  false,
+                  null
+                ],
+                "sourceRefsJson": null
+              }
+            ],
+            "schedule": [
+              {
+                "id": "test_schedule_entry",
+                "vaccineId": "test_vaccine",
+                "ageMonths": 0,
+                "ageDays": null,
+                "ageLabel": null,
+                "doseNumber": 1,
+                "priority": "test_priority",
+                "isOptional": false,
+                "action": null,
+                "selectionGroup": null,
+                "notes": null,
+                "sourceRefsJson": null
+              }
+            ],
+            "engineRules": [
+              {
+                "id": "rule_rotavirus_exclusive",
+                "type": "mutually_exclusive_product_series",
+                "vaccineIds": [
+                  "vac_rotavirus_llr",
+                  "vac_rotavirus3",
+                  "vac_rotavirus5",
+                  "vac_rotavirus6"
+                ],
+                "description": "默认不把不同轮状病毒产品叠加成一套程序；互换仅依据具体说明书/指南。",
+                "sourceRefs": [
+                  "src_chinacdc_nonprogram_principle_2020",
+                  "src_hebeicdc_rotavirus_2025"
+                ]
+              },
+              {
+                "id": "rule_pcv13_product_specific",
+                "type": "product_specific_regimen",
+                "vaccineIds": [
+                  "vac_pcv13_crm197",
+                  "vac_pcv13_tt",
+                  "vac_pcv13_ttdt",
+                  "vac_pcv13_crm197_tt_cansino"
+                ],
+                "description": "PCV13载体/产品不同，起始年龄、间隔和补种程序可能不同；先选产品再排程序。",
+                "sourceRefs": [
+                  "src_guangdong_non_nip_2024",
+                  "src_pcv13i_cansino_2026"
+                ]
+              },
+              {
+                "id": "rule_pertussis_combo_component_counting",
+                "type": "component_counting",
+                "vaccineIds": [
+                  "vac_dtap_hib",
+                  "vac_dtap_ipv_hib_pentaxim"
+                ],
+                "description": "含百日咳成分非免规疫苗按说明书接种可计入DTaP；含IPV成分可计入脊灰。",
+                "sourceRefs": [
+                  "src_nip_2026",
+                  "src_chinacdc_pertussis_2026"
+                ]
+              },
+              {
+                "id": "rule_pentaxim_no_auto_same_day",
+                "type": "coadministration_constraint",
+                "vaccineIds": [
+                  "vac_dtap_ipv_hib_pentaxim"
+                ],
+                "description": "潘太欣中国说明书暂建议不与其他儿童计划免疫/常规儿童疫苗同时接种；自动排期不得默认同日。",
+                "sourceRefs": [
+                  "src_pentaxim_pi_2024"
+                ]
+              },
+              {
+                "id": "rule_ev71_recheck_same_day",
+                "type": "coadministration_requires_revalidation",
+                "vaccineIds": [
+                  "vac_ev71"
+                ],
+                "description": "EV-A71旧专项技术指南的同时接种规则较保守；接种前按当前产品说明书/门诊复核。",
+                "sourceRefs": [
+                  "src_ev71_guide",
+                  "src_chinacdc_nonprogram_principle_2020"
+                ]
+              },
+              {
+                "id": "rule_jiangsu_varicella_free",
+                "type": "regional_program_override",
+                "vaccineIds": [
+                  "vac_varicella"
+                ],
+                "description": "江苏/苏州水痘按地方免费项目显示，不能默认标成自费。",
+                "sourceRefs": [
+                  "src_suzhou_varicella_2026",
+                  "src_jiangsu_varicella_evaluation_2025"
+                ]
+              },
+              {
+                "id": "rule_meningococcal_no_automatic_substitution",
+                "type": "substitution_requires_local_policy",
+                "vaccineIds": [
+                  "vac_mcv_ac",
+                  "vac_mcv4_crm197",
+                  "vac_mpsv_acyw_highrisk"
+                ],
+                "description": "自费流脑结合/四价疫苗与国家MPSV-A/MPSV-AC的替代计次，在缺少江苏2026明确逐剂映射时不自动计算。",
+                "sourceRefs": [
+                  "src_chinacdc_nonprogram_principle_2020",
+                  "src_chinacdc_meningococcal_2026"
+                ]
+              },
+              {
+                "id": "rule_indication_specific_not_routine",
+                "type": "exclude_from_routine_timeline",
+                "vaccineIds": [
+                  "vac_ppsv23_highrisk",
+                  "vac_mpsv_acyw_highrisk",
+                  "vac_rabies_pep"
+                ],
+                "description": "仅在高危、旅行或暴露等具体指征出现时生成，不进入健康儿童默认常规时间轴。",
+                "sourceRefs": [
+                  "src_guangdong_non_nip_2024",
+                  "src_rabies_2023"
+                ]
+              }
+            ],
+            "dataRelease": {
+              "title": "0–3岁中国婴幼儿育儿数据库：来源与全局QA",
+              "asOf": "2026-08-03",
+              "evidencePriority": [
+                "A：中国现行官方规范/政府指南",
+                "B：权威医学/公共卫生机构",
+                "C：出版社/作者/图书馆/正规书目",
+                "D：大众平台，仅用于市场热度、口碑或补充书目"
+              ],
+              "nullPolicy": "无可靠直接证据的字段填null或空数组，不为完整性自行推算数值。",
+              "sources": [
+                {
+                  "id": "src_nip_2026",
+                  "title": "国家免疫规划疫苗儿童免疫程序及说明（2026年版）",
+                  "organization": "国家疾病预防控制局、国家卫生健康委员会",
+                  "year": 2026,
+                  "publicationDate": "2026-07-03",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100014/2073005020766703616/BXZA3kH5.pdf",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "国家免疫规划儿童程序、补种、同时接种和特殊健康状态的核心基准。"
+                },
+                {
+                  "id": "src_nip_2026_explainer",
+                  "title": "《关于印发国家免疫规划疫苗儿童免疫程序及说明（2026年版）的通知》政策解读",
+                  "organization": "国家疾病预防控制局",
+                  "year": 2026,
+                  "publicationDate": "2026-07-03",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100013/common/content/content_2073003175839174656.html",
+                  "sourceLevel": "A",
+                  "sourceType": "government_policy_explainer",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_nip_2026_qa",
+                  "title": "《国家免疫规划疫苗儿童免疫程序及说明（2026年版）》解读问答",
+                  "organization": "国家疾病预防控制局",
+                  "year": 2026,
+                  "publicationDate": "2026-07-03",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100013/common/content/content_2073002930292035584.html",
+                  "sourceLevel": "A",
+                  "sourceType": "government_policy_explainer",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_jiangsu_legacy_2008",
+                  "title": "江苏省扩大儿童免疫规划实施方案（历史文件，网站标注有效）",
+                  "organization": "江苏省卫生健康委员会",
+                  "year": 2008,
+                  "publicationDate": null,
+                  "url": "https://wjw.jiangsu.gov.cn/art/2024/1/9/art_81326_11120903.html",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_policy",
+                  "accessedDate": "2026-08-03",
+                  "notes": "该文件形成时间早于2026年国家免疫程序；不得用于覆盖2026年国家程序中的新调整。"
+                },
+                {
+                  "id": "src_suzhou_2026_repost",
+                  "title": "国家免疫规划疫苗儿童免疫程序及说明（2026年版）相关信息",
+                  "organization": "苏州市人民政府",
+                  "year": 2026,
+                  "publicationDate": "2026-07-07",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/mszx/202607/e666b20536604952895d8f6f94a33954.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于确认苏州市政府已发布/转载新版国家程序信息；未据此推断独立地方接种月龄。"
+                },
+                {
+                  "id": "src_chinacdc_nonprogram_2026",
+                  "title": "非免疫规划疫苗接种服务相关科普",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-17",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/yfjzfw/jzfw/202606/t20260617_1836820.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于确认我国常见非免疫规划疫苗类别，不据此填入未明确给出的精确剂次或间隔。"
+                },
+                {
+                  "id": "src_chinacdc_nonprogram_principle_2020",
+                  "title": "国家卫生健康委办公厅关于印发非免疫规划疫苗使用指导原则（2020年版）的通知",
+                  "organization": "国家卫生健康委员会/中国疾病预防控制中心",
+                  "year": 2020,
+                  "publicationDate": null,
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/jswj2026/202606/t20260624_1837332.html",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "非免疫规划疫苗应按接种工作规范、技术指南、省级方案及产品说明书执行。"
+                },
+                {
+                  "id": "src_chinacdc_flu_2026",
+                  "title": "流感疫苗接种相关技术信息",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-22",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/lg/202606/t20260622_1837281.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "包含≥6月龄人群接种建议及儿童既往接种史相关剂次数信息。"
+                },
+                {
+                  "id": "src_chinacdc_varicella_2026",
+                  "title": "水痘疫苗相关技术信息",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-22",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/sd/202606/t20260622_1837288.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于确认我国可用水痘减毒活疫苗及两剂保护效果信息；未用其推断精确月龄。"
+                },
+                {
+                  "id": "src_wst580_2017",
+                  "title": "WS/T 580—2017《0岁～6岁儿童发育行为评估量表》",
+                  "organization": "国家卫生和计划生育委员会（现国家卫生健康委员会）",
+                  "year": 2017,
+                  "publicationDate": "2017-10-12",
+                  "url": "https://www.nhc.gov.cn/wjw/c100311/201710/998011ad285a45808bfff259da50c125.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "national_health_standard",
+                  "accessedDate": "2026-08-03",
+                  "notes": "标准化发育行为评估工具；不等同于家长里程碑清单。"
+                },
+                {
+                  "id": "src_nhc_autism_2022",
+                  "title": "0～6岁儿童孤独症筛查干预服务规范（试行）",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2022,
+                  "publicationDate": "2022-09-22",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202209/0cb5cf9dd3964c0ab46beb31c1be312d.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "包含3、6、8、12、18、24、30、36月龄等初筛时点及预警征象。"
+                },
+                {
+                  "id": "src_nhc_autism_warning_pdf",
+                  "title": "0～6岁儿童孤独症筛查干预服务规范（试行）附件：儿童心理行为发育问题预警征象",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2022,
+                  "publicationDate": "2022-09-22",
+                  "url": "https://www.nhc.gov.cn/bgt/c100251/202302/96218ad117b54853afdaccd38323d7af/files/1733795759650_44285.pdf",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline_appendix",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_cdc_milestone_2m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 2 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/2-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_4m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 4 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/4-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_6m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 6 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/6-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_9m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 9 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/9-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_12m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 1 Year",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/1-year.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_15m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 15 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/15-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_18m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 18 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/18-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_24m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 24 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/2-years.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_30m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 30 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/30-months.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_cdc_milestone_36m_2026",
+                  "title": "CDC Learn the Signs. Act Early. — Milestones by 36 Months",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-05-15",
+                  "url": "https://www.cdc.gov/act-early/milestones/3-years.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_milestone_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "CDC将里程碑定义为在该年龄约75%或更多儿童能够做到的行为；不能转换为平均月龄。"
+                },
+                {
+                  "id": "src_nhc_care_2022",
+                  "title": "3岁以下婴幼儿健康养育照护指南（试行）",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2022,
+                  "publicationDate": "2022-11-28",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202211/f0f764d18bbc4ddea3cf659df6ebf10d.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于养育照护、亲子互动与分龄活动建议。"
+                },
+                {
+                  "id": "src_nhc_feeding_2022",
+                  "title": "托育机构婴幼儿喂养与营养指南（试行）",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2022,
+                  "publicationDate": "2022-01-10",
+                  "url": "https://www.nhc.gov.cn/rkjcyjtfzs/c100147/202201/a7d3fc17153f410ea97270814a3e662f.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于辅食添加、食物多样性、质地、顺应喂养和噎食风险。"
+                },
+                {
+                  "id": "src_wst678_2020",
+                  "title": "WS/T 678—2020《婴幼儿辅食添加营养指南》",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2020,
+                  "publicationDate": "2020-05-06",
+                  "url": "https://www.nhc.gov.cn/wjw/yingyang/202005/f3a01a3cfb5646e2a3fe33544e407a61.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "national_health_standard",
+                  "accessedDate": "2026-08-03",
+                  "notes": "适用于健康足月6～24月龄婴幼儿；包含新食物逐一添加、3～5天适应观察等建议。"
+                },
+                {
+                  "id": "src_nhc_feeding_assessment_2025",
+                  "title": "婴幼儿营养喂养评估服务指南（试行）",
+                  "organization": "国家卫生健康委员会",
+                  "year": 2025,
+                  "publicationDate": "2025-02-08",
+                  "url": "https://www.nhc.gov.cn/fys/c100078/202502/19903ff647694f3a85ed6fe332380b34.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "包含关键月龄喂养频次、奶类摄入及食物多样性评估要点。"
+                },
+                {
+                  "id": "src_who_cf_2023",
+                  "title": "WHO Guideline for complementary feeding of infants and young children 6–23 months of age",
+                  "organization": "World Health Organization",
+                  "year": 2023,
+                  "publicationDate": "2023-10-16",
+                  "url": "https://www.who.int/publications/i/item/9789240081864",
+                  "sourceLevel": "B",
+                  "sourceType": "international_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_cdc_food_intro_2026",
+                  "title": "When, What, and How to Introduce Solid Foods",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-04-14",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/when-what-and-how-to-introduce-solid-foods.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于辅食准备信号、质地、逐一引入和部分过敏原引入信息。"
+                },
+                {
+                  "id": "src_cdc_food_avoid_2026",
+                  "title": "Foods and Drinks to Avoid or Limit",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-04-14",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/foods-and-drinks-to-avoid-or-limit.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_safety_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于蜂蜜、添加糖、牛奶作主要饮品、未巴氏杀菌食品等安全信息。"
+                },
+                {
+                  "id": "src_cdc_choking_2026",
+                  "title": "Choking Hazards",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-03-11",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/choking-hazards.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_safety_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_cdc_texture_2026",
+                  "title": "Tastes and Textures",
+                  "organization": "U.S. Centers for Disease Control and Prevention",
+                  "year": 2026,
+                  "publicationDate": "2026-03-13",
+                  "url": "https://www.cdc.gov/infant-toddler-nutrition/foods-and-drinks/tastes-and-textures.html",
+                  "sourceLevel": "B",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_book_beng_ndl",
+                  "title": "《蹦!》书目记录",
+                  "organization": "日本国立国会图书馆（NDL Search）",
+                  "year": 2008,
+                  "publicationDate": "2008-10-01",
+                  "url": "https://ndlsearch.ndl.go.jp/books/R100000002-Ia1000107871",
+                  "sourceLevel": "C",
+                  "sourceType": "library_catalog",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_book_goldfish_ndl",
+                  "title": "《小金鱼逃走了》书目记录",
+                  "organization": "日本国立国会图书馆（NDL Search）",
+                  "year": 2012,
+                  "publicationDate": "2012-04-01",
+                  "url": "https://ndlsearch.ndl.go.jp/books/R100000002-I024785894",
+                  "sourceLevel": "C",
+                  "sourceType": "library_catalog",
+                  "accessedDate": "2026-08-03",
+                  "notes": null
+                },
+                {
+                  "id": "src_book_caterpillar_douban",
+                  "title": "《好饿的毛毛虫》条目",
+                  "organization": "豆瓣读书",
+                  "year": 2008,
+                  "publicationDate": "2008-04-01",
+                  "url": "https://book.douban.com/subject/3106707/",
+                  "sourceLevel": "D",
+                  "sourceType": "consumer_book_platform",
+                  "accessedDate": "2026-08-03",
+                  "notes": "书目信息与评分会随平台更新；评分仅作市场口碑补充。"
+                },
+                {
+                  "id": "src_book_gorilla_douban",
+                  "title": "《晚安，大猩猩》条目",
+                  "organization": "豆瓣读书",
+                  "year": 2010,
+                  "publicationDate": "2010-06-01",
+                  "url": "https://book.douban.com/subject/4773507/",
+                  "sourceLevel": "D",
+                  "sourceType": "consumer_book_platform",
+                  "accessedDate": "2026-08-03",
+                  "notes": "书目信息与评分会随平台更新；评分仅作市场口碑补充。"
+                },
+                {
+                  "id": "src_book_headtoe_catalog",
+                  "title": "《从头动到脚》书目记录",
+                  "organization": "ThatBear在线图书",
+                  "year": 2013,
+                  "publicationDate": "2013-01-01",
+                  "url": "https://www.thatbear.cn/book/cong-tou-dong-dang-jiao",
+                  "sourceLevel": "D",
+                  "sourceType": "book_catalog_platform",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于书目元数据；年龄字段未直接采用该站过宽的0–12岁范围。"
+                },
+                {
+                  "id": "src_chinacdc_pertussis_2026",
+                  "title": "疫苗可预防疾病：百日咳——疫苗免疫预防",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-22",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/brk/202606/t20260622_1837267.html",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认我国现用含百日咳成分疫苗包括DTaP、DTaP-Hib、DTaP-IPV-Hib。"
+                },
+                {
+                  "id": "src_pentaxim_pi_2024",
+                  "title": "吸附无细胞百白破灭活脊髓灰质炎和b型流感嗜血杆菌（结合）联合疫苗（潘太欣/PENTAXIM）说明书",
+                  "organization": "Sanofi Winthrop Industrie / 深圳赛诺菲巴斯德生物制品有限公司",
+                  "year": 2024,
+                  "publicationDate": "2024-01-10",
+                  "url": "https://www.sanofi.cn/assets/dot-cn/pages/docs/your-health/vaccine-publications/20240314-imported-pentaxim-1127.pdf",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "accessedDate": "2026-08-03",
+                  "notes": "经批准产品说明书。用于五联疫苗年龄、剂次、剂量、部位、禁忌及同时接种限制。"
+                },
+                {
+                  "id": "src_acthib_pi_2025",
+                  "title": "b型流感嗜血杆菌结合疫苗（安尔宝/Act-HIB）说明书",
+                  "organization": "Sanofi Winthrop Industrie / 深圳赛诺菲巴斯德生物制品有限公司",
+                  "year": 2025,
+                  "publicationDate": "2025-03-29",
+                  "url": "https://www.sanofi.cn/assets/dot-cn/pages/docs/your-health/vaccine-publications/haemophilus-inhaemophilus-influenzae-type-b-conjugate-vaccine-250329.pdf",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "accessedDate": "2026-08-03",
+                  "notes": "经批准产品说明书。用于Hib分年龄免疫程序、剂量、途径和接种部位。"
+                },
+                {
+                  "id": "src_guangdong_non_nip_2024",
+                  "title": "广东省非免疫规划疫苗接种方案（2024年版）",
+                  "organization": "广东省卫生健康委员会",
+                  "year": 2024,
+                  "publicationDate": "2024-01-08",
+                  "url": "https://www.yuexiu.gov.cn/ggfw/ztfw/yl/ylxx/content/post_9427091.html",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "非江苏地方方案，仅用于交叉核对上市非免规疫苗的技术程序，不用于宣称江苏地方政策相同。"
+                },
+                {
+                  "id": "src_xinjiang_non_nip_2023",
+                  "title": "自治区非免疫规划疫苗接种方案（2023年修订版）",
+                  "organization": "新疆维吾尔自治区卫生健康委员会",
+                  "year": 2023,
+                  "publicationDate": "2023-09-15",
+                  "url": "https://wjw.xinjiang.gov.cn/hfpc/zhgl3/202309/c861afee92b846c69f304743a3055693.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "非江苏地方方案，用于交叉核对Hib、四联、五联和流脑等技术程序。"
+                },
+                {
+                  "id": "src_pcv13_prevenar_pi_2025",
+                  "title": "沛儿13（13价肺炎球菌多糖结合疫苗，CRM197载体）产品说明书",
+                  "organization": "辉瑞医学信息中国",
+                  "year": 2025,
+                  "publicationDate": "2025-07-04",
+                  "url": "https://www.pfizermedicalinformation.cn/products/package-insert/prevenar13",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于CRM197载体PCV13适用年龄与产品信息，并与政府非免规方案交叉核对。"
+                },
+                {
+                  "id": "src_pcv13i_cansino_2026",
+                  "title": "13价肺炎球菌多糖结合疫苗（CRM197/破伤风类毒素）优佩欣®产品信息",
+                  "organization": "康希诺生物股份公司",
+                  "year": 2026,
+                  "publicationDate": null,
+                  "url": "https://www.cansinotech.com.cn/detail-4553",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "上市许可持有人官方信息；列明6周龄至5岁分年龄免疫程序。"
+                },
+                {
+                  "id": "src_pcv13i_regulatory_2025",
+                  "title": "疫苗委托储存配送信息公告：13价肺炎球菌多糖结合疫苗（CRM197/破伤风类毒素）",
+                  "organization": "新疆维吾尔自治区药品监督管理局",
+                  "year": 2025,
+                  "publicationDate": "2025-12-16",
+                  "url": "https://mpa.xinjiang.gov.cn/xjyjj/tzgg/202512/a50b7c26ee954efa8805790fe0fe9932.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "drug_regulatory_notice",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认优佩欣批准文号国药准字S20250033及上市配送状态。"
+                },
+                {
+                  "id": "src_hebeicdc_rotavirus_2025",
+                  "title": "轮状病毒疫苗相关健康科普",
+                  "organization": "河北省疾病预防控制中心",
+                  "year": 2025,
+                  "publicationDate": null,
+                  "url": "https://www.hebeicdc.cn/jkkp/87965.jhtml",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_cdc_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "列明单价、三价、五价轮状病毒疫苗适用年龄和程序。"
+                },
+                {
+                  "id": "src_rotateq_pi_2024",
+                  "title": "口服五价重配轮状病毒减毒活疫苗（Vero细胞）（乐儿德/RotaTeq）说明书",
+                  "organization": "Merck Sharp & Dohme",
+                  "year": 2024,
+                  "publicationDate": "2024-09-05",
+                  "url": "https://drugs.dxy.cn/pc/drug/SyhpeRkQdYc2igmepepm0mepepmQDfrw%3D%3D",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label_secondary_display",
+                  "accessedDate": "2026-08-03",
+                  "notes": "说明书二次展示；年龄和剂次同时由省级疾控/政府方案交叉核对。"
+                },
+                {
+                  "id": "src_rotavirus3_pi_2023",
+                  "title": "口服三价重配轮状病毒减毒活疫苗（Vero细胞）（瑞特威）说明书",
+                  "organization": "兰州生物制品研究所有限责任公司",
+                  "year": 2023,
+                  "publicationDate": "2023-04-07",
+                  "url": "https://drugs.dxy.cn/pc/drug/yaVdCq8XEwL3fAfBksovAYg",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_label_secondary_display",
+                  "accessedDate": "2026-08-03",
+                  "notes": "说明书二次展示；程序由省级疾控资料交叉核对。"
+                },
+                {
+                  "id": "src_rotavirus6_regulatory_2026",
+                  "title": "疫苗委托储存配送备案：口服六价重配轮状病毒减毒活疫苗（Vero细胞）",
+                  "organization": "海南省药品监督管理局",
+                  "year": 2026,
+                  "publicationDate": "2026-05-07",
+                  "url": "https://amr.hainan.gov.cn/himpa/xxgk/gsgg/ymbagg/202605/t20260507_4070868.html",
+                  "sourceLevel": "A",
+                  "sourceType": "drug_regulatory_notice",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认国药准字S20250047、生产企业武汉生物制品研究所有限责任公司及上市配送状态。"
+                },
+                {
+                  "id": "src_rotavirus6_wuhan_2025",
+                  "title": "汉产全球首款六价轮状病毒疫苗正式上市",
+                  "organization": "武汉市商务局（转载湖北日报）",
+                  "year": 2025,
+                  "publicationDate": "2025-09-15",
+                  "url": "https://sw.wuhan.gov.cn/xwdt/mtbd/202509/t20250915_2647341.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "government_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认六价轮状病毒疫苗已上市、适用于6至36周龄及覆盖血清型。"
+                },
+                {
+                  "id": "src_rotavirus6_trial_2022",
+                  "title": "口服六价重配轮状病毒活疫苗（Vero细胞）对中国婴儿的有效性、安全性和免疫原性研究",
+                  "organization": "Virologica Sinica",
+                  "year": 2022,
+                  "publicationDate": "2022-07-19",
+                  "url": "https://www.virosin.org/cn/article/2022/5",
+                  "sourceLevel": "B",
+                  "sourceType": "peer_reviewed_research",
+                  "accessedDate": "2026-08-03",
+                  "notes": "临床研究中6–12周龄婴儿接受3剂、每剂间隔4周；最终批准窗口仍以产品最新说明书为准。"
+                },
+                {
+                  "id": "src_ev71_guide",
+                  "title": "肠道病毒71型灭活疫苗使用技术指南",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2016,
+                  "publicationDate": null,
+                  "url": "https://www.chinacdc.cn/nip/ywdt/zcyj/zcjswj/202112/W020211206570536774575.pdf",
+                  "sourceLevel": "A",
+                  "sourceType": "technical_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于EV-A71疫苗2剂程序、适用年龄和历史同时接种建议；同时接种条款较早，应结合现行产品说明书复核。"
+                },
+                {
+                  "id": "src_chinacdc_ev71_2026",
+                  "title": "2026年健康风险提示：手足口病与EV-A71疫苗",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-10",
+                  "url": "https://www.chinacdc.cn/jkts/202606/t20260610_1836703.html",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "鼓励儿童在12月龄前完成EV-A71疫苗全程接种。"
+                },
+                {
+                  "id": "src_chinacdc_meningococcal_2026",
+                  "title": "疫苗可预防疾病：流行性脑脊髓膜炎——疫苗免疫预防",
+                  "organization": "中国疾病预防控制中心",
+                  "year": 2026,
+                  "publicationDate": "2026-06-22",
+                  "url": "https://www.chinacdc.cn/jkyj/mygh02/ymkyfjb/ln/202606/t20260622_1837260.html",
+                  "sourceLevel": "A",
+                  "sourceType": "public_health_guidance",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认我国使用A、AC、ACYW多糖疫苗及AC/ACYW结合流脑疫苗等类别。"
+                },
+                {
+                  "id": "src_mcv4_cansino_2026",
+                  "title": "ACYW135群脑膜炎球菌多糖结合疫苗（CRM197载体）曼海欣®产品信息",
+                  "organization": "康希诺生物股份公司",
+                  "year": 2026,
+                  "publicationDate": "2026-02-25",
+                  "url": "https://cansinotech.com.cn/detail-818",
+                  "sourceLevel": "B",
+                  "sourceType": "approved_product_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "现行适用3月龄至6周岁（83月龄），列明分年龄程序。"
+                },
+                {
+                  "id": "src_mcv4_expansion_2026",
+                  "title": "四价流脑结合疫苗曼海欣®适应症扩龄至6岁人群",
+                  "organization": "康希诺生物股份公司",
+                  "year": 2026,
+                  "publicationDate": "2026-02-24",
+                  "url": "https://www.cansinotech.com.cn/detail-4806",
+                  "sourceLevel": "B",
+                  "sourceType": "regulatory_approval_announcement",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认国家药监部门已批准将适用人群扩大至3月龄至6周岁；2026年7月扩龄至17周岁的申请仅为受理，不能视为已批准。"
+                },
+                {
+                  "id": "src_suzhou_varicella_2026",
+                  "title": "苏州水痘疫苗免费接种政策说明",
+                  "organization": "苏州市人民政府",
+                  "year": 2026,
+                  "publicationDate": "2026-07-28",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/mszx/202607/3b7a1a0383114363adb1866da78b6a87.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_policy_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认江苏自2023-01-01起将水痘减毒活疫苗纳入儿童免费免疫项目；常规12–18月龄第1剂、4周岁第2剂，间隔不小于3个月。"
+                },
+                {
+                  "id": "src_jiangsu_varicella_evaluation_2025",
+                  "title": "2025年度采购需求：江苏省水痘疫苗2剂次免费接种政策卫生经济学研究",
+                  "organization": "江苏省疾病预防控制中心",
+                  "year": 2025,
+                  "publicationDate": "2025-05-07",
+                  "url": "https://www.jscdc.cn/xxgk_1641/cgxq/202505/t20250507_95447.html",
+                  "sourceLevel": "A",
+                  "sourceType": "provincial_cdc_policy_evidence",
+                  "accessedDate": "2026-08-03",
+                  "notes": "确认江苏自2023-01-01实施水痘疫苗2剂次免费接种政策。"
+                },
+                {
+                  "id": "src_suzhou_flu_2026",
+                  "title": "苏州工业园区开展流感疫苗接种优惠活动",
+                  "organization": "苏州市人民政府 / 苏州工业园区管理委员会",
+                  "year": 2026,
+                  "publicationDate": "2026-01-20",
+                  "url": "https://www.suzhou.gov.cn/szsrmzf/ylfw/202601/213030ed595a41ac846629dcbccff068.shtml",
+                  "sourceLevel": "A",
+                  "sourceType": "local_government_service_information",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于确认苏州2026年仍提供自费流感疫苗服务；价格和优惠不写入医学程序。"
+                },
+                {
+                  "id": "src_rabies_2023",
+                  "title": "狂犬病暴露预防处置工作规范（2023年版）",
+                  "organization": "国家疾病预防控制局、国家卫生健康委员会",
+                  "year": 2023,
+                  "publicationDate": "2023-09-16",
+                  "url": "https://www.ndcpa.gov.cn/jbkzzx/c100081/common/content/content_1715172596229992448.html",
+                  "sourceLevel": "A",
+                  "sourceType": "government_guideline",
+                  "accessedDate": "2026-08-03",
+                  "notes": "用于儿童狂犬病暴露后处置、5针/2-1-1程序、注射部位、与常规儿童疫苗关系及再次暴露规则。"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "case": "stored public schedule",
+          "status": 200,
+          "body": {
+            "data": [
+              {
+                "id": "test_schedule",
+                "vaccineCode": "TEST-A",
+                "name": "Test Schedule",
+                "recommendedAgeMonths": 0,
+                "doseNumber": 1,
+                "mandatory": false
+              }
+            ]
+          }
+        },
+        {
+          "case": "vaccine baby isolation",
+          "status": 403,
+          "body": {
+            "error": {
+              "code": "BABY_ACCESS_DENIED"
+            }
+          }
+        },
+        {
+          "case": "empty records",
+          "status": 200,
+          "body": {
+            "data": []
+          }
+        },
+        {
+          "case": "empty selections",
+          "status": 200,
+          "body": {
+            "data": []
+          }
+        },
+        {
+          "case": "rescheduled plan and guarded body deletion",
+          "body": {
+            "id": "<rescheduled_plan>",
+            "babyId": "<baby>",
+            "familyId": "<family>",
+            "vaccineCode": "TEST-PLAN",
+            "vaccineId": null,
+            "doseNumber": null,
+            "legacyName": null,
+            "legacyDose": null,
+            "administeredDate": "2026-06-03",
+            "scheduledDate": "2026-06-03",
+            "completedDate": null,
+            "isCompleted": false,
+            "clinic": null,
+            "batchNumber": null,
+            "manufacturer": null,
+            "productName": null,
+            "traceabilityCode": null,
+            "injectionSite": null,
+            "notes": null,
+            "version": "2",
+            "createdAt": "<generated-time>",
+            "updatedAt": "<generated-time>"
+          }
+        },
+        {
+          "case": "booklet fields and pending state",
+          "body": {
+            "data": {
+              "id": "<pending_record>",
+              "babyId": "<baby>",
+              "familyId": "<family>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "doseNumber": 1,
+              "legacyName": "test_booklet_name",
+              "legacyDose": "test_booklet_dose",
+              "administeredDate": "2026-06-01",
+              "scheduledDate": "2026-06-01",
+              "completedDate": null,
+              "isCompleted": false,
+              "clinic": "test_clinic",
+              "batchNumber": "test_batch",
+              "manufacturer": "test_manufacturer",
+              "productName": "test_product",
+              "traceabilityCode": "00000001234567890123",
+              "injectionSite": "test_left_arm",
+              "notes": "test pending",
+              "version": "1",
+              "createdAt": "<generated-time>",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "selection resolves code without recording vaccination",
+          "body": {
+            "data": {
+              "id": "<selection>",
+              "familyId": "<family>",
+              "babyId": "<baby>",
+              "vaccineId": "test_vaccine",
+              "doseNumber": 1,
+              "selected": false,
+              "completed": false,
+              "version": 1,
+              "createdAt": "<generated-time>",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "complete plan on explicit historical date",
+          "body": {
+            "data": {
+              "id": "<pending_record>",
+              "babyId": "<baby>",
+              "familyId": "<family>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "doseNumber": 1,
+              "legacyName": "test_booklet_name",
+              "legacyDose": "test_booklet_dose",
+              "administeredDate": "2026-05-05",
+              "scheduledDate": "2026-06-01",
+              "completedDate": "2026-05-05",
+              "isCompleted": true,
+              "clinic": "test_clinic",
+              "batchNumber": "test_batch",
+              "manufacturer": "test_manufacturer",
+              "productName": "test_product",
+              "traceabilityCode": "00000001234567890123",
+              "injectionSite": "test_left_arm",
+              "notes": "test pending",
+              "version": "2",
+              "createdAt": "<generated-time>",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "selection never changes administration facts",
+          "unchanged": true
+        },
+        {
+          "case": "correct in place, clear metadata and preserve raw dose",
+          "body": {
+            "data": {
+              "id": "<pending_record>",
+              "babyId": "<baby>",
+              "familyId": "<family>",
+              "vaccineCode": "TEST-A",
+              "vaccineId": "test_vaccine",
+              "doseNumber": null,
+              "legacyName": "test_corrected_booklet_name",
+              "legacyDose": "test_booklet_dose",
+              "administeredDate": "2026-05-06",
+              "scheduledDate": null,
+              "completedDate": "2026-05-06",
+              "isCompleted": true,
+              "clinic": null,
+              "batchNumber": "test_batch",
+              "manufacturer": null,
+              "productName": null,
+              "traceabilityCode": null,
+              "injectionSite": null,
+              "notes": "test pending",
+              "version": "3",
+              "createdAt": "<generated-time>",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        },
+        {
+          "case": "concurrent corrections have one winner",
+          "statuses": [
+            200,
+            409
+          ]
+        },
+        {
+          "case": "atomic vaccine mutation rollback",
+          "unchanged": true
+        },
+        {
+          "case": "unlisted vaccine with unknown dose",
+          "body": {
+            "data": {
+              "id": "<completed_record>",
+              "babyId": "<baby>",
+              "familyId": "<family>",
+              "vaccineCode": "TEST-UNLISTED",
+              "vaccineId": null,
+              "doseNumber": null,
+              "legacyName": null,
+              "legacyDose": null,
+              "administeredDate": "2026-04-03",
+              "scheduledDate": null,
+              "completedDate": "2026-04-03",
+              "isCompleted": true,
+              "clinic": null,
+              "batchNumber": null,
+              "manufacturer": null,
+              "productName": null,
+              "traceabilityCode": null,
+              "injectionSite": null,
+              "notes": null,
+              "version": "1",
+              "createdAt": "<generated-time>",
+              "updatedAt": "<generated-time>"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "serviceVersions": {
+    "postgres": "postgres (PostgreSQL) 18.6",
+    "redis": "Redis server v=7.4.0 sha=00000000:1 malloc=libc bits=64 build=865cdbdb64fe9d82"
+  },
+  "differentialObservations": 16
+}

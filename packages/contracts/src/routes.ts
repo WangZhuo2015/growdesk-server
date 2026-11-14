@@ -107,6 +107,9 @@ import {
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
   CreateVaccineRecordRequestSchema,
+  UpdateVaccineRecordRequestSchema,
+  DeleteVaccineRecordRequestSchema,
+  DeleteVaccineRecordQuerySchema,
   VaccineSelectionSchema,
   VaccineSelectionListResponseSchema,
   UpsertVaccineSelectionRequestSchema,
@@ -212,8 +215,10 @@ export interface RouteDefinition {
   operationId: string;
   summary: string;
   tags: string[];
-  implementationStatus: "READY" | "READY_TEST_SAMPLE" | "PLANNED_SH02" | "PLANNED_SH03" | "PLANNED_SH04F" | "PLANNED_SH04S" | "PLANNED_SH04D" | "PLANNED_SH04FO" | "PLANNED_SH04SU" | "PLANNED_SH04G" | "PLANNED_SH04N" | "PLANNED_SH04T" | "PLANNED_SH06" | "PLANNED_SH07" | "PLANNED_SH08" | "PLANNED_SH09" | "PLANNED_PASSPORT" | "READY_PASSPORT";
+  implementationStatus: "IMPLEMENTED_NOT_REVIEWED" | "READY" | "READY_TEST_SAMPLE" | "PLANNED_SH02" | "PLANNED_SH03" | "PLANNED_SH04F" | "PLANNED_SH04S" | "PLANNED_SH04D" | "PLANNED_SH04FO" | "PLANNED_SH04SU" | "PLANNED_SH04G" | "PLANNED_SH04N" | "PLANNED_SH04T" | "PLANNED_SH06" | "PLANNED_SH07" | "PLANNED_SH08" | "PLANNED_SH09" | "PLANNED_PASSPORT" | "READY_PASSPORT";
   body?: TSchema;
+  /** Set false only when the implementation also accepts an absent body. */
+  bodyRequired?: boolean;
   params?: TSchema;
   querystring?: TSchema;
   headers?: TSchema;
@@ -1043,22 +1048,36 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     method: "POST",
     path: "/api/v1/babies/:babyId/vaccines/records",
     operationId: "createVaccineRecord",
-    summary: "Record administered vaccine dose",
+    summary: "Record an administered vaccine dose or an explicit appointment",
     tags: ["Medical"],
     implementationStatus: "PLANNED_SH06",
     params: BabyIdParam,
     body: CreateVaccineRecordRequestSchema,
-    responses: { 201: VaccineRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef },
+    responses: { 201: VaccineRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
+  },
+  {
+    method: "PATCH",
+    path: "/api/v1/babies/:babyId/vaccines/records/:id",
+    operationId: "updateVaccineRecord",
+    summary: "Correct a vaccination record with its current version",
+    tags: ["Medical"],
+    implementationStatus: "IMPLEMENTED_NOT_REVIEWED",
+    params: BabyAndIdParam,
+    body: UpdateVaccineRecordRequestSchema,
+    responses: { 200: VaccineRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
   {
     method: "DELETE",
     path: "/api/v1/babies/:babyId/vaccines/records/:id",
     operationId: "deleteVaccineRecord",
-    summary: "Delete vaccination administration record",
+    summary: "Delete vaccination record with an optional observed-version precondition",
     tags: ["Medical"],
     implementationStatus: "PLANNED_SH06",
     params: BabyAndIdParam,
-    responses: { 200: DeleteRecordResponseSchema, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef },
+    body: DeleteVaccineRecordRequestSchema,
+    bodyRequired: false,
+    querystring: DeleteVaccineRecordQuerySchema,
+    responses: { 200: DeleteRecordResponseSchema, 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
   {
     method: "GET",
@@ -1083,12 +1102,12 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     method: "PUT",
     path: "/api/v1/babies/:babyId/vaccines/selections",
     operationId: "upsertVaccineSelection",
-    summary: "Select or complete a vaccine dose",
+    summary: "Select a vaccine dose without changing vaccination records",
     tags: ["Medical"],
     implementationStatus: "PLANNED_SH06",
     params: BabyIdParam,
     body: UpsertVaccineSelectionRequestSchema,
-    responses: { 200: Type.Object({ data: VaccineSelectionSchema }), 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 409: ApiErrorRef },
+    responses: { 200: Type.Object({ data: VaccineSelectionSchema }), 400: ApiErrorRef, 401: ApiErrorRef, 403: ApiErrorRef, 404: ApiErrorRef, 409: ApiErrorRef },
   },
 
   // 13. AI & Voice Runs (SH-07)

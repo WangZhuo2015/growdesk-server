@@ -2,6 +2,7 @@
 """Vaccine graph and completion state using owned test tenants and real HTTP."""
 import importlib.util
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 SPEC = importlib.util.spec_from_file_location('vaccine_support', Path(__file__).with_name('go-parity-support.py'))
@@ -26,16 +27,16 @@ class VaccineScenario(DOMAIN.Scenario):
         self.observations.append({'case': 'frozen default vaccine schedule', 'body': fallback})
         self.call('GET', '/api/v1/vaccines/catalog', 401, observe='catalog requires authentication')
         users = {}
-        for label in ('owner', 'outsider'):
+        for label in ('owner', 'outsider', 'viewer'):
             users[label] = self.call('POST', '/api/v1/auth/register', 201, {
-                'username': 'test_go_vaccine_' + label, 'displayName': 'Test Vaccine ' + label,
+                'username': 'test_go_vaccine_' + label, 'displayName': 'test_vaccine_' + label,
                 'password': 'test_vaccine_password_8675309', 'deviceLabel': 'test_vaccine'})['data']
             self.alias(users[label]['user']['id'], label)
         owner, outsider = (users[name]['accessToken'] for name in ('owner', 'outsider'))
         uid = users['owner']['user']['id']
         fid = self.alias(self.call('GET', '/api/v1/families', 200, token=owner)['data'][0]['id'], 'family')
         bid = self.alias(self.call('POST', f'/api/v1/families/{fid}/babies', 201,
-            {'name': 'Test Vaccine Baby', 'birthDate': '2026-01-02', 'gender': 'girl'}, owner)['data']['id'], 'baby')
+            {'name': 'test_vaccine_baby', 'birthDate': '2026-01-02', 'gender': 'girl'}, owner)['data']['id'], 'baby')
         base = f'/api/v1/babies/{bid}/vaccines'
         assert self.call('GET', base + '/schedule', 200) == fallback
         self.owned.sql("""INSERT INTO vaccines(id,vaccine_code,name,program_type,china_national,source_refs_json,legacy_metadata)
@@ -58,44 +59,118 @@ class VaccineScenario(DOMAIN.Scenario):
         self.call('GET', base + '/records', 403, token=outsider, observe='vaccine baby isolation')
         self.call('GET', base + '/records', 200, token=owner, observe='empty records')
         self.call('GET', base + '/selections', 200, token=owner, observe='empty selections')
+        # A changed appointment only moves the compatibility anchor; it never
+        # creates a completed date or a vaccination timeline entry.
+        plan = self.call('POST', base + '/records', 201, {
+            'vaccineCode': 'TEST-PLAN', 'administeredDate': '2026-06-01',
+            'scheduledDate': '2026-06-01', 'isCompleted': False}, owner)['data']
+        plan_id = self.alias(plan['id'], 'rescheduled_plan')
+        plan = self.call('PATCH', base + '/records/' + plan_id, 200,
+            {'baseVersion': '1', 'scheduledDate': '2026-06-03'}, owner)['data']
+        assert plan['scheduledDate'] == plan['administeredDate'] == '2026-06-03'
+        assert plan['completedDate'] is None and plan['isCompleted'] is False
+        assert self.owned.sql(f"SELECT COUNT(*) FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{plan_id}';") == '0'
+        snapshot = self.snapshot(fid)
+        self.call('DELETE', base + '/records/' + plan_id, 409, {'baseVersion': '1'}, owner)
+        assert self.snapshot(fid) == snapshot
+        self.call('DELETE', base + '/records/' + plan_id, 200, {'baseVersion': '2'}, owner)
+        assert self.owned.sql(f"SELECT version FROM vaccine_records WHERE id='{plan_id}' AND deleted_at IS NOT NULL;") == '3'
+        self.observations.append({'case': 'rescheduled plan and guarded body deletion', 'body': self.normalize(plan)})
+        # The record is a source-backed fact or an explicit appointment; the
+        # selection checkbox can never supply a clinical date on its behalf.
         body = {'vaccineCode': 'different-input-code', 'vaccineId': 'test_vaccine', 'doseNumber': 1,
-                'administeredDate': '2026-05-02', 'scheduledDate': '2026-06-01', 'completedDate': '2026-05-02',
-                'isCompleted': False, 'clinic': None, 'notes': 'test pending'}
+                'legacyName': 'test_booklet_name', 'legacyDose': 'test_booklet_dose',
+                'administeredDate': '2026-06-01', 'scheduledDate': '2026-06-01', 'completedDate': None,
+                'isCompleted': False, 'clinic': 'test_clinic', 'batchNumber': 'test_batch',
+                'manufacturer': 'test_manufacturer', 'productName': 'test_product',
+                'traceabilityCode': '00000001234567890123', 'injectionSite': 'test_left_arm', 'notes': 'test pending'}
         record = self.call('POST', base + '/records', 201, body, owner, 'test_vaccine_pending')
         rid = self.alias(record['data']['id'], 'pending_record')
         assert record['data']['completedDate'] is None and record['data']['isCompleted'] is False
         assert record['data']['vaccineCode'] == 'TEST-A'
-        self.observations.append({'case': 'pending vaccine record', 'body': self.normalize(record)})
+        assert record['data']['traceabilityCode'] == body['traceabilityCode']
+        self.observations.append({'case': 'booklet fields and pending state', 'body': self.normalize(record)})
         snapshot = self.snapshot(fid)
         assert self.call('POST', base + '/records', 201, body, owner, 'test_vaccine_pending') == record
+        self.call('POST', base + '/records', 409, {**body, 'notes': 'changed'}, owner, 'test_vaccine_pending')
         assert self.snapshot(fid) == snapshot
         assert self.owned.sql(f"SELECT COUNT(*) FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}';").strip() == '0'
-        if runtime == 'go':
-            self.call('POST', base + '/records', 409, {**body, 'notes': 'changed'}, owner, 'test_vaccine_pending')
-            assert self.snapshot(fid) == snapshot
-        if interop_base:
-            assert TOOLS.expect(interop_base, 'POST', base + '/records', 201, body, owner, {'Idempotency-Key': 'test_vaccine_pending'}) == record
         selected = self.call('PUT', base + '/selections', 200, {'vaccineId': 'TEST-A', 'doseNumber': 1, 'selected': False, 'completed': False}, owner)
-        sid = self.alias(selected['data']['id'], 'selection')
+        self.alias(selected['data']['id'], 'selection')
         assert selected['data']['selected'] is False and selected['data']['version'] == 1
-        self.observations.append({'case': 'selection code resolves stable ID', 'body': self.normalize(selected)})
-        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': True}, owner, observe='complete pending vaccination')
-        completed = self.call('GET', base + '/records', 200, token=owner)
-        assert len(completed['data']) == 1 and completed['data'][0]['id'] == rid
-        assert completed['data'][0]['version'] == '2' and completed['data'][0]['isCompleted'] is True
-        assert completed['data'][0]['scheduledDate'] == '2026-06-01'
-        assert completed['data'][0]['legacyName'] == 'Test Vaccine' and completed['data'][0]['legacyDose'] == '第1剂'
-        self.observations.append({'case': 'selection completes existing record', 'body': self.normalize(completed)})
-        self.call('PUT', base + '/selections', 409, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': False}, owner, observe='stale selection')
-        # Failure after all record/projection changes must roll everything back.
+        self.observations.append({'case': 'selection resolves code without recording vaccination', 'body': self.normalize(selected)})
+        snapshot = self.snapshot(fid)
+        rejected = self.call('PUT', base + '/selections', 400, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'completed': True}, owner)
+        assert rejected['error']['code'] == 'VACCINE_RECORD_REQUIRED'
+        self.call('PATCH', base + '/records/' + rid, 400, {'baseVersion': '1', 'isCompleted': True}, owner)
+        assert self.snapshot(fid) == snapshot
+
+        completed = self.call('PATCH', base + '/records/' + rid, 200,
+            {'baseVersion': '1', 'administeredDate': '2026-05-05', 'completedDate': '2026-05-05', 'isCompleted': True}, owner)
+        assert completed['data']['id'] == rid and completed['data']['version'] == '2'
+        assert completed['data']['scheduledDate'] == '2026-06-01'
+        assert completed['data']['administeredDate'] == '2026-05-05'
+        assert completed['data']['manufacturer'] == 'test_manufacturer'
+        assert self.owned.sql(f"SELECT occurred_at::date FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}';").strip() == '2026-05-05'
+        self.observations.append({'case': 'complete plan on explicit historical date', 'body': self.normalize(completed)})
+        assert self.call('GET', base + '/selections', 200, token=owner)['data'][0]['completed'] is True
+        snapshot = self.snapshot(fid)
+        self.call('PATCH', base + '/records/' + rid, 409, {'baseVersion': '1', 'clinic': 'test_stale'}, owner)
+        self.call('PATCH', base + '/records/' + rid, 403, {'baseVersion': '2', 'clinic': 'test_outsider'}, outsider)
+        self.call('PATCH', base + '/records/' + rid, 400, {'clinic': 'test_no_version'}, owner)
+        for version in ('0', '01', '2147483648'):
+            self.call('PATCH', base + '/records/' + rid, 400, {'baseVersion': version, 'clinic': 'test_bad_version'}, owner)
+        self.call('PATCH', base + '/records/' + rid, 400, {'baseVersion': '2', 'administeredDate': '2026-02-30'}, owner)
+        self.call('PATCH', base + '/records/' + rid, 400, {'baseVersion': '2', 'completedDate': '2026-06-03'}, owner)
+        assert self.snapshot(fid) == snapshot
+
+        # Selecting or deselecting a product must leave every historical field,
+        # timeline date, record version and creation receipt unchanged.
+        before = self.snapshot(fid)
+        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 1, 'selected': True}, owner)
+        after = self.snapshot(fid)
+        for name in ('records', 'timeline', 'receipts'):
+            assert after[name] == before[name], name
+        snapshot = after
+        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': True}, owner)
+        assert self.snapshot(fid) == snapshot
+        self.call('PUT', base + '/selections', 400, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': False}, owner)
+        assert self.snapshot(fid) == snapshot
+        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'selected': False}, owner)
+        assert self.snapshot(fid)['records'] == before['records']
+        assert self.snapshot(fid)['timeline'] == before['timeline']
+        self.observations.append({'case': 'selection never changes administration facts', 'unchanged': True})
+
+        correction = self.call('PATCH', base + '/records/' + rid, 200,
+            {'baseVersion': '2', 'administeredDate': '2026-05-06', 'scheduledDate': None, 'legacyName': 'test_corrected_booklet_name',
+             'doseNumber': None, 'clinic': None, 'manufacturer': None, 'productName': None, 'traceabilityCode': None, 'injectionSite': None}, owner)
+        assert correction['data']['id'] == rid and correction['data']['version'] == '3'
+        assert correction['data']['completedDate'] == '2026-05-06' and correction['data']['scheduledDate'] is None
+        for field in ('doseNumber', 'clinic', 'manufacturer', 'productName', 'traceabilityCode', 'injectionSite'):
+            assert correction['data'][field] is None, field
+        assert correction['data']['legacyDose'] == 'test_booklet_dose'
+        assert self.call('GET', base + '/selections', 200, token=owner)['data'][0]['completed'] is False
+        assert self.owned.sql(f"SELECT summary || '|' || occurred_at::date FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}';").strip() == '接种疫苗: test_corrected_booklet_name|2026-05-06'
+        self.observations.append({'case': 'correct in place, clear metadata and preserve raw dose', 'body': self.normalize(correction)})
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            races = list(pool.map(lambda note: TOOLS.http(self.base, 'PATCH', base + '/records/' + rid,
+                {'baseVersion': '3', 'notes': note}, owner), ['test_concurrent_a', 'test_concurrent_b']))
+        assert sorted(status for status, _ in races) == [200, 409]
+        assert [body for status, body in races if status == 200][0]['data']['version'] == '4'
+        self.observations.append({'case': 'concurrent corrections have one winner', 'statuses': [200, 409]})
+
+        # A failed cursor write must roll back record metadata, date, timeline,
+        # selection, idempotency receipt and cursor together.
         self.owned.sql(f"""CREATE FUNCTION test_vaccine_failure() RETURNS trigger LANGUAGE plpgsql AS $$
           BEGIN RAISE EXCEPTION 'test_vaccine_cursor_failure'; END; $$;
           CREATE TRIGGER test_vaccine_failure BEFORE UPDATE ON family_sync_states
           FOR EACH ROW WHEN (NEW.family_id='{fid}') EXECUTE FUNCTION test_vaccine_failure();""")
         try:
             for method, path, payload in (
-                ('PUT', base + '/selections', {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': False}),
-                ('POST', base + '/records', {**body, 'doseNumber': 2, 'isCompleted': True}),
+                ('PUT', base + '/selections', {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 3, 'selected': True}),
+                ('POST', base + '/records', {**body, 'doseNumber': 2}),
+                ('PATCH', base + '/records/' + rid, {'baseVersion': '4', 'administeredDate': '2026-05-07', 'manufacturer': 'test_rollback'}),
                 ('DELETE', base + '/records/' + rid, None),
             ):
                 before = self.snapshot(fid)
@@ -103,31 +178,53 @@ class VaccineScenario(DOMAIN.Scenario):
                 assert self.snapshot(fid) == before
         finally:
             self.owned.sql('DROP TRIGGER test_vaccine_failure ON family_sync_states; DROP FUNCTION test_vaccine_failure();')
-        self.observations.append({'case': 'vaccine completion and record rollback', 'unchanged': True})
-        self.call('PUT', base + '/selections', 200, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 2, 'completed': False}, owner, observe='uncomplete vaccination')
-        assert self.call('GET', base + '/records', 200, token=owner)['data'] == []
-        assert self.owned.sql(f"SELECT version FROM vaccine_records WHERE id='{rid}' AND deleted_at IS NOT NULL;").strip() == '3'
-        assert self.owned.sql(f"SELECT version FROM timeline_entries WHERE entity_type='vaccine' AND entity_id='{rid}' AND deleted_at IS NOT NULL;").strip() == '2'
-        immediate = self.call('POST', base + '/records', 201, {'vaccineCode': 'TEST-UNLISTED', 'administeredDate': '2026-04-03'}, owner, 'test_vaccine_completed')
+        self.observations.append({'case': 'atomic vaccine mutation rollback', 'unchanged': True})
+
+        # Unknown dose numbers and unmatched product names remain unknown.
+        immediate = self.call('POST', base + '/records', 201, {'vaccineCode': 'TEST-UNLISTED', 'administeredDate': '2026-04-03', 'doseNumber': None}, owner, 'test_vaccine_completed')
         immediate_id = self.alias(immediate['data']['id'], 'completed_record')
         assert immediate['data']['vaccineId'] is None and immediate['data']['isCompleted'] is True
-        self.observations.append({'case': 'unlisted legacy vaccine code', 'body': self.normalize(immediate)})
-        self.call('DELETE', base + '/records/' + immediate_id, 200, token=owner, observe='delete vaccine record')
-        self.call('DELETE', base + '/records/' + immediate_id, 404, token=owner, observe='deleted vaccine cannot repeat delete')
-        persisted = self.call('GET', base + '/selections', 200, token=owner)
+        assert immediate['data']['doseNumber'] is None and immediate['data']['scheduledDate'] is None
+        assert immediate['data']['completedDate'] == '2026-04-03'
+        self.observations.append({'case': 'unlisted vaccine with unknown dose', 'body': self.normalize(immediate)})
+        persisted = self.call('GET', base + '/records', 200, token=owner)
         self.base = restart()
-        assert self.call('GET', base + '/selections', 200, token=owner) == persisted
+        assert self.call('GET', base + '/records', 200, token=owner) == persisted
         if interop_base:
-            assert TOOLS.expect(interop_base, 'GET', base + '/selections', 200, token=owner) == persisted
-            updated = TOOLS.expect(interop_base, 'PUT', base + '/selections', 200,
-                {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'baseVersion': 3, 'selected': True}, owner)
-            assert self.call('GET', base + '/selections', 200, token=owner)['data'][0] == updated['data']
+            assert TOOLS.expect(interop_base, 'GET', base + '/records', 200, token=owner) == persisted
+            assert TOOLS.expect(interop_base, 'GET', base + '/selections', 200, token=owner) == self.call('GET', base + '/selections', 200, token=owner)
+
+        self.call('PATCH', base + '/records/' + rid, 200, {'baseVersion': '4', 'doseNumber': 1}, owner)
+        assert self.call('GET', base + '/selections', 200, token=owner)['data'][0]['completed'] is True
+        snapshot = self.snapshot(fid)
+        self.call('DELETE', base + '/records/' + rid, 409, {'baseVersion': '4'}, owner)
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=4', 409, token=owner)
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=0', 400, token=owner)
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=', 400, token=owner)
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=5&baseVersion=5', 400, token=owner)
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=5', 400, {'baseVersion': '4'}, owner)
+        assert self.snapshot(fid) == snapshot
+        self.call('DELETE', base + '/records/' + rid + '?baseVersion=5', 200, token=owner)
+        assert self.owned.sql(f"SELECT version FROM vaccine_records WHERE id='{rid}' AND deleted_at IS NOT NULL;") == '6'
+        assert self.call('GET', base + '/selections', 200, token=owner)['data'][0]['completed'] is False
+        self.call('PATCH', base + '/records/' + rid, 404, {'baseVersion': '5', 'notes': 'test_deleted'}, owner)
+        self.call('DELETE', base + '/records/' + immediate_id, 200, token=owner)
+        assert self.owned.sql(f"SELECT version FROM vaccine_records WHERE id='{immediate_id}' AND deleted_at IS NOT NULL;") == '2'
+        self.call('DELETE', base + '/records/' + immediate_id, 404, token=owner)
+        assert self.call('GET', base + '/records', 200, token=owner)['data'] == []
         assert self.owned.sql(f"SELECT COUNT(*) FROM family_changes WHERE family_id='{fid}';").strip() == '0'
-        if runtime == 'go':
-            self.owned.sql(f"UPDATE family_members SET status='revoked' WHERE family_id='{fid}' AND user_id='{uid}';")
-            self.call('GET', base + '/records', 403, token=owner)
-            self.call('PUT', base + '/selections', 403, {'vaccineId': 'test_vaccine', 'doseNumber': 1}, owner)
-        print('PASS vaccine graph, selection effects, tombstones, restart and scope', flush=True)
+
+        viewer_id = users['viewer']['user']['id']
+        self.owned.sql(f"""INSERT INTO family_members(id,family_id,user_id,role,status,updated_at) VALUES(gen_random_uuid()::text,'{fid}','{viewer_id}','member','active',NOW());
+          INSERT INTO baby_members(id,family_id,baby_id,user_id,role,status,updated_at) VALUES(gen_random_uuid()::text,'{fid}','{bid}','{viewer_id}','viewer','active',NOW());""")
+        viewer = self.call('POST', '/api/v1/auth/login', 200, {'username': 'test_go_vaccine_viewer', 'password': 'test_vaccine_password_8675309'})['data']['accessToken']
+        self.call('GET', base + '/records', 200, token=viewer)
+        self.call('POST', base + '/records', 403, body, viewer)
+        self.call('PUT', base + '/selections', 403, {'vaccineId': 'test_vaccine', 'doseNumber': 1, 'selected': True}, viewer)
+        self.owned.sql(f"UPDATE family_members SET status='revoked' WHERE family_id='{fid}' AND user_id='{uid}';")
+        self.call('GET', base + '/records', 403, token=owner)
+        self.call('PUT', base + '/selections', 403, {'vaccineId': 'test_vaccine', 'doseNumber': 1}, owner)
+        print('PASS vaccine booklet metadata, dates, correction concurrency, selection isolation, rollback and scope', flush=True)
         return {'httpAssertions': self.calls, 'observations': self.observations}
 
 

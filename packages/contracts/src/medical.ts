@@ -163,8 +163,12 @@ export const VaccineRecordSchema = Type.Object(
     scheduledDate: Nullable(DateString),
     completedDate: Nullable(DateString),
     isCompleted: Type.Boolean(),
-    clinic: Nullable(Type.String()),
-    batchNumber: Nullable(Type.String()),
+    clinic: Nullable(Type.String({ maxLength: 200 })),
+    batchNumber: Nullable(Type.String({ maxLength: 100 })),
+    manufacturer: Nullable(Type.String({ maxLength: 200 })),
+    productName: Nullable(Type.String({ maxLength: 200 })),
+    traceabilityCode: Nullable(Type.String({ maxLength: 200 })),
+    injectionSite: Nullable(Type.String({ maxLength: 100 })),
     notes: Nullable(Type.String({ maxLength: 1000 })),
     version: BigIntString,
     createdAt: DateTimeString,
@@ -177,23 +181,52 @@ export type VaccineRecord = Static<typeof VaccineRecordSchema>;
 
 export const CreateVaccineRecordRequestSchema = Type.Object(
   {
-    vaccineCode: Type.String(),
+    vaccineCode: Type.String({ minLength: 1, maxLength: 100 }),
     vaccineId: Type.Optional(Nullable(Type.String({ minLength: 1, maxLength: 128 }))),
-    doseNumber: Type.Optional(Type.Integer({ minimum: 1, maximum: 12 })),
+    doseNumber: Type.Optional(Nullable(Type.Integer({ minimum: 1, maximum: 12 }))),
     legacyName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
     legacyDose: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     administeredDate: DateString,
     scheduledDate: Type.Optional(Nullable(DateString)),
     completedDate: Type.Optional(Nullable(DateString)),
     isCompleted: Type.Optional(Type.Boolean()),
-    clinic: Type.Optional(Nullable(Type.String())),
-    batchNumber: Type.Optional(Nullable(Type.String())),
+    clinic: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    batchNumber: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
+    manufacturer: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    productName: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    traceabilityCode: Type.Optional(Nullable(Type.String({ maxLength: 200 }))),
+    injectionSite: Type.Optional(Nullable(Type.String({ maxLength: 100 }))),
     notes: Type.Optional(Nullable(Type.String({ maxLength: 1000 }))),
   },
   { $id: "CreateVaccineRecordRequest", additionalProperties: false }
 );
 
 export type CreateVaccineRecordRequest = Static<typeof CreateVaccineRecordRequestSchema>;
+
+// Omitted properties preserve their value; explicit null clears a nullable
+// booklet field. Unknown dose numbers remain null instead of becoming dose 1.
+export const UpdateVaccineRecordRequestSchema = Type.Object(
+  {
+    baseVersion: BigIntString,
+    ...Type.Partial(CreateVaccineRecordRequestSchema).properties,
+  },
+  { $id: "UpdateVaccineRecordRequest", additionalProperties: false },
+);
+
+export type UpdateVaccineRecordRequest = Static<typeof UpdateVaccineRecordRequestSchema>;
+
+// Older clients omit the deletion precondition. New clients must send the
+// version they displayed, through this body or the compatible query parameter.
+export const DeleteVaccineRecordRequestSchema = Type.Object(
+  { baseVersion: Type.Optional(BigIntString) },
+  { $id: "DeleteVaccineRecordRequest", additionalProperties: false },
+);
+export type DeleteVaccineRecordRequest = Static<typeof DeleteVaccineRecordRequestSchema>;
+
+export const DeleteVaccineRecordQuerySchema = Type.Object(
+  { baseVersion: Type.Optional(BigIntString) },
+  { $id: "DeleteVaccineRecordQuery", additionalProperties: false },
+);
 
 export const VaccineRecordResponseSchema = Type.Object(
   {
@@ -246,7 +279,7 @@ export const UpsertVaccineSelectionRequestSchema = Type.Object(
     vaccineId: Type.String({ minLength: 1, maxLength: 128 }),
     doseNumber: Type.Integer({ minimum: 1, maximum: 12 }),
     selected: Type.Optional(Type.Boolean()),
-    completed: Type.Optional(Type.Boolean()),
+    completed: Type.Optional(Type.Boolean({ description: "Read-only projection of completed records. A supplied value must already match the records; use record create/update to record vaccination." })),
     baseVersion: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { $id: "UpsertVaccineSelectionRequest", additionalProperties: false },

@@ -905,6 +905,10 @@ model VaccineRecord {
   isCompleted      Boolean   @default(false) @map("is_completed")
   clinic           String?   @db.VarChar(200)
   batchNumber      String?   @map("batch_number") @db.VarChar(100)
+  manufacturer     String?   @db.VarChar(200)
+  productName      String?   @map("product_name") @db.VarChar(200)
+  traceabilityCode  String?   @map("traceability_code") @db.VarChar(200)
+  injectionSite    String?   @map("injection_site") @db.VarChar(100)
   notes            String?   @db.VarChar(1000)
   legacyMetadata   Json?     @map("legacy_metadata") @db.JsonB
   version          Int       @default(1)

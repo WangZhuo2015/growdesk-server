@@ -210,6 +210,16 @@ export async function generateCanonicalOpenApi() {
   const rawSpec = app.swagger();
   const spec = transformOpenApi(rawSpec);
 
+  // Swagger treats every Fastify body schema as required. Some compatibility
+  // handlers normalize an absent body before validation and explicitly expose
+  // an optional request body in the shared route definition.
+  for (const route of contracts.ROUTE_DEFINITIONS) {
+    if (route.bodyRequired === false) {
+      const path = route.path.replace(/:([^/]+)/g, "{$1}");
+      spec.paths[path][route.method.toLowerCase()].requestBody.required = false;
+    }
+  }
+
   // Validate operationId uniqueness and OpenAPI version
   if (spec.openapi !== "3.0.3") {
     throw new Error(`Invalid OpenAPI version: expected 3.0.3, got ${spec.openapi}`);

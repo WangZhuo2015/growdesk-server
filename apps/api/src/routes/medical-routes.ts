@@ -7,9 +7,13 @@ import {
   CreateMedicalReportRequest,
   UpdateMedicalReportRequest,
   CreateVaccineRecordRequest,
+  UpdateVaccineRecordRequest,
   CreateMedicalReportRequestSchema,
   UpdateMedicalReportRequestSchema,
   CreateVaccineRecordRequestSchema,
+  UpdateVaccineRecordRequestSchema,
+  DeleteVaccineRecordRequestSchema,
+  DeleteVaccineRecordQuerySchema,
   MedicalReportResponseSchema,
   MedicalReportListResponseSchema,
   VaccineScheduleResponseSchema,
@@ -379,6 +383,8 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
           400: ApiErrorEnvelopeSchema,
           401: ApiErrorEnvelopeSchema,
           403: ApiErrorEnvelopeSchema,
+          404: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
         },
       },
     },
@@ -395,6 +401,27 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
     }
   );
 
+  fastify.patch<{ Params: { babyId: string; id: string }; Body: UpdateVaccineRecordRequest }>(
+    "/api/v1/babies/:babyId/vaccines/records/:id",
+    {
+      preHandler: [fastify.authenticate],
+      schema: {
+        body: UpdateVaccineRecordRequestSchema,
+        response: {
+          200: VaccineRecordResponseSchema,
+          400: ApiErrorEnvelopeSchema,
+          401: ApiErrorEnvelopeSchema,
+          403: ApiErrorEnvelopeSchema,
+          404: ApiErrorEnvelopeSchema,
+          409: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    async (request, reply) => reply.status(200).send({
+      data: await vaccineService.updateVaccineRecord(request.principal!, request.params.babyId, request.params.id, request.body),
+    }),
+  );
+
   const deleteVaccine = async (
     request: FastifyRequest<{
       Params: { babyId: string; recordId?: string; id?: string };
@@ -403,22 +430,36 @@ export const medicalRoutes: FastifyPluginAsync<MedicalRoutesOptions> = async (
   ) => {
     const principal = request.principal!;
     const recordId = request.params.recordId || request.params.id!;
+    const bodyVersion = (request.body as { baseVersion?: string } | undefined)?.baseVersion;
+    const queryVersion = (request.query as { baseVersion?: string }).baseVersion;
+    if (bodyVersion !== undefined && queryVersion !== undefined && bodyVersion !== queryVersion) {
+      throw Object.assign(new Error("Body and query baseVersion must agree"), { statusCode: 400, code: "INVALID_BASE_VERSION" });
+    }
     const result = await vaccineService.deleteVaccineRecord(
       principal,
       request.params.babyId,
-      recordId
+      recordId,
+      bodyVersion ?? queryVersion,
     );
     return reply.status(200).send(result);
   };
 
   const createDeleteVaccineOptions = () => ({
     preHandler: [fastify.authenticate],
+    preValidation: async (request: FastifyRequest) => {
+      // Preserve old no-body callers while validating every supplied field.
+      if (request.body === undefined) request.body = {};
+    },
     schema: {
+      body: DeleteVaccineRecordRequestSchema,
+      querystring: DeleteVaccineRecordQuerySchema,
       response: {
         200: DeleteRecordResponseSchema,
+        400: ApiErrorEnvelopeSchema,
         401: ApiErrorEnvelopeSchema,
         403: ApiErrorEnvelopeSchema,
         404: ApiErrorEnvelopeSchema,
+        409: ApiErrorEnvelopeSchema,
       },
     },
   });

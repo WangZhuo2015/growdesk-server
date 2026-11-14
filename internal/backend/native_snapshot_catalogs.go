@@ -50,8 +50,11 @@ func appendNativeSnapshotAuxiliary(ctx context.Context, q Querier, input nativeT
 		for {
 			// Every identifier/expression is a source literal in this allowlist.
 			// $2 is always bound, even when a shared table has no baby column.
-			query := "SELECT to_jsonb(t) FROM "+pgx.Identifier{spec.table}.Sanitize()+" t WHERE "+spec.where+
+			query := "SELECT to_jsonb(t) FROM " + pgx.Identifier{spec.table}.Sanitize() + " t WHERE " + spec.where +
 				" AND $2::text[] IS NOT NULL AND id>$3 ORDER BY id LIMIT 20"
+			if spec.kind == "vaccine_selection" {
+				query = "SELECT " + vaccineSelectionProjection + " FROM vaccine_selections s WHERE s.family_id=$1 AND s.baby_id=ANY($2::text[]) AND s.id>$3 ORDER BY s.id LIMIT 20"
+			}
 			rows, err := many(ctx, q, query, input.FamilyID, babies, last)
 			if err != nil {
 				return fmt.Errorf("snapshot %s: %w", spec.kind, err)

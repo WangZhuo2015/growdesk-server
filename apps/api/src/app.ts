@@ -82,6 +82,8 @@ import {
   VaccineRecordResponseSchema,
   VaccineListResponseSchema,
   CreateVaccineRecordRequestSchema,
+  UpdateVaccineRecordRequestSchema,
+  DeleteVaccineRecordRequestSchema,
   VaccineCatalogItemSchema,
   VaccineCatalogResponseSchema,
   RegisterPushDeviceRequestSchema,
@@ -301,6 +303,8 @@ export function buildApiApp(options: ApiAppOptions = {}) {
   app.addSchema(VaccineRecordResponseSchema);
   app.addSchema(VaccineListResponseSchema);
   app.addSchema(CreateVaccineRecordRequestSchema);
+  app.addSchema(UpdateVaccineRecordRequestSchema);
+  app.addSchema(DeleteVaccineRecordRequestSchema);
   app.addSchema(VaccineCatalogItemSchema);
   app.addSchema(VaccineCatalogResponseSchema);
   app.addSchema(RegisterPushDeviceRequestSchema);
